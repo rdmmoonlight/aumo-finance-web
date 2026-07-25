@@ -11,6 +11,7 @@ namespace AumoFinance.Models
         public DbSet<ChartOfAccount> ChartOfAccounts => Set<ChartOfAccount>();
         public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
         public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+        public DbSet<Period> Periods { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
