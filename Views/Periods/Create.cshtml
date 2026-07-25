@@ -1,0 +1,100 @@
+@model AumoFinance.Models.OpenPeriodViewModel
+@{
+    ViewData["Title"] = "Open New Period";
+}
+
+<div class="container-fluid py-4 px-4">
+    <div class="mb-4">
+        <h2 class="fw-bold text-body-emphasis mb-1">
+            <i class="bi bi-calendar-plus text-primary me-2"></i> Open New Period
+        </h2>
+        <p class="text-secondary mb-0">
+            Initialize a new accounting cycle. This will generate an automated opening balance journal on the 1st day of the selected month.
+        </p>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+                <div class="card-body p-4">
+                    <form asp-action="Create" method="post">
+                        
+                        <h5 class="fw-bold mb-3 border-bottom pb-2">1. Period Setup</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="Month" class="form-label fw-semibold small">Month</label>
+                                <select asp-for="Month" class="form-select">
+                                    @for (int i = 1; i <= 12; i++)
+                                    {
+                                        <option value="@i">@new DateTime(2000, i, 1).ToString("MMMM")</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Year" class="form-label fw-semibold small">Year</label>
+                                <input asp-for="Year" class="form-control" type="number" min="2000" max="2100" />
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold mb-3 border-bottom pb-2 mt-4">2. Opening Balances (Debit)</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="CashAccountId" class="form-label fw-semibold small">Cash Account</label>
+                                <select asp-for="CashAccountId" asp-items="ViewBag.Accounts" class="form-select">
+                                    <option value="">-- Select Cash Account --</option>
+                                </select>
+                                <span asp-validation-for="CashAccountId" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="CashBalance" class="form-label fw-semibold small">Cash Balance Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input asp-for="CashBalance" class="form-control" type="number" step="0.01" min="0" />
+                                </div>
+                                <span asp-validation-for="CashBalance" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="BankAccountId" class="form-label fw-semibold small">Bank Account</label>
+                                <select asp-for="BankAccountId" asp-items="ViewBag.Accounts" class="form-select">
+                                    <option value="">-- Select Bank Account --</option>
+                                </select>
+                                <span asp-validation-for="BankAccountId" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="BankBalance" class="form-label fw-semibold small">Bank Balance Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input asp-for="BankBalance" class="form-control" type="number" step="0.01" min="0" />
+                                </div>
+                                <span asp-validation-for="BankBalance" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold mb-3 border-bottom pb-2 mt-4">3. Equity Equivalence (Credit)</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-12">
+                                <label asp-for="RetainedEarningsAccountId" class="form-label fw-semibold small">Retained Earnings / Capital Account</label>
+                                <select asp-for="RetainedEarningsAccountId" asp-items="ViewBag.Accounts" class="form-select">
+                                    <option value="">-- Select Equity Account --</option>
+                                </select>
+                                <span asp-validation-for="RetainedEarningsAccountId" class="text-danger small"></span>
+                                <div class="form-text text-secondary">
+                                    The system will automatically credit this account with the sum of the Cash and Bank balances to ensure a strict double-entry equilibrium.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i> Open Period
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
