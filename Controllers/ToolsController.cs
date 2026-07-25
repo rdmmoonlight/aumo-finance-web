@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace AurumFinance.Controllers
+namespace AumoFinance.Controllers
 {
     public class ToolsController : Controller
     {
