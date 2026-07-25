@@ -13,7 +13,6 @@
             <p class="text-secondary mb-0">Chronological record of financial transactions for Aumo Finance.</p>
         </div>
         <div class="d-flex gap-2">
-            <!-- Posisi Add Entry di kiri, Edit di sebelah kanannya -->
             <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Add Entry
             </a>
@@ -90,11 +89,12 @@
                                         <td class="text-center align-top">
                                             <code>@line.Account?.ReferenceNumber</code>
                                         </td>
+                                        <!-- Menggunakan N0 agar tampil tanpa angka desimal di belakang koma -->
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
-                                            @(isDebit ? line.Debit.ToString("N2") : "-")
+                                            @(isDebit ? line.Debit.ToString("N0") : "-")
                                         </td>
                                         <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
-                                            @(!isDebit ? line.Credit.ToString("N2") : "-")
+                                            @(!isDebit ? line.Credit.ToString("N0") : "-")
                                         </td>
                                     </tr>
                                 }
