@@ -38,4 +38,4 @@ To maintain the highest level of financial integrity, economic rationality, and 
 ### 1. Clone the Repository
 ```bash
 git clone [https://github.com/yourusername/aurum-finance.git](https://github.com/yourusername/aurum-finance.git)
-cd aurum-finance
+cd aumo-finance
