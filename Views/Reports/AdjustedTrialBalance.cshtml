@@ -1,0 +1,81 @@
+@model AumoFinance.Models.TrialBalanceViewModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-list-columns me-2 text-info"></i> @Model.Title</h2>
+            <p class="text-muted mb-0">Saldo setiap akun setelah memperhitungkan jurnal penyesuaian (Adjusting Journal) — dasar penyusunan Laporan Laba Rugi dan Laporan Posisi Keuangan.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Reports" asp-action="TrialBalance" class="btn btn-outline-secondary">
+                <i class="bi bi-list-columns me-1"></i> Trial Balance
+            </a>
+            <a asp-controller="AdjustingJournal" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-journal-medical me-1"></i> Adjusting Journal
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-dark border-secondary text-white shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead class="table-active border-bottom border-secondary">
+                        <tr>
+                            <th class="text-center">Ref.</th>
+                            <th>Account Name</th>
+                            <th>Type</th>
+                            <th class="text-end">Debit</th>
+                            <th class="text-end">Credit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Rows.Any())
+                        {
+                            foreach (var row in Model.Rows)
+                            {
+                                <tr>
+                                    <td class="text-center"><code>@row.ReferenceNumber</code></td>
+                                    <td>@row.AccountName</td>
+                                    <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">@row.Type</span></td>
+                                    <td class="text-end text-success">@(row.Debit > 0 ? row.Debit.ToString("N2") : "-")</td>
+                                    <td class="text-end text-danger">@(row.Credit > 0 ? row.Credit.ToString("N2") : "-")</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-muted">Belum ada akun dengan mutasi.</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-top border-secondary fw-bold">
+                            <td colspan="3" class="text-end">Total</td>
+                            <td class="text-end text-success">@Model.TotalDebit.ToString("N2")</td>
+                            <td class="text-end text-danger">@Model.TotalCredit.ToString("N2")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Rows.Any())
+    {
+        <div class="alert @(Model.IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 mt-3 mb-0 py-2 small">
+            @if (Model.IsBalanced)
+            {
+                <i class="bi bi-check-circle-fill me-1"></i> @:Total Debit = Total Credit. Neraca saldo disesuaikan seimbang.
+            }
+            else
+            {
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> @:Neraca saldo disesuaikan tidak seimbang, periksa kembali jurnal penyesuaian.
+            }
+        </div>
+    }
+</div>
