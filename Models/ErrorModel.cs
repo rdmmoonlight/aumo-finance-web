@@ -1,4 +1,4 @@
-namespace AurumFinance.Models;
+namespace AumoFinance.Models;
 
 public class ErrorModel
 {

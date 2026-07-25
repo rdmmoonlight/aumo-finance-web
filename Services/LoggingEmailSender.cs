@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace AurumFinance.Services
+namespace AumoFinance.Services
 {
     /// <summary>
     /// Default IEmailSender: writes the message to the log instead of

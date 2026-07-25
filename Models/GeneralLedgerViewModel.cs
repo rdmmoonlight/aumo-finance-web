@@ -1,4 +1,4 @@
-namespace AurumFinance.Models
+namespace AumoFinance.Models
 {
     // Satu kartu ledger per akun. Baris-barisnya diambil langsung dari
     // JournalEntryLine (yang diinput lewat Journal Entry), sehingga General

@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using AurumFinance.Models;
+using AumoFinance.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
-namespace AurumFinance.Services
+namespace AumoFinance.Services
 {
     /// <summary>
     /// Adds the user's FullName as the principal's ClaimTypes.Name (falling
@@ -11,9 +11,9 @@ namespace AurumFinance.Services
     /// _Sidebar.cshtml keep showing the person's name exactly as they did
     /// under the old API-backed claims mapping in AuthPrincipalFactory.
     /// </summary>
-    public class AurumUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<Guid>>
+    public class AumoUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<Guid>>
     {
-        public AurumUserClaimsPrincipalFactory(
+        public AumoUserClaimsPrincipalFactory(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole<Guid>> roleManager,
             IOptions<IdentityOptions> options)

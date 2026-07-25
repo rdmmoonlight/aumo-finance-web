@@ -19,21 +19,40 @@
                 </a>
             </li>            
             
+            <!-- Menu Journal Entry -->
             <li class="nav-item mb-1">
                 <a asp-controller="JournalEntry" asp-action="Create" class="nav-link text-white icon-btn" title="Journal Entry">
                     <i class="bi bi-journal-plus fs-6"></i>
                 </a>
             </li>
             
+            <!-- Menu Reports -->
             <li class="nav-item mb-1">
                 <a href="javascript:void(0)" id="btn-toggle-reports" class="nav-link text-white icon-btn" title="Reports">
                     <i class="bi bi-folder fs-6"></i>
                 </a>
             </li>
             
+            <!-- Menu Chart of Accounts -->
             <li class="nav-item mb-1">
                 <a asp-controller="ChartOfAccounts" asp-action="Index" class="nav-link text-white icon-btn" title="Chart of Accounts">
                     <i class="bi bi-diagram-3 fs-6"></i>
+                </a>
+            </li>
+
+            <!-- ========================================= -->
+            <!-- MENU PERIODS                              -->
+            <!-- ========================================= -->
+            <li class="nav-item mb-1">
+                <a asp-controller="Periods" asp-action="Index" class="nav-link text-white icon-btn" title="Financial Periods">
+                    <i class="bi bi-calendar3 fs-6"></i>
+                </a>
+            </li>
+
+            <!-- Menu Tools -->
+            <li class="nav-item mb-1">
+                <a asp-controller="Tools" asp-action="Index" class="nav-link text-white icon-btn" title="Tools">
+                    <i class="bi bi-tools fs-6"></i>
                 </a>
             </li>
         </ul>

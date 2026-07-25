@@ -1,4 +1,4 @@
-namespace AurumFinance.Services
+namespace AumoFinance.Services
 {
     /// <summary>
     /// Minimal mail abstraction used by Identity's account-confirmation and

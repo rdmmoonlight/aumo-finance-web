@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AurumFinance.Migrations
+namespace AumoFinance.Migrations
 {
     /// <inheritdoc />
     public partial class InitPostgres : Migration

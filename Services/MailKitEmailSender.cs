@@ -3,7 +3,7 @@ using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using MimeKit;
 
-namespace AurumFinance.Services
+namespace AumoFinance.Services
 {
     public class MailKitEmailSender : IEmailSender
     {
@@ -37,7 +37,7 @@ namespace AurumFinance.Services
             try
             {
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("Aurum Finance", senderEmail));
+                message.From.Add(new MailboxAddress("Aumo Finance", senderEmail));
                 message.To.Add(MailboxAddress.Parse(toEmail));
                 message.Subject = subject;
 

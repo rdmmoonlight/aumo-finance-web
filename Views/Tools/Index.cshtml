@@ -1,0 +1,129 @@
+@{
+    ViewData["Title"] = "Tools & Utilities";
+}
+
+<div class="container-fluid py-4 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1">
+                <i class="bi bi-tools me-2 text-warning"></i> Tools & Utilities
+            </h2>
+            <p class="text-secondary mb-0">System operations, data imports, and end-of-period maintenance.</p>
+        </div>
+    </div>
+
+    <!-- Tampilkan pesan sukses/error jika ada -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        
+        <!-- ========================================== -->
+        <!-- 1. IMPORT GENERAL JOURNAL (XLSX)           -->
+        <!-- ========================================== -->
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
+                    <h5 class="fw-bold"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i> Import Journal Entries</h5>
+                </div>
+                <div class="card-body px-4">
+                    <p class="text-secondary small mb-4">
+                        Upload batch journal entries using the standard `.xlsx` format. Strict validation will be applied to ensure debits and credits balance before saving to the database.
+                    </p>
+
+                    <!-- Template Format Info -->
+                    <div class="bg-body rounded-3 p-3 mb-4 border">
+                        <span class="d-block fw-semibold small mb-2">Required Columns (Row 1 Header):</span>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span class="badge bg-secondary">Date</span>
+                            <span class="badge bg-secondary">AccountCode</span>
+                            <span class="badge bg-secondary">Description</span>
+                            <span class="badge bg-secondary">Ref</span>
+                            <span class="badge bg-secondary">Debit</span>
+                            <span class="badge bg-secondary">Credit</span>
+                        </div>
+                        <a asp-action="DownloadJournalTemplate" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-download me-1"></i> Download Template .xlsx
+                        </a>
+                    </div>
+
+                    <!-- Upload Form -->
+                    <form asp-action="ImportJournal" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="excelFile" class="form-label fw-semibold small">Select Excel File</label>
+                            <input class="form-control" type="file" id="excelFile" name="excelFile" accept=".xlsx" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm w-100">
+                            <i class="bi bi-cloud-upload me-2"></i> Validate & Import Data
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 2. END OF PERIOD / TUTUP BUKU              -->
+        <!-- ========================================== -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="mb-3">
+                        <i class="bi bi-calendar-check text-warning" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h5 class="fw-bold">Month-End Close</h5>
+                    <p class="text-secondary small">
+                        Lock transactions for the selected period and calculate Retained Earnings. Ensures historical data integrity.
+                    </p>
+                    
+                    <form asp-action="MonthEndClose" method="post" class="mt-auto">
+                        <div class="mb-3">
+                            <input type="month" class="form-control form-control-sm" name="period" required />
+                        </div>
+                        <button type="submit" class="btn btn-outline-warning w-100 btn-sm fw-semibold" onclick="return confirm('Are you sure you want to close this period? No further edits will be allowed.')">
+                            <i class="bi bi-lock me-1"></i> Execute Closing
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 3. MAINTENANCE & UTILITIES                 -->
+        <!-- ========================================== -->
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="mb-3">
+                        <i class="bi bi-database-gear text-info" style="font-size: 2.5rem;"></i>
+                    </div>
+                    <h5 class="fw-bold">System Maintenance</h5>
+                    <p class="text-secondary small mb-4">
+                        Tools to verify structural integrity and safeguard financial records.
+                    </p>
+
+                    <div class="d-grid gap-2 mt-auto">
+                        <a asp-action="RecalculateLedger" class="btn btn-outline-info btn-sm text-start" onclick="return confirm('This will rebuild all running balances. Continue?')">
+                            <i class="bi bi-arrow-repeat me-2"></i> Recalculate Ledger Balances
+                        </a>
+                        <a asp-action="BackupDatabase" class="btn btn-outline-secondary btn-sm text-start">
+                            <i class="bi bi-hdd-network me-2"></i> Export Data Backup
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

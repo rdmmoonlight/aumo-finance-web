@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using AurumFinance.Models; // Sesuaikan dengan namespace ViewModel-mu
+using AumoFinance.Models; // Sesuaikan dengan namespace ViewModel-mu
 using System;
 using System.Collections.Generic;
 
-namespace AurumFinance.Controllers
+namespace AumoFinance.Controllers
 {
     public class DashboardController : Controller
     {

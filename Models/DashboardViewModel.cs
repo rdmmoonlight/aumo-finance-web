@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 
-// PASTIKAN TULISANNYA AurumFinance.Models
-namespace AurumFinance.Models 
+// PASTIKAN TULISANNYA AumoFinance.Models
+namespace AumoFinance.Models 
 {
     public class DashboardViewModel
     {

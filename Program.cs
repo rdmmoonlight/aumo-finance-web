@@ -1,5 +1,5 @@
-using AurumFinance.Models;
-using AurumFinance.Services;
+using AumoFinance.Models;
+using AumoFinance.Services;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -14,7 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // 2. ASP.NET Core Identity — single source of truth for accounts. Replaces
 //    the old cookie-plus-external-JWT-API setup entirely: no more custom
-//    User table, no more remote Aurum.Api calls for auth.
+//    User table, no more remote Aumo.Api calls for auth.
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
@@ -24,7 +24,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders()
-    .AddClaimsPrincipalFactory<AurumUserClaimsPrincipalFactory>();
+    .AddClaimsPrincipalFactory<AumoUserClaimsPrincipalFactory>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {

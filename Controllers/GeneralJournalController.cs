@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AurumFinance.Models;
+using AumoFinance.Models;
 
-namespace AurumFinance.Controllers
+namespace AumoFinance.Controllers
 {
     public class GeneralJournalController : Controller
     {

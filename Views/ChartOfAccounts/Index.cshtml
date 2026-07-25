@@ -1,4 +1,4 @@
-@model IEnumerable<AurumFinance.Models.ChartOfAccount>
+@model IEnumerable<AumoFinance.Models.ChartOfAccount>
 @{
     ViewData["Title"] = "Chart of Accounts";
 }
@@ -101,7 +101,7 @@
                                             <button class="btn btn-sm btn-outline-light" title="Edit Account">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
-                                            <a href="@Url.Action(AurumFinance.Models.AccountClassification.IsTemporary(account.Type) ? "GeneralLedgerTemporary" : "GeneralLedger", "Reports")#account-@account.Id" class="btn btn-sm btn-outline-info" title="View General Ledger">
+                                            <a href="@Url.Action(AumoFinance.Models.AccountClassification.IsTemporary(account.Type) ? "GeneralLedgerTemporary" : "GeneralLedger", "Reports")#account-@account.Id" class="btn btn-sm btn-outline-info" title="View General Ledger">
                                                 <i class="bi bi-journal-text"></i>
                                             </a>
                                         </div>

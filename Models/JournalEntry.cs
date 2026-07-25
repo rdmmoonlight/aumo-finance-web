@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AurumFinance.Models
+namespace AumoFinance.Models
 {
     public class JournalEntry
     {

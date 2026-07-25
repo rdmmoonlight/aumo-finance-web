@@ -1,12 +1,12 @@
 using System.Text;
-using AurumFinance.Models;
-using AurumFinance.Services;
+using AumoFinance.Models;
+using AumoFinance.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace AurumFinance.Controllers
+namespace AumoFinance.Controllers
 {
     [AllowAnonymous]
     public class AuthController : Controller
@@ -145,7 +145,7 @@ namespace AurumFinance.Controllers
 
                 await _emailSender.SendEmailAsync(
                     user.Email!,
-                    "Reset your Aurum Finance password",
+                    "Reset your Aumo Finance password",
                     $"Reset your password by clicking <a href='{resetUrl}'>here</a>.");
             }
 
@@ -271,7 +271,7 @@ namespace AurumFinance.Controllers
 
             await _emailSender.SendEmailAsync(
                 user.Email!,
-                "Confirm your Aurum Finance account",
+                "Confirm your Aumo Finance account",
                 $"Confirm your account by clicking <a href='{confirmUrl}'>here</a>.");
         }
     }
