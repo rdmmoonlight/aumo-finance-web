@@ -3,72 +3,101 @@
     ViewData["Title"] = "General Journal";
 }
 
-<div class="container-fluid">
-   <!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="mb-1"><i class="bi bi-journal-bookmark me-2 text-warning"></i> General Journal</h2>
-        <p class="text-muted mb-0">Chronological record of financial transactions for Aumo Finance.</p>
+<div class="container-fluid py-4 px-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1">
+                <i class="bi bi-journal-bookmark me-2 text-warning"></i> General Journal
+            </h2>
+            <p class="text-secondary mb-0">Chronological record of financial transactions for Aumo Finance.</p>
+        </div>
+        <div>
+            <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add Entry
+            </a>
+        </div>
     </div>
-    <div>
-        <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-warning fw-semibold">
-            <i class="bi bi-plus-lg me-1"></i> Add Entry
-        </a>
-    </div>
-</div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show border-success bg-dark text-success" role="alert">
+        <div class="alert alert-success alert-dismissible fade show shadow-sm py-2" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
     <!-- General Journal Table -->
-    <div class="card bg-dark border-secondary text-white shadow-sm">
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle mb-0">
-                    <thead class="table-active border-bottom border-secondary">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th>Date</th>
-                            <th>Account</th>
-                            <th>Description</th>
-                            <th class="text-center">Ref.</th>
-                            <th class="text-end">Debit</th>
-                            <th class="text-end">Credit</th>
+                            <th class="ps-4" style="width: 12%;">Date</th>
+                            <th style="width: 25%;">Account</th>
+                            <th style="width: 25%;">Description</th>
+                            <th class="text-center" style="width: 10%;">Ref.</th>
+                            <th class="text-end" style="width: 12%;">Debit</th>
+                            <th class="text-end" style="width: 12%;">Credit</th>
+                            <th class="text-center pe-4" style="width: 4%;">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="border-top-0">
                         @if (Model.Any())
                         {
                             foreach (var entry in Model)
                             {
+                                // Gabungkan debit dan kredit menjadi satu urutan transaksi
                                 var orderedLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
                                 var debitLines = orderedLines.Where(l => l.Debit > 0).ToList();
                                 var creditLines = orderedLines.Where(l => l.Credit > 0).ToList();
+                                var allLines = debitLines.Concat(creditLines).ToList();
 
-                                @foreach (var line in debitLines)
+                                for (int i = 0; i < allLines.Count; i++)
                                 {
-                                    <tr>
-                                        <td class="text-nowrap">@entry.EntryDate.ToString("dd-MM-yyyy")</td>
-                                        <td class="fw-bold"><code class="text-warning me-1">@line.Account?.ReferenceNumber</code> @line.Account?.AccountName</td>
-                                        <td class="text-muted small">@(line.LineDescription ?? entry.Memo)</td>
-                                        <td class="text-center"><code>@entry.ReferenceNumber</code></td>
-                                        <td class="text-end text-success fw-semibold">@line.Debit.ToString("N2")</td>
-                                        <td class="text-end text-muted">-</td>
-                                    </tr>
-                                }
-                                @foreach (var line in creditLines)
-                                {
-                                    <tr>
-                                        <td class="text-nowrap">@entry.EntryDate.ToString("dd-MM-yyyy")</td>
-                                        <td class="fw-bold ps-4"><code class="text-warning me-1">@line.Account?.ReferenceNumber</code> @line.Account?.AccountName</td>
-                                        <td class="text-muted small">@(line.LineDescription ?? entry.Memo)</td>
-                                        <td class="text-center"><code>@entry.ReferenceNumber</code></td>
-                                        <td class="text-end text-muted">-</td>
-                                        <td class="text-end text-danger fw-semibold">@line.Credit.ToString("N2")</td>
+                                    var line = allLines[i];
+                                    var isFirstRow = (i == 0);
+                                    var isLastRow = (i == allLines.Count - 1);
+                                    var isDebit = line.Debit > 0;
+                                    
+                                    // Tambahkan border bawah yang tebal di akhir transaksi untuk memisahkan antar jurnal
+                                    var rowClass = isLastRow ? "border-bottom border-2" : "border-bottom-0";
+
+                                    <tr class="@rowClass">
+                                        <td class="ps-4 text-nowrap align-top">
+                                            @if (isFirstRow)
+                                            {
+                                                <span class="fw-bold text-body">@entry.EntryDate.ToString("dd MMM yyyy")</span>
+                                                <div class="text-secondary small mt-1">@entry.JournalType</div>
+                                            }
+                                        </td>
+                                        <td class="align-top @(isDebit ? "fw-bold text-body" : "ps-4 text-body")">
+                                            @line.Account?.AccountName
+                                        </td>
+                                        <td class="text-secondary small align-top">
+                                            @(line.LineDescription ?? entry.Memo)
+                                        </td>
+                                        <td class="text-center align-top">
+                                            <!-- Ref sekarang merujuk mutlak ke COA Reference Number -->
+                                            <code>@line.Account?.ReferenceNumber</code>
+                                        </td>
+                                        <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
+                                            @(isDebit ? line.Debit.ToString("N2") : "-")
+                                        </td>
+                                        <td class="text-end align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
+                                            @(!isDebit ? line.Credit.ToString("N2") : "-")
+                                        </td>
+                                        
+                                        @if (isFirstRow)
+                                        {
+                                            // Tombol Edit menggunakan rowspan agar posisinya menyatu dan rapi di tengah transaksi
+                                            <td rowspan="@allLines.Count" class="text-center align-middle pe-4 border-start">
+                                                <a asp-controller="JournalEntry" asp-action="Edit" asp-route-id="@entry.Id" class="btn btn-sm btn-outline-secondary shadow-sm" title="Edit Entry">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            </td>
+                                        }
                                     </tr>
                                 }
                             }
@@ -76,7 +105,10 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">No journal entries recorded yet.</td>
+                                <td colspan="7" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
+                                    No journal entries recorded yet.
+                                </td>
                             </tr>
                         }
                     </tbody>
