@@ -49,18 +49,18 @@
                         <div class="row g-3 mb-4">
                             <div class="col-md-3">
                                 <label asp-for="CashAccountCode" class="form-label fw-semibold small">Ref / Code</label>
-                                <input asp-for="CashAccountCode" class="form-control" placeholder="e.g., 1001" />
+                                <input asp-for="CashAccountCode" class="form-control" placeholder="e.g., 101" />
                                 <span asp-validation-for="CashAccountCode" class="text-danger small"></span>
                             </div>
                             <div class="col-md-5">
                                 <label asp-for="CashAccountName" class="form-label fw-semibold small">Account Name</label>
-                                <input asp-for="CashAccountName" class="form-control" placeholder="e.g., Petty Cash" />
+                                <input asp-for="CashAccountName" class="form-control" placeholder="e.g., Cash" />
                                 <span asp-validation-for="CashAccountName" class="text-danger small"></span>
                             </div>
                             <div class="col-md-4">
                                 <label asp-for="CashBalance" class="form-label fw-semibold small">Opening Balance</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">Rp</span>
                                     <input asp-for="CashBalance" class="form-control" type="number" step="0.01" min="0" />
                                 </div>
                                 <span asp-validation-for="CashBalance" class="text-danger small"></span>
@@ -83,7 +83,7 @@
                             <div class="col-md-4">
                                 <label asp-for="BankBalance" class="form-label fw-semibold small">Opening Balance</label>
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">Rp</span>
                                     <input asp-for="BankBalance" class="form-control" type="number" step="0.01" min="0" />
                                 </div>
                                 <span asp-validation-for="BankBalance" class="text-danger small"></span>
