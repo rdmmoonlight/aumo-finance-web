@@ -12,7 +12,11 @@
             </h2>
             <p class="text-secondary mb-0">Chronological record of financial transactions for Aumo Finance.</p>
         </div>
-        <div>
+        <div class="d-flex gap-2">
+            <!-- Tombol Edit dipindah ke sini (sebelah kiri/kanan Add Entry) -->
+            <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm" title="Select an entry to edit (Feature incoming)">
+                <i class="bi bi-pencil me-1"></i> Edit
+            </button>
             <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Add Entry
             </a>
@@ -34,25 +38,36 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4" style="width: 12%;">Date</th>
-                            <th style="width: 25%;">Account</th>
-                            <th style="width: 25%;">Description</th>
+                            <th class="ps-4 text-center" style="width: 8%;">Date</th>
+                            <th style="width: 27%;">Account</th>
+                            <th style="width: 27%;">Description</th>
                             <th class="text-center" style="width: 10%;">Ref.</th>
-                            <th class="text-end" style="width: 12%;">Debit</th>
-                            <th class="text-end" style="width: 12%;">Credit</th>
-                            <th class="text-center pe-4" style="width: 4%;">Action</th>
+                            <th class="text-end" style="width: 14%;">Debit</th>
+                            <th class="text-end pe-4" style="width: 14%;">Credit</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
                         @if (Model.Any())
                         {
+                            string lastDate = ""; // Variabel penanda untuk menyimpan tanggal terakhir yang dicetak
+
                             foreach (var entry in Model)
                             {
-                                // Gabungkan debit dan kredit menjadi satu urutan transaksi
+                                // Urutkan Debit dulu, baru Kredit
                                 var orderedLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
                                 var debitLines = orderedLines.Where(l => l.Debit > 0).ToList();
                                 var creditLines = orderedLines.Where(l => l.Credit > 0).ToList();
                                 var allLines = debitLines.Concat(creditLines).ToList();
+
+                                // Ambil angka tanggalnya saja (DD)
+                                var currentDateStr = entry.EntryDate.ToString("dd");
+                                
+                                // Cek apakah tanggal transaksi ini BEDA dengan transaksi sebelumnya
+                                var showDate = (currentDateStr != lastDate);
+                                if (showDate)
+                                {
+                                    lastDate = currentDateStr; // Update memori tanggal
+                                }
 
                                 for (int i = 0; i < allLines.Count; i++)
                                 {
@@ -61,15 +76,15 @@
                                     var isLastRow = (i == allLines.Count - 1);
                                     var isDebit = line.Debit > 0;
                                     
-                                    // Tambahkan border bawah yang tebal di akhir transaksi untuk memisahkan antar jurnal
+                                    // Garis pemisah transaksi
                                     var rowClass = isLastRow ? "border-bottom border-2" : "border-bottom-0";
 
                                     <tr class="@rowClass">
-                                        <td class="ps-4 text-nowrap align-top">
-                                            @if (isFirstRow)
+                                        <td class="ps-4 text-center align-top">
+                                            <!-- Tanggal HANYA dicetak di baris pertama tiap transaksi, DAN HANYA jika beda hari -->
+                                            @if (isFirstRow && showDate)
                                             {
-                                                <span class="fw-bold text-body">@entry.EntryDate.ToString("dd MMM yyyy")</span>
-                                                <div class="text-secondary small mt-1">@entry.JournalType</div>
+                                                <span class="fw-bold text-body fs-5">@currentDateStr</span>
                                             }
                                         </td>
                                         <td class="align-top @(isDebit ? "fw-bold text-body" : "ps-4 text-body")">
@@ -79,25 +94,14 @@
                                             @(line.LineDescription ?? entry.Memo)
                                         </td>
                                         <td class="text-center align-top">
-                                            <!-- Ref sekarang merujuk mutlak ke COA Reference Number -->
                                             <code>@line.Account?.ReferenceNumber</code>
                                         </td>
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
                                             @(isDebit ? line.Debit.ToString("N2") : "-")
                                         </td>
-                                        <td class="text-end align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
+                                        <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
                                             @(!isDebit ? line.Credit.ToString("N2") : "-")
                                         </td>
-                                        
-                                        @if (isFirstRow)
-                                        {
-                                            // Tombol Edit menggunakan rowspan agar posisinya menyatu dan rapi di tengah transaksi
-                                            <td rowspan="@allLines.Count" class="text-center align-middle pe-4 border-start">
-                                                <a asp-controller="JournalEntry" asp-action="Edit" asp-route-id="@entry.Id" class="btn btn-sm btn-outline-secondary shadow-sm" title="Edit Entry">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                            </td>
-                                        }
                                     </tr>
                                 }
                             }
@@ -105,9 +109,9 @@
                         else
                         {
                             <tr>
-                                <td colspan="7" class="text-center py-5 text-secondary">
+                                <td colspan="6" class="text-center py-5 text-secondary">
                                     <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                    No journal entries recorded yet.
+                                    No journal entries recorded yet in this period.
                                 </td>
                             </tr>
                         }
