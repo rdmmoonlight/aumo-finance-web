@@ -34,7 +34,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
+builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 
 // 3. MVC Services + Kunci Semua Halaman Secara Global
 builder.Services.AddControllersWithViews(options =>
