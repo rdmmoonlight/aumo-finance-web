@@ -1,3 +1,38 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using AumoFinance.Models;
+
+namespace AumoFinance.Controllers
+{
+    public class PeriodsController : Controller
+    {
+        private readonly AppDbContext _context;
+
+        public PeriodsController(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var periods = await _context.Periods
+                                        .OrderByDescending(p => p.StartDate)
+                                        .ToListAsync();
+            return View(periods);
+        }
+
+        // GET: /Periods/Create
+        public IActionResult Create()
+        {
+            var model = new OpenPeriodViewModel
+            {
+                Month = DateTime.Today.Month,
+                Year = DateTime.Today.Year
+            };
+
+            return View(model);
+        }
+
         // POST: /Periods/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -19,7 +54,6 @@
                 return RedirectToAction(nameof(Index));
             }
 
-            // Gunakan ReferenceNumber sesuai properti asli ChartOfAccount
             var existingCodes = await _context.ChartOfAccounts
                 .Where(a => a.ReferenceNumber.ToString() == model.CashAccountCode 
                          || a.ReferenceNumber.ToString() == model.BankAccountCode 
@@ -36,7 +70,6 @@
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Buat 3 Akun Baru di COA (Gunakan ReferenceNumber & Type)
                 var cashAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.CashAccountCode), AccountName = model.CashAccountName, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
                 var bankAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.BankAccountCode), AccountName = model.BankAccountName, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
                 var retainedAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.RetainedEarningsAccountCode), AccountName = model.RetainedEarningsAccountName, Type = "Equity", Role = "RetainedEarnings", IsActive = true };
@@ -44,7 +77,6 @@
                 _context.ChartOfAccounts.AddRange(cashAccount, bankAccount, retainedAccount);
                 await _context.SaveChangesAsync();
 
-                // 2. Buat Periode Baru
                 var newPeriod = new Period
                 {
                     PeriodName = periodName,
@@ -55,7 +87,6 @@
                 _context.Periods.Add(newPeriod);
                 await _context.SaveChangesAsync();
 
-                // 3. Jurnal Saldo Awal (Sesuaikan dengan properti EntryDate dan Memo)
                 var totalOpeningBalance = model.CashBalance + model.BankBalance;
                 var journalEntry = new JournalEntry
                 {
@@ -67,7 +98,6 @@
                 _context.JournalEntries.Add(journalEntry);
                 await _context.SaveChangesAsync();
 
-                // 4. Masukkan Baris Jurnal (Lines)
                 var lines = new List<JournalEntryLine>
                 {
                     new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = cashAccount.Id, Debit = model.CashBalance, Credit = 0 },
@@ -89,3 +119,5 @@
                 return RedirectToAction(nameof(Index));
             }
         }
+    }
+}
