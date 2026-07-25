@@ -82,9 +82,9 @@
     </nav>
 
     <!-- ========================================================= -->
-    <!-- 2. EXPANDABLE FLYOUT PANEL (Lebar Disesuaikan ~280px)      -->
+    <!-- 2. EXPANDABLE FLYOUT PANEL (Reports Menu List - Compact)  -->
     <!-- ========================================================= -->
-    <div id="reports-flyout" class="sidebar-flyout bg-dark border-end border-secondary text-white" style="width: 280px;">
+    <div id="reports-flyout" class="sidebar-flyout bg-dark border-end border-secondary text-white">
         <div class="p-2 border-bottom border-secondary d-flex justify-content-between align-items-center">
             <span class="fw-bold small text-uppercase tracking-wider text-warning mb-0">
                 Reports
@@ -92,7 +92,7 @@
             <button type="button" id="btn-close-reports" class="btn-close btn-close-white btn-sm" aria-label="Close" style="font-size: 0.65rem;"></button>
         </div>
 
-        <!-- List of Reports (Garis pemisah hapus) -->
+        <!-- List of Reports (Ikon dan Garis Bawah Dihapus) -->
         <div class="list-group list-group-flush p-1 small">
             <a asp-controller="GeneralJournal" asp-action="Index" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
                 General Journal
@@ -103,6 +103,7 @@
             <a asp-controller="Reports" asp-action="GeneralLedgerTemporary" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
                 General Ledger (Temporary Accounts)
             </a>
+            <!-- Garis hr dihapus dari sini -->
             <a asp-controller="Reports" asp-action="TrialBalance" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
                 Trial Balance
             </a>
