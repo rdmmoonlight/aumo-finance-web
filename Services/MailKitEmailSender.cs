@@ -18,29 +18,24 @@ namespace AurumFinance.Services
             var senderEmail = _configuration["Smtp:User"];
             var pass = _configuration["Smtp:Pass"];
             var host = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
-            var port = int.Parse(_configuration["Smtp:Port"] ?? "587");
+            var port = int.Parse(_configuration["Smtp:Port"] ?? "465");
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Aurum Finance", senderEmail));
             message.To.Add(MailboxAddress.Parse(toEmail));
             message.Subject = subject;
 
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = htmlMessage
-            };
+            var bodyBuilder = new BodyBuilder { HtmlBody = htmlMessage };
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
+            client.Timeout = 10000; // Limit 10 detik
+
             try
             {
-                // Menghubungkan ke server SMTP dengan Cancellation Token support
-                await client.ConnectAsync(host, port, SecureSocketOptions.StartTls, ct);
-
-                // Autentikasi menggunakan Gmail App Password
+                var socketOptions = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                await client.ConnectAsync(host, port, socketOptions, ct);
                 await client.AuthenticateAsync(senderEmail, pass, ct);
-
-                // Kirim email
                 await client.SendAsync(message, ct);
             }
             finally
