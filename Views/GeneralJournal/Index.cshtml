@@ -1,3 +1,4 @@
+@model List<AurumFinance.Models.JournalEntry>
 @{
     ViewData["Title"] = "General Journal";
 }
@@ -10,12 +11,19 @@
         <p class="text-muted mb-0">Chronological record of financial transactions for Aurum Finance.</p>
     </div>
     <div>
-        <button class="btn btn-outline-light me-2"><i class="bi bi-funnel me-1"></i> Filter</button>
-        <a asp-action="Create" class="btn btn-warning fw-semibold">
+        <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-warning fw-semibold">
             <i class="bi bi-plus-lg me-1"></i> Add Entry
         </a>
     </div>
 </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show border-success bg-dark text-success" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     <!-- General Journal Table -->
     <div class="card bg-dark border-secondary text-white shadow-sm">
@@ -33,43 +41,44 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Transaksi 1: Debit -->
-                        <tr>
-                            <td class="text-nowrap">22-07-2026</td>
-                            <td class="fw-bold">Cash</td>
-                            <td class="text-muted small">Initial Capital Investment</td>
-                            <td class="text-center"><code>GJ-2026-001</code></td>
-                            <td class="text-end text-success fw-semibold">$100,000.00</td>
-                            <td class="text-end text-muted">-</td>
-                        </tr>
-                        <!-- Transaksi 1: Kredit (Di-indentasi) -->
-                        <tr>
-                            <td class="text-nowrap">22-07-2026</td>
-                            <td class="fw-bold ps-4">Owner's Equity</td>
-                            <td class="text-muted small">Initial Capital Investment</td>
-                            <td class="text-center"><code>GJ-2026-001</code></td>
-                            <td class="text-end text-muted">-</td>
-                            <td class="text-end text-danger fw-semibold">$100,000.00</td>
-                        </tr>
+                        @if (Model.Any())
+                        {
+                            foreach (var entry in Model)
+                            {
+                                var orderedLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
+                                var debitLines = orderedLines.Where(l => l.Debit > 0).ToList();
+                                var creditLines = orderedLines.Where(l => l.Credit > 0).ToList();
 
-                        <!-- Transaksi 2: Debit -->
-                        <tr>
-                            <td class="text-nowrap">22-07-2026</td>
-                            <td class="fw-bold">Rent Expense</td>
-                            <td class="text-muted small">Monthly Office Rent Payment</td>
-                            <td class="text-center"><code>GJ-2026-002</code></td>
-                            <td class="text-end text-success fw-semibold">$15,000.00</td>
-                            <td class="text-end text-muted">-</td>
-                        </tr>
-                        <!-- Transaksi 2: Kredit (Di-indentasi) -->
-                        <tr>
-                            <td class="text-nowrap">22-07-2026</td>
-                            <td class="fw-bold ps-4">Cash</td>
-                            <td class="text-muted small">Monthly Office Rent Payment</td>
-                            <td class="text-center"><code>GJ-2026-002</code></td>
-                            <td class="text-end text-muted">-</td>
-                            <td class="text-end text-danger fw-semibold">$15,000.00</td>
-                        </tr>
+                                @foreach (var line in debitLines)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap">@entry.EntryDate.ToString("dd-MM-yyyy")</td>
+                                        <td class="fw-bold"><code class="text-warning me-1">@line.Account?.ReferenceNumber</code> @line.Account?.AccountName</td>
+                                        <td class="text-muted small">@(line.LineDescription ?? entry.Memo)</td>
+                                        <td class="text-center"><code>@entry.ReferenceNumber</code></td>
+                                        <td class="text-end text-success fw-semibold">@line.Debit.ToString("N2")</td>
+                                        <td class="text-end text-muted">-</td>
+                                    </tr>
+                                }
+                                @foreach (var line in creditLines)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap">@entry.EntryDate.ToString("dd-MM-yyyy")</td>
+                                        <td class="fw-bold ps-4"><code class="text-warning me-1">@line.Account?.ReferenceNumber</code> @line.Account?.AccountName</td>
+                                        <td class="text-muted small">@(line.LineDescription ?? entry.Memo)</td>
+                                        <td class="text-center"><code>@entry.ReferenceNumber</code></td>
+                                        <td class="text-end text-muted">-</td>
+                                        <td class="text-end text-danger fw-semibold">@line.Credit.ToString("N2")</td>
+                                    </tr>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No journal entries recorded yet.</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>

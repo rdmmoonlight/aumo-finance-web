@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Database Context
+// 1. Database Context — Neon (PostgreSQL). Tidak ada lagi SQLite.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 2. ASP.NET Core Identity — single source of truth for accounts. Replaces
 //    the old cookie-plus-external-JWT-API setup entirely: no more custom

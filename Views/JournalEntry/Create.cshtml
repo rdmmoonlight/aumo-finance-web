@@ -1,3 +1,4 @@
+@model AurumFinance.Models.JournalEntryCreateViewModel
 @{
     ViewData["Title"] = "Create Journal Entry";
 }
@@ -16,7 +17,20 @@
         </div>
     </div>
 
-    <form id="journalForm" method="post">
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger border-danger bg-dark text-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <ul class="mb-0">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@error.ErrorMessage</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <form id="journalForm" method="post" asp-controller="JournalEntry" asp-action="Create">
         <!-- Transaction Header Metadata -->
         <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
             <div class="card-body">
@@ -24,25 +38,26 @@
                     <!-- Journal Type Picker -->
                     <div class="col-md-3">
                         <label class="form-label fw-semibold text-warning">Journal Type</label>
-                        <select class="form-select bg-dark text-white border-secondary fw-semibold" id="journalType">
-                            <option value="General" selected>General Journal (GJ)</option>
+                        <select asp-for="JournalType" class="form-select bg-dark text-white border-secondary fw-semibold" id="journalType">
+                            <option value="General">General Journal (GJ)</option>
                             <option value="Adjusting">Adjusting Entry (AJE)</option>
                         </select>
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">Transaction Date</label>
-                        <input type="date" class="form-control bg-dark text-white border-secondary" required value="2026-07-22" />
+                        <input asp-for="EntryDate" type="date" class="form-control bg-dark text-white border-secondary" required />
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">Reference / Voucher No.</label>
-                        <input type="text" id="refNumber" class="form-control bg-dark text-white border-secondary" value="GJ-2026-003" required />
+                        <input asp-for="ReferenceNumber" type="text" id="refNumber" class="form-control bg-dark text-white border-secondary" required />
+                        <div class="form-text text-info">Auto-generated from Chart of Accounts activity. Editable if needed.</div>
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">General Description / Memo</label>
-                        <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Brief summary of entry..." />
+                        <input asp-for="Memo" type="text" class="form-control bg-dark text-white border-secondary" placeholder="Brief summary of entry..." />
                     </div>
                 </div>
             </div>
@@ -61,78 +76,52 @@
                     <table class="table table-dark align-middle mb-0" id="journalTable">
                         <thead class="table-active border-bottom border-secondary">
                             <tr>
-                                <th style="width: 30%;">Account</th>
+                                <th style="width: 30%;">Account (Ref. No. — Chart of Accounts)</th>
                                 <th style="width: 30%;">Line Description</th>
-                                <th style="width: 17%;" class="text-end">Debit ($)</th>
-                                <th style="width: 17%;" class="text-end">Credit ($)</th>
+                                <th style="width: 17%;" class="text-end">Debit</th>
+                                <th style="width: 17%;" class="text-end">Credit</th>
                                 <th style="width: 6%;" class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody id="journalBody">
-                            <!-- Line 1 -->
-                            <tr>
-                                <td>
-                                    <select class="form-select bg-dark text-white border-secondary" required>
-                                        <option value="" selected disabled>Select Account...</option>
-                                        <option value="101">101 - Cash</option>
-                                        <option value="102">102 - Accounts Receivable</option>
-                                        <option value="301">301 - Owner's Equity</option>
-                                        <option value="501">501 - Rent Expense</option>
-                                        <option value="502">502 - Depreciation Expense</option>
-                                        <option value="105">105 - Accumulated Depreciation</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Note..." />
-                                </td>
-                                <td>
-                                    <input type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-debit" placeholder="0.00" />
-                                </td>
-                                <td>
-                                    <input type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-credit" placeholder="0.00" />
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
-                                </td>
-                            </tr>
-                            <!-- Line 2 -->
-                            <tr>
-                                <td>
-                                    <select class="form-select bg-dark text-white border-secondary" required>
-                                        <option value="" selected disabled>Select Account...</option>
-                                        <option value="101">101 - Cash</option>
-                                        <option value="102">102 - Accounts Receivable</option>
-                                        <option value="301">301 - Owner's Equity</option>
-                                        <option value="501">501 - Rent Expense</option>
-                                        <option value="502">502 - Depreciation Expense</option>
-                                        <option value="105">105 - Accumulated Depreciation</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Note..." />
-                                </td>
-                                <td>
-                                    <input type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-debit" placeholder="0.00" />
-                                </td>
-                                <td>
-                                    <input type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-credit" placeholder="0.00" />
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
-                                </td>
-                            </tr>
+                            @for (int i = 0; i < Model.Lines.Count; i++)
+                            {
+                                <tr>
+                                    <td>
+                                        <select name="Lines[@i].AccountId" class="form-select bg-dark text-white border-secondary" required>
+                                            <option value="" selected disabled>Select Account...</option>
+                                            @foreach (var acc in Model.AvailableAccounts)
+                                            {
+                                                <option value="@acc.Id" selected="@(acc.Id == Model.Lines[i].AccountId)">@acc.DisplayLabel</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input name="Lines[@i].LineDescription" type="text" value="@Model.Lines[i].LineDescription" class="form-control bg-dark text-white border-secondary" placeholder="Note..." />
+                                    </td>
+                                    <td>
+                                        <input name="Lines[@i].Debit" type="number" step="0.01" min="0" value="@(Model.Lines[i].Debit == 0 ? "" : Model.Lines[i].Debit.ToString())" class="form-control bg-dark text-white border-secondary text-end input-debit" placeholder="0.00" />
+                                    </td>
+                                    <td>
+                                        <input name="Lines[@i].Credit" type="number" step="0.01" min="0" value="@(Model.Lines[i].Credit == 0 ? "" : Model.Lines[i].Credit.ToString())" class="form-control bg-dark text-white border-secondary text-end input-credit" placeholder="0.00" />
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                         <tfoot class="table-active border-top border-secondary fw-bold">
                             <tr>
                                 <td colspan="2" class="text-end">Total:</td>
-                                <td class="text-end text-success fs-6" id="totalDebit">$0.00</td>
-                                <td class="text-end text-danger fs-6" id="totalCredit">$0.00</td>
+                                <td class="text-end text-success fs-6" id="totalDebit">0.00</td>
+                                <td class="text-end text-danger fs-6" id="totalCredit">0.00</td>
                                 <td></td>
                             </tr>
                             <tr>
                                 <td colspan="2" class="text-end">Status:</td>
                                 <td colspan="2" class="text-center" id="balanceStatus">
-                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Balanced</span>
+                                    <span class="badge bg-secondary">Awaiting Input</span>
                                 </td>
                                 <td></td>
                             </tr>
@@ -141,6 +130,33 @@
                 </div>
             </div>
         </div>
+
+        <!-- Row template for JS-added lines (kept in sync with server-rendered markup) -->
+        <template id="rowTemplate">
+            <tr>
+                <td>
+                    <select name="Lines[__INDEX__].AccountId" class="form-select bg-dark text-white border-secondary" required>
+                        <option value="" selected disabled>Select Account...</option>
+                        @foreach (var acc in Model.AvailableAccounts)
+                        {
+                            <option value="@acc.Id">@acc.DisplayLabel</option>
+                        }
+                    </select>
+                </td>
+                <td>
+                    <input name="Lines[__INDEX__].LineDescription" type="text" class="form-control bg-dark text-white border-secondary" placeholder="Note..." />
+                </td>
+                <td>
+                    <input name="Lines[__INDEX__].Debit" type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-debit" placeholder="0.00" />
+                </td>
+                <td>
+                    <input name="Lines[__INDEX__].Credit" type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-credit" placeholder="0.00" />
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        </template>
 
         <!-- Form Action Controls -->
         <div class="d-flex justify-content-end gap-2">
@@ -161,47 +177,27 @@
         const totalCreditEl = document.getElementById("totalCredit");
         const balanceStatusEl = document.getElementById("balanceStatus");
         const btnSubmit = document.getElementById("btnSubmit");
-        const journalTypeEl = document.getElementById("journalType");
-        const refNumberEl = document.getElementById("refNumber");
+        const rowTemplate = document.getElementById("rowTemplate").innerHTML;
 
-        // Ganti Prefix Referensi berdasarkan Tipe Jurnal
-        journalTypeEl.addEventListener("change", function () {
-            if (this.value === "Adjusting") {
-                refNumberEl.value = "AJE-2026-001";
-            } else {
-                refNumberEl.value = "GJ-2026-003";
-            }
+        function nextIndex() {
+            return journalBody.querySelectorAll("tr").length;
+        }
+
+        btnAddRow.addEventListener("click", function () {
+            const html = rowTemplate.replaceAll("__INDEX__", nextIndex());
+            journalBody.insertAdjacentHTML("beforeend", html);
         });
 
-        function createRowHtml() {
-            return `
-                <tr>
-                    <td>
-                        <select class="form-select bg-dark text-white border-secondary" required>
-                            <option value="" selected disabled>Select Account...</option>
-                            <option value="101">101 - Cash</option>
-                            <option value="102">102 - Accounts Receivable</option>
-                            <option value="301">301 - Owner's Equity</option>
-                            <option value="501">501 - Rent Expense</option>
-                            <option value="502">502 - Depreciation Expense</option>
-                            <option value="105">105 - Accumulated Depreciation</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control bg-dark text-white border-secondary" placeholder="Note..." />
-                    </td>
-                    <td>
-                        <input type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-debit" placeholder="0.00" />
-                    </td>
-                    <td>
-                        <input type="number" step="0.01" min="0" class="form-control bg-dark text-white border-secondary text-end input-credit" placeholder="0.00" />
-                    </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
-                    </td>
-                </tr>
-            `;
-        }
+        journalBody.addEventListener("click", function (e) {
+            if (e.target.closest(".btn-remove")) {
+                if (journalBody.querySelectorAll("tr").length > 2) {
+                    e.target.closest("tr").remove();
+                    calculateTotals();
+                } else {
+                    alert("A journal entry must have at least two line items (Debit & Credit).");
+                }
+            }
+        });
 
         function calculateTotals() {
             let totalDebit = 0;
@@ -215,8 +211,8 @@
                 totalCredit += parseFloat(input.value) || 0;
             });
 
-            totalDebitEl.textContent = `$${totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-            totalCreditEl.textContent = `$${totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+            totalDebitEl.textContent = totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            totalCreditEl.textContent = totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2 });
 
             const difference = Math.abs(totalDebit - totalCredit);
 
@@ -224,26 +220,11 @@
                 balanceStatusEl.innerHTML = `<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> Balanced</span>`;
                 btnSubmit.disabled = false;
             } else {
-                const diffFormatted = `$${difference.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+                const diffFormatted = difference.toLocaleString('en-US', { minimumFractionDigits: 2 });
                 balanceStatusEl.innerHTML = `<span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i> Unbalanced (${diffFormatted})</span>`;
                 btnSubmit.disabled = true;
             }
         }
-
-        btnAddRow.addEventListener("click", function () {
-            journalBody.insertAdjacentHTML("beforeend", createRowHtml());
-        });
-
-        journalBody.addEventListener("click", function (e) {
-            if (e.target.closest(".btn-remove")) {
-                if (journalBody.querySelectorAll("tr").length > 2) {
-                    e.target.closest("tr").remove();
-                    calculateTotals();
-                } else {
-                    alert("A journal entry must have at least two line items (Debit & Credit).");
-                }
-            }
-        });
 
         journalBody.addEventListener("input", function (e) {
             if (e.target.classList.contains("input-debit") || e.target.classList.contains("input-credit")) {
