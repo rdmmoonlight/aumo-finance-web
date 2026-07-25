@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AurumFinance.Models; // Sesuaikan jika folder modelmu berbeda
+using AumoFinance.Models; 
 
 namespace AurumFinance.Controllers
 {
@@ -13,10 +13,10 @@ namespace AurumFinance.Controllers
             _context = context;
         }
 
-        // Halaman utama Daftar Periode
+        // Main Periods List Page
         public async Task<IActionResult> Index()
         {
-            // Ambil semua data periode, urutkan dari yang terbaru
+            // Fetch all periods, ordered by newest start date
             var periods = await _context.Periods
                                         .OrderByDescending(p => p.StartDate)
                                         .ToListAsync();
@@ -24,7 +24,7 @@ namespace AurumFinance.Controllers
             return View(periods);
         }
 
-        // Halaman form Create (tampilannya bisa disusul nanti)
+        // Create Form Page (UI to be implemented)
         public IActionResult Create()
         {
             return View();
