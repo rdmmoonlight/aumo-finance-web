@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace AumoFinance.Controllers
 {
-    [AllowAnonymous]
+    // [AllowAnonymous] dihapus dari sini agar tidak menimpa [Authorize] di method Logout
     public class AuthController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -27,6 +27,7 @@ namespace AumoFinance.Controllers
 
         // GET: /Auth/Login
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
             return View(new LoginViewModel());
@@ -34,6 +35,7 @@ namespace AumoFinance.Controllers
 
         // POST: /Auth/Login
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
@@ -68,6 +70,7 @@ namespace AumoFinance.Controllers
 
         // GET: /Auth/Register
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Register()
         {
             return View(new RegisterViewModel());
@@ -75,6 +78,7 @@ namespace AumoFinance.Controllers
 
         // POST: /Auth/Register
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
@@ -112,7 +116,7 @@ namespace AumoFinance.Controllers
 
         // GET: /Auth/Logout
         [HttpGet]
-        [Authorize]
+        [Authorize] // Method ini sekarang terlindungi dengan benar
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
@@ -121,6 +125,7 @@ namespace AumoFinance.Controllers
 
         // GET: /Auth/ForgotPassword
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ForgotPassword()
         {
             return View(new ForgotPasswordModel());
@@ -128,6 +133,7 @@ namespace AumoFinance.Controllers
 
         // POST: /Auth/ForgotPassword
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordModel model)
         {
@@ -156,6 +162,7 @@ namespace AumoFinance.Controllers
 
         // GET: /Auth/ResetPassword?email=...&token=...
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ResetPassword(string email, string token)
         {
             return View(new ResetPasswordModel { Email = email ?? string.Empty, Token = token ?? string.Empty });
@@ -163,6 +170,7 @@ namespace AumoFinance.Controllers
 
         // POST: /Auth/ResetPassword
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
         {
@@ -205,6 +213,7 @@ namespace AumoFinance.Controllers
 
         // GET: /Auth/VerifyEmail?email=...&token=...
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> VerifyEmail(string email, string token)
         {
             var user = string.IsNullOrEmpty(email) ? null : await _userManager.FindByEmailAsync(email);
@@ -237,6 +246,7 @@ namespace AumoFinance.Controllers
 
         // GET: /Auth/ResendVerification
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ResendVerification()
         {
             return View(new ResendVerificationModel());
@@ -244,6 +254,7 @@ namespace AumoFinance.Controllers
 
         // POST: /Auth/ResendVerification
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResendVerification(ResendVerificationModel model)
         {
