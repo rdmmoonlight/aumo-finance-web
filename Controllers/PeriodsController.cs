@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
 
@@ -23,19 +22,9 @@ namespace AumoFinance.Controllers
         }
 
         // GET: /Periods/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
-            // Ambil daftar akun untuk dipilih di dropdown
-            var accounts = await _context.ChartOfAccounts
-                .OrderBy(a => a.AccountCode)
-                .Select(a => new SelectListItem
-                {
-                    Value = a.Id.ToString(),
-                    Text = $"{a.AccountCode} - {a.AccountName}"
-                }).ToListAsync();
-
-            ViewBag.Accounts = accounts;
-
+            // Tidak perlu lagi memanggil ViewBag.Accounts karena input manual
             var model = new OpenPeriodViewModel
             {
                 Month = DateTime.Today.Month,
@@ -52,16 +41,13 @@ namespace AumoFinance.Controllers
         {
             if (!ModelState.IsValid)
             {
-                ViewBag.Accounts = new SelectList(await _context.ChartOfAccounts.OrderBy(a => a.AccountCode).ToListAsync(), "Id", "AccountName");
                 return View(model);
             }
 
-            // 1. Tentukan Tanggal Mulai (Selalu tanggal 1)
             var startDate = new DateTime(model.Year, model.Month, 1);
             var endDate = startDate.AddMonths(1).AddDays(-1);
             var periodName = startDate.ToString("MMMM yyyy");
 
-            // 2. Validasi apakah periode sudah ada
             var periodExists = await _context.Periods.AnyAsync(p => p.StartDate == startDate);
             if (periodExists)
             {
@@ -69,10 +55,34 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Validasi tambahan: Pastikan kode akun belum dipakai di COA
+            var existingCodes = await _context.ChartOfAccounts
+                .Where(a => a.AccountCode == model.CashAccountCode 
+                         || a.AccountCode == model.BankAccountCode 
+                         || a.AccountCode == model.RetainedEarningsAccountCode)
+                .Select(a => a.AccountCode)
+                .ToListAsync();
+
+            if (existingCodes.Any())
+            {
+                ModelState.AddModelError(string.Empty, $"Account Code(s) already exist in COA: {string.Join(", ", existingCodes)}");
+                return View(model);
+            }
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 3. Buat Periode Baru
+                // 1. Buat 3 Akun Baru di COA
+                var cashAccount = new ChartOfAccount { AccountCode = model.CashAccountCode, AccountName = model.CashAccountName };
+                var bankAccount = new ChartOfAccount { AccountCode = model.BankAccountCode, AccountName = model.BankAccountName };
+                var retainedAccount = new ChartOfAccount { AccountCode = model.RetainedEarningsAccountCode, AccountName = model.RetainedEarningsAccountName };
+                
+                // (Catatan: Jika Model ChartOfAccount kamu wajib punya AccountClassificationId, tambahkan di sini)
+                
+                _context.ChartOfAccounts.AddRange(cashAccount, bankAccount, retainedAccount);
+                await _context.SaveChangesAsync(); // Save agar mendapatkan ID
+
+                // 2. Buat Periode Baru
                 var newPeriod = new Period
                 {
                     PeriodName = periodName,
@@ -83,13 +93,11 @@ namespace AumoFinance.Controllers
                 _context.Periods.Add(newPeriod);
                 await _context.SaveChangesAsync();
 
-                // 4. Hitung Total Kredit (Retained Earnings)
+                // 3. Jurnal Saldo Awal
                 var totalOpeningBalance = model.CashBalance + model.BankBalance;
-
-                // 5. Buat Jurnal Saldo Awal (Opening Balance)
                 var journalEntry = new JournalEntry
                 {
-                    Date = startDate, // Selalu tanggal 1
+                    Date = startDate,
                     Description = $"Opening Balance for {periodName}",
                     ReferenceNumber = $"OB-{startDate:yyyyMM}",
                     TotalDebit = totalOpeningBalance,
@@ -98,25 +106,25 @@ namespace AumoFinance.Controllers
                 _context.JournalEntries.Add(journalEntry);
                 await _context.SaveChangesAsync();
 
-                // 6. Masukkan Baris Jurnal (Lines)
+                // 4. Masukkan Baris Jurnal dengan ID Akun yang baru terbuat
                 var lines = new List<JournalEntryLine>
                 {
-                    new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = model.CashAccountId, Debit = model.CashBalance, Credit = 0 },
-                    new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = model.BankAccountId, Debit = model.BankBalance, Credit = 0 },
-                    new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = model.RetainedEarningsAccountId, Debit = 0, Credit = totalOpeningBalance }
+                    new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = cashAccount.Id, Debit = model.CashBalance, Credit = 0 },
+                    new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = bankAccount.Id, Debit = model.BankBalance, Credit = 0 },
+                    new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = retainedAccount.Id, Debit = 0, Credit = totalOpeningBalance }
                 };
 
                 _context.Set<JournalEntryLine>().AddRange(lines);
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
-                TempData["SuccessMessage"] = $"Period {periodName} opened successfully with initial balances recorded.";
+                TempData["SuccessMessage"] = $"Period {periodName} opened. Core accounts created and initial balances recorded.";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception)
             {
                 await transaction.RollbackAsync();
-                TempData["ErrorMessage"] = "A fatal error occurred while opening the period. Transaction rolled back.";
+                TempData["ErrorMessage"] = "A fatal error occurred while processing. Transaction rolled back.";
                 return RedirectToAction(nameof(Index));
             }
         }
