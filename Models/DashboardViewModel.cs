@@ -12,11 +12,11 @@ namespace AumoFinance.Models
         public decimal TotalAssets { get; set; }
         public decimal TotalLiabilities { get; set; }
 
-        // Trend percentages (positive = up)
-        public decimal CashTrendPercent { get; set; }
-        public decimal RevenueTrendPercent { get; set; }
-        public decimal ExpenseTrendPercent { get; set; }
-        public decimal NetIncomeTrendPercent { get; set; }
+        // Trend percentages (null when no comparable prior period exists)
+        public decimal? CashTrendPercent { get; set; }
+        public decimal? RevenueTrendPercent { get; set; }
+        public decimal? ExpenseTrendPercent { get; set; }
+        public decimal? NetIncomeTrendPercent { get; set; }
 
         public List<string> ChartLabels { get; set; } = new();
         public List<decimal> ChartRevenue { get; set; } = new();
@@ -29,6 +29,8 @@ namespace AumoFinance.Models
         public List<CoaBalanceDto> MainCoaBalances { get; set; } = new();
 
         public string ActivePeriodName { get; set; } = "No Active Period";
+        public DateTime? ActivePeriodStart { get; set; }
+        public DateTime? ActivePeriodEnd { get; set; }
     }
 
     public class JournalEntryDto
