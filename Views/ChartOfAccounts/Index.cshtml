@@ -3,15 +3,15 @@
     ViewData["Title"] = "Chart of Accounts";
 }
 
-<div class="container-fluid">
+<div class="container-fluid py-4 px-4">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1"><i class="bi bi-diagram-3 me-2 text-warning"></i> Chart of Accounts</h2>
-            <p class="text-muted mb-0">Master list of financial accounts (Automatically sorted by reference).</p>
+            <h2 class="fw-bold text-body-emphasis mb-1"><i class="bi bi-diagram-3 me-2 text-warning"></i> Chart of Accounts</h2>
+            <p class="text-secondary mb-0">Master list of financial accounts (Automatically sorted by reference).</p>
         </div>
         <div>
-            <button class="btn btn-warning fw-semibold" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+            <button class="btn btn-warning fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addAccountModal">
                 <i class="bi bi-plus-lg me-1"></i> New Account
             </button>
         </div>
@@ -20,25 +20,25 @@
     <!-- Alert Notifications -->
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show border-danger bg-dark text-danger" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
             <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show border-success bg-dark text-success" role="alert">
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
     <!-- COA Table Card -->
-    <div class="card bg-dark border-secondary text-white shadow-sm">
-        <div class="card-header bg-transparent border-secondary py-3 d-flex justify-content-between align-items-center">
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+        <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
             <div class="d-flex gap-2">
-                <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Search accounts..." style="width: 250px;">
-                <select class="form-select form-select-sm bg-dark text-white border-secondary" style="width: 180px;">
+                <input type="text" class="form-control form-control-sm" placeholder="Search accounts..." style="width: 250px;">
+                <select class="form-select form-select-sm" style="width: 180px;">
                     <option value="">All Categories</option>
                     <option value="Assets">Assets</option>
                     <option value="Liabilities">Liabilities</option>
@@ -49,32 +49,32 @@
                     <option value="OtherExpenses">Other Expenses</option>
                 </select>
             </div>
-            <span class="text-muted small">Total Accounts: @Model.Count()</span>
+            <span class="text-secondary small fw-semibold">Total Accounts: @Model.Count()</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle mb-0">
-                    <thead class="table-active border-bottom border-secondary">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th style="width: 120px;">Ref No.</th>
+                            <th class="ps-4" style="width: 120px;">Ref No.</th>
                             <th>Account Name</th>
                             <th>Category</th>
                             <th>Role</th>
                             <th class="text-end">Current Balance</th>
                             <th class="text-center" style="width: 100px;">Status</th>
-                            <th class="text-center" style="width: 130px;">Action</th>
+                            <th class="text-center pe-4" style="width: 130px;">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="border-top-0">
                         @if(Model.Any())
                         {
                             foreach (var account in Model)
                             {
                                 <tr>
-                                    <td><code>@account.ReferenceNumber</code></td>
-                                    <td class="fw-bold">@account.AccountName</td>
+                                    <td class="ps-4"><code>@account.ReferenceNumber</code></td>
+                                    <td class="fw-bold text-body">@account.AccountName</td>
                                     <td>
-                                        <span class="badge bg-secondary bg-opacity-25 text-light border border-secondary">
+                                        <span class="badge bg-secondary text-light">
                                             @account.Type
                                         </span>
                                     </td>
@@ -85,7 +85,7 @@
                                         }
                                         else
                                         {
-                                            <span class="text-muted small">Standard</span>
+                                            <span class="text-secondary small">Standard</span>
                                         }
                                     </td>
                                     <td class="text-end fw-semibold @(account.Balance >= 0 ? "text-success" : "text-danger")">
@@ -96,9 +96,9 @@
                                             @(account.IsActive ? "Active" : "Inactive")
                                         </span>
                                     </td>
-                                    <td class="text-center">
-                                        <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-light" title="Edit Account">
+                                    <td class="text-center pe-4">
+                                        <div class="btn-group shadow-sm">
+                                            <button class="btn btn-sm btn-outline-secondary" title="Edit Account">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <a href="@Url.Action(AumoFinance.Models.AccountClassification.IsTemporary(account.Type) ? "GeneralLedgerTemporary" : "GeneralLedger", "Reports")#account-@account.Id" class="btn btn-sm btn-outline-info" title="View General Ledger">
@@ -112,7 +112,10 @@
                         else
                         {
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">No accounts found.</td>
+                                <td colspan="7" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-diagram-3 mb-3 d-block" style="font-size: 2.5rem;"></i>
+                                    No accounts found. Add a new account to get started.
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -125,16 +128,17 @@
 <!-- Modal Add Account -->
 <div class="modal fade" id="addAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-secondary text-white">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title text-warning"><i class="bi bi-plus-circle me-1"></i> Add New Account</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-body-emphasis"><i class="bi bi-plus-circle me-2 text-warning"></i> Add New Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" asp-controller="Accounts" asp-action="Create">
-                <div class="modal-body">
+            <!-- Perbaikan asp-controller ke ChartOfAccounts -->
+            <form method="post" asp-controller="ChartOfAccounts" asp-action="Create">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label">Account Category</label>
-                        <select id="accountType" name="Type" class="form-select bg-dark text-white border-secondary" required onchange="enforceNumberingRule()">
+                        <label class="form-label fw-semibold small">Account Category</label>
+                        <select id="accountType" name="Type" class="form-select" required onchange="enforceNumberingRule()">
                             <option value="">-- Select Category --</option>
                             <option value="Assets">Assets (100 - 199)</option>
                             <option value="Liabilities">Liabilities (200 - 299)</option>
@@ -147,19 +151,19 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Reference Number (Account Code)</label>
-                        <input type="number" id="referenceNumber" name="ReferenceNumber" class="form-control bg-dark text-white border-secondary" placeholder="Select category first..." required disabled />
-                        <div id="refHelpText" class="form-text text-info">Please select an account category to see the valid numbering range.</div>
+                        <label class="form-label fw-semibold small">Reference Number (Account Code)</label>
+                        <input type="number" id="referenceNumber" name="ReferenceNumber" class="form-control" placeholder="Select category first..." required disabled />
+                        <div id="refHelpText" class="form-text text-secondary">Please select an account category to see the valid numbering range.</div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Account Name</label>
-                        <input type="text" name="AccountName" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Rent Expense" required />
+                        <label class="form-label fw-semibold small">Account Name</label>
+                        <input type="text" name="AccountName" class="form-control" placeholder="e.g. Rent Expense" required />
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">System Role (Special Calculations)</label>
-                        <select name="Role" class="form-select bg-dark text-white border-secondary" required>
+                        <label class="form-label fw-semibold small">System Role (Special Calculations)</label>
+                        <select name="Role" class="form-select" required>
                             <option value="Default">Standard / Default</option>
                             <option value="CashAndEquivalents">Cash & Equivalents</option>
                             <option value="RetainedEarnings">Retained Earnings</option>
@@ -168,9 +172,9 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning fw-semibold">Save Account</button>
+                <div class="modal-footer bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold px-4">Save Account</button>
                 </div>
             </form>
         </div>
@@ -204,8 +208,8 @@
                 refInput.max = rule.max;
                 refInput.placeholder = `Enter a number between ${rule.min} and ${rule.max}`;
                 
-                helpText.innerHTML = `Valid range for this category: <strong>${rule.min} - ${rule.max}</strong>.`;
-                helpText.className = "form-text text-warning";
+                helpText.innerHTML = `<i class="bi bi-info-circle"></i> Valid range for this category: <strong>${rule.min} - ${rule.max}</strong>.`;
+                helpText.className = "form-text text-primary";
                 
                 if(refInput.value && (refInput.value < rule.min || refInput.value > rule.max)) {
                     refInput.value = '';
@@ -215,7 +219,7 @@
                 refInput.value = '';
                 refInput.placeholder = "Select category first...";
                 helpText.textContent = "Please select an account category to see the valid numbering range.";
-                helpText.className = "form-text text-info";
+                helpText.className = "form-text text-secondary";
             }
         }
     </script>
