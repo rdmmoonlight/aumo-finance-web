@@ -92,8 +92,8 @@
             <button type="button" id="btn-close-reports" class="btn-close btn-close-white btn-sm" aria-label="Close" style="font-size: 0.65rem;"></button>
         </div>
 
-        <!-- List of Reports (Ikon dan Garis Bawah Dihapus) -->
-        <div class="list-group list-group-flush p-1 small">
+        <!-- List of Reports (Lebar dilebarkan dengan min-width pada isi dalam agar aman) -->
+        <div class="list-group list-group-flush p-1 small" style="min-width: 270px;">
             <a asp-controller="GeneralJournal" asp-action="Index" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
                 General Journal
             </a>
@@ -103,7 +103,6 @@
             <a asp-controller="Reports" asp-action="GeneralLedgerTemporary" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
                 General Ledger (Temporary Accounts)
             </a>
-            <!-- Garis hr dihapus dari sini -->
             <a asp-controller="Reports" asp-action="TrialBalance" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
                 Trial Balance
             </a>
