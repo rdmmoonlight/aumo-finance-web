@@ -1,4 +1,6 @@
 @* Views/Shared/_TopBar.cshtml *@
+@using AumoFinance.Models
+@inject AppDbContext _context
 
 <!-- ========================================== -->
 <!-- ROW 1: Main Header (Height 36px)           -->
@@ -49,9 +51,15 @@
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
-    var activePeriod = ViewData["ActivePeriod"]?.ToString();
-    var hasActivePeriod = !string.IsNullOrEmpty(activePeriod);
-    var periodText = hasActivePeriod ? activePeriod : "No Active Period";
+    // Cek langsung ke Database mencari Periode yang aktif (belum di-close)
+    var activePeriodObj = _context.Periods
+        .Where(p => !p.IsClosed)
+        .OrderByDescending(p => p.StartDate)
+        .FirstOrDefault();
+
+    var activePeriodName = activePeriodObj?.PeriodName;
+    var hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);
+    var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
     var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
 
     <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
