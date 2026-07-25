@@ -1,22 +1,34 @@
 using System;
 using System.Collections.Generic;
 
-// PASTIKAN TULISANNYA AumoFinance.Models
-namespace AumoFinance.Models 
+namespace AumoFinance.Models
 {
     public class DashboardViewModel
     {
-        public decimal TotalKasBank { get; set; }
-        public decimal PendapatanBulanIni { get; set; }
-        public decimal BebanOperasional { get; set; }
-        public decimal LabaBersih { get; set; }
-        
+        public decimal TotalCashAndEquivalents { get; set; }
+        public decimal RevenueThisPeriod { get; set; }
+        public decimal OperatingExpenses { get; set; }
+        public decimal NetIncome { get; set; }
+        public decimal TotalAssets { get; set; }
+        public decimal TotalLiabilities { get; set; }
+
+        // Trend percentages (positive = up)
+        public decimal CashTrendPercent { get; set; }
+        public decimal RevenueTrendPercent { get; set; }
+        public decimal ExpenseTrendPercent { get; set; }
+        public decimal NetIncomeTrendPercent { get; set; }
+
         public List<string> ChartLabels { get; set; } = new();
-        public List<decimal> ChartPendapatan { get; set; } = new();
-        public List<decimal> ChartBeban { get; set; } = new();
-        
+        public List<decimal> ChartRevenue { get; set; } = new();
+        public List<decimal> ChartExpenses { get; set; } = new();
+
+        public List<string> ExpenseCategoryLabels { get; set; } = new();
+        public List<decimal> ExpenseCategoryValues { get; set; } = new();
+
         public List<JournalEntryDto> RecentJournals { get; set; } = new();
         public List<CoaBalanceDto> MainCoaBalances { get; set; } = new();
+
+        public string ActivePeriodName { get; set; } = "No Active Period";
     }
 
     public class JournalEntryDto
