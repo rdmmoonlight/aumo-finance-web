@@ -1,58 +1,221 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
-using System;
-using System.Collections.Generic;
 
 namespace AumoFinance.Controllers
 {
     public class DashboardController : Controller
     {
-        public IActionResult Index()
+        private readonly AppDbContext _db;
+
+        public DashboardController(AppDbContext db)
         {
-            // TODO: Replace mock data with real EF Core queries against JournalEntries,
-            // ChartOfAccounts, and Periods once the data layer is fully connected.
+            _db = db;
+        }
 
-            var model = new DashboardViewModel
+        public async Task<IActionResult> Index()
+        {
+            var model = new DashboardViewModel();
+
+            // 1. Active period (same logic used in _TopBar)
+            var activePeriod = await _db.Periods
+                .Where(p => !p.IsClosed)
+                .OrderByDescending(p => p.StartDate)
+                .FirstOrDefaultAsync();
+
+            if (activePeriod != null)
             {
-                TotalCashAndEquivalents = 142_500_000m,
-                RevenueThisPeriod = 58_400_000m,
-                OperatingExpenses = 21_150_000m,
-                NetIncome = 37_250_000m,
-                TotalAssets = 312_800_000m,
-                TotalLiabilities = 98_400_000m,
+                model.ActivePeriodName = activePeriod.PeriodName;
+                model.ActivePeriodStart = activePeriod.StartDate;
+                model.ActivePeriodEnd = activePeriod.EndDate;
+            }
 
-                CashTrendPercent = 4.2m,
-                RevenueTrendPercent = 8.7m,
-                ExpenseTrendPercent = -3.1m,
-                NetIncomeTrendPercent = 12.4m,
+            // 2. All active accounts + all journal lines (General + Adjusting)
+            var accounts = await _db.ChartOfAccounts
+                .Where(a => a.IsActive)
+                .OrderBy(a => a.ReferenceNumber)
+                .ToListAsync();
 
-                ChartLabels = new List<string> { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul" },
-                ChartRevenue = new List<decimal> { 45_000_000, 52_000_000, 48_000_000, 61_000_000, 55_000_000, 67_000_000, 58_400_000 },
-                ChartExpenses = new List<decimal> { 20_000_000, 22_000_000, 19_000_000, 25_000_000, 23_000_000, 28_000_000, 21_150_000 },
+            var lines = await _db.JournalEntryLines
+                .Include(l => l.JournalEntry)
+                .Include(l => l.Account)
+                .Where(l => l.JournalEntry != null)
+                .ToListAsync();
 
-                ExpenseCategoryLabels = new List<string> { "Salaries", "Utilities", "Marketing", "Office", "Other" },
-                ExpenseCategoryValues = new List<decimal> { 9_200_000, 3_150_000, 4_800_000, 2_100_000, 1_900_000 },
+            // 3. Compute net balance for every account (identical rule to ReportsController)
+            var accountBalances = new Dictionary<int, decimal>();
+            foreach (var account in accounts)
+            {
+                var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
+                var accountLines = lines.Where(l => l.AccountId == account.Id);
+                var net = normalDebit
+                    ? accountLines.Sum(l => l.Debit - l.Credit)
+                    : accountLines.Sum(l => l.Credit - l.Debit);
+                accountBalances[account.Id] = net;
+            }
 
-                RecentJournals = new List<JournalEntryDto>
+            // 4. KPI values derived purely from balances
+            model.TotalCashAndEquivalents = accounts
+                .Where(a => a.Role == "CashAndEquivalents")
+                .Sum(a => accountBalances.GetValueOrDefault(a.Id));
+
+            model.TotalAssets = accounts
+                .Where(a => a.Type == "Assets")
+                .Sum(a => accountBalances.GetValueOrDefault(a.Id));
+
+            model.TotalLiabilities = accounts
+                .Where(a => a.Type == "Liabilities")
+                .Sum(a => accountBalances.GetValueOrDefault(a.Id));
+
+            // Revenue & Expenses limited to the active period when one exists
+            IEnumerable<JournalEntryLine> periodLines = lines;
+            if (activePeriod != null)
+            {
+                periodLines = lines.Where(l =>
+                    l.JournalEntry!.EntryDate >= activePeriod.StartDate &&
+                    l.JournalEntry!.EntryDate <= activePeriod.EndDate);
+            }
+
+            decimal SumByType(string type)
+            {
+                var ids = accounts.Where(a => a.Type == type).Select(a => a.Id).ToHashSet();
+                var normalDebit = AccountClassification.NormalBalanceIsDebit(type);
+                var relevant = periodLines.Where(l => ids.Contains(l.AccountId));
+                return normalDebit
+                    ? relevant.Sum(l => l.Debit - l.Credit)
+                    : relevant.Sum(l => l.Credit - l.Debit);
+            }
+
+            model.RevenueThisPeriod =
+                SumByType("OperatingIncome") + SumByType("OtherIncome");
+
+            model.OperatingExpenses =
+                SumByType("OperatingExpenses") + SumByType("OtherExpenses");
+
+            model.NetIncome = model.RevenueThisPeriod - model.OperatingExpenses;
+
+            // 5. Prior-period trends (only when a previous closed period exists)
+            var priorPeriod = await _db.Periods
+                .Where(p => p.IsClosed)
+                .OrderByDescending(p => p.EndDate)
+                .FirstOrDefaultAsync();
+
+            if (priorPeriod != null)
+            {
+                var priorLines = lines.Where(l =>
+                    l.JournalEntry!.EntryDate >= priorPeriod.StartDate &&
+                    l.JournalEntry!.EntryDate <= priorPeriod.EndDate);
+
+                decimal PriorSumByType(string type)
                 {
-                    new() { ReferenceNo = "JV-2026/07/004", Date = new DateTime(2026, 7, 24), Memo = "Accounts receivable collection", TotalDebit = 12_500_000, TotalCredit = 12_500_000 },
-                    new() { ReferenceNo = "JV-2026/07/003", Date = new DateTime(2026, 7, 22), Memo = "Utility payment – electricity", TotalDebit = 3_200_000, TotalCredit = 3_200_000 },
-                    new() { ReferenceNo = "JV-2026/07/002", Date = new DateTime(2026, 7, 18), Memo = "Office supplies purchase", TotalDebit = 1_850_000, TotalCredit = 1_850_000 },
-                    new() { ReferenceNo = "JV-2026/07/001", Date = new DateTime(2026, 7, 15), Memo = "Sales revenue – July batch", TotalDebit = 28_750_000, TotalCredit = 28_750_000 }
-                },
+                    var ids = accounts.Where(a => a.Type == type).Select(a => a.Id).ToHashSet();
+                    var normalDebit = AccountClassification.NormalBalanceIsDebit(type);
+                    var relevant = priorLines.Where(l => ids.Contains(l.AccountId));
+                    return normalDebit
+                        ? relevant.Sum(l => l.Debit - l.Credit)
+                        : relevant.Sum(l => l.Credit - l.Debit);
+                }
 
-                MainCoaBalances = new List<CoaBalanceDto>
+                var priorRevenue = PriorSumByType("OperatingIncome") + PriorSumByType("OtherIncome");
+                var priorExpenses = PriorSumByType("OperatingExpenses") + PriorSumByType("OtherExpenses");
+                var priorNet = priorRevenue - priorExpenses;
+
+                model.RevenueTrendPercent = CalcTrend(model.RevenueThisPeriod, priorRevenue);
+                model.ExpenseTrendPercent = CalcTrend(model.OperatingExpenses, priorExpenses);
+                model.NetIncomeTrendPercent = CalcTrend(model.NetIncome, priorNet);
+
+                // Cash trend uses cumulative balance (no period filter)
+                // For simplicity we leave it null when no meaningful prior cash figure exists
+                model.CashTrendPercent = null;
+            }
+
+            // 6. Monthly trend chart (last 7 calendar months that contain data)
+            var monthly = lines
+                .GroupBy(l => new { l.JournalEntry!.EntryDate.Year, l.JournalEntry!.EntryDate.Month })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                .TakeLast(7)
+                .ToList();
+
+            foreach (var g in monthly)
+            {
+                var label = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yy");
+                model.ChartLabels.Add(label);
+
+                var revIds = accounts
+                    .Where(a => a.Type is "OperatingIncome" or "OtherIncome")
+                    .Select(a => a.Id).ToHashSet();
+                var expIds = accounts
+                    .Where(a => a.Type is "OperatingExpenses" or "OtherExpenses")
+                    .Select(a => a.Id).ToHashSet();
+
+                var revenue = g.Where(l => revIds.Contains(l.AccountId))
+                               .Sum(l => l.Credit - l.Debit); // income normal credit
+                var expense = g.Where(l => expIds.Contains(l.AccountId))
+                               .Sum(l => l.Debit - l.Credit); // expense normal debit
+
+                model.ChartRevenue.Add(revenue);
+                model.ChartExpenses.Add(expense);
+            }
+
+            // 7. Expense composition (current period)
+            var expenseAccounts = accounts
+                .Where(a => a.Type is "OperatingExpenses" or "OtherExpenses")
+                .ToList();
+
+            foreach (var acc in expenseAccounts)
+            {
+                var amount = periodLines
+                    .Where(l => l.AccountId == acc.Id)
+                    .Sum(l => l.Debit - l.Credit);
+
+                if (amount != 0)
                 {
-                    new() { AccountCode = "1010", AccountName = "Cash – Main Account", Category = "Assets", Balance = 42_500_000 },
-                    new() { AccountCode = "1030", AccountName = "Accounts Receivable", Category = "Assets", Balance = 18_200_000 },
-                    new() { AccountCode = "2010", AccountName = "Accounts Payable", Category = "Liabilities", Balance = 12_800_000 },
-                    new() { AccountCode = "3010", AccountName = "Owner's Equity", Category = "Equity", Balance = 185_000_000 }
-                },
+                    model.ExpenseCategoryLabels.Add(acc.AccountName);
+                    model.ExpenseCategoryValues.Add(amount);
+                }
+            }
 
-                ActivePeriodName = "July 2026"
-            };
+            // 8. Key account balances (Cash, AR, AP, Equity – ordered by reference)
+            var keyRoles = new[] { "CashAndEquivalents", "AccountsReceivable", "AccountsPayable" };
+            var keyAccounts = accounts
+                .Where(a => keyRoles.Contains(a.Role) || a.Type == "Equity")
+                .OrderBy(a => a.ReferenceNumber)
+                .Take(6)
+                .ToList();
+
+            foreach (var acc in keyAccounts)
+            {
+                model.MainCoaBalances.Add(new CoaBalanceDto
+                {
+                    AccountCode = acc.ReferenceNumber.ToString(),
+                    AccountName = acc.AccountName,
+                    Category = acc.Type,
+                    Balance = accountBalances.GetValueOrDefault(acc.Id)
+                });
+            }
+
+            // 9. Recent journal entries (latest 8)
+            model.RecentJournals = await _db.JournalEntries
+                .OrderByDescending(j => j.EntryDate)
+                .ThenByDescending(j => j.Id)
+                .Take(8)
+                .Select(j => new JournalEntryDto
+                {
+                    ReferenceNo = j.ReferenceNumber,
+                    Date = j.EntryDate,
+                    Memo = j.Memo ?? string.Empty,
+                    TotalDebit = j.Lines.Sum(l => l.Debit),
+                    TotalCredit = j.Lines.Sum(l => l.Credit)
+                })
+                .ToListAsync();
 
             return View(model);
+        }
+
+        private static decimal? CalcTrend(decimal current, decimal prior)
+        {
+            if (prior == 0) return current == 0 ? 0 : null;
+            return Math.Round((current - prior) / Math.Abs(prior) * 100m, 1);
         }
     }
 }
