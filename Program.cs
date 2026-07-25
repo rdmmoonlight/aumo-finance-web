@@ -17,7 +17,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 //    User table, no more remote Aurum.Api calls for auth.
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = true;
+    options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
