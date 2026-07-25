@@ -1,38 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using AumoFinance.Models;
-
-namespace AumoFinance.Controllers
-{
-    public class PeriodsController : Controller
-    {
-        private readonly AppDbContext _context;
-
-        public PeriodsController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        public async Task<IActionResult> Index()
-        {
-            var periods = await _context.Periods
-                                        .OrderByDescending(p => p.StartDate)
-                                        .ToListAsync();
-            return View(periods);
-        }
-
-        // GET: /Periods/Create
-        public IActionResult Create()
-        {
-            var model = new OpenPeriodViewModel
-            {
-                Month = DateTime.Today.Month,
-                Year = DateTime.Today.Year
-            };
-
-            return View(model);
-        }
-
         // POST: /Periods/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -43,7 +8,8 @@ namespace AumoFinance.Controllers
                 return View(model);
             }
 
-            var startDate = new DateTime(model.Year, model.Month, 1);
+            // PERBAIKAN KRUSIAL: Tambahkan DateTimeKind.Utc agar diterima oleh PostgreSQL
+            var startDate = new DateTime(model.Year, model.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var endDate = startDate.AddMonths(1).AddDays(-1);
             var periodName = startDate.ToString("MMMM yyyy");
 
@@ -112,12 +78,10 @@ namespace AumoFinance.Controllers
                 TempData["SuccessMessage"] = $"Period {periodName} opened. Core accounts created and initial balances recorded.";
                 return RedirectToAction(nameof(Index));
             }
-            catch (Exception)
+            catch (Exception ex) // Tangkap spesifik pesan errornya jika masih gagal
             {
                 await transaction.RollbackAsync();
-                TempData["ErrorMessage"] = "A fatal error occurred while processing. Transaction rolled back.";
+                TempData["ErrorMessage"] = $"Transaction failed: {ex.InnerException?.Message ?? ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
         }
-    }
-}
