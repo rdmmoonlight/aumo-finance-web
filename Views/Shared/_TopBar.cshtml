@@ -1,5 +1,8 @@
 @* Views/Shared/_TopBar.cshtml *@
 
+<!-- ========================================== -->
+<!-- ROW 1: Main Header (Height 36px)           -->
+<!-- ========================================== -->
 <header class="navbar navbar-expand border-bottom px-3 py-0 bg-body-tertiary" style="height: 36px; min-height: 36px;">
     <div class="container-fluid p-0 d-flex align-items-center justify-content-between h-100">
         
@@ -15,31 +18,65 @@
             <partial name="_QuranVerse" />
         </div>
 
-        <!-- Right Section: Hanya Lup & 3 Titik -->
+        <!-- Right Section: Search & Kebab Menu -->
         <div class="d-flex align-items-center gap-0">
             
-            <!-- 3. Ikon Lup (Search) -->
+            <!-- 3. Search Icon -->
             <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                 <i class="bi bi-search" style="font-size: 0.825rem;"></i>
             </button>
 
-            <!-- 4. Menu 3 Titik (Kebab Menu) -->
+            <!-- 4. Kebab Menu -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
                     <i class="bi bi-three-dots-vertical" style="font-size: 0.875rem;"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem;">
-                    <li><h6 class="dropdown-header py-1" style="font-size: 0.725rem;">Pengaturan Tema</h6></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Gelap</button></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Terang</button></li>
+                    <li><h6 class="dropdown-header py-1" style="font-size: 0.725rem;">Theme Settings</h6></li>
+                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark</button></li>
+                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>
                     <li><hr class="dropdown-divider my-1"></li>
-                    <li><a class="dropdown-item py-1 text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i>Keluar</a></li>
+                    <li><a class="dropdown-item py-1 text-danger" href="#"><i class="bi bi-box-arrow-right me-2"></i> Sign Out</a></li>
                 </ul>
             </div>
 
         </div>
     </div>
 </header>
+
+<!-- ========================================== -->
+<!-- ROW 2: Active Period & Dropdown            -->
+<!-- ========================================== -->
+<div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+    <div class="dropdown">
+        <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-calendar2-check text-success"></i>
+            <span class="text-secondary">Active Period:</span> 
+            <!-- Ganti "July 2026" di bawah ini dengan ViewData / ViewBag / Model dari database nanti -->
+            <span class="text-body fw-bold">@(ViewData["ActivePeriod"] ?? "July 2026")</span>
+        </button>
+        
+        <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.75rem; min-width: 180px;">
+            <li><h6 class="dropdown-header py-1" style="font-size: 0.7rem;">Period Management</h6></li>
+            
+            <!-- Tombol Create Periode Baru -->
+            <li>
+                <a class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Create">
+                    <i class="bi bi-plus-circle"></i> Open New Period
+                </a>
+            </li>
+            
+            <li><hr class="dropdown-divider my-1"></li>
+            
+            <!-- Opsi ke Daftar Periode (Index) -->
+            <li>
+                <a class="dropdown-item py-1 d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Index">
+                    <i class="bi bi-list-ul"></i> View All Periods
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
 
 <!-- Search Modal -->
 <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
@@ -48,7 +85,7 @@
             <div class="modal-body p-2">
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-transparent border-0 text-secondary"><i class="bi bi-search"></i></span>
-                    <input type="search" class="form-control border-0 shadow-none" placeholder="Cari transaksi, akun..." autofocus>
+                    <input type="search" class="form-control border-0 shadow-none" placeholder="Search transactions, accounts..." autofocus>
                     <button type="button" class="btn-close ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
             </div>
