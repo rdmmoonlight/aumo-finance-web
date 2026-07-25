@@ -1,39 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using AumoFinance.Models;
-
-namespace AumoFinance.Controllers
-{
-    public class PeriodsController : Controller
-    {
-        private readonly AppDbContext _context;
-
-        public PeriodsController(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        public async Task<IActionResult> Index()
-        {
-            var periods = await _context.Periods
-                                        .OrderByDescending(p => p.StartDate)
-                                        .ToListAsync();
-            return View(periods);
-        }
-
-        // GET: /Periods/Create
-        public IActionResult Create()
-        {
-            // Tidak perlu lagi memanggil ViewBag.Accounts karena input manual
-            var model = new OpenPeriodViewModel
-            {
-                Month = DateTime.Today.Month,
-                Year = DateTime.Today.Year
-            };
-
-            return View(model);
-        }
-
         // POST: /Periods/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -55,32 +19,30 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Validasi tambahan: Pastikan kode akun belum dipakai di COA
+            // Gunakan ReferenceNumber sesuai properti asli ChartOfAccount
             var existingCodes = await _context.ChartOfAccounts
-                .Where(a => a.AccountCode == model.CashAccountCode 
-                         || a.AccountCode == model.BankAccountCode 
-                         || a.AccountCode == model.RetainedEarningsAccountCode)
-                .Select(a => a.AccountCode)
+                .Where(a => a.ReferenceNumber.ToString() == model.CashAccountCode 
+                         || a.ReferenceNumber.ToString() == model.BankAccountCode 
+                         || a.ReferenceNumber.ToString() == model.RetainedEarningsAccountCode)
+                .Select(a => a.ReferenceNumber)
                 .ToListAsync();
 
             if (existingCodes.Any())
             {
-                ModelState.AddModelError(string.Empty, $"Account Code(s) already exist in COA: {string.Join(", ", existingCodes)}");
+                ModelState.AddModelError(string.Empty, "One or more account reference numbers are already in use in the Chart of Accounts.");
                 return View(model);
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Buat 3 Akun Baru di COA
-                var cashAccount = new ChartOfAccount { AccountCode = model.CashAccountCode, AccountName = model.CashAccountName };
-                var bankAccount = new ChartOfAccount { AccountCode = model.BankAccountCode, AccountName = model.BankAccountName };
-                var retainedAccount = new ChartOfAccount { AccountCode = model.RetainedEarningsAccountCode, AccountName = model.RetainedEarningsAccountName };
-                
-                // (Catatan: Jika Model ChartOfAccount kamu wajib punya AccountClassificationId, tambahkan di sini)
+                // 1. Buat 3 Akun Baru di COA (Gunakan ReferenceNumber & Type)
+                var cashAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.CashAccountCode), AccountName = model.CashAccountName, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
+                var bankAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.BankAccountCode), AccountName = model.BankAccountName, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
+                var retainedAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.RetainedEarningsAccountCode), AccountName = model.RetainedEarningsAccountName, Type = "Equity", Role = "RetainedEarnings", IsActive = true };
                 
                 _context.ChartOfAccounts.AddRange(cashAccount, bankAccount, retainedAccount);
-                await _context.SaveChangesAsync(); // Save agar mendapatkan ID
+                await _context.SaveChangesAsync();
 
                 // 2. Buat Periode Baru
                 var newPeriod = new Period
@@ -93,20 +55,19 @@ namespace AumoFinance.Controllers
                 _context.Periods.Add(newPeriod);
                 await _context.SaveChangesAsync();
 
-                // 3. Jurnal Saldo Awal
+                // 3. Jurnal Saldo Awal (Sesuaikan dengan properti EntryDate dan Memo)
                 var totalOpeningBalance = model.CashBalance + model.BankBalance;
                 var journalEntry = new JournalEntry
                 {
-                    Date = startDate,
-                    Description = $"Opening Balance for {periodName}",
+                    EntryDate = startDate,
+                    Memo = $"Opening Balance for {periodName}",
                     ReferenceNumber = $"OB-{startDate:yyyyMM}",
-                    TotalDebit = totalOpeningBalance,
-                    TotalCredit = totalOpeningBalance
+                    JournalType = "General"
                 };
                 _context.JournalEntries.Add(journalEntry);
                 await _context.SaveChangesAsync();
 
-                // 4. Masukkan Baris Jurnal dengan ID Akun yang baru terbuat
+                // 4. Masukkan Baris Jurnal (Lines)
                 var lines = new List<JournalEntryLine>
                 {
                     new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = cashAccount.Id, Debit = model.CashBalance, Credit = 0 },
@@ -128,5 +89,3 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
-    }
-}
