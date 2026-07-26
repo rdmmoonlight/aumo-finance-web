@@ -340,7 +340,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { position: 'top' } },
                 scales: {
-                    y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1e6) + 'M' } },
+                    y: { 
+                        beginAtZero: true, 
+                        ticks: { 
+                            callback: function(value) {
+                                return 'Rp ' + value.toLocaleString('id-ID');
+                            } 
+                        } 
+                    },
                     x: { grid: { display: false } }
                 }
             }
