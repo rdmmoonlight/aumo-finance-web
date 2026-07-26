@@ -1,3 +1,4 @@
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AumoFinance.Controllers
@@ -16,8 +17,40 @@ namespace AumoFinance.Controllers
 
         public IActionResult DownloadJournalTemplate()
         {
-            TempData["SuccessMessage"] = "Excel template is ready for download (Feature pending).";
-            return RedirectToAction(nameof(Index));
+            // Kolom wajib sesuai info yang ditampilkan di Views/Tools/Index.cshtml
+            string[] headers = { "Date", "AccountCode", "Description", "Ref", "Debit", "Credit" };
+
+            using var workbook = new XLWorkbook();
+            var sheet = workbook.Worksheets.Add("Journal Template");
+
+            for (int i = 0; i < headers.Length; i++)
+            {
+                var cell = sheet.Cell(1, i + 1);
+                cell.Value = headers[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#212529");
+                cell.Style.Font.FontColor = XLColor.White;
+            }
+
+            // Baris contoh (row 2) supaya format kolom Date/Debit/Credit jelas
+            sheet.Cell(2, 1).Value = DateTime.Today;
+            sheet.Cell(2, 1).Style.DateFormat.Format = "yyyy-mm-dd";
+            sheet.Cell(2, 2).Value = "101";
+            sheet.Cell(2, 3).Value = "Contoh: Penerimaan kas awal";
+            sheet.Cell(2, 4).Value = "JE-0001";
+            sheet.Cell(2, 5).Value = 100000;
+            sheet.Cell(2, 6).Value = 0;
+
+            sheet.Columns().AdjustToContents();
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            var content = stream.ToArray();
+
+            return File(
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "JournalImportTemplate.xlsx");
         }
 
         [HttpPost]
