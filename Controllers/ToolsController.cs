@@ -1,10 +1,19 @@
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using AumoFinance.Models;
 
 namespace AumoFinance.Controllers
 {
     public class ToolsController : Controller
     {
+        private readonly AppDbContext _context;
+
+        public ToolsController(AppDbContext context)
+        {
+            _context = context;
+        }
+
         // Display Tools & Utilities Page
         public IActionResult Index()
         {
@@ -12,7 +21,7 @@ namespace AumoFinance.Controllers
         }
 
         // ==========================================
-        // FEATURE PLACEHOLDERS (Logic to be implemented)
+        // TEMPLATE DOWNLOAD
         // ==========================================
 
         public IActionResult DownloadJournalTemplate()
@@ -20,27 +29,31 @@ namespace AumoFinance.Controllers
             // Header wajib. Satu Date = satu transaksi: baris-baris dengan
             // Date yang sama adalah satu transaksi yang sama (bisa 1 baris
             // Debit dengan beberapa baris Credit, atau sebaliknya).
-            string[] headers = { "Date", "Account Name", "Ref", "Debit", "Credit" };
+            // Ref = nomor akun COA (ChartOfAccount.ReferenceNumber). Jika
+            // Account Name + Ref belum ada di COA, akan otomatis dibuatkan
+            // akun baru saat import (Type mengikuti rentang nomor Ref).
+            string[] headers = { "Date", "Account Name", "Description", "Ref", "Debit", "Credit" };
 
             using var workbook = new XLWorkbook();
 
             BuildJournalSheet(
                 workbook,
                 sheetName: "GJ",
-                exampleRef: "GJ-0001",
-                exampleMemo1: "Cash on Hand",
-                exampleMemo2: "Sales Revenue",
-                exampleMemo3: "Service Revenue",
-                headers: headers);
+                rows: new[]
+                {
+                    (Account: "Cash on Hand", Desc: "Penerimaan penjualan tunai", Ref: 101, Debit: 500000m, Credit: 0m),
+                    (Account: "Sales Revenue", Desc: "Penerimaan penjualan tunai", Ref: 401, Debit: 0m, Credit: 300000m),
+                    (Account: "Service Revenue", Desc: "Penerimaan penjualan tunai", Ref: 402, Debit: 0m, Credit: 200000m),
+                });
 
             BuildJournalSheet(
                 workbook,
                 sheetName: "AJ",
-                exampleRef: "AJ-0001",
-                exampleMemo1: "Depreciation Expense",
-                exampleMemo2: "Accumulated Depreciation",
-                exampleMemo3: null,
-                headers: headers);
+                rows: new[]
+                {
+                    (Account: "Depreciation Expense", Desc: "Penyesuaian penyusutan bulanan", Ref: 501, Debit: 100000m, Credit: 0m),
+                    (Account: "Accumulated Depreciation", Desc: "Penyesuaian penyusutan bulanan", Ref: 151, Debit: 0m, Credit: 100000m),
+                });
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
@@ -52,19 +65,15 @@ namespace AumoFinance.Controllers
                 "JournalImportTemplate.xlsx");
         }
 
-        // Membangun 1 sheet jurnal (GJ atau AJ) dengan header dan 1 contoh
-        // transaksi. Contoh transaksi memakai Date yang sama pada setiap
-        // baris untuk menunjukkan bahwa Date yang sama = satu transaksi,
-        // walau Debit hanya 1 baris dan Credit lebih dari 1 baris.
+        // Membangun 1 sheet jurnal (GJ atau AJ) dengan header dan contoh
+        // transaksi. Semua baris contoh memakai Date yang sama untuk
+        // menunjukkan bahwa Date yang sama = satu transaksi.
         private static void BuildJournalSheet(
             XLWorkbook workbook,
             string sheetName,
-            string exampleRef,
-            string exampleMemo1,
-            string exampleMemo2,
-            string? exampleMemo3,
-            string[] headers)
+            (string Account, string Desc, int Ref, decimal Debit, decimal Credit)[] rows)
         {
+            string[] headers = { "Date", "Account Name", "Description", "Ref", "Debit", "Credit" };
             var sheet = workbook.Worksheets.Add(sheetName);
 
             for (int i = 0; i < headers.Length; i++)
@@ -78,31 +87,14 @@ namespace AumoFinance.Controllers
 
             var exampleDate = DateTime.Today;
             int row = 2;
-
-            // Baris 1: Debit tunggal
-            sheet.Cell(row, 1).Value = exampleDate;
-            sheet.Cell(row, 2).Value = exampleMemo1;
-            sheet.Cell(row, 3).Value = exampleRef;
-            sheet.Cell(row, 4).Value = 500000;
-            sheet.Cell(row, 5).Value = 0;
-            row++;
-
-            // Baris 2: Credit pertama, Date sama = masih transaksi yang sama
-            sheet.Cell(row, 1).Value = exampleDate;
-            sheet.Cell(row, 2).Value = exampleMemo2;
-            sheet.Cell(row, 3).Value = exampleRef;
-            sheet.Cell(row, 4).Value = 0;
-            sheet.Cell(row, 5).Value = exampleMemo3 != null ? 300000 : 500000;
-            row++;
-
-            // Baris 3: Credit kedua (khusus GJ, untuk contoh 1 Debit banyak Credit)
-            if (exampleMemo3 != null)
+            foreach (var r in rows)
             {
                 sheet.Cell(row, 1).Value = exampleDate;
-                sheet.Cell(row, 2).Value = exampleMemo3;
-                sheet.Cell(row, 3).Value = exampleRef;
-                sheet.Cell(row, 4).Value = 0;
-                sheet.Cell(row, 5).Value = 200000;
+                sheet.Cell(row, 2).Value = r.Account;
+                sheet.Cell(row, 3).Value = r.Desc;
+                sheet.Cell(row, 4).Value = r.Ref;
+                sheet.Cell(row, 5).Value = r.Debit;
+                sheet.Cell(row, 6).Value = r.Credit;
                 row++;
             }
 
@@ -110,8 +102,12 @@ namespace AumoFinance.Controllers
             sheet.Columns().AdjustToContents();
         }
 
+        // ==========================================
+        // IMPORT: parsing GJ/AJ, auto-create akun ke COA, simpan Journal Entry
+        // ==========================================
+
         [HttpPost]
-        public IActionResult ImportJournal(IFormFile excelFile)
+        public async Task<IActionResult> ImportJournal(IFormFile excelFile)
         {
             if (excelFile == null || excelFile.Length == 0)
             {
@@ -119,7 +115,181 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            TempData["SuccessMessage"] = $"File '{excelFile.FileName}' received. Validation and import logic pending.";
+            using var stream = new MemoryStream();
+            await excelFile.CopyToAsync(stream);
+            stream.Position = 0;
+
+            int accountsCreated = 0;
+            int transactionsImported = 0;
+            var errors = new List<string>();
+
+            try
+            {
+                using var workbook = new XLWorkbook(stream);
+
+                var sheetMap = new (string SheetName, string JournalType, string RefPrefix)[]
+                {
+                    ("GJ", "General", "GJ"),
+                    ("AJ", "Adjusting", "AJ"),
+                };
+
+                foreach (var (sheetName, journalType, refPrefix) in sheetMap)
+                {
+                    if (!workbook.Worksheets.TryGetWorksheet(sheetName, out var sheet))
+                    {
+                        continue; // Sheet opsional: kalau tidak ada, dilewati.
+                    }
+
+                    var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
+
+                    // Kelompokkan baris per Date: Date yang sama = satu transaksi.
+                    var groups = new List<(DateTime Date, List<int> RowNumbers)>();
+                    for (int r = 2; r <= lastRow; r++)
+                    {
+                        var dateCell = sheet.Cell(r, 1);
+                        if (dateCell.IsEmpty()) continue;
+                        if (!dateCell.TryGetValue(out DateTime date))
+                        {
+                            errors.Add($"{sheetName} baris {r}: Date tidak valid, dilewati.");
+                            continue;
+                        }
+
+                        var last = groups.Count > 0 ? groups[^1] : default;
+                        if (groups.Count > 0 && last.Date.Date == date.Date)
+                        {
+                            last.RowNumbers.Add(r);
+                        }
+                        else
+                        {
+                            groups.Add((date.Date, new List<int> { r }));
+                        }
+                    }
+
+                    int sequence = 1;
+                    foreach (var group in groups)
+                    {
+                        decimal totalDebit = 0, totalCredit = 0;
+                        var lines = new List<JournalEntryLine>();
+                        bool groupHasError = false;
+
+                        foreach (var r in group.RowNumbers)
+                        {
+                            var accountName = sheet.Cell(r, 2).GetString().Trim();
+                            var description = sheet.Cell(r, 3).GetString().Trim();
+                            var refCell = sheet.Cell(r, 4);
+                            var debit = sheet.Cell(r, 5).GetValue<decimal>();
+                            var credit = sheet.Cell(r, 6).GetValue<decimal>();
+
+                            if (string.IsNullOrWhiteSpace(accountName) || refCell.IsEmpty())
+                            {
+                                errors.Add($"{sheetName} baris {r}: Account Name atau Ref kosong, transaksi {group.Date:yyyy-MM-dd} dilewati.");
+                                groupHasError = true;
+                                continue;
+                            }
+
+                            if (!refCell.TryGetValue(out int refNumber))
+                            {
+                                errors.Add($"{sheetName} baris {r}: Ref bukan angka, transaksi {group.Date:yyyy-MM-dd} dilewati.");
+                                groupHasError = true;
+                                continue;
+                            }
+
+                            // Cari akun berdasarkan Ref (nomor akun COA). Jika belum
+                            // ada, otomatis dibuatkan akun baru ke Chart of Accounts.
+                            var account = await _context.ChartOfAccounts
+                                .FirstOrDefaultAsync(a => a.ReferenceNumber == refNumber);
+
+                            if (account == null)
+                            {
+                                var type = AccountClassification.TypeFromReferenceNumber(refNumber);
+                                if (type == null)
+                                {
+                                    errors.Add($"{sheetName} baris {r}: Ref {refNumber} di luar rentang penomoran akun yang valid, dilewati.");
+                                    groupHasError = true;
+                                    continue;
+                                }
+
+                                account = new ChartOfAccount
+                                {
+                                    ReferenceNumber = refNumber,
+                                    AccountName = accountName,
+                                    Type = type,
+                                    Role = "Default",
+                                    IsActive = true,
+                                };
+                                _context.ChartOfAccounts.Add(account);
+                                accountsCreated++;
+                            }
+
+                            totalDebit += debit;
+                            totalCredit += credit;
+                            lines.Add(new JournalEntryLine
+                            {
+                                Account = account,
+                                LineDescription = description,
+                                Debit = debit,
+                                Credit = credit,
+                                LineOrder = lines.Count + 1,
+                            });
+                        }
+
+                        if (groupHasError || lines.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        if (totalDebit != totalCredit)
+                        {
+                            errors.Add($"{sheetName} transaksi {group.Date:yyyy-MM-dd}: Debit ({totalDebit:N2}) tidak sama dengan Credit ({totalCredit:N2}), transaksi dilewati.");
+                            continue;
+                        }
+
+                        // Nomor referensi transaksi (JournalEntry.ReferenceNumber) wajib
+                        // unik secara global. Dibuat otomatis dari sheet + tanggal.
+                        string referenceNumber;
+                        do
+                        {
+                            referenceNumber = $"{refPrefix}-{group.Date:yyyyMMdd}-{sequence:000}";
+                            sequence++;
+                        } while (await _context.JournalEntries.AnyAsync(j => j.ReferenceNumber == referenceNumber));
+
+                        var entry = new JournalEntry
+                        {
+                            ReferenceNumber = referenceNumber,
+                            JournalType = journalType,
+                            EntryDate = group.Date,
+                            Lines = lines,
+                        };
+
+                        _context.JournalEntries.Add(entry);
+                        transactionsImported++;
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = $"Gagal memproses file '{excelFile.FileName}': {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var summary = $"Import selesai: {transactionsImported} transaksi tersimpan, {accountsCreated} akun baru ditambahkan ke Chart of Accounts.";
+            if (errors.Count > 0)
+            {
+                summary += $" {errors.Count} baris/transaksi dilewati: {string.Join(" | ", errors.Take(5))}";
+                if (errors.Count > 5) summary += " ...";
+            }
+
+            if (transactionsImported == 0)
+            {
+                TempData["ErrorMessage"] = summary;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = summary;
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
