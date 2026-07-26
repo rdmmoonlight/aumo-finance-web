@@ -17,11 +17,55 @@ namespace AumoFinance.Controllers
 
         public IActionResult DownloadJournalTemplate()
         {
-            // Kolom wajib sesuai info yang ditampilkan di Views/Tools/Index.cshtml
-            string[] headers = { "Date", "AccountCode", "Description", "Ref", "Debit", "Credit" };
+            // Header wajib. Satu Date = satu transaksi: baris-baris dengan
+            // Date yang sama adalah satu transaksi yang sama (bisa 1 baris
+            // Debit dengan beberapa baris Credit, atau sebaliknya).
+            string[] headers = { "Date", "Account Name", "Ref", "Debit", "Credit" };
 
             using var workbook = new XLWorkbook();
-            var sheet = workbook.Worksheets.Add("Journal Template");
+
+            BuildJournalSheet(
+                workbook,
+                sheetName: "GJ",
+                exampleRef: "GJ-0001",
+                exampleMemo1: "Cash on Hand",
+                exampleMemo2: "Sales Revenue",
+                exampleMemo3: "Service Revenue",
+                headers: headers);
+
+            BuildJournalSheet(
+                workbook,
+                sheetName: "AJ",
+                exampleRef: "AJ-0001",
+                exampleMemo1: "Depreciation Expense",
+                exampleMemo2: "Accumulated Depreciation",
+                exampleMemo3: null,
+                headers: headers);
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            var content = stream.ToArray();
+
+            return File(
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "JournalImportTemplate.xlsx");
+        }
+
+        // Membangun 1 sheet jurnal (GJ atau AJ) dengan header dan 1 contoh
+        // transaksi. Contoh transaksi memakai Date yang sama pada setiap
+        // baris untuk menunjukkan bahwa Date yang sama = satu transaksi,
+        // walau Debit hanya 1 baris dan Credit lebih dari 1 baris.
+        private static void BuildJournalSheet(
+            XLWorkbook workbook,
+            string sheetName,
+            string exampleRef,
+            string exampleMemo1,
+            string exampleMemo2,
+            string? exampleMemo3,
+            string[] headers)
+        {
+            var sheet = workbook.Worksheets.Add(sheetName);
 
             for (int i = 0; i < headers.Length; i++)
             {
@@ -32,25 +76,38 @@ namespace AumoFinance.Controllers
                 cell.Style.Font.FontColor = XLColor.White;
             }
 
-            // Baris contoh (row 2) supaya format kolom Date/Debit/Credit jelas
-            sheet.Cell(2, 1).Value = DateTime.Today;
-            sheet.Cell(2, 1).Style.DateFormat.Format = "yyyy-mm-dd";
-            sheet.Cell(2, 2).Value = "101";
-            sheet.Cell(2, 3).Value = "Contoh: Penerimaan kas awal";
-            sheet.Cell(2, 4).Value = "JE-0001";
-            sheet.Cell(2, 5).Value = 100000;
-            sheet.Cell(2, 6).Value = 0;
+            var exampleDate = DateTime.Today;
+            int row = 2;
 
+            // Baris 1: Debit tunggal
+            sheet.Cell(row, 1).Value = exampleDate;
+            sheet.Cell(row, 2).Value = exampleMemo1;
+            sheet.Cell(row, 3).Value = exampleRef;
+            sheet.Cell(row, 4).Value = 500000;
+            sheet.Cell(row, 5).Value = 0;
+            row++;
+
+            // Baris 2: Credit pertama, Date sama = masih transaksi yang sama
+            sheet.Cell(row, 1).Value = exampleDate;
+            sheet.Cell(row, 2).Value = exampleMemo2;
+            sheet.Cell(row, 3).Value = exampleRef;
+            sheet.Cell(row, 4).Value = 0;
+            sheet.Cell(row, 5).Value = exampleMemo3 != null ? 300000 : 500000;
+            row++;
+
+            // Baris 3: Credit kedua (khusus GJ, untuk contoh 1 Debit banyak Credit)
+            if (exampleMemo3 != null)
+            {
+                sheet.Cell(row, 1).Value = exampleDate;
+                sheet.Cell(row, 2).Value = exampleMemo3;
+                sheet.Cell(row, 3).Value = exampleRef;
+                sheet.Cell(row, 4).Value = 0;
+                sheet.Cell(row, 5).Value = 200000;
+                row++;
+            }
+
+            sheet.Range(2, 1, row - 1, 1).Style.DateFormat.Format = "yyyy-mm-dd";
             sheet.Columns().AdjustToContents();
-
-            using var stream = new MemoryStream();
-            workbook.SaveAs(stream);
-            var content = stream.ToArray();
-
-            return File(
-                content,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "JournalImportTemplate.xlsx");
         }
 
         [HttpPost]
