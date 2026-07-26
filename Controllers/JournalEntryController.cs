@@ -66,7 +66,7 @@ namespace AumoFinance.Controllers
             {
                 ReferenceNumber = await GenerateReferenceNumberAsync(model.JournalType),
                 JournalType = model.JournalType,
-                EntryDate = model.EntryDate,
+                EntryDate = DateTime.SpecifyKind(model.EntryDate, DateTimeKind.Utc),
                 Lines = model.Lines.Select((l, index) => new JournalEntryLine
                 {
                     AccountId = l.AccountId,
