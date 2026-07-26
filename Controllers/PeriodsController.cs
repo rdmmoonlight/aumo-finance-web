@@ -95,8 +95,6 @@ namespace AumoFinance.Controllers
                 var journalEntry = new JournalEntry
                 {
                     EntryDate = startDate,
-                    Memo = $"Opening Balance for {periodName}",
-                    ReferenceNumber = $"OB-{startDate:yyyyMM}",
                     JournalType = "General"
                 };
                 _context.JournalEntries.Add(journalEntry);

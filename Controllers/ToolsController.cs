@@ -127,13 +127,13 @@ namespace AumoFinance.Controllers
             {
                 using var workbook = new XLWorkbook(stream);
 
-                var sheetMap = new (string SheetName, string JournalType, string RefPrefix)[]
+                var sheetMap = new (string SheetName, string JournalType)[]
                 {
-                    ("GJ", "General", "GJ"),
-                    ("AJ", "Adjusting", "AJ"),
+                    ("GJ", "General"),
+                    ("AJ", "Adjusting"),
                 };
 
-                foreach (var (sheetName, journalType, refPrefix) in sheetMap)
+                foreach (var (sheetName, journalType) in sheetMap)
                 {
                     if (!workbook.Worksheets.TryGetWorksheet(sheetName, out var sheet))
                     {
@@ -165,7 +165,6 @@ namespace AumoFinance.Controllers
                         }
                     }
 
-                    int sequence = 1;
                     foreach (var group in groups)
                     {
                         decimal totalDebit = 0, totalCredit = 0;
@@ -244,18 +243,8 @@ namespace AumoFinance.Controllers
                             continue;
                         }
 
-                        // Nomor referensi transaksi (JournalEntry.ReferenceNumber) wajib
-                        // unik secara global. Dibuat otomatis dari sheet + tanggal.
-                        string referenceNumber;
-                        do
-                        {
-                            referenceNumber = $"{refPrefix}-{group.Date:yyyyMMdd}-{sequence:000}";
-                            sequence++;
-                        } while (await _context.JournalEntries.AnyAsync(j => j.ReferenceNumber == referenceNumber));
-
                         var entry = new JournalEntry
                         {
-                            ReferenceNumber = referenceNumber,
                             JournalType = journalType,
                             EntryDate = group.Date,
                             Lines = lines,

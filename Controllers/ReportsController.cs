@@ -369,7 +369,7 @@ namespace AumoFinance.Controllers
                     // Bagi proporsional bila satu jurnal kas menyentuh beberapa akun lawan.
                     var portion = cashNet * (contraAmount / contraTotal);
                     var type = contra.Account?.Type ?? "";
-                    var description = contra.Account?.AccountName ?? entry.Memo ?? entry.ReferenceNumber;
+                    var description = contra.Account?.AccountName ?? "Uncategorized";
 
                     if (type == "OperatingIncome" || type == "OperatingExpenses" || type == "OtherIncome" || type == "OtherExpenses")
                     {
@@ -442,8 +442,7 @@ namespace AumoFinance.Controllers
                     ledgerLines.Add(new LedgerLineViewModel
                     {
                         EntryDate = line.JournalEntry!.EntryDate,
-                        ReferenceNumber = line.JournalEntry!.ReferenceNumber,
-                        Description = line.LineDescription ?? line.JournalEntry!.Memo,
+                        Description = line.LineDescription,
                         Debit = line.Debit,
                         Credit = line.Credit,
                         RunningBalance = running

@@ -198,9 +198,7 @@ namespace AumoFinance.Controllers
                 .Take(8)
                 .Select(j => new JournalEntryDto
                 {
-                    ReferenceNo = j.ReferenceNumber,
                     Date = j.EntryDate,
-                    Memo = j.Memo ?? string.Empty,
                     TotalDebit = j.Lines.Sum(l => l.Debit),
                     TotalCredit = j.Lines.Sum(l => l.Credit)
                 })

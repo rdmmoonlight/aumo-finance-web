@@ -21,7 +21,6 @@ namespace AumoFinance.Controllers
             var model = new JournalEntryCreateViewModel
             {
                 EntryDate = DateTime.Today,
-                ReferenceNumber = await NextReferenceNumberAsync("General"),
                 AvailableAccounts = await ActiveAccountsAsync()
             };
 
@@ -57,11 +56,6 @@ namespace AumoFinance.Controllers
                 ModelState.AddModelError(string.Empty, "One or more selected accounts are invalid or inactive.");
             }
 
-            if (await _db.JournalEntries.AnyAsync(j => j.ReferenceNumber == model.ReferenceNumber))
-            {
-                ModelState.AddModelError(string.Empty, $"Reference number {model.ReferenceNumber} is already used.");
-            }
-
             if (!ModelState.IsValid)
             {
                 model.AvailableAccounts = await ActiveAccountsAsync();
@@ -70,10 +64,8 @@ namespace AumoFinance.Controllers
 
             var entry = new JournalEntry
             {
-                ReferenceNumber = model.ReferenceNumber,
                 JournalType = model.JournalType,
                 EntryDate = model.EntryDate,
-                Memo = model.Memo,
                 Lines = model.Lines.Select((l, index) => new JournalEntryLine
                 {
                     AccountId = l.AccountId,
@@ -87,7 +79,7 @@ namespace AumoFinance.Controllers
             _db.JournalEntries.Add(entry);
             await _db.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Journal entry '{entry.ReferenceNumber}' has been posted.";
+            TempData["SuccessMessage"] = "Journal entry has been posted.";
             return RedirectToAction("Index", "GeneralJournal");
         }
 
@@ -97,20 +89,6 @@ namespace AumoFinance.Controllers
                 .Where(a => a.IsActive)
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
-        }
-
-        // Nomor referensi berikutnya dibentuk otomatis: GJ-<tahun>-<urut> untuk
-        // General Journal, AJE-<tahun>-<urut> untuk Adjusting Entry.
-        private async Task<string> NextReferenceNumberAsync(string journalType)
-        {
-            var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
-            var year = DateTime.Today.Year;
-            var pattern = $"{prefix}-{year}-";
-
-            var countThisYear = await _db.JournalEntries
-                .CountAsync(j => j.ReferenceNumber.StartsWith(pattern));
-
-            return $"{pattern}{(countThisYear + 1):D3}";
         }
     }
 }
