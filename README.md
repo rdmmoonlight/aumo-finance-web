@@ -24,6 +24,8 @@ To maintain the highest level of financial integrity, economic rationality, and 
 6. **Mandatory Traceability**
    Every journal entry must be accompanied by a clear description, a valid reference number, and a verifiable date. Anonymous or ambiguous financial movements are not allowed.
 
+7. **Maximal 400 line code**
+
 ## 🛠️ Tech Stack
 
 * **Framework:** .NET 8 / ASP.NET Core MVC
