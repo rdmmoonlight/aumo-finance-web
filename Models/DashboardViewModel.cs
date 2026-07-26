@@ -35,9 +35,7 @@ namespace AumoFinance.Models
 
     public class JournalEntryDto
     {
-        public string ReferenceNo { get; set; } = string.Empty;
         public DateTime Date { get; set; }
-        public string Memo { get; set; } = string.Empty;
         public decimal TotalDebit { get; set; }
         public decimal TotalCredit { get; set; }
     }

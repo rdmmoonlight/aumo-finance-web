@@ -11,13 +11,6 @@ namespace AumoFinance.Models
         [DataType(DataType.Date)]
         public DateTime EntryDate { get; set; } = DateTime.Today;
 
-        [Required]
-        [StringLength(30)]
-        public string ReferenceNumber { get; set; } = string.Empty;
-
-        [StringLength(250)]
-        public string? Memo { get; set; }
-
         public List<JournalEntryLineInputModel> Lines { get; set; } = new()
         {
             new JournalEntryLineInputModel(),

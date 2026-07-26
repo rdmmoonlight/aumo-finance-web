@@ -17,7 +17,6 @@ namespace AumoFinance.Models
     public class LedgerLineViewModel
     {
         public DateTime EntryDate { get; set; }
-        public string ReferenceNumber { get; set; } = string.Empty;
         public string? Description { get; set; }
         public decimal Debit { get; set; }
         public decimal Credit { get; set; }

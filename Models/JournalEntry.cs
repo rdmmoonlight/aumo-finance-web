@@ -7,17 +7,10 @@ namespace AumoFinance.Models
         public int Id { get; set; }
 
         [Required]
-        [StringLength(30)]
-        public string ReferenceNumber { get; set; } = string.Empty;
-
-        [Required]
         public string JournalType { get; set; } = "General"; // "General" atau "Adjusting"
 
         [Required]
         public DateTime EntryDate { get; set; }
-
-        [StringLength(250)]
-        public string? Memo { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
