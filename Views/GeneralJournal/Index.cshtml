@@ -57,7 +57,7 @@
                                 var creditLines = orderedLines.Where(l => l.Credit > 0).ToList();
                                 var allLines = debitLines.Concat(creditLines).ToList();
 
-                                var currentDateStr = entry.EntryDate.ToString("dd");
+                                var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
                                 var showDate = (currentDateStr != lastDate);
                                 if (showDate)
                                 {
