@@ -86,7 +86,7 @@
                         else
                         {
                             <i class="bi @(Model.CashTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @Math.Abs(Model.CashTrendPercent.Value).ToString("0.0")% vs prior period
+                            @(Math.Abs(Model.CashTrendPercent.Value).ToString("0.0") + "%") vs prior period
                         }
                     </div>
                 </div>
@@ -110,7 +110,7 @@
                         else
                         {
                             <i class="bi @(Model.RevenueTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @Math.Abs(Model.RevenueTrendPercent.Value).ToString("0.0")% vs prior period
+                            @(Math.Abs(Model.RevenueTrendPercent.Value).ToString("0.0") + "%") vs prior period
                         }
                     </div>
                 </div>
@@ -134,7 +134,7 @@
                         else
                         {
                             <i class="bi @(Model.ExpenseTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @Math.Abs(Model.ExpenseTrendPercent.Value).ToString("0.0")% vs prior period
+                            @(Math.Abs(Model.ExpenseTrendPercent.Value).ToString("0.0") + "%") vs prior period
                         }
                     </div>
                 </div>
@@ -158,7 +158,7 @@
                         else
                         {
                             <i class="bi @(Model.NetIncomeTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @Math.Abs(Model.NetIncomeTrendPercent.Value).ToString("0.0")% vs prior period
+                            @(Math.Abs(Model.NetIncomeTrendPercent.Value).ToString("0.0") + "%") vs prior period
                         }
                     </div>
                 </div>
@@ -166,7 +166,7 @@
         </div>
     </div>
 
-    <!-- KPI Cards - Row 2 (Assets / Liabilities) -->
+    <!-- KPI Cards - Row 2 -->
     <div class="row g-3 mb-4">
         <div class="col-12 col-md-6">
             <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
@@ -244,9 +244,8 @@
         </div>
     </div>
 
-    <!-- Bottom Section: Accounts + Recent Journals -->
+    <!-- Bottom Section -->
     <div class="row g-3">
-        <!-- Key Account Balances -->
         <div class="col-12 col-lg-4">
             <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
                 <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
@@ -277,7 +276,6 @@
             </div>
         </div>
 
-        <!-- Recent Journal Entries -->
         <div class="col-12 col-lg-8">
             <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
                 <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
@@ -335,7 +333,6 @@
             Chart.defaults.borderColor = gridColor;
             Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
 
-            // Trend Chart (Line) – only if data exists
             const trendCanvas = document.getElementById('trendChart');
             if (trendCanvas) {
                 const trendCtx = trendCanvas.getContext('2d');
@@ -398,7 +395,6 @@
                 });
             }
 
-            // Expense Doughnut – only if data exists
             const doughnutCanvas = document.getElementById('expenseDoughnut');
             if (doughnutCanvas) {
                 const doughnutCtx = doughnutCanvas.getContext('2d');
