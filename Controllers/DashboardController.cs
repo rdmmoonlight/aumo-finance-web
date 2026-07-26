@@ -17,7 +17,7 @@ namespace AumoFinance.Controllers
         {
             var model = new DashboardViewModel();
 
-            // 1. Active period (same logic used in _TopBar)
+            // 1. Active period
             var activePeriod = await _db.Periods
                 .Where(p => !p.IsClosed)
                 .OrderByDescending(p => p.StartDate)
@@ -30,7 +30,7 @@ namespace AumoFinance.Controllers
                 model.ActivePeriodEnd = activePeriod.EndDate;
             }
 
-            // 2. All active accounts + all journal lines (General + Adjusting)
+            // 2. All active accounts + all journal lines
             var accounts = await _db.ChartOfAccounts
                 .Where(a => a.IsActive)
                 .OrderBy(a => a.ReferenceNumber)
@@ -42,7 +42,7 @@ namespace AumoFinance.Controllers
                 .Where(l => l.JournalEntry != null)
                 .ToListAsync();
 
-            // 3. Compute net balance for every account (identical rule to ReportsController)
+            // 3. Compute net balance for every account (same rule as ReportsController)
             var accountBalances = new Dictionary<int, decimal>();
             foreach (var account in accounts)
             {
@@ -54,7 +54,7 @@ namespace AumoFinance.Controllers
                 accountBalances[account.Id] = net;
             }
 
-            // 4. KPI values derived purely from balances
+            // 4. KPI values
             model.TotalCashAndEquivalents = accounts
                 .Where(a => a.Role == "CashAndEquivalents")
                 .Sum(a => accountBalances.GetValueOrDefault(a.Id));
@@ -94,7 +94,7 @@ namespace AumoFinance.Controllers
 
             model.NetIncome = model.RevenueThisPeriod - model.OperatingExpenses;
 
-            // 5. Prior-period trends (only when a previous closed period exists)
+            // 5. Prior-period trends
             var priorPeriod = await _db.Periods
                 .Where(p => p.IsClosed)
                 .OrderByDescending(p => p.EndDate)
@@ -123,13 +123,10 @@ namespace AumoFinance.Controllers
                 model.RevenueTrendPercent = CalcTrend(model.RevenueThisPeriod, priorRevenue);
                 model.ExpenseTrendPercent = CalcTrend(model.OperatingExpenses, priorExpenses);
                 model.NetIncomeTrendPercent = CalcTrend(model.NetIncome, priorNet);
-
-                // Cash trend uses cumulative balance (no period filter)
-                // For simplicity we leave it null when no meaningful prior cash figure exists
-                model.CashTrendPercent = null;
+                model.CashTrendPercent = null; // cumulative; leave null for now
             }
 
-            // 6. Monthly trend chart (last 7 calendar months that contain data)
+            // 6. Monthly trend chart (last 7 months that contain data)
             var monthly = lines
                 .GroupBy(l => new { l.JournalEntry!.EntryDate.Year, l.JournalEntry!.EntryDate.Month })
                 .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
@@ -149,9 +146,9 @@ namespace AumoFinance.Controllers
                     .Select(a => a.Id).ToHashSet();
 
                 var revenue = g.Where(l => revIds.Contains(l.AccountId))
-                               .Sum(l => l.Credit - l.Debit); // income normal credit
+                               .Sum(l => l.Credit - l.Debit);
                 var expense = g.Where(l => expIds.Contains(l.AccountId))
-                               .Sum(l => l.Debit - l.Credit); // expense normal debit
+                               .Sum(l => l.Debit - l.Credit);
 
                 model.ChartRevenue.Add(revenue);
                 model.ChartExpenses.Add(expense);
@@ -175,7 +172,7 @@ namespace AumoFinance.Controllers
                 }
             }
 
-            // 8. Key account balances (Cash, AR, AP, Equity – ordered by reference)
+            // 8. Key account balances
             var keyRoles = new[] { "CashAndEquivalents", "AccountsReceivable", "AccountsPayable" };
             var keyAccounts = accounts
                 .Where(a => keyRoles.Contains(a.Role) || a.Type == "Equity")
