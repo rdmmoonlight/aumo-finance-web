@@ -31,9 +31,9 @@ namespace AumoFinance.Models
         public string? LineDescription { get; set; }
 
         [Range(0, double.MaxValue)]
-        public decimal Debit { get; set; }
+        public decimal? Debit { get; set; }
 
         [Range(0, double.MaxValue)]
-        public decimal Credit { get; set; }
+        public decimal? Credit { get; set; }
     }
 }
