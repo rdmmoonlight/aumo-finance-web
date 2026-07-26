@@ -1,448 +1,52 @@
-@model AumoFinance.Models.DashboardViewModel
-@{
-    ViewData["Title"] = "Dashboard";
-    var idr = new System.Globalization.CultureInfo("id-ID");
-}
+using System;
+using System.Collections.Generic;
 
-<style>
-    .kpi-card {
-        border: 1px solid rgba(255,255,255,0.06);
-        background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+namespace AumoFinance.Models
+{
+    public class DashboardViewModel
+    {
+        public decimal TotalCashAndEquivalents { get; set; }
+        public decimal RevenueThisPeriod { get; set; }
+        public decimal OperatingExpenses { get; set; }
+        public decimal NetIncome { get; set; }
+        public decimal TotalAssets { get; set; }
+        public decimal TotalLiabilities { get; set; }
+
+        // Trend percentages (null when no comparable prior period exists)
+        public decimal? CashTrendPercent { get; set; }
+        public decimal? RevenueTrendPercent { get; set; }
+        public decimal? ExpenseTrendPercent { get; set; }
+        public decimal? NetIncomeTrendPercent { get; set; }
+
+        public List<string> ChartLabels { get; set; } = new();
+        public List<decimal> ChartRevenue { get; set; } = new();
+        public List<decimal> ChartExpenses { get; set; } = new();
+
+        public List<string> ExpenseCategoryLabels { get; set; } = new();
+        public List<decimal> ExpenseCategoryValues { get; set; } = new();
+
+        public List<JournalEntryDto> RecentJournals { get; set; } = new();
+        public List<CoaBalanceDto> MainCoaBalances { get; set; } = new();
+
+        public string ActivePeriodName { get; set; } = "No Active Period";
+        public DateTime? ActivePeriodStart { get; set; }
+        public DateTime? ActivePeriodEnd { get; set; }
     }
-    [data-bs-theme="light"] .kpi-card {
-        border-color: rgba(0,0,0,0.06);
-        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+
+    public class JournalEntryDto
+    {
+        public string ReferenceNo { get; set; } = string.Empty;
+        public DateTime Date { get; set; }
+        public string Memo { get; set; } = string.Empty;
+        public decimal TotalDebit { get; set; }
+        public decimal TotalCredit { get; set; }
     }
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+
+    public class CoaBalanceDto
+    {
+        public string AccountCode { get; set; } = string.Empty;
+        public string AccountName { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public decimal Balance { get; set; }
     }
-    .trend-up { color: #198754; }
-    .trend-down { color: #dc3545; }
-    .chart-container {
-        position: relative;
-        height: 280px;
-    }
-    .quick-action-btn {
-        min-width: 140px;
-    }
-    .account-item {
-        transition: background-color 0.15s ease;
-    }
-    .account-item:hover {
-        background-color: rgba(255,255,255,0.04);
-    }
-    [data-bs-theme="light"] .account-item:hover {
-        background-color: rgba(0,0,0,0.03);
-    }
-</style>
-
-<div class="container-fluid px-0">
-
-    <!-- Header -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-        <div>
-            <h4 class="fw-bold mb-1">Financial Overview</h4>
-            <p class="text-secondary small mb-0">
-                Active Period: <span class="fw-semibold text-body">@Model.ActivePeriodName</span>
-                @if (Model.ActivePeriodStart.HasValue && Model.ActivePeriodEnd.HasValue)
-                {
-                    <span class="ms-1">
-                        (@Model.ActivePeriodStart.Value.ToString("dd MMM yyyy") – @Model.ActivePeriodEnd.Value.ToString("dd MMM yyyy"))
-                    </span>
-                }
-                · Last updated @DateTime.Now.ToString("dd MMM yyyy, HH:mm")
-            </p>
-        </div>
-        <div class="d-flex flex-wrap gap-2">
-            <a asp-controller="JournalEntry" asp-action="Create"
-               class="btn btn-warning btn-sm fw-semibold shadow-sm d-flex align-items-center gap-2 quick-action-btn">
-                <i class="bi bi-plus-lg"></i> New Journal Entry
-            </a>
-            <a asp-controller="Reports" asp-action="IncomeStatement"
-               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2 quick-action-btn">
-                <i class="bi bi-file-earmark-bar-graph"></i> Income Statement
-            </a>
-        </div>
-    </div>
-
-    <!-- KPI Cards - Row 1 -->
-    <div class="row g-3 mb-3">
-        <!-- Cash & Equivalents -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase">Cash &amp; Equivalents</span>
-                        <i class="bi bi-wallet2 text-success fs-5"></i>
-                    </div>
-                    <h4 class="fw-bold mb-1">@Model.TotalCashAndEquivalents.ToString("C0", idr)</h4>
-                    <div class="small @(Model.CashTrendPercent is null ? "text-secondary" : (Model.CashTrendPercent >= 0 ? "trend-up" : "trend-down"))">
-                        @if (Model.CashTrendPercent is null)
-                        {
-                            <span>—</span>
-                        }
-                        else
-                        {
-                            <i class="bi @(Model.CashTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.CashTrendPercent.Value).ToString("0.0"))% vs prior period
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Revenue -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase">Revenue (Period)</span>
-                        <i class="bi bi-graph-up-arrow text-primary fs-5"></i>
-                    </div>
-                    <h4 class="fw-bold text-primary mb-1">@Model.RevenueThisPeriod.ToString("C0", idr)</h4>
-                    <div class="small @(Model.RevenueTrendPercent is null ? "text-secondary" : (Model.RevenueTrendPercent >= 0 ? "trend-up" : "trend-down"))">
-                        @if (Model.RevenueTrendPercent is null)
-                        {
-                            <span>—</span>
-                        }
-                        else
-                        {
-                            <i class="bi @(Model.RevenueTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.RevenueTrendPercent.Value).ToString("0.0"))% vs prior period
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Operating Expenses -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase">Operating Expenses</span>
-                        <i class="bi bi-exclamation-triangle text-danger fs-5"></i>
-                    </div>
-                    <h4 class="fw-bold text-danger mb-1">@Model.OperatingExpenses.ToString("C0", idr)</h4>
-                    <div class="small @(Model.ExpenseTrendPercent is null ? "text-secondary" : (Model.ExpenseTrendPercent >= 0 ? "trend-down" : "trend-up"))">
-                        @if (Model.ExpenseTrendPercent is null)
-                        {
-                            <span>—</span>
-                        }
-                        else
-                        {
-                            <i class="bi @(Model.ExpenseTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.ExpenseTrendPercent.Value).ToString("0.0"))% vs prior period
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Net Income -->
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card border-0 shadow-sm h-100 rounded-3" style="background: linear-gradient(135deg, var(--bs-primary), #0d6efdcc); color: white;">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="small fw-semibold text-white-50 text-uppercase">Net Income</span>
-                        <i class="bi bi-shield-check text-warning fs-5"></i>
-                    </div>
-                    <h4 class="fw-bold mb-1">@Model.NetIncome.ToString("C0", idr)</h4>
-                    <div class="small text-white-50">
-                        @if (Model.NetIncomeTrendPercent is null)
-                        {
-                            <span>—</span>
-                        }
-                        else
-                        {
-                            <i class="bi @(Model.NetIncomeTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.NetIncomeTrendPercent.Value).ToString("0.0"))% vs prior period
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- KPI Cards - Row 2 (Assets / Liabilities) -->
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-md-6">
-            <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-secondary small fw-semibold text-uppercase d-block">Total Assets</span>
-                        <h5 class="fw-bold mb-0 mt-1">@Model.TotalAssets.ToString("C0", idr)</h5>
-                    </div>
-                    <i class="bi bi-building text-info fs-3 opacity-75"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-md-6">
-            <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-secondary small fw-semibold text-uppercase d-block">Total Liabilities</span>
-                        <h5 class="fw-bold mb-0 mt-1">@Model.TotalLiabilities.ToString("C0", idr)</h5>
-                    </div>
-                    <i class="bi bi-credit-card text-warning fs-3 opacity-75"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Section -->
-    <div class="row g-3 mb-4">
-        <div class="col-12 col-lg-8">
-            <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0">Revenue vs Expenses Trend</h6>
-                    <span class="badge bg-secondary-subtle text-secondary small">
-                        @(Model.ChartLabels.Count > 0 ? "Last " + Model.ChartLabels.Count + " months" : "No data")
-                    </span>
-                </div>
-                <div class="card-body">
-                    @if (Model.ChartLabels.Any())
-                    {
-                        <div class="chart-container">
-                            <canvas id="trendChart"></canvas>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center text-secondary py-5">
-                            <i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-50"></i>
-                            No transaction data available for the chart.
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-lg-4">
-            <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header bg-transparent border-0 py-3">
-                    <h6 class="fw-bold mb-0">Expense Composition</h6>
-                </div>
-                <div class="card-body d-flex align-items-center justify-content-center">
-                    @if (Model.ExpenseCategoryLabels.Any())
-                    {
-                        <div class="chart-container" style="height: 240px; width: 100%;">
-                            <canvas id="expenseDoughnut"></canvas>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center text-secondary py-4">
-                            <i class="bi bi-pie-chart fs-1 d-block mb-2 opacity-50"></i>
-                            No expense data for this period.
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bottom Section: Accounts + Recent Journals -->
-    <div class="row g-3">
-        <!-- Key Account Balances -->
-        <div class="col-12 col-lg-4">
-            <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0">Key Account Balances</h6>
-                    <a asp-controller="ChartOfAccounts" asp-action="Index" class="small text-decoration-none fw-semibold">Manage →</a>
-                </div>
-                <div class="list-group list-group-flush">
-                    @if (Model.MainCoaBalances != null && Model.MainCoaBalances.Any())
-                    {
-                        foreach (var coa in Model.MainCoaBalances)
-                        {
-                            <div class="list-group-item bg-transparent account-item d-flex justify-content-between align-items-center py-3 px-3 border-0 border-bottom">
-                                <div>
-                                    <span class="fw-semibold d-block text-body small">@coa.AccountCode · @coa.AccountName</span>
-                                    <span class="text-secondary fs-8">@coa.Category</span>
-                                </div>
-                                <span class="fw-bold text-body small">@coa.Balance.ToString("N0", idr)</span>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="list-group-item bg-transparent text-center text-secondary py-4">
-                            No account balances available.
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Journal Entries -->
-        <div class="col-12 col-lg-8">
-            <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold mb-0">Recent Journal Entries</h6>
-                    <a asp-controller="GeneralJournal" asp-action="Index" class="btn btn-link btn-sm p-0 text-decoration-none">View All →</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 small">
-                        <thead>
-                            <tr class="text-secondary">
-                                <th scope="col" class="ps-3 fw-semibold border-0">Reference</th>
-                                <th scope="col" class="fw-semibold border-0">Date</th>
-                                <th scope="col" class="fw-semibold border-0">Description</th>
-                                <th scope="col" class="text-end fw-semibold border-0">Debit</th>
-                                <th scope="col" class="text-end pe-3 fw-semibold border-0">Credit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if (Model.RecentJournals != null && Model.RecentJournals.Any())
-                            {
-                                foreach (var journal in Model.RecentJournals)
-                                {
-                                    <tr>
-                                        <td class="ps-3 fw-semibold">@journal.ReferenceNo</td>
-                                        <td>@journal.Date.ToString("dd MMM yyyy")</td>
-                                        <td class="text-secondary">@(string.IsNullOrWhiteSpace(journal.Memo) ? "—" : journal.Memo)</td>
-                                        <td class="text-end text-success">@journal.TotalDebit.ToString("N0", idr)</td>
-                                        <td class="text-end pe-3 text-danger">@journal.TotalCredit.ToString("N0", idr)</td>
-                                    </tr>
-                                }
-                            }
-                            else
-                            {
-                                <tr>
-                                    <td colspan="5" class="text-center text-secondary py-4">No journal entries recorded yet.</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-            const textColor = isDark ? '#adb5bd' : '#6c757d';
-            const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-
-            Chart.defaults.color = textColor;
-            Chart.defaults.borderColor = gridColor;
-            Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
-
-            // Trend Chart (Line) – only if data exists
-            const trendCanvas = document.getElementById('trendChart');
-            if (trendCanvas) {
-                const trendCtx = trendCanvas.getContext('2d');
-                new Chart(trendCtx, {
-                    type: 'line',
-                    data: {
-                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartLabels)),
-                        datasets: [
-                            {
-                                label: 'Revenue',
-                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartRevenue)),
-                                borderColor: 'rgba(25, 135, 84, 1)',
-                                backgroundColor: 'rgba(25, 135, 84, 0.12)',
-                                fill: true,
-                                tension: 0.35,
-                                borderWidth: 2.5,
-                                pointRadius: 3,
-                                pointHoverRadius: 5
-                            },
-                            {
-                                label: 'Expenses',
-                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartExpenses)),
-                                borderColor: 'rgba(220, 53, 69, 1)',
-                                backgroundColor: 'rgba(220, 53, 69, 0.08)',
-                                fill: true,
-                                tension: 0.35,
-                                borderWidth: 2.5,
-                                pointRadius: 3,
-                                pointHoverRadius: 5
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (ctx) {
-                                        return ctx.dataset.label + ': Rp ' + (ctx.parsed.y / 1_000_000).toFixed(1) + 'M';
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: gridColor },
-                                ticks: {
-                                    callback: function (value) {
-                                        return 'Rp ' + (value / 1_000_000) + 'M';
-                                    }
-                                }
-                            },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-            }
-
-            // Expense Doughnut – only if data exists
-            const doughnutCanvas = document.getElementById('expenseDoughnut');
-            if (doughnutCanvas) {
-                const doughnutCtx = doughnutCanvas.getContext('2d');
-                new Chart(doughnutCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryLabels)),
-                        datasets: [{
-                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryValues)),
-                            backgroundColor: [
-                                'rgba(13, 110, 253, 0.85)',
-                                'rgba(25, 135, 84, 0.85)',
-                                'rgba(255, 193, 7, 0.85)',
-                                'rgba(220, 53, 69, 0.85)',
-                                'rgba(111, 66, 193, 0.85)',
-                                'rgba(13, 202, 240, 0.85)',
-                                'rgba(253, 126, 20, 0.85)'
-                            ],
-                            borderWidth: 0,
-                            hoverOffset: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '68%',
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { usePointStyle: true, padding: 14, font: { size: 11 } }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (ctx) {
-                                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                        const pct = total === 0 ? 0 : ((ctx.parsed / total) * 100).toFixed(1);
-                                        return ctx.label + ': Rp ' + (ctx.parsed / 1_000_000).toFixed(1) + 'M (' + pct + '%)';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        });
-    </script>
 }
