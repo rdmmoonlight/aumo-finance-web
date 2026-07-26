@@ -268,9 +268,7 @@
                     <table class="table table-hover align-middle mb-0 small">
                         <thead>
                             <tr class="text-secondary">
-                                <th class="ps-3 fw-semibold border-0">Reference</th>
-                                <th class="fw-semibold border-0">Date</th>
-                                <th class="fw-semibold border-0">Description</th>
+                                <th class="ps-3 fw-semibold border-0">Date</th>
                                 <th class="text-end fw-semibold border-0">Debit</th>
                                 <th class="text-end pe-3 fw-semibold border-0">Credit</th>
                             </tr>
@@ -281,9 +279,7 @@
                                 foreach (var j in Model.RecentJournals)
                                 {
                                     <tr>
-                                        <td class="ps-3 fw-semibold">@j.ReferenceNo</td>
-                                        <td>@j.Date.ToString("dd MMM yyyy")</td>
-                                        <td class="text-secondary">@(string.IsNullOrWhiteSpace(j.Memo) ? "—" : j.Memo)</td>
+                                        <td class="ps-3 fw-semibold">@j.Date.ToString("dd MMM yyyy")</td>
                                         <td class="text-end text-success">@j.TotalDebit.ToString("N0", idr)</td>
                                         <td class="text-end pe-3 text-danger">@j.TotalCredit.ToString("N0", idr)</td>
                                     </tr>
@@ -292,7 +288,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="5" class="text-center text-secondary py-4">No journal entries recorded yet.</td>
+                                    <td colspan="3" class="text-center text-secondary py-4">No journal entries recorded yet.</td>
                                 </tr>
                             }
                         </tbody>
