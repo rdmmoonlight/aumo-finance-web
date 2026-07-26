@@ -23,10 +23,13 @@
         <!-- Right Section: Search & Kebab Menu -->
         <div class="d-flex align-items-center gap-0">
             
-            <!-- 3. Search Icon -->
-            <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
-                <i class="bi bi-search" style="font-size: 0.825rem;"></i>
-            </button>
+            <!-- 3. Search Icon (Protected: Only visible if user is logged in) -->
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
+                    <i class="bi bi-search" style="font-size: 0.825rem;"></i>
+                </button>
+            }
 
             <!-- 4. Kebab Menu -->
             <div class="dropdown">
@@ -36,7 +39,7 @@
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem;">
                     <li><h6 class="dropdown-header py-1" style="font-size: 0.725rem;">Theme Settings</h6></li>
                     <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark</button></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>>
+                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>
                 </ul>
             </div>
 
@@ -91,17 +94,20 @@
     </div>
 }
 
-<!-- Search Modal -->
-<div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-top modal-sm">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-body p-2">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-transparent border-0 text-secondary"><i class="bi bi-search"></i></span>
-                    <input type="search" class="form-control border-0 shadow-none" placeholder="Search transactions, accounts..." autofocus>
-                    <button type="button" class="btn-close ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Search Modal (Optional: Also protected so modal code isn't rendered unless logged in) -->
+@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-top modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body p-2">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-transparent border-0 text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="search" class="form-control border-0 shadow-none" placeholder="Search transactions, accounts..." autofocus>
+                        <button type="button" class="btn-close ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
