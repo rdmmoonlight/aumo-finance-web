@@ -67,7 +67,7 @@
                                 <!-- Kolom Ref No dipisah dan dikecilkan lebarnya -->
                                 <th style="width: 10%;" class="ps-4">Ref No.</th>
                                 <th style="width: 25%;">Account Name</th>
-                                <th style="width: 25%;">Line Description</th>
+                                <th style="width: 25%;">Description</th>
                                 <th style="width: 15%;" class="text-end">Debit</th>
                                 <th style="width: 15%;" class="text-end">Credit</th>
                                 <th style="width: 10%;" class="text-center pe-4">Action</th>
@@ -93,14 +93,14 @@
                                             }
                                         </select>
                                     </td>
-                                    <td>
-                                        <input name="Lines[@i].LineDescription" type="text" value="@Model.Lines[i].LineDescription" class="form-control" placeholder="Note..." />
+                                    <td class="position-relative">
+                                        <input name="Lines[@i].LineDescription" type="text" value="@Model.Lines[i].LineDescription" class="form-control line-description" placeholder="Note..." autocomplete="off" />
                                     </td>
                                     <td>
-                                        <input name="Lines[@i].Debit" type="number" step="0.01" min="0" value="@(Model.Lines[i].Debit == 0 ? "" : Model.Lines[i].Debit.ToString())" class="form-control text-end input-debit" placeholder="0.00" />
+                                        <input name="Lines[@i].Debit" type="number" step="0.01" min="0" value="@((Model.Lines[i].Debit ?? 0) == 0 ? "" : Model.Lines[i].Debit.ToString())" class="form-control text-end input-debit" placeholder="0" />
                                     </td>
                                     <td>
-                                        <input name="Lines[@i].Credit" type="number" step="0.01" min="0" value="@(Model.Lines[i].Credit == 0 ? "" : Model.Lines[i].Credit.ToString())" class="form-control text-end input-credit" placeholder="0.00" />
+                                        <input name="Lines[@i].Credit" type="number" step="0.01" min="0" value="@((Model.Lines[i].Credit ?? 0) == 0 ? "" : Model.Lines[i].Credit.ToString())" class="form-control text-end input-credit" placeholder="0" />
                                     </td>
                                     <td class="text-center pe-4">
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
@@ -143,14 +143,14 @@
                         }
                     </select>
                 </td>
-                <td>
-                    <input name="Lines[__INDEX__].LineDescription" type="text" class="form-control" placeholder="Note..." />
+                <td class="position-relative">
+                    <input name="Lines[__INDEX__].LineDescription" type="text" class="form-control line-description" placeholder="Note..." autocomplete="off" />
                 </td>
                 <td>
-                    <input name="Lines[__INDEX__].Debit" type="number" step="0.01" min="0" class="form-control text-end input-debit" placeholder="0.00" />
+                    <input name="Lines[__INDEX__].Debit" type="number" step="0.01" min="0" class="form-control text-end input-debit" placeholder="0" />
                 </td>
                 <td>
-                    <input name="Lines[__INDEX__].Credit" type="number" step="0.01" min="0" class="form-control text-end input-credit" placeholder="0.00" />
+                    <input name="Lines[__INDEX__].Credit" type="number" step="0.01" min="0" class="form-control text-end input-credit" placeholder="0" />
                 </td>
                 <td class="text-center pe-4">
                     <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
@@ -166,6 +166,9 @@
             </button>
         </div>
     </form>
+
+    <!-- Dropdown saran deskripsi (posisi diatur lewat JS, mengikuti input yang sedang aktif) -->
+    <div id="descSuggestions" class="list-group shadow-sm" style="display:none; position:absolute; z-index:1060; max-height:220px; overflow-y:auto;"></div>
 </div>
 
 <!-- Interactive Dynamic Logic -->
@@ -260,5 +263,82 @@
         });
 
         calculateTotals();
+
+        // ==== Autocomplete Description (mirip transaksi sebelumnya) ====
+        const descSuggestions = document.getElementById("descSuggestions");
+        let activeDescInput = null;
+        let searchTimer = null;
+
+        function hideSuggestions() {
+            descSuggestions.style.display = "none";
+            descSuggestions.innerHTML = "";
+            activeDescInput = null;
+        }
+
+        function showSuggestions(input, items) {
+            if (!items.length) {
+                hideSuggestions();
+                return;
+            }
+
+            descSuggestions.innerHTML = items.map(text =>
+                `<button type="button" class="list-group-item list-group-item-action small py-1 desc-suggestion-item">${text.replace(/</g, "&lt;")}</button>`
+            ).join("");
+
+            const rect = input.getBoundingClientRect();
+            descSuggestions.style.left = (rect.left + window.scrollX) + "px";
+            descSuggestions.style.top = (rect.bottom + window.scrollY) + "px";
+            descSuggestions.style.width = rect.width + "px";
+            descSuggestions.style.display = "block";
+        }
+
+        journalBody.addEventListener("input", function (e) {
+            if (!e.target.classList.contains("line-description")) return;
+
+            activeDescInput = e.target;
+            const query = e.target.value.trim();
+
+            clearTimeout(searchTimer);
+
+            if (query.length < 2) {
+                hideSuggestions();
+                return;
+            }
+
+            searchTimer = setTimeout(async function () {
+                try {
+                    const res = await fetch(`/JournalEntry/SearchDescriptions?q=${encodeURIComponent(query)}`);
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (activeDescInput === e.target) {
+                        showSuggestions(e.target, data);
+                    }
+                } catch (err) {
+                    // Diamkan saja kalau gagal fetch, autocomplete bukan fitur wajib
+                }
+            }, 250);
+        });
+
+        // Klik salah satu saran -> isi ke input yang sedang aktif
+        descSuggestions.addEventListener("mousedown", function (e) {
+            const item = e.target.closest(".desc-suggestion-item");
+            if (!item || !activeDescInput) return;
+            e.preventDefault(); // supaya blur tidak keburu menutup dropdown sebelum klik diproses
+            activeDescInput.value = item.textContent;
+            hideSuggestions();
+        });
+
+        // Tutup dropdown saat klik di luar
+        document.addEventListener("click", function (e) {
+            if (e.target.closest("#descSuggestions") || e.target.classList.contains("line-description")) return;
+            hideSuggestions();
+        });
+
+        // Tutup dropdown saat baris dihapus atau field description hilang dari DOM
+        journalBody.addEventListener("click", function (e) {
+            if (e.target.closest(".btn-remove")) {
+                hideSuggestions();
+            }
+        });
     });
 </script>
