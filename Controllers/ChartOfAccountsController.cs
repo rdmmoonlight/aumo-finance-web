@@ -28,6 +28,12 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ChartOfAccount model)
         {
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = GetFirstModelError() ?? "Data akun tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
             // 1. Validasi Kedisiplinan: Pastikan nomor referensi tidak keluar dari rentang kategori
             if (!IsValidReferenceNumber(model.Type, model.ReferenceNumber))
             {
@@ -51,7 +57,7 @@ namespace AumoFinance.Controllers
             {
                 _context.ChartOfAccounts.Add(model);
                 await _context.SaveChangesAsync();
-                
+
                 TempData["SuccessMessage"] = $"Account '{model.AccountName}' successfully created.";
             }
             catch (Exception)
@@ -60,6 +66,101 @@ namespace AumoFinance.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // POST: Menangkap data dari Modal Edit Account
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(ChartOfAccount model)
+        {
+            var account = await _context.ChartOfAccounts.FindAsync(model.Id);
+            if (account == null)
+            {
+                TempData["ErrorMessage"] = "Account not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                TempData["ErrorMessage"] = GetFirstModelError() ?? "Data akun tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!IsValidReferenceNumber(model.Type, model.ReferenceNumber))
+            {
+                TempData["ErrorMessage"] = $"Invalid reference number {model.ReferenceNumber} for category {model.Type}.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Duplikasi nomor akun boleh sama dengan dirinya sendiri, tidak dengan akun lain
+            bool isCodeTaken = await _context.ChartOfAccounts
+                .AnyAsync(a => a.ReferenceNumber == model.ReferenceNumber && a.Id != model.Id);
+            if (isCodeTaken)
+            {
+                TempData["ErrorMessage"] = $"Account code {model.ReferenceNumber} is already in use!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            account.ReferenceNumber = model.ReferenceNumber;
+            account.AccountName = model.AccountName;
+            account.Type = model.Type;
+            account.Role = model.Role;
+            account.IsActive = model.IsActive;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Account '{account.AccountName}' successfully updated.";
+            }
+            catch (Exception)
+            {
+                TempData["ErrorMessage"] = "A fatal error occurred while updating the account.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: Menghapus akun dari COA
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var account = await _context.ChartOfAccounts.FindAsync(id);
+            if (account == null)
+            {
+                TempData["ErrorMessage"] = "Account not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Akun yang sudah dipakai di Journal Entry tidak boleh dihapus
+            // (menjaga integritas General Ledger). Nonaktifkan saja.
+            bool hasJournalLines = await _context.JournalEntryLines.AnyAsync(l => l.AccountId == id);
+            if (hasJournalLines)
+            {
+                TempData["ErrorMessage"] = $"Account '{account.AccountName}' cannot be deleted because it already has journal entries. Set it to Inactive instead.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                _context.ChartOfAccounts.Remove(account);
+                await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = $"Account '{account.AccountName}' successfully deleted.";
+            }
+            catch (Exception)
+            {
+                TempData["ErrorMessage"] = "A fatal error occurred while deleting the account.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private string? GetFirstModelError()
+        {
+            return ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault();
         }
 
         // Fungsi internal untuk validasi mutlak rentang penomoran
