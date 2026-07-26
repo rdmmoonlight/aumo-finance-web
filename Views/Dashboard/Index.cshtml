@@ -20,22 +20,11 @@
     }
     .trend-up { color: #198754; }
     .trend-down { color: #dc3545; }
-    .chart-container {
-        position: relative;
-        height: 280px;
-    }
-    .quick-action-btn {
-        min-width: 140px;
-    }
-    .account-item {
-        transition: background-color 0.15s ease;
-    }
-    .account-item:hover {
-        background-color: rgba(255,255,255,0.04);
-    }
-    [data-bs-theme="light"] .account-item:hover {
-        background-color: rgba(0,0,0,0.03);
-    }
+    .chart-container { position: relative; height: 280px; }
+    .quick-action-btn { min-width: 140px; }
+    .account-item { transition: background-color 0.15s ease; }
+    .account-item:hover { background-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="light"] .account-item:hover { background-color: rgba(0,0,0,0.03); }
 </style>
 
 <div class="container-fluid px-0">
@@ -67,9 +56,9 @@
         </div>
     </div>
 
-    <!-- KPI Cards - Row 1 -->
+    <!-- KPI Row 1 -->
     <div class="row g-3 mb-3">
-        <!-- Cash & Equivalents -->
+        <!-- Cash -->
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body">
@@ -86,7 +75,7 @@
                         else
                         {
                             <i class="bi @(Model.CashTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.CashTrendPercent.Value).ToString("0.0") + "%") vs prior period
+                            <span>@(Math.Abs(Model.CashTrendPercent.Value).ToString("0.0"))% vs prior period</span>
                         }
                     </div>
                 </div>
@@ -110,14 +99,14 @@
                         else
                         {
                             <i class="bi @(Model.RevenueTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.RevenueTrendPercent.Value).ToString("0.0") + "%") vs prior period
+                            <span>@(Math.Abs(Model.RevenueTrendPercent.Value).ToString("0.0"))% vs prior period</span>
                         }
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Operating Expenses -->
+        <!-- Expenses -->
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
                 <div class="card-body">
@@ -134,7 +123,7 @@
                         else
                         {
                             <i class="bi @(Model.ExpenseTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.ExpenseTrendPercent.Value).ToString("0.0") + "%") vs prior period
+                            <span>@(Math.Abs(Model.ExpenseTrendPercent.Value).ToString("0.0"))% vs prior period</span>
                         }
                     </div>
                 </div>
@@ -158,7 +147,7 @@
                         else
                         {
                             <i class="bi @(Model.NetIncomeTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                            @(Math.Abs(Model.NetIncomeTrendPercent.Value).ToString("0.0") + "%") vs prior period
+                            <span>@(Math.Abs(Model.NetIncomeTrendPercent.Value).ToString("0.0"))% vs prior period</span>
                         }
                     </div>
                 </div>
@@ -166,7 +155,7 @@
         </div>
     </div>
 
-    <!-- KPI Cards - Row 2 -->
+    <!-- KPI Row 2 -->
     <div class="row g-3 mb-4">
         <div class="col-12 col-md-6">
             <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
@@ -192,7 +181,7 @@
         </div>
     </div>
 
-    <!-- Charts Section -->
+    <!-- Charts -->
     <div class="row g-3 mb-4">
         <div class="col-12 col-lg-8">
             <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
@@ -205,9 +194,7 @@
                 <div class="card-body">
                     @if (Model.ChartLabels.Any())
                     {
-                        <div class="chart-container">
-                            <canvas id="trendChart"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="trendChart"></canvas></div>
                     }
                     else
                     {
@@ -219,7 +206,6 @@
                 </div>
             </div>
         </div>
-
         <div class="col-12 col-lg-4">
             <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
                 <div class="card-header bg-transparent border-0 py-3">
@@ -228,9 +214,7 @@
                 <div class="card-body d-flex align-items-center justify-content-center">
                     @if (Model.ExpenseCategoryLabels.Any())
                     {
-                        <div class="chart-container" style="height: 240px; width: 100%;">
-                            <canvas id="expenseDoughnut"></canvas>
-                        </div>
+                        <div class="chart-container" style="height:240px;width:100%;"><canvas id="expenseDoughnut"></canvas></div>
                     }
                     else
                     {
@@ -244,7 +228,7 @@
         </div>
     </div>
 
-    <!-- Bottom Section -->
+    <!-- Bottom -->
     <div class="row g-3">
         <div class="col-12 col-lg-4">
             <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
@@ -268,9 +252,7 @@
                     }
                     else
                     {
-                        <div class="list-group-item bg-transparent text-center text-secondary py-4">
-                            No account balances available.
-                        </div>
+                        <div class="list-group-item bg-transparent text-center text-secondary py-4">No account balances available.</div>
                     }
                 </div>
             </div>
@@ -286,24 +268,24 @@
                     <table class="table table-hover align-middle mb-0 small">
                         <thead>
                             <tr class="text-secondary">
-                                <th scope="col" class="ps-3 fw-semibold border-0">Reference</th>
-                                <th scope="col" class="fw-semibold border-0">Date</th>
-                                <th scope="col" class="fw-semibold border-0">Description</th>
-                                <th scope="col" class="text-end fw-semibold border-0">Debit</th>
-                                <th scope="col" class="text-end pe-3 fw-semibold border-0">Credit</th>
+                                <th class="ps-3 fw-semibold border-0">Reference</th>
+                                <th class="fw-semibold border-0">Date</th>
+                                <th class="fw-semibold border-0">Description</th>
+                                <th class="text-end fw-semibold border-0">Debit</th>
+                                <th class="text-end pe-3 fw-semibold border-0">Credit</th>
                             </tr>
                         </thead>
                         <tbody>
                             @if (Model.RecentJournals != null && Model.RecentJournals.Any())
                             {
-                                foreach (var journal in Model.RecentJournals)
+                                foreach (var j in Model.RecentJournals)
                                 {
                                     <tr>
-                                        <td class="ps-3 fw-semibold">@journal.ReferenceNo</td>
-                                        <td>@journal.Date.ToString("dd MMM yyyy")</td>
-                                        <td class="text-secondary">@(string.IsNullOrWhiteSpace(journal.Memo) ? "—" : journal.Memo)</td>
-                                        <td class="text-end text-success">@journal.TotalDebit.ToString("N0", idr)</td>
-                                        <td class="text-end pe-3 text-danger">@journal.TotalCredit.ToString("N0", idr)</td>
+                                        <td class="ps-3 fw-semibold">@j.ReferenceNo</td>
+                                        <td>@j.Date.ToString("dd MMM yyyy")</td>
+                                        <td class="text-secondary">@(string.IsNullOrWhiteSpace(j.Memo) ? "—" : j.Memo)</td>
+                                        <td class="text-end text-success">@j.TotalDebit.ToString("N0", idr)</td>
+                                        <td class="text-end pe-3 text-danger">@j.TotalCredit.ToString("N0", idr)</td>
                                     </tr>
                                 }
                             }
@@ -322,123 +304,67 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-            const textColor = isDark ? '#adb5bd' : '#6c757d';
-            const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const textColor = isDark ? '#adb5bd' : '#6c757d';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
 
-            Chart.defaults.color = textColor;
-            Chart.defaults.borderColor = gridColor;
-            Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
-
-            const trendCanvas = document.getElementById('trendChart');
-            if (trendCanvas) {
-                const trendCtx = trendCanvas.getContext('2d');
-                new Chart(trendCtx, {
-                    type: 'line',
-                    data: {
-                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartLabels)),
-                        datasets: [
-                            {
-                                label: 'Revenue',
-                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartRevenue)),
-                                borderColor: 'rgba(25, 135, 84, 1)',
-                                backgroundColor: 'rgba(25, 135, 84, 0.12)',
-                                fill: true,
-                                tension: 0.35,
-                                borderWidth: 2.5,
-                                pointRadius: 3,
-                                pointHoverRadius: 5
-                            },
-                            {
-                                label: 'Expenses',
-                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartExpenses)),
-                                borderColor: 'rgba(220, 53, 69, 1)',
-                                backgroundColor: 'rgba(220, 53, 69, 0.08)',
-                                fill: true,
-                                tension: 0.35,
-                                borderWidth: 2.5,
-                                pointRadius: 3,
-                                pointHoverRadius: 5
-                            }
-                        ]
+    const trendCanvas = document.getElementById('trendChart');
+    if (trendCanvas) {
+        new Chart(trendCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartLabels)),
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartRevenue)),
+                        borderColor: 'rgba(25,135,84,1)',
+                        backgroundColor: 'rgba(25,135,84,0.12)',
+                        fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 3
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (ctx) {
-                                        return ctx.dataset.label + ': Rp ' + (ctx.parsed.y / 1_000_000).toFixed(1) + 'M';
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: gridColor },
-                                ticks: {
-                                    callback: function (value) {
-                                        return 'Rp ' + (value / 1_000_000) + 'M';
-                                    }
-                                }
-                            },
-                            x: { grid: { display: false } }
-                        }
+                    {
+                        label: 'Expenses',
+                        data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ChartExpenses)),
+                        borderColor: 'rgba(220,53,69,1)',
+                        backgroundColor: 'rgba(220,53,69,0.08)',
+                        fill: true, tension: 0.35, borderWidth: 2.5, pointRadius: 3
                     }
-                });
-            }
-
-            const doughnutCanvas = document.getElementById('expenseDoughnut');
-            if (doughnutCanvas) {
-                const doughnutCtx = doughnutCanvas.getContext('2d');
-                new Chart(doughnutCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryLabels)),
-                        datasets: [{
-                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryValues)),
-                            backgroundColor: [
-                                'rgba(13, 110, 253, 0.85)',
-                                'rgba(25, 135, 84, 0.85)',
-                                'rgba(255, 193, 7, 0.85)',
-                                'rgba(220, 53, 69, 0.85)',
-                                'rgba(111, 66, 193, 0.85)',
-                                'rgba(13, 202, 240, 0.85)',
-                                'rgba(253, 126, 20, 0.85)'
-                            ],
-                            borderWidth: 0,
-                            hoverOffset: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '68%',
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { usePointStyle: true, padding: 14, font: { size: 11 } }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function (ctx) {
-                                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                        const pct = total === 0 ? 0 : ((ctx.parsed / total) * 100).toFixed(1);
-                                        return ctx.label + ': Rp ' + (ctx.parsed / 1_000_000).toFixed(1) + 'M (' + pct + '%)';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: v => 'Rp ' + (v/1e6) + 'M' } },
+                    x: { grid: { display: false } }
+                }
             }
         });
-    </script>
+    }
+
+    const doughnutCanvas = document.getElementById('expenseDoughnut');
+    if (doughnutCanvas) {
+        new Chart(doughnutCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryLabels)),
+                datasets: [{
+                    data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ExpenseCategoryValues)),
+                    backgroundColor: ['#0d6efd','#198754','#ffc107','#dc3545','#6f42c1','#0dcaf0','#fd7e14'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '68%',
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+});
+</script>
 }
