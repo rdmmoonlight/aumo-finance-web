@@ -33,7 +33,7 @@ namespace AumoFinance.Controllers
         {
             // Buang baris kosong (akun belum dipilih dan debit/kredit nol)
             model.Lines = model.Lines
-                .Where(l => l.AccountId != 0 && (l.Debit != 0 || l.Credit != 0))
+                .Where(l => l.AccountId != 0 && ((l.Debit ?? 0) != 0 || (l.Credit ?? 0) != 0))
                 .ToList();
 
             if (model.Lines.Count < 2)
@@ -41,8 +41,8 @@ namespace AumoFinance.Controllers
                 ModelState.AddModelError(string.Empty, "A journal entry must have at least two line items.");
             }
 
-            var totalDebit = model.Lines.Sum(l => l.Debit);
-            var totalCredit = model.Lines.Sum(l => l.Credit);
+            var totalDebit = model.Lines.Sum(l => l.Debit ?? 0);
+            var totalCredit = model.Lines.Sum(l => l.Credit ?? 0);
 
             if (totalDebit != totalCredit || totalDebit == 0)
             {
@@ -70,8 +70,8 @@ namespace AumoFinance.Controllers
                 {
                     AccountId = l.AccountId,
                     LineDescription = l.LineDescription,
-                    Debit = l.Debit,
-                    Credit = l.Credit,
+                    Debit = l.Debit ?? 0,
+                    Credit = l.Credit ?? 0,
                     LineOrder = index
                 }).ToList()
             };
@@ -81,6 +81,29 @@ namespace AumoFinance.Controllers
 
             TempData["SuccessMessage"] = "Journal entry has been posted.";
             return RedirectToAction("Index", "GeneralJournal");
+        }
+
+        // GET: Cari deskripsi jurnal sebelumnya yang mirip, untuk fitur autocomplete
+        [HttpGet]
+        public async Task<IActionResult> SearchDescriptions(string q)
+        {
+            if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+            {
+                return Json(Array.Empty<string>());
+            }
+
+            var keyword = q.Trim();
+
+            var results = await _db.JournalEntryLines
+                .Where(l => l.LineDescription != null && l.LineDescription != "" && EF.Functions.ILike(l.LineDescription, $"%{keyword}%"))
+                .GroupBy(l => l.LineDescription)
+                .OrderByDescending(g => g.Count())
+                .ThenByDescending(g => g.Max(l => l.Id))
+                .Select(g => g.Key)
+                .Take(8)
+                .ToListAsync();
+
+            return Json(results);
         }
 
         private async Task<List<ChartOfAccount>> ActiveAccountsAsync()
