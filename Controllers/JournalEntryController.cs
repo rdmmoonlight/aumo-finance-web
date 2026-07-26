@@ -64,6 +64,7 @@ namespace AumoFinance.Controllers
 
             var entry = new JournalEntry
             {
+                ReferenceNumber = await GenerateReferenceNumberAsync(model.JournalType),
                 JournalType = model.JournalType,
                 EntryDate = model.EntryDate,
                 Lines = model.Lines.Select((l, index) => new JournalEntryLine
@@ -79,8 +80,32 @@ namespace AumoFinance.Controllers
             _db.JournalEntries.Add(entry);
             await _db.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = "Journal entry has been posted.";
+            TempData["SuccessMessage"] = $"Journal entry {entry.ReferenceNumber} has been posted.";
             return RedirectToAction("Index", "GeneralJournal");
+        }
+
+        // Membuat nomor referensi otomatis per jenis jurnal, mis. GJ-000001 / AJE-000001
+        private async Task<string> GenerateReferenceNumberAsync(string journalType)
+        {
+            var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
+
+            var lastNumber = await _db.JournalEntries
+                .Where(e => e.ReferenceNumber.StartsWith(prefix + "-"))
+                .OrderByDescending(e => e.Id)
+                .Select(e => e.ReferenceNumber)
+                .FirstOrDefaultAsync();
+
+            var nextSeq = 1;
+            if (lastNumber != null)
+            {
+                var parts = lastNumber.Split('-');
+                if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+                {
+                    nextSeq = lastSeq + 1;
+                }
+            }
+
+            return $"{prefix}-{nextSeq:D6}";
         }
 
         // GET: Cari deskripsi jurnal sebelumnya yang mirip, untuk fitur autocomplete
