@@ -59,5 +59,21 @@ namespace AumoFinance.Models
             var end = ValidRangeEnd(type);
             return start != 0 && referenceNumber >= start && referenceNumber <= end;
         }
+
+        // Kebalikan dari ValidRangeStart/End: dipakai saat auto-membuat akun
+        // baru ke Chart of Accounts pada waktu import, supaya Type otomatis
+        // mengikuti rentang nomor Ref yang diinput user (tidak perlu diminta
+        // manual di template import).
+        public static string? TypeFromReferenceNumber(int referenceNumber) => referenceNumber switch
+        {
+            >= 100 and <= 199 => "Assets",
+            >= 200 and <= 299 => "Liabilities",
+            >= 300 and <= 399 => "Equity",
+            >= 400 and <= 499 => "OperatingIncome",
+            >= 500 and <= 599 => "OperatingExpenses",
+            >= 600 and <= 799 => "OtherIncome",
+            >= 800 and <= 999 => "OtherExpenses",
+            _ => null
+        };
     }
 }
