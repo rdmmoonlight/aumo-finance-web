@@ -98,12 +98,24 @@
                                     </td>
                                     <td class="text-center pe-4">
                                         <div class="btn-group shadow-sm">
-                                            <button class="btn btn-sm btn-outline-secondary" title="Edit Account">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit Account"
+                                                    data-bs-toggle="modal" data-bs-target="#editAccountModal"
+                                                    data-id="@account.Id"
+                                                    data-ref="@account.ReferenceNumber"
+                                                    data-name="@account.AccountName"
+                                                    data-type="@account.Type"
+                                                    data-role="@account.Role"
+                                                    data-active="@account.IsActive.ToString().ToLower()"
+                                                    onclick="openEditModal(this)">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <a href="@Url.Action(AumoFinance.Models.AccountClassification.IsTemporary(account.Type) ? "GeneralLedgerTemporary" : "GeneralLedger", "Reports")#account-@account.Id" class="btn btn-sm btn-outline-info" title="View General Ledger">
                                                 <i class="bi bi-journal-text"></i>
                                             </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete Account"
+                                                    onclick="confirmDelete(@account.Id, '@account.AccountName.Replace("'", "\\'")')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -180,37 +192,103 @@
     </div>
 </div>
 
+<!-- Modal Edit Account -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-body-emphasis"><i class="bi bi-pencil-square me-2 text-warning"></i> Edit Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" asp-controller="ChartOfAccounts" asp-action="Edit">
+                <input type="hidden" id="editId" name="Id" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Account Category</label>
+                        <select id="editAccountType" name="Type" class="form-select" required onchange="enforceNumberingRule('editAccountType', 'editReferenceNumber', 'editRefHelpText')">
+                            <option value="">-- Select Category --</option>
+                            <option value="Assets">Assets (100 - 199)</option>
+                            <option value="Liabilities">Liabilities (200 - 299)</option>
+                            <option value="Equity">Equity (300 - 399)</option>
+                            <option value="OperatingIncome">Operating Income (400 - 499)</option>
+                            <option value="OperatingExpenses">Operating Expenses (500 - 599)</option>
+                            <option value="OtherIncome">Other Income (600 - 799)</option>
+                            <option value="OtherExpenses">Other Expenses (800 - 999)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Reference Number (Account Code)</label>
+                        <input type="number" id="editReferenceNumber" name="ReferenceNumber" class="form-control" required />
+                        <div id="editRefHelpText" class="form-text text-secondary">Valid numbering range depends on the selected category.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Account Name</label>
+                        <input type="text" id="editAccountName" name="AccountName" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">System Role (Special Calculations)</label>
+                        <select id="editRole" name="Role" class="form-select" required>
+                            <option value="Default">Standard / Default</option>
+                            <option value="CashAndEquivalents">Cash & Equivalents</option>
+                            <option value="RetainedEarnings">Retained Earnings</option>
+                            <option value="TaxPayable">Tax Payable</option>
+                        </select>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="editIsActive" name="IsActive" value="true" />
+                        <input type="hidden" name="IsActive" value="false" />
+                        <label class="form-check-label fw-semibold small" for="editIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold px-4">Update Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Form tersembunyi untuk Delete -->
+<form id="deleteAccountForm" method="post" asp-controller="ChartOfAccounts" asp-action="Delete">
+    <input type="hidden" id="deleteId" name="id" />
+</form>
+
 @section Scripts {
     <script>
-        function enforceNumberingRule() {
-            const typeSelect = document.getElementById('accountType');
-            const refInput = document.getElementById('referenceNumber');
-            const helpText = document.getElementById('refHelpText');
+        const NUMBERING_RULES = {
+            'Assets': { min: 100, max: 199 },
+            'Liabilities': { min: 200, max: 299 },
+            'Equity': { min: 300, max: 399 },
+            'OperatingIncome': { min: 400, max: 499 },
+            'OperatingExpenses': { min: 500, max: 599 },
+            'OtherIncome': { min: 600, max: 799 },
+            'OtherExpenses': { min: 800, max: 999 }
+        };
 
-            const rules = {
-                'Assets': { min: 100, max: 199 },
-                'Liabilities': { min: 200, max: 299 },
-                'Equity': { min: 300, max: 399 },
-                'OperatingIncome': { min: 400, max: 499 },
-                'OperatingExpenses': { min: 500, max: 599 },
-                'OtherIncome': { min: 600, max: 799 },
-                'OtherExpenses': { min: 800, max: 999 }
-            };
+        function enforceNumberingRule(typeSelectId = 'accountType', refInputId = 'referenceNumber', helpTextId = 'refHelpText') {
+            const typeSelect = document.getElementById(typeSelectId);
+            const refInput = document.getElementById(refInputId);
+            const helpText = document.getElementById(helpTextId);
 
             const selectedValue = typeSelect.value;
 
-            if (selectedValue && rules[selectedValue]) {
-                const rule = rules[selectedValue];
-                
+            if (selectedValue && NUMBERING_RULES[selectedValue]) {
+                const rule = NUMBERING_RULES[selectedValue];
+
                 refInput.disabled = false;
                 refInput.min = rule.min;
                 refInput.max = rule.max;
                 refInput.placeholder = `Enter a number between ${rule.min} and ${rule.max}`;
-                
+
                 helpText.innerHTML = `<i class="bi bi-info-circle"></i> Valid range for this category: <strong>${rule.min} - ${rule.max}</strong>.`;
                 helpText.className = "form-text text-primary";
-                
-                if(refInput.value && (refInput.value < rule.min || refInput.value > rule.max)) {
+
+                if (refInput.value && (refInput.value < rule.min || refInput.value > rule.max)) {
                     refInput.value = '';
                 }
             } else {
@@ -219,6 +297,27 @@
                 refInput.placeholder = "Select category first...";
                 helpText.textContent = "Please select an account category to see the valid numbering range.";
                 helpText.className = "form-text text-secondary";
+            }
+        }
+
+        // Mengisi Modal Edit dengan data akun yang diklik
+        function openEditModal(button) {
+            document.getElementById('editId').value = button.dataset.id;
+            document.getElementById('editAccountName').value = button.dataset.name;
+            document.getElementById('editRole').value = button.dataset.role;
+            document.getElementById('editIsActive').checked = (button.dataset.active === 'true');
+
+            const typeSelect = document.getElementById('editAccountType');
+            typeSelect.value = button.dataset.type;
+            enforceNumberingRule('editAccountType', 'editReferenceNumber', 'editRefHelpText');
+            document.getElementById('editReferenceNumber').value = button.dataset.ref;
+        }
+
+        // Konfirmasi sebelum menghapus akun
+        function confirmDelete(id, accountName) {
+            if (confirm(`Delete account "${accountName}"? This action cannot be undone.`)) {
+                document.getElementById('deleteId').value = id;
+                document.getElementById('deleteAccountForm').submit();
             }
         }
     </script>
