@@ -81,7 +81,7 @@ namespace AumoFinance.Controllers
             await _db.SaveChangesAsync();
 
             TempData["SuccessMessage"] = $"Journal entry {entry.ReferenceNumber} has been posted.";
-            return RedirectToAction("Index", "GeneralJournal");
+            return RedirectToAction(nameof(Create));
         }
 
         // Membuat nomor referensi otomatis per jenis jurnal, mis. GJ-000001 / AJE-000001
