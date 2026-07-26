@@ -7,6 +7,10 @@ namespace AumoFinance.Models
         public int Id { get; set; }
 
         [Required]
+        [StringLength(30)]
+        public string ReferenceNumber { get; set; } = string.Empty;
+
+        [Required]
         public string JournalType { get; set; } = "General"; // "General" atau "Adjusting"
 
         [Required]
