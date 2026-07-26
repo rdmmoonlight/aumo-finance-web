@@ -26,12 +26,10 @@ namespace AumoFinance.Controllers
 
         public IActionResult DownloadJournalTemplate()
         {
-            // Header wajib. Satu Date = satu transaksi: baris-baris dengan
-            // Date yang sama adalah satu transaksi yang sama (bisa 1 baris
-            // Debit dengan beberapa baris Credit, atau sebaliknya).
-            // Ref = nomor akun COA (ChartOfAccount.ReferenceNumber). Jika
-            // Account Name + Ref belum ada di COA, akan otomatis dibuatkan
-            // akun baru saat import (Type mengikuti rentang nomor Ref).
+            // Header wajib. 
+            // Date hanya perlu diisi 1 kali di awal transaksi.
+            // Baris berikutnya yang Date-nya kosong akan otomatis masuk
+            // ke transaksi yang sama (sampai ditemukan Date baru).
             string[] headers = { "Date", "Account Name", "Description", "Ref", "Debit", "Credit" };
 
             using var workbook = new XLWorkbook();
@@ -65,9 +63,7 @@ namespace AumoFinance.Controllers
                 "JournalImportTemplate.xlsx");
         }
 
-        // Membangun 1 sheet jurnal (GJ atau AJ) dengan header dan contoh
-        // transaksi. Semua baris contoh memakai Date yang sama untuk
-        // menunjukkan bahwa Date yang sama = satu transaksi.
+        // Membangun 1 sheet jurnal (GJ atau AJ) dengan header dan contoh transaksi.
         private static void BuildJournalSheet(
             XLWorkbook workbook,
             string sheetName,
@@ -87,9 +83,17 @@ namespace AumoFinance.Controllers
 
             var exampleDate = DateTime.Today;
             int row = 2;
+            bool isFirstRowOfTransaction = true;
+
             foreach (var r in rows)
             {
-                sheet.Cell(row, 1).Value = exampleDate;
+                // Cetak tanggal HANYA di baris pertama transaksi
+                if (isFirstRowOfTransaction)
+                {
+                    sheet.Cell(row, 1).Value = exampleDate;
+                    isFirstRowOfTransaction = false;
+                }
+                
                 sheet.Cell(row, 2).Value = r.Account;
                 sheet.Cell(row, 3).Value = r.Desc;
                 sheet.Cell(row, 4).Value = r.Ref;
@@ -137,31 +141,45 @@ namespace AumoFinance.Controllers
                 {
                     if (!workbook.Worksheets.TryGetWorksheet(sheetName, out var sheet))
                     {
-                        continue; // Sheet opsional: kalau tidak ada, dilewati.
+                        continue; 
                     }
 
                     var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
 
-                    // Kelompokkan baris per Date: Date yang sama = satu transaksi.
+                    // Grouping berdasarkan posisi Date.
+                    // Tiap nemu Date isi -> Transaksi Baru.
+                    // Tiap nemu Date kosong -> Masuk ke Transaksi Terakhir.
                     var groups = new List<(DateTime Date, List<int> RowNumbers)>();
+                    
                     for (int r = 2; r <= lastRow; r++)
                     {
                         var dateCell = sheet.Cell(r, 1);
-                        if (dateCell.IsEmpty()) continue;
-                        if (!dateCell.TryGetValue(out DateTime date))
-                        {
-                            errors.Add($"{sheetName} baris {r}: Date tidak valid, dilewati.");
-                            continue;
-                        }
+                        var accountCell = sheet.Cell(r, 2);
+                        
+                        // Skip baris jika benar-benar kosong (antisipasi format nyangkut di row bawah)
+                        if (dateCell.IsEmpty() && accountCell.IsEmpty()) continue;
 
-                        var last = groups.Count > 0 ? groups[^1] : default;
-                        if (groups.Count > 0 && last.Date.Date == date.Date)
+                        if (!dateCell.IsEmpty())
                         {
-                            last.RowNumbers.Add(r);
+                            // Ini adalah awal transaksi baru
+                            if (!dateCell.TryGetValue(out DateTime date))
+                            {
+                                errors.Add($"{sheetName} baris {r}: Date tidak valid, baris dilewati.");
+                                continue;
+                            }
+                            groups.Add((date.Date, new List<int> { r }));
                         }
                         else
                         {
-                            groups.Add((date.Date, new List<int> { r }));
+                            // Date kosong, gabungkan dengan grup transaksi terakhir
+                            if (groups.Count > 0)
+                            {
+                                groups[^1].RowNumbers.Add(r);
+                            }
+                            else
+                            {
+                                errors.Add($"{sheetName} baris {r}: Kehilangan tanggal di awal transaksi, baris dilewati.");
+                            }
                         }
                     }
 
@@ -193,8 +211,6 @@ namespace AumoFinance.Controllers
                                 continue;
                             }
 
-                            // Cari akun berdasarkan Ref (nomor akun COA). Jika belum
-                            // ada, otomatis dibuatkan akun baru ke Chart of Accounts.
                             var account = await _context.ChartOfAccounts
                                 .FirstOrDefaultAsync(a => a.ReferenceNumber == refNumber);
 
@@ -203,7 +219,7 @@ namespace AumoFinance.Controllers
                                 var type = AccountClassification.TypeFromReferenceNumber(refNumber);
                                 if (type == null)
                                 {
-                                    errors.Add($"{sheetName} baris {r}: Ref {refNumber} di luar rentang penomoran akun yang valid, dilewati.");
+                                    errors.Add($"{sheetName} baris {r}: Ref {refNumber} tidak valid, transaksi dilewati.");
                                     groupHasError = true;
                                     continue;
                                 }
@@ -237,9 +253,10 @@ namespace AumoFinance.Controllers
                             continue;
                         }
 
+                        // Validasi Balance (Debit = Credit)
                         if (totalDebit != totalCredit)
                         {
-                            errors.Add($"{sheetName} transaksi {group.Date:yyyy-MM-dd}: Debit ({totalDebit:N2}) tidak sama dengan Credit ({totalCredit:N2}), transaksi dilewati.");
+                            errors.Add($"{sheetName} transaksi {group.Date:yyyy-MM-dd}: Debit ({totalDebit:N2}) tidak balance dengan Credit ({totalCredit:N2}), transaksi dilewati.");
                             continue;
                         }
 
@@ -263,10 +280,10 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var summary = $"Import selesai: {transactionsImported} transaksi tersimpan, {accountsCreated} akun baru ditambahkan ke Chart of Accounts.";
+            var summary = $"Import selesai: {transactionsImported} transaksi tersimpan, {accountsCreated} akun baru ditambahkan.";
             if (errors.Count > 0)
             {
-                summary += $" {errors.Count} baris/transaksi dilewati: {string.Join(" | ", errors.Take(5))}";
+                summary += $" {errors.Count} masalah terdeteksi: {string.Join(" | ", errors.Take(5))}";
                 if (errors.Count > 5) summary += " ...";
             }
 
