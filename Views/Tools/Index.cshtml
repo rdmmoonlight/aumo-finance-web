@@ -49,6 +49,7 @@
                         <div class="d-flex flex-wrap gap-2 mb-2">
                             <span class="badge bg-secondary">Date</span>
                             <span class="badge bg-secondary">Account Name</span>
+                            <span class="badge bg-secondary">Description</span>
                             <span class="badge bg-secondary">Ref</span>
                             <span class="badge bg-secondary">Debit</span>
                             <span class="badge bg-secondary">Credit</span>
@@ -56,7 +57,7 @@
                         <p class="text-secondary small mb-3">
                             2 sheet: <strong>GJ</strong> (General Journal) dan <strong>AJ</strong> (Adjusting Journal).
                             Baris dengan <strong>Date</strong> yang sama adalah satu transaksi yang sama.
-                            <strong>Account Name</strong> dan <strong>Ref</strong> yang belum ada akan ditambahkan ke Chart of Accounts.
+                            <strong>Ref</strong> adalah nomor akun COA — jika <strong>Account Name</strong> dan <strong>Ref</strong> belum ada, akun baru otomatis dibuat di Chart of Accounts saat import.
                         </p>
                         <a asp-action="DownloadJournalTemplate" class="btn btn-sm btn-outline-success">
                             <i class="bi bi-download me-1"></i> Download Template .xlsx
