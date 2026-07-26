@@ -38,7 +38,6 @@
                         <thead class="table-active border-bottom border-secondary">
                             <tr>
                                 <th>Date</th>
-                                <th class="text-center">Ref.</th>
                                 <th>Description</th>
                                 <th class="text-end">Debit</th>
                                 <th class="text-end">Credit</th>
@@ -52,7 +51,6 @@
                                 {
                                     <tr>
                                         <td class="text-nowrap">@line.EntryDate.ToString("dd-MM-yyyy")</td>
-                                        <td class="text-center"><code>@line.ReferenceNumber</code></td>
                                         <td class="text-muted small">@line.Description</td>
                                         <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N2") : "-")</td>
                                         <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N2") : "-")</td>
@@ -63,7 +61,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="6" class="text-center py-3 text-muted">No postings yet for this account.</td>
+                                    <td colspan="5" class="text-center py-3 text-muted">No postings yet for this account.</td>
                                 </tr>
                             }
                         </tbody>
