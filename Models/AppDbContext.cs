@@ -24,7 +24,6 @@ namespace AumoFinance.Models
 
             builder.Entity<JournalEntry>(entity =>
             {
-                entity.HasIndex(j => j.ReferenceNumber).IsUnique();
                 entity.HasMany(j => j.Lines)
                       .WithOne(l => l.JournalEntry)
                       .HasForeignKey(l => l.JournalEntryId)
