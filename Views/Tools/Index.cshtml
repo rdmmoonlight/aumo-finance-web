@@ -46,14 +46,18 @@
                     <!-- Template Format Info -->
                     <div class="bg-body rounded-3 p-3 mb-4 border">
                         <span class="d-block fw-semibold small mb-2">Required Columns (Row 1 Header):</span>
-                        <div class="d-flex flex-wrap gap-2 mb-3">
+                        <div class="d-flex flex-wrap gap-2 mb-2">
                             <span class="badge bg-secondary">Date</span>
-                            <span class="badge bg-secondary">AccountCode</span>
-                            <span class="badge bg-secondary">Description</span>
+                            <span class="badge bg-secondary">Account Name</span>
                             <span class="badge bg-secondary">Ref</span>
                             <span class="badge bg-secondary">Debit</span>
                             <span class="badge bg-secondary">Credit</span>
                         </div>
+                        <p class="text-secondary small mb-3">
+                            2 sheet: <strong>GJ</strong> (General Journal) dan <strong>AJ</strong> (Adjusting Journal).
+                            Baris dengan <strong>Date</strong> yang sama adalah satu transaksi yang sama.
+                            <strong>Account Name</strong> dan <strong>Ref</strong> yang belum ada akan ditambahkan ke Chart of Accounts.
+                        </p>
                         <a asp-action="DownloadJournalTemplate" class="btn btn-sm btn-outline-success">
                             <i class="bi bi-download me-1"></i> Download Template .xlsx
                         </a>
