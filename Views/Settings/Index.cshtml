@@ -1,40 +1,176 @@
 @{
-    ViewData["Title"] = "Settings";
+    ViewData["Title"] = "Pengaturan";
 }
 
 <div class="container-fluid p-0">
-    <h2 class="mb-4">Application Settings</h2>
+    <h2 class="mb-4">Pengaturan Aplikasi</h2>
 
-    <div class="card p-4 col-md-6">
-        <h5 class="card-title mb-3">Appearance & Theme</h5>
-        
-        <div class="d-flex align-items-center justify-content-between">
-            <div>
-                <h6 class="mb-0">Dark Mode</h6>
-                <small class="text-muted">Enable for lower eye strain in low-light environments.</small>
+    <div class="row">
+        <!-- Panel 1: Penampilan & Tema -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 h-100 shadow-sm border-0">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-palette-fill me-2 text-primary"></i>Penampilan & Tema
+                </h5>
+                
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="mb-1">Mode Gelap (Dark Mode)</h6>
+                        <small class="text-muted">Kurangi ketegangan mata saat bekerja di ruangan minim cahaya.</small>
+                    </div>
+                    <div class="form-check form-switch fs-4">
+                        <input class="form-check-input" type="checkbox" role="switch" id="themeToggleSwitch">
+                    </div>
+                </div>
             </div>
-            
-            <!-- Theme Toggle Switch -->
-            <div class="form-check form-switch fs-4">
-                <input class="form-check-input" type="checkbox" role="switch" id="themeToggleSwitch">
+        </div>
+
+        <!-- Panel 2: Format & Regional (Fokus Akurasi) -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 h-100 shadow-sm border-0">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-globe me-2 text-success"></i>Format & Regional
+                </h5>
+                
+                <div class="mb-3">
+                    <label for="currencyFormat" class="form-label fw-bold mb-1">Format Mata Uang Default</label>
+                    <small class="d-block text-muted mb-2">Pilih standar pelaporan angka dan nominal.</small>
+                    <select class="form-select" id="currencyFormat">
+                        <option value="id-ID">Rupiah (IDR) - Rp 1.000,00</option>
+                        <option value="en-US">US Dollar (USD) - $1,000.00</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 3: Notifikasi & Rutinitas -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 h-100 shadow-sm border-0">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-bell-fill me-2 text-warning"></i>Notifikasi & Pengingat
+                </h5>
+                
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h6 class="mb-1">Peringatan Sistem</h6>
+                        <small class="text-muted">Terima notifikasi untuk aktivitas sistem penting.</small>
+                    </div>
+                    <div class="form-check form-switch fs-5">
+                        <input class="form-check-input" type="checkbox" role="switch" id="systemAlertToggle" checked>
+                    </div>
+                </div>
+                
+                <hr class="text-muted">
+
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="mb-1">Pengingat Waktu Ibadah</h6>
+                        <small class="text-muted">Hentikan sementara notifikasi kerja saat memasuki waktu salat.</small>
+                    </div>
+                    <div class="form-check form-switch fs-5">
+                        <input class="form-check-input" type="checkbox" role="switch" id="prayerTimeToggle">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 4: Manajemen Data & Keamanan -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 h-100 shadow-sm border-0">
+                <h5 class="card-title mb-4">
+                    <i class="bi bi-shield-lock-fill me-2 text-danger"></i>Manajemen Data
+                </h5>
+                
+                <p class="text-muted small mb-3">Ekspor seluruh data laporan atau histori transaksi Anda ke dalam format spreadsheet untuk keperluan audit atau pencatatan pribadi.</p>
+                
+                <button class="btn btn-outline-primary w-100 d-flex justify-content-center align-items-center" id="btnExportData">
+                    <i class="bi bi-file-earmark-excel-fill me-2"></i> Ekspor Data (CSV/Excel)
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+  <div id="settingsToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        Pengaturan berhasil disimpan.
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // --- DOM Elements ---
             const themeSwitch = document.getElementById('themeToggleSwitch');
-            const currentTheme = localStorage.getItem('aumo_theme') || 'dark';
+            const currencySelect = document.getElementById('currencyFormat');
+            const prayerTimeSwitch = document.getElementById('prayerTimeToggle');
+            const systemAlertSwitch = document.getElementById('systemAlertToggle');
+            const btnExport = document.getElementById('btnExportData');
+            const toastElement = document.getElementById('settingsToast');
+            
+            // --- Initialize Bootstrap Toast ---
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
 
-            // Set initial state based on active theme
+            // --- Load Saved Settings ---
+            const currentTheme = localStorage.getItem('app_theme') || 'dark';
+            const currentCurrency = localStorage.getItem('app_currency') || 'id-ID';
+            const prayerTimeEnabled = localStorage.getItem('app_prayer_alert') === 'true';
+            
             themeSwitch.checked = (currentTheme === 'dark');
+            currencySelect.value = currentCurrency;
+            prayerTimeSwitch.checked = prayerTimeEnabled;
 
-            // Handle theme change event
+            // --- Function to Show Toast ---
+            const showToast = (message) => {
+                toastElement.querySelector('.toast-body').textContent = message;
+                toast.show();
+            };
+
+            // --- Event Listeners ---
+            
+            // 1. Theme Toggle
             themeSwitch.addEventListener('change', function () {
                 const selectedTheme = this.checked ? 'dark' : 'light';
-                window.setAppTheme(selectedTheme);
+                localStorage.setItem('app_theme', selectedTheme);
+                
+                // Panggil fungsi global (pastikan ini sudah didefinisikan di _Layout.cshtml)
+                if (typeof window.setAppTheme === 'function') {
+                    window.setAppTheme(selectedTheme);
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', selectedTheme);
+                }
+                showToast(`Tema diubah ke mode ${selectedTheme === 'dark' ? 'Gelap' : 'Terang'}.`);
+            });
+
+            // 2. Currency Change
+            currencySelect.addEventListener('change', function () {
+                localStorage.setItem('app_currency', this.value);
+                showToast(`Format mata uang diubah menjadi ${this.value}.`);
+            });
+
+            // 3. Prayer Time Toggle
+            prayerTimeSwitch.addEventListener('change', function () {
+                localStorage.setItem('app_prayer_alert', this.checked);
+                showToast(this.checked ? 'Pengingat ibadah diaktifkan.' : 'Pengingat ibadah dinonaktifkan.');
+            });
+
+            // 4. Export Button Action
+            btnExport.addEventListener('click', function () {
+                // Simulasi proses ekspor data
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Memproses...';
+                this.classList.add('disabled');
+                
+                setTimeout(() => {
+                    this.innerHTML = '<i class="bi bi-file-earmark-excel-fill me-2"></i> Ekspor Data (CSV/Excel)';
+                    this.classList.remove('disabled');
+                    showToast('Data berhasil diekspor.');
+                }, 1500);
             });
         });
     </script>
