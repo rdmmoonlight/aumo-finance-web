@@ -52,9 +52,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4 text-center" style="width: 8%;">Date</th>
-                            <th style="width: 26%;">Account</th>
-                            <th style="width: 26%;">Description</th>
+                            <th class="ps-4 text-center" style="width: 5%;">Tgl</th>
+                            <th style="width: 27%;">Account</th>
+                            <th style="width: 27%;">Description</th>
                             <th class="text-center" style="width: 8%;">Ref.</th>
                             <th class="text-end" style="width: 16%;">Debit</th>
                             <th class="text-end pe-4" style="width: 16%;">Credit</th>
@@ -93,7 +93,7 @@
                                         <td class="ps-4 text-center align-top">
                                             @if (isFirstRow && showDate)
                                             {
-                                                <span class="fw-bold text-body fs-5">@currentDateStr</span>
+                                                <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold fs-6 px-3 py-2">@entry.EntryDate.Day</span>
                                             }
                                         </td>
                                         <td class="align-top @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
