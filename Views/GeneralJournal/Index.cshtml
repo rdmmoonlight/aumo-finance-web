@@ -64,21 +64,21 @@
                         @if (Model.Any())
                         {
                             string lastDate = "";
-                            int entryIndex = 0;
+                            int dateGroupIndex = 0;
 
-                            foreach (var entry in Model)
+                            for (int e = 0; e < Model.Count; e++)
                             {
-                                var orderedLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
-                                var debitLines = orderedLines.Where(l => l.Debit > 0).ToList();
-                                var creditLines = orderedLines.Where(l => l.Credit > 0).ToList();
-                                var allLines = debitLines.Concat(creditLines).ToList();
+                                var entry = Model[e];
+                                var allLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
 
                                 var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
                                 var showDate = (currentDateStr != lastDate);
-                                if (showDate) { lastDate = currentDateStr; }
+                                if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
 
-                                var entryShade = (entryIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
-                                entryIndex++;
+                                var nextEntryDateStr = (e + 1 < Model.Count) ? Model[e + 1].EntryDate.ToString("dd-MM-yyyy") : null;
+                                var isLastEntryInDateGroup = (nextEntryDateStr != currentDateStr);
+
+                                var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
 
                                 for (int i = 0; i < allLines.Count; i++)
                                 {
@@ -87,7 +87,8 @@
                                     var isLastRow = (i == allLines.Count - 1);
                                     var isDebit = line.Debit > 0;
 
-                                    var rowClass = (isLastRow ? "border-bottom border-2" : "border-bottom-0") + " " + entryShade;
+                                    var showBottomBorder = isLastRow && isLastEntryInDateGroup;
+                                    var rowClass = (showBottomBorder ? "border-bottom border-2" : "border-bottom-0") + " " + entryShade;
 
                                     <tr class="@rowClass">
                                         <td class="ps-4 text-center align-top">
