@@ -24,8 +24,8 @@ namespace AumoFinance.Controllers
             var entries = await _db.JournalEntries
                 .Include(j => j.Lines)
                     .ThenInclude(l => l.Account)
-                .OrderByDescending(j => j.EntryDate)
-                .ThenByDescending(j => j.Id)
+                .OrderBy(j => j.EntryDate)
+                .ThenBy(j => j.Id)
                 .ToListAsync();
 
             return View(entries);
