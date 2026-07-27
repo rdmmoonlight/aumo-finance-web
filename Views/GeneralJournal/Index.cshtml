@@ -1,6 +1,8 @@
 @model List<AumoFinance.Models.JournalEntry>
 @{
     ViewData["Title"] = "General Journal";
+    var totalDebit = Model.SelectMany(e => e.Lines).Sum(l => l.Debit);
+    var totalCredit = Model.SelectMany(e => e.Lines).Sum(l => l.Credit);
 }
 
 <div class="container-fluid py-4 px-4">
@@ -38,17 +40,18 @@
                     <thead class="table-light">
                         <tr>
                             <th class="ps-4 text-center" style="width: 8%;">Date</th>
-                            <th style="width: 27%;">Account</th>
-                            <th style="width: 27%;">Description</th>
-                            <th class="text-center" style="width: 10%;">Ref.</th>
-                            <th class="text-end" style="width: 14%;">Debit</th>
-                            <th class="text-end pe-4" style="width: 14%;">Credit</th>
+                            <th style="width: 26%;">Account</th>
+                            <th style="width: 26%;">Description</th>
+                            <th class="text-center" style="width: 8%;">Ref.</th>
+                            <th class="text-end" style="width: 16%;">Debit</th>
+                            <th class="text-end pe-4" style="width: 16%;">Credit</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
                         @if (Model.Any())
                         {
-                            string lastDate = ""; 
+                            string lastDate = "";
+                            int entryIndex = 0;
 
                             foreach (var entry in Model)
                             {
@@ -59,10 +62,10 @@
 
                                 var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
                                 var showDate = (currentDateStr != lastDate);
-                                if (showDate)
-                                {
-                                    lastDate = currentDateStr;
-                                }
+                                if (showDate) { lastDate = currentDateStr; }
+
+                                var entryShade = (entryIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
+                                entryIndex++;
 
                                 for (int i = 0; i < allLines.Count; i++)
                                 {
@@ -70,8 +73,8 @@
                                     var isFirstRow = (i == 0);
                                     var isLastRow = (i == allLines.Count - 1);
                                     var isDebit = line.Debit > 0;
-                                    
-                                    var rowClass = isLastRow ? "border-bottom border-2" : "border-bottom-0";
+
+                                    var rowClass = (isLastRow ? "border-bottom border-2" : "border-bottom-0") + " " + entryShade;
 
                                     <tr class="@rowClass">
                                         <td class="ps-4 text-center align-top">
@@ -80,7 +83,7 @@
                                                 <span class="fw-bold text-body fs-5">@currentDateStr</span>
                                             }
                                         </td>
-                                        <td class="align-top @(isDebit ? "fw-bold text-body" : "ps-4 text-body")">
+                                        <td class="align-top @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
                                             @line.Account?.AccountName
                                         </td>
                                         <td class="text-secondary small align-top">
@@ -89,7 +92,6 @@
                                         <td class="text-center align-top">
                                             <code>@line.Account?.ReferenceNumber</code>
                                         </td>
-                                        <!-- Menggunakan N0 agar tampil tanpa angka desimal di belakang koma -->
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
                                             @(isDebit ? line.Debit.ToString("N0") : "-")
                                         </td>
@@ -110,6 +112,16 @@
                             </tr>
                         }
                     </tbody>
+                    @if (Model.Any())
+                    {
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="ps-4 text-end fw-bold text-body-emphasis">Total</td>
+                                <td class="text-end fw-bold text-success">@totalDebit.ToString("N0")</td>
+                                <td class="text-end pe-4 fw-bold text-danger">@totalCredit.ToString("N0")</td>
+                            </tr>
+                        </tfoot>
+                    }
                 </table>
             </div>
         </div>
