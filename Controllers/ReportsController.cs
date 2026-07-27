@@ -234,7 +234,7 @@ namespace AumoFinance.Controllers
         // Keuangan — hanya akun permanen (Assets, Liabilities, Equity).
         public async Task<IActionResult> PostClosingBalanceSheet()
         {
-            ViewData["Title"] = "Post-Closing Balance Sheet";
+            ViewData["Title"] = "Post-Closing Trial Balance";
             var vm = await BuildSofpAsync(isPostClosing: true);
             return View(vm);
         }
