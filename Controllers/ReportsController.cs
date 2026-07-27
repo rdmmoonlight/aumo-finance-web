@@ -232,7 +232,7 @@ namespace AumoFinance.Controllers
         // Neraca Pasca-Penutupan: SOFP yang sama, karena akun nominal
         // (sementara) memang tidak pernah tampil di Laporan Posisi
         // Keuangan — hanya akun permanen (Assets, Liabilities, Equity).
-        public async Task<IActionResult> PostClosingBalanceSheet()
+        public async Task<IActionResult> PostClosingTrialBalance()
         {
             ViewData["Title"] = "Post-Closing Trial Balance";
             var vm = await BuildSofpAsync(isPostClosing: true);
