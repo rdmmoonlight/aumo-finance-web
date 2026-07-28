@@ -37,6 +37,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 
+// Lightweight in-process cache, used to throttle the anonymous
+// /Auth/ResendVerification endpoint so it can't be spammed to email-bomb
+// arbitrary addresses or burn through the SMTP sender's daily quota.
+builder.Services.AddMemoryCache();
+
 // Trust Railway's edge proxy so Request.Scheme resolves to "https" (from
 // X-Forwarded-Proto) instead of "http". Without this, every link built with
 // Url.Action(..., Request.Scheme) — including the email confirmation and
