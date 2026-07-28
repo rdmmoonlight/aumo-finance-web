@@ -2,6 +2,7 @@ using AumoFinance.Models;
 using AumoFinance.Services;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,19 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 
+// Trust Railway's edge proxy so Request.Scheme resolves to "https" (from
+// X-Forwarded-Proto) instead of "http". Without this, every link built with
+// Url.Action(..., Request.Scheme) — including the email confirmation and
+// password reset links — comes out as an http:// URL in production.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // Railway's proxy IP isn't fixed/known ahead of time, so clear the
+    // default known-network/proxy allowlist to accept its forwarded headers.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // 3. MVC Services + Kunci Semua Halaman Secara Global
 builder.Services.AddControllersWithViews(options =>
 {
@@ -64,6 +78,10 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 }
 
 var app = builder.Build();
+
+// Must run before anything that inspects Request.Scheme/Host (exception
+// handler, HSTS, HTTPS redirection, auth, and the auth email links).
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
