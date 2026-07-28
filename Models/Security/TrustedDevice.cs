@@ -6,6 +6,8 @@ public class TrustedDevice
 
     public Guid UserId { get; set; }
 
+    public ApplicationUser User { get; set; } = null!;
+
     public string DeviceName { get; set; } = string.Empty;
 
     public string DeviceIdentifier { get; set; } = string.Empty;
@@ -14,9 +16,9 @@ public class TrustedDevice
 
     public string OperatingSystem { get; set; } = string.Empty;
 
+    public bool IsTrusted { get; set; } = true;
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime LastUsedAt { get; set; }
-
-    public bool IsTrusted { get; set; } = true;
 }
