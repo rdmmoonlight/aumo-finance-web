@@ -1,153 +1,93 @@
+using AumoFinance.Models;
+using AumoFinance.Services.Security;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using AumoFinance.Models.Guardian;
 
-namespace AurumFinance.Controllers;
+namespace AumoFinance.Controllers;
 
+[Authorize]
 public class GuardianController : Controller
 {
-    public IActionResult Index()
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IGuardianService _guardianService;
+
+
+    public GuardianController(
+        UserManager<ApplicationUser> userManager,
+        IGuardianService guardianService)
     {
-        var model = BuildDashboard();
+        _userManager = userManager;
+        _guardianService = guardianService;
+    }
+
+
+
+    // GET: /Guardian
+    public async Task<IActionResult> Index()
+    {
+        var user =
+            await _userManager.GetUserAsync(User);
+
+
+        if (user == null)
+        {
+            return RedirectToAction(
+                "Login",
+                "Auth"
+            );
+        }
+
+
+        var sessions =
+            await _guardianService
+            .GetActiveSessionsAsync(user.Id);
+
+
+        var activities =
+            await _guardianService
+            .GetLoginActivitiesAsync(user.Id);
+
+
+        var model = new GuardianViewModel
+        {
+            Sessions = sessions,
+            Activities = activities
+        };
+
 
         return View(model);
     }
 
-    public IActionResult Sessions()
+
+
+    // POST: /Guardian/RevokeSession
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeSession(Guid id)
     {
-        var sessions = new List<ActiveSessionViewModel>
+        var user =
+            await _userManager.GetUserAsync(User);
+
+
+        if (user == null)
         {
-            new()
-            {
-                DeviceName = "Windows PC",
-                Browser = "Chrome",
-                IpAddress = "192.168.1.15",
-                Country = "Indonesia",
-                LastActivity = DateTime.Now,
-                IsCurrent = true
-            },
-            new()
-            {
-                DeviceName = "Samsung Galaxy",
-                Browser = "Chrome Mobile",
-                IpAddress = "10.10.0.15",
-                Country = "Indonesia",
-                LastActivity = DateTime.Now.AddHours(-5),
-                IsCurrent = false
-            }
-        };
+            return Unauthorized();
+        }
 
-        return View(sessions);
-    }
 
-    public IActionResult Devices()
-    {
-        var devices = new List<TrustedDeviceViewModel>
-        {
-            new()
-            {
-                Name = "Windows PC",
-                Browser = "Chrome",
-                AddedOn = DateTime.Now.AddMonths(-3)
-            },
-            new()
-            {
-                Name = "Samsung Galaxy",
-                Browser = "Chrome Mobile",
-                AddedOn = DateTime.Now.AddDays(-12)
-            }
-        };
+        await _guardianService.RevokeSessionAsync(
+            id,
+            user.Id
+        );
 
-        return View(devices);
-    }
 
-    public IActionResult Activity()
-    {
-        var logs = new List<LoginActivityViewModel>
-        {
-            new()
-            {
-                Activity = "Successful Login",
-                Device = "Windows PC",
-                Browser = "Chrome",
-                Country = "Indonesia",
-                IpAddress = "192.168.1.15",
-                OccurredAt = DateTime.Now
-            },
-            new()
-            {
-                Activity = "Password Changed",
-                Device = "Windows PC",
-                Browser = "Chrome",
-                Country = "Indonesia",
-                IpAddress = "192.168.1.15",
-                OccurredAt = DateTime.Now.AddDays(-1)
-            }
-        };
+        TempData["SuccessMessage"] =
+            "Device session has been signed out.";
 
-        return View(logs);
-    }
 
-    public IActionResult RecoveryCodes()
-    {
-        var codes = new List<string>
-        {
-            "A3X9-BD11-KQ2P",
-            "P7LK-991Q-WXZ2",
-            "MM28-TUU7-ABCD",
-            "QWE9-88LK-HG52",
-            "ZXCV-888P-YTR1",
-            "PLMK-774Q-WERT",
-            "AA88-ZXCV-9988",
-            "MNVB-111A-ZXC9"
-        };
-
-        return View(codes);
-    }
-
-    private static GuardianDashboardViewModel BuildDashboard()
-    {
-        return new GuardianDashboardViewModel
-        {
-            Username = "Moonlight",
-            Email = "moonlight@example.com",
-
-            Security = new SecurityStatusViewModel
-            {
-                EmailVerified = true,
-                MultiFactorEnabled = false,
-                RecoveryCodesAvailable = true,
-                PasswordProtected = true
-            },
-
-            SecurityScore = 82,
-
-            ActiveSessions = 2,
-
-            TrustedDevices = 2,
-
-            LastLogin = DateTime.Now.AddHours(-2),
-
-            RecentActivities = new List<LoginActivityViewModel>
-            {
-                new()
-                {
-                    Activity="Successful Login",
-                    Device="Windows PC",
-                    Browser="Chrome",
-                    Country="Indonesia",
-                    IpAddress="192.168.1.15",
-                    OccurredAt=DateTime.Now
-                },
-                new()
-                {
-                    Activity="Password Changed",
-                    Device="Windows PC",
-                    Browser="Chrome",
-                    Country="Indonesia",
-                    IpAddress="192.168.1.15",
-                    OccurredAt=DateTime.Now.AddDays(-1)
-                }
-            }
-        };
+        return RedirectToAction(
+            nameof(Index)
+        );
     }
 }
