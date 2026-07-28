@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace AumoFinance.Controllers
 {
@@ -14,15 +15,21 @@ namespace AumoFinance.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailSender _emailSender;
+        private readonly IMemoryCache _cache;
+
+        // How long a given email address must wait before another resend is sent.
+        private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(60);
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            IMemoryCache cache)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
+            _cache = cache;
         }
 
         // GET: /Auth/Login
@@ -263,13 +270,24 @@ namespace AumoFinance.Controllers
                 return View(model);
             }
 
-            var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user is not null && !await _userManager.IsEmailConfirmedAsync(user))
+            var normalizedEmail = model.Email.Trim().ToLowerInvariant();
+            var cacheKey = $"resend-verification-cooldown:{normalizedEmail}";
+
+            // Applied per submitted address regardless of whether an account
+            // exists for it, so the throttle itself never reveals which
+            // emails are registered.
+            if (!_cache.TryGetValue(cacheKey, out _))
             {
-                await SendEmailConfirmationAsync(user);
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user is not null && !await _userManager.IsEmailConfirmedAsync(user))
+                {
+                    await SendEmailConfirmationAsync(user);
+                }
+
+                _cache.Set(cacheKey, true, ResendCooldown);
             }
 
-            // Same message whether or not the email is registered/already verified.
+            // Same message whether or not the email is registered/already verified/still on cooldown.
             TempData["SuccessMessage"] = "If that email is registered and not yet verified, a new link has been sent.";
             return RedirectToAction("Login");
         }
