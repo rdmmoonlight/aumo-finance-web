@@ -73,22 +73,15 @@
                                 var showDate = (currentDateStr != lastDate);
                                 if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
 
-                                var nextEntryDateStr = (e + 1 < Model.Count) ? Model[e + 1].EntryDate.ToString("dd-MM-yyyy") : null;
-                                var isLastEntryInDateGroup = (nextEntryDateStr != currentDateStr);
-
                                 var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
 
                                 for (int i = 0; i < allLines.Count; i++)
                                 {
                                     var line = allLines[i];
                                     var isFirstRow = (i == 0);
-                                    var isLastRow = (i == allLines.Count - 1);
                                     var isDebit = line.Debit > 0;
 
-                                    var showBottomBorder = isLastRow && isLastEntryInDateGroup;
-                                    var rowClass = (showBottomBorder ? "border-bottom border-2" : "border-bottom-0") + " " + entryShade;
-
-                                    <tr class="@rowClass">
+                                    <tr class="@entryShade">
                                         <td class="ps-4 text-center align-top">
                                             @if (isFirstRow && showDate)
                                             {
