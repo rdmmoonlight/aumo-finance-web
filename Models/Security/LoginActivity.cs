@@ -51,6 +51,10 @@ public class LoginActivity
     public string IpAddress { get; set; } = string.Empty;
 
 
+    [MaxLength(100)]
+    public string Country { get; set; } = string.Empty;
+
+
     [MaxLength(500)]
     public string UserAgent { get; set; } = string.Empty;
 
