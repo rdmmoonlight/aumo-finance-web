@@ -6,6 +6,8 @@ public class LoginActivity
 
     public Guid UserId { get; set; }
 
+    public ApplicationUser User { get; set; } = null!;
+
     public string ActivityType { get; set; } = string.Empty;
 
     public string Device { get; set; } = string.Empty;
