@@ -32,8 +32,16 @@ public class UserSession
     public string IpAddress { get; set; } = string.Empty;
 
 
+    [MaxLength(100)]
+    public string Country { get; set; } = string.Empty;
+
+
     [MaxLength(500)]
     public string UserAgent { get; set; } = string.Empty;
+
+
+    [MaxLength(255)]
+    public string RefreshTokenHash { get; set; } = string.Empty;
 
 
 
