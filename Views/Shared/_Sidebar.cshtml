@@ -1,138 +1,312 @@
 <div class="sidebar-wrapper d-flex">
+
     <!-- ========================================================= -->
     <!-- 1. STATIC ICON BAR (Compact Width: 52px)                  -->
     <!-- ========================================================= -->
+
     <nav id="sidebar-icons" class="sidebar-icons text-white d-flex flex-column align-items-center py-2">
-        
-        <!-- Brand Header (Clickable Icon -> Menuju Home) -->
-        <a asp-controller="Home" asp-action="Index" class="mb-3 mt-1 brand-container text-center text-warning text-decoration-none" title="Beranda Utama (Home)">
+
+        <!-- Brand Header -->
+        <a asp-controller="Home"
+           asp-action="Index"
+           class="mb-3 mt-1 brand-container text-center text-warning text-decoration-none"
+           title="Beranda Utama (Home)">
             <i class="bi bi-shield-lock-fill fs-5"></i>
         </a>
 
+
         <!-- Menu Items -->
         <ul class="nav flex-column align-items-center w-100 flex-grow-1">
-            
-            <!-- Menu Dashboard -->
+
+            <!-- Dashboard -->
             <li class="nav-item mb-1">
-                <a asp-controller="Dashboard" asp-action="Index" class="nav-link text-white icon-btn" title="Dashboard">
+                <a asp-controller="Dashboard"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn"
+                   title="Dashboard">
                     <i class="bi bi-columns-gap fs-6"></i>
                 </a>
-            </li>            
-            
-            <!-- Menu Journal Entry -->
+            </li>
+
+
+            <!-- Journal Entry -->
             <li class="nav-item mb-1">
-                <a asp-controller="JournalEntry" asp-action="Create" class="nav-link text-white icon-btn" title="Journal Entry">
+                <a asp-controller="JournalEntry"
+                   asp-action="Create"
+                   class="nav-link text-white icon-btn"
+                   title="Journal Entry">
                     <i class="bi bi-journal-plus fs-6"></i>
                 </a>
             </li>
-            
-            <!-- Menu Reports -->
+
+
+            <!-- Reports -->
             <li class="nav-item mb-1">
-                <a href="javascript:void(0)" id="btn-toggle-reports" class="nav-link text-white icon-btn" title="Reports">
+                <a href="javascript:void(0)"
+                   id="btn-toggle-reports"
+                   class="nav-link text-white icon-btn"
+                   title="Reports">
                     <i class="bi bi-folder fs-6"></i>
                 </a>
             </li>
-            
-            <!-- Menu Chart of Accounts -->
+
+
+            <!-- Chart of Accounts -->
             <li class="nav-item mb-1">
-                <a asp-controller="ChartOfAccounts" asp-action="Index" class="nav-link text-white icon-btn" title="Chart of Accounts">
+                <a asp-controller="ChartOfAccounts"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn"
+                   title="Chart of Accounts">
                     <i class="bi bi-diagram-3 fs-6"></i>
                 </a>
             </li>
 
-            <!-- ========================================= -->
-            <!-- MENU PERIODS                              -->
-            <!-- ========================================= -->
+
+            <!-- Financial Periods -->
             <li class="nav-item mb-1">
-                <a asp-controller="Periods" asp-action="Index" class="nav-link text-white icon-btn" title="Financial Periods">
+                <a asp-controller="Periods"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn"
+                   title="Financial Periods">
                     <i class="bi bi-calendar3 fs-6"></i>
                 </a>
             </li>
 
-            <!-- Menu Tools -->
+
+            <!-- Guardian -->
             <li class="nav-item mb-1">
-                <a asp-controller="Tools" asp-action="Index" class="nav-link text-white icon-btn" title="Tools">
+                <a asp-controller="Guardian"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn"
+                   title="Guardian">
+                    <i class="bi bi-shield-check fs-6"></i>
+                </a>
+            </li>
+
+
+            <!-- Tools -->
+            <li class="nav-item mb-1">
+                <a asp-controller="Tools"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn"
+                   title="Tools">
                     <i class="bi bi-tools fs-6"></i>
                 </a>
             </li>
+
         </ul>
 
+
         <!-- Bottom User Section -->
+
         <div class="mt-auto dropup">
-            <a href="#" class="nav-link text-white icon-btn" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="@(User.Identity?.Name ?? "User")">
+
+            <a href="#"
+               class="nav-link text-white icon-btn"
+               id="userDropdown"
+               data-bs-toggle="dropdown"
+               aria-expanded="false"
+               title="@(User.Identity?.Name ?? "User")">
+
                 <i class="bi bi-person-circle fs-5"></i>
+
             </a>
 
-            <!-- Popover Dropdown -->
-            <ul class="dropdown-menu dropdown-menu-dark shadow ms-2 mb-2 fs-7" aria-labelledby="userDropdown">
-                <li class="dropdown-header">@(User.Identity?.Name ?? "User")</li>
-                <li><hr class="dropdown-divider"></li>
+
+            <!-- User Dropdown -->
+
+            <ul class="dropdown-menu dropdown-menu-dark shadow ms-2 mb-2 fs-7"
+                aria-labelledby="userDropdown">
+
+                <li class="dropdown-header">
+                    @(User.Identity?.Name ?? "User")
+                </li>
+
                 <li>
-                    <a class="dropdown-item d-flex align-items-center" asp-controller="Settings" asp-action="Index">
-                        <i class="bi bi-gear me-2"></i> Settings
+                    <hr class="dropdown-divider">
+                </li>
+
+
+                <li>
+                    <a class="dropdown-item d-flex align-items-center"
+                       asp-controller="Settings"
+                       asp-action="Index">
+
+                        <i class="bi bi-gear me-2"></i>
+                        Settings
+
                     </a>
                 </li>
+
+
                 <li>
-                    <a class="dropdown-item d-flex align-items-center text-danger" asp-controller="Auth" asp-action="Logout">
-                        <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                    <a class="dropdown-item d-flex align-items-center text-danger"
+                       asp-controller="Auth"
+                       asp-action="Logout">
+
+                        <i class="bi bi-box-arrow-right me-2"></i>
+                        Sign Out
+
                     </a>
                 </li>
+
             </ul>
+
         </div>
+
     </nav>
 
+
+
     <!-- ========================================================= -->
-    <!-- 2. EXPANDABLE FLYOUT PANEL (Reports Menu List - Compact)  -->
+    <!-- 2. REPORTS FLYOUT PANEL                                  -->
     <!-- ========================================================= -->
-    <div id="reports-flyout" class="sidebar-flyout bg-dark border-end border-secondary text-white">
+
+    <div id="reports-flyout"
+         class="sidebar-flyout bg-dark border-end border-secondary text-white">
+
+
         <div class="p-2 border-bottom border-secondary d-flex justify-content-between align-items-center">
+
             <span class="fw-bold small text-uppercase tracking-wider text-warning mb-0">
                 Reports
             </span>
-            <button type="button" id="btn-close-reports" class="btn-close btn-close-white btn-sm" aria-label="Close" style="font-size: 0.65rem;"></button>
+
+
+            <button type="button"
+                    id="btn-close-reports"
+                    class="btn-close btn-close-white btn-sm"
+                    aria-label="Close"
+                    style="font-size:0.65rem;">
+            </button>
+
         </div>
 
-        <!-- List of Reports (Lebar dilebarkan dengan min-width pada isi dalam agar aman) -->
-        <div class="list-group list-group-flush p-1 small" style="min-width: 270px;">
-            <a asp-controller="GeneralJournal" asp-action="Index" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+        <div class="list-group list-group-flush p-1 small"
+             style="min-width:270px;">
+
+
+            <a asp-controller="GeneralJournal"
+               asp-action="Index"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 General Journal
+
             </a>
-            <a asp-controller="Reports" asp-action="GeneralLedger" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="GeneralLedger"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 GL (Permanent Accounts)
+
             </a>
-            <a asp-controller="Reports" asp-action="GeneralLedgerTemporary" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="GeneralLedgerTemporary"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 GL (Temporary Accounts)
+
             </a>
-            <a asp-controller="Reports" asp-action="TrialBalance" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="TrialBalance"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Trial Balance
+
             </a>
-            <a asp-controller="AdjustingJournal" asp-action="Index" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="AdjustingJournal"
+               asp-action="Index"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Adjusting Journal
+
             </a>
-            <a asp-controller="Reports" asp-action="AdjustedTrialBalance" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="AdjustedTrialBalance"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Adjusted Trial Balance
+
             </a>
-            <a asp-controller="Reports" asp-action="Worksheet" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="Worksheet"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Worksheet
+
             </a>
-            <a asp-controller="Reports" asp-action="IncomeStatement" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="IncomeStatement"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Income Statement
+
             </a>
-            <a asp-controller="Reports" asp-action="RetainedEarnings" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="RetainedEarnings"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Retained Earnings
+
             </a>
-            <a asp-controller="Reports" asp-action="StatementOfFinancialPosition" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
-               Financial Position
+
+
+            <a asp-controller="Reports"
+               asp-action="StatementOfFinancialPosition"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
+                Financial Position
+
             </a>
-            <a asp-controller="Reports" asp-action="ClosingJournal" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="ClosingJournal"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Closing Journal
+
             </a>
-            <a asp-controller="Reports" asp-action="PostClosingTrialBalance" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="PostClosingTrialBalance"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Post-Closing TB
+
             </a>
-            <a asp-controller="Reports" asp-action="CashFlowStatement" class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2 d-flex align-items-center">
+
+
+            <a asp-controller="Reports"
+               asp-action="CashFlowStatement"
+               class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
+
                 Cash Flow Statement
+
             </a>
+
+
         </div>
+
     </div>
+
 </div>
