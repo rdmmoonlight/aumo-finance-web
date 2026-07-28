@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AumoFinance.Controllers
 {
@@ -16,10 +18,45 @@ namespace AumoFinance.Controllers
         // GET: Menampilkan tabel COA dan Modal
         public async Task<IActionResult> Index()
         {
-            // Menampilkan akun diurutkan berdasarkan Nomor Referensi agar rapi
+            // 1. Tarik master data COA dan urutkan
             var accounts = await _context.ChartOfAccounts
                                          .OrderBy(a => a.ReferenceNumber)
                                          .ToListAsync();
+
+            // 2. Kalkulasi total Debit & Kredit dari JournalEntryLines untuk setiap akun
+            var accountBalances = await _context.JournalEntryLines
+                                                .GroupBy(j => j.AccountId)
+                                                .Select(g => new 
+                                                {
+                                                    AccountId = g.Key,
+                                                    TotalDebit = g.Sum(j => j.Debit),
+                                                    TotalCredit = g.Sum(j => j.Credit)
+                                                })
+                                                .ToDictionaryAsync(x => x.AccountId);
+
+            // 3. Terapkan logika Normal Balance ke masing-masing akun
+            foreach (var account in accounts)
+            {
+                if (accountBalances.TryGetValue(account.Id, out var balance))
+                {
+                    // Kelompok Akun bersaldo normal DEBIT
+                    if (account.Type == "Assets" || account.Type == "OperatingExpenses" || account.Type == "OtherExpenses")
+                    {
+                        account.Balance = balance.TotalDebit - balance.TotalCredit;
+                    }
+                    // Kelompok Akun bersaldo normal KREDIT
+                    else 
+                    {
+                        account.Balance = balance.TotalCredit - balance.TotalDebit;
+                    }
+                }
+                else
+                {
+                    // Jika belum ada transaksi jurnal, saldo 0
+                    account.Balance = 0; 
+                }
+            }
+
             return View(accounts);
         }
 
