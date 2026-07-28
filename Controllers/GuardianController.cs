@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using AurumFinance.Models.Guardian;
+using AumoFinance.Models.Guardian;
 
 namespace AurumFinance.Controllers;
 
