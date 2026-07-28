@@ -1,45 +1,101 @@
+using AumoFinance.Models.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Models
+namespace AumoFinance.Models;
+
+public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
-    public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options)
+        : base(options)
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    }
 
-        public DbSet<ChartOfAccount> ChartOfAccounts => Set<ChartOfAccount>();
-        public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
-        public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
-        public DbSet<Period> Periods { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder builder)
+    public DbSet<ChartOfAccount> ChartOfAccounts => Set<ChartOfAccount>();
+
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+
+    public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+
+    public DbSet<Period> Periods => Set<Period>();
+
+
+    // Guardian
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
+
+    public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
+
+
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+
+
+        builder.Entity<ChartOfAccount>(entity =>
         {
-            base.OnModelCreating(builder);
+            entity.HasIndex(x => x.ReferenceNumber)
+                .IsUnique();
+        });
 
-            builder.Entity<ChartOfAccount>(entity =>
+
+
+        builder.Entity<JournalEntry>(entity =>
+        {
+            entity.HasMany(x => x.Lines)
+                .WithOne(x => x.JournalEntry)
+                .HasForeignKey(x => x.JournalEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+
+        builder.Entity<JournalEntryLine>(entity =>
+        {
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
+
+        // Guardian Session
+        builder.Entity<UserSession>(entity =>
+        {
+            entity.HasIndex(x => new
             {
-                entity.HasIndex(a => a.ReferenceNumber).IsUnique();
+                x.UserId,
+                x.IsActive
             });
 
-            builder.Entity<JournalEntry>(entity =>
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+
+        // Guardian Activity
+        builder.Entity<LoginActivity>(entity =>
+        {
+            entity.HasIndex(x => new
             {
-                entity.HasMany(j => j.Lines)
-                      .WithOne(l => l.JournalEntry)
-                      .HasForeignKey(l => l.JournalEntryId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                x.UserId,
+                x.CreatedAt
             });
 
-            builder.Entity<JournalEntryLine>(entity =>
-            {
-                // Setiap baris jurnal WAJIB merujuk ke satu akun di Chart of
-                // Account. Relasi ini yang membuat nomor referensi COA bisa
-                // "otomatis muncul" di General Journal maupun General Ledger.
-                entity.HasOne(l => l.Account)
-                      .WithMany()
-                      .HasForeignKey(l => l.AccountId)
-                      .OnDelete(DeleteBehavior.Restrict);
-            });
-        }
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }
