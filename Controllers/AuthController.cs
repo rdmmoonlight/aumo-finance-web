@@ -1,5 +1,6 @@
 using System.Text;
 using AumoFinance.Models;
+using AumoFinance.Models.Security;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -8,33 +9,330 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace AumoFinance.Controllers
+namespace AumoFinance.Controllers;
+
+public class AuthController : Controller
 {
-    public class AuthController : Controller
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IEmailSender _emailSender;
+    private readonly IMemoryCache _cache;
+    private readonly IGuardianService _guardianService;
+
+
+    private static readonly TimeSpan ResendCooldown =
+        TimeSpan.FromSeconds(60);
+
+
+
+    public AuthController(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        IEmailSender emailSender,
+        IMemoryCache cache,
+        IGuardianService guardianService)
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly IEmailSender _emailSender;
-        private readonly IMemoryCache _cache;
-        private readonly IGuardianService _guardianService;
-
-        private static readonly TimeSpan ResendCooldown =
-            TimeSpan.FromSeconds(60);
+        _userManager = userManager;
+        _signInManager = signInManager;
+        _emailSender = emailSender;
+        _cache = cache;
+        _guardianService = guardianService;
+    }
 
 
-        public AuthController(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            IEmailSender emailSender,
-            IMemoryCache cache,
-            IGuardianService guardianService)
+
+    // ============================
+    // LOGIN
+    // ============================
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult Login()
+    {
+        return View(new LoginViewModel());
+    }
+
+
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Login(
+        LoginViewModel model)
+    {
+        if (!ModelState.IsValid)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _emailSender = emailSender;
-            _cache = cache;
-            _guardianService = guardianService;
+            return View(model);
         }
+
+
+        var result =
+            await _signInManager.PasswordSignInAsync(
+                model.Email,
+                model.Password,
+                true,
+                true
+            );
+
+
+
+        if (result.Succeeded)
+        {
+            var user =
+                await _userManager.FindByEmailAsync(
+                    model.Email
+                );
+
+
+            if (user != null)
+            {
+                await CreateGuardianRecordAsync(user);
+            }
+
+
+            return RedirectToAction(
+                "Index",
+                "Home"
+            );
+        }
+
+
+
+        if (result.IsNotAllowed)
+        {
+            ModelState.AddModelError(
+                "",
+                "Please verify your email before login."
+            );
+        }
+        else if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(
+                "",
+                "Account temporarily locked."
+            );
+        }
+        else
+        {
+            ModelState.AddModelError(
+                "",
+                "Invalid email or password."
+            );
+        }
+
+
+        return View(model);
+    }
+
+
+
+    // ============================
+    // REGISTER
+    // ============================
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult Register()
+    {
+        return View(new RegisterViewModel());
+    }
+
+
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(
+        RegisterViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+
+        var user = new ApplicationUser
+        {
+            UserName = model.Email,
+            Email = model.Email,
+            FullName = model.FullName
+        };
+
+
+        var result =
+            await _userManager.CreateAsync(
+                user,
+                model.Password
+            );
+
+
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(
+                    "",
+                    error.Description
+                );
+            }
+
+
+            return View(model);
+        }
+
+
+        await SendEmailConfirmationAsync(user);
+
+
+        ViewBag.ShowSuccessModal = true;
+
+        ViewBag.RegisteredEmail =
+            model.Email;
+
+
+        return View(
+            new RegisterViewModel()
+        );
+    }
+
+
+
+    // ============================
+    // LOGOUT
+    // ============================
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        var user =
+            await _userManager.GetUserAsync(User);
+
+
+        if (user != null)
+        {
+            await _guardianService.RevokeCurrentSessionAsync(
+                user.Id
+            );
+        }
+
+
+        await _signInManager.SignOutAsync();
+
+
+        return RedirectToAction(
+            "Login"
+        );
+    }
+
+
+
+    // ============================
+    // CREATE GUARDIAN RECORD
+    // ============================
+
+    private async Task CreateGuardianRecordAsync(
+        ApplicationUser user)
+    {
+        var ip =
+            HttpContext.Connection.RemoteIpAddress?
+            .ToString()
+            ?? "Unknown";
+
+
+        var agent =
+            Request.Headers.UserAgent.ToString();
+
+
+
+        await _guardianService.CreateLoginActivityAsync(
+            new LoginActivity
+            {
+                UserId = user.Id,
+                ActivityType = "Login",
+                IsSuccess = true,
+                IpAddress = ip,
+                UserAgent = agent,
+                Device = "Web Browser",
+                Browser = agent,
+                CreatedAt = DateTime.UtcNow
+            }
+        );
+
+
+
+        await _guardianService.CreateSessionAsync(
+            new UserSession
+            {
+                UserId = user.Id,
+                DeviceName =
+                    Environment.MachineName,
+
+                Browser = agent,
+
+                IpAddress = ip,
+
+                UserAgent = agent,
+
+                IsActive = true,
+
+                IsCurrent = true,
+
+                CreatedAt =
+                    DateTime.UtcNow,
+
+                LastActivityAt =
+                    DateTime.UtcNow
+            }
+        );
+    }
+
+
+
+    // ============================
+    // EMAIL CONFIRMATION
+    // ============================
+
+    private async Task SendEmailConfirmationAsync(
+        ApplicationUser user)
+    {
+        var token =
+            await _userManager
+            .GenerateEmailConfirmationTokenAsync(user);
+
+
+
+        var encoded =
+            WebEncoders.Base64UrlEncode(
+                Encoding.UTF8.GetBytes(token)
+            );
+
+
+
+        var url =
+            Url.Action(
+                "VerifyEmail",
+                "Auth",
+                new
+                {
+                    email = user.Email,
+                    token = encoded
+                },
+                Request.Scheme
+            );
+
+
+
+        await _emailSender.SendEmailAsync(
+            user.Email!,
+            "Confirm your Aumo Finance account",
+            EmailTemplates.EmailConfirmation(
+                user.FullName,
+                url!
+            )
+        );
+    }
+}        }
 
 
         // GET: /Auth/Login
