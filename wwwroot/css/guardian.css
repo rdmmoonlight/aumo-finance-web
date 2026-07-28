@@ -1,5 +1,9 @@
+/* ==========================================
+   Aumo Finance - Guardian Module
+   ========================================== */
+
 .guardian-card {
-    transition: all .2s ease;
+    transition: all 0.2s ease;
 }
 
 .guardian-card:hover {
@@ -20,20 +24,12 @@
     border-radius: 50%;
 }
 
-.activity-success {
-    color: #198754;
-}
-
-.activity-warning {
-    color: #ffc107;
-}
-
 .device-card {
     min-height: 220px;
 }
 
 .recovery-code {
-    font-family: monospace;
+    font-family: "Courier New", monospace;
     letter-spacing: 1px;
     font-weight: 600;
 }
@@ -42,7 +38,29 @@
     border-left: 4px solid #ffc107;
 }
 
-.dark-panel {
-    background-color: #121212;
-    color: white;
+.activity-item {
+    border-left: 3px solid #6c757d;
+    padding-left: 1rem;
+}
+
+.activity-success {
+    border-color: #198754;
+}
+
+.activity-warning {
+    border-color: #ffc107;
+}
+
+.guardian-table th {
+    white-space: nowrap;
+}
+
+.guardian-action {
+    min-width: 120px;
+}
+
+.guardian-empty {
+    padding: 40px;
+    text-align: center;
+    color: #6c757d;
 }
