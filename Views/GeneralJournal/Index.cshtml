@@ -16,22 +16,9 @@
             <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Add Entry
             </a>
-            <div class="dropdown">
-                <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm dropdown-toggle" id="btnEditEntry" data-bs-toggle="dropdown" aria-expanded="false" @(Model.Any() ? "" : "disabled")>
-                    <i class="bi bi-pencil me-1"></i> Edit
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="btnEditEntry" style="max-height: 320px; overflow-y: auto; min-width: 280px;">
-                    <li><h6 class="dropdown-header">Select an entry to edit</h6></li>
-                    @foreach (var entry in Model.OrderByDescending(e => e.EntryDate).ThenByDescending(e => e.Id))
-                    {
-                        <li>
-                            <a class="dropdown-item d-flex justify-content-between align-items-center" asp-controller="JournalEntry" asp-action="Edit" asp-route-id="@entry.Id">
-                                <span><code class="me-2">@entry.ReferenceNumber</code>@entry.EntryDate.ToString("dd-MM-yyyy")</span>
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </div>
+            <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm" id="btnEditEntry" onclick="toggleEditMode()" @(Model.Any() ? "" : "disabled")>
+                <i class="bi bi-pencil me-1"></i> Edit
+            </button>
         </div>
     </div>
 
@@ -73,26 +60,26 @@
                                 var showDate = (currentDateStr != lastDate);
                                 if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
 
-                                var nextEntryDateStr = (e + 1 < Model.Count) ? Model[e + 1].EntryDate.ToString("dd-MM-yyyy") : null;
-                                var isLastEntryInDateGroup = (nextEntryDateStr != currentDateStr);
-
                                 var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
 
                                 for (int i = 0; i < allLines.Count; i++)
                                 {
                                     var line = allLines[i];
                                     var isFirstRow = (i == 0);
-                                    var isLastRow = (i == allLines.Count - 1);
                                     var isDebit = line.Debit > 0;
 
-                                    var showBottomBorder = isLastRow && isLastEntryInDateGroup;
-                                    var rowClass = (showBottomBorder ? "border-bottom border-2" : "border-bottom-0") + " " + entryShade;
-
-                                    <tr class="@rowClass">
+                                    <tr class="@entryShade">
                                         <td class="ps-4 text-center align-top">
                                             @if (isFirstRow && showDate)
                                             {
-                                                <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold fs-6 px-3 py-2">@entry.EntryDate.Day</span>
+                                                <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold small px-2 py-1">@entry.EntryDate.Day</span>
+                                            }
+                                            @if (isFirstRow)
+                                            {
+                                                <a asp-controller="JournalEntry" asp-action="Edit" asp-route-id="@entry.Id"
+                                                   class="edit-pencil-icon d-none text-primary ms-1" title="Edit entri ini">
+                                                    <i class="bi bi-pencil-fill"></i>
+                                                </a>
                                             }
                                         </td>
                                         <td class="align-top @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
@@ -129,3 +116,15 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function toggleEditMode() {
+            var btn = document.getElementById('btnEditEntry');
+            btn.classList.toggle('active');
+            document.querySelectorAll('.edit-pencil-icon').forEach(function (el) {
+                el.classList.toggle('d-none');
+            });
+        }
+    </script>
+}
