@@ -6,23 +6,36 @@ namespace AumoFinance.Models
 {
     public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) 
-            : base(options) 
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
         {
         }
 
+        // ==========================================
         // Accounting
+        // ==========================================
+
         public DbSet<ChartOfAccount> ChartOfAccounts => Set<ChartOfAccount>();
+
         public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+
         public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
-        public DbSet<Period> Periods { get; set; }
+
+        public DbSet<Period> Periods => Set<Period>();
 
 
+        // ==========================================
         // Guardian Security
+        // ==========================================
+
         public DbSet<UserSession> UserSessions => Set<UserSession>();
+
         public DbSet<TrustedDevice> TrustedDevices => Set<TrustedDevice>();
+
         public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
+
         public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
+
         public DbSet<SecuritySetting> SecuritySettings => Set<SecuritySetting>();
 
 
@@ -37,7 +50,7 @@ namespace AumoFinance.Models
 
             builder.Entity<ChartOfAccount>(entity =>
             {
-                entity.HasIndex(a => a.ReferenceNumber)
+                entity.HasIndex(x => x.ReferenceNumber)
                       .IsUnique();
             });
 
@@ -48,18 +61,22 @@ namespace AumoFinance.Models
 
             builder.Entity<JournalEntry>(entity =>
             {
-                entity.HasMany(j => j.Lines)
-                      .WithOne(l => l.JournalEntry)
-                      .HasForeignKey(l => l.JournalEntryId)
+                entity.HasMany(x => x.Lines)
+                      .WithOne(x => x.JournalEntry)
+                      .HasForeignKey(x => x.JournalEntryId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
 
+            // ==========================================
+            // Journal Entry Line - COA
+            // ==========================================
+
             builder.Entity<JournalEntryLine>(entity =>
             {
-                entity.HasOne(l => l.Account)
+                entity.HasOne(x => x.Account)
                       .WithMany()
-                      .HasForeignKey(l => l.AccountId)
+                      .HasForeignKey(x => x.AccountId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -71,6 +88,11 @@ namespace AumoFinance.Models
             builder.Entity<UserSession>(entity =>
             {
                 entity.HasKey(x => x.Id);
+
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasIndex(x => x.UserId);
 
@@ -85,6 +107,12 @@ namespace AumoFinance.Models
 
                 entity.Property(x => x.IpAddress)
                       .HasMaxLength(50);
+
+                entity.Property(x => x.Country)
+                      .HasMaxLength(100);
+
+                entity.Property(x => x.RefreshTokenHash)
+                      .HasMaxLength(255);
             });
 
 
@@ -96,6 +124,11 @@ namespace AumoFinance.Models
             {
                 entity.HasKey(x => x.Id);
 
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 entity.HasIndex(x => x.UserId);
 
                 entity.HasIndex(x => x.DeviceIdentifier)
@@ -103,6 +136,9 @@ namespace AumoFinance.Models
 
                 entity.Property(x => x.DeviceName)
                       .HasMaxLength(100);
+
+                entity.Property(x => x.DeviceIdentifier)
+                      .HasMaxLength(255);
 
                 entity.Property(x => x.Browser)
                       .HasMaxLength(100);
@@ -120,6 +156,11 @@ namespace AumoFinance.Models
             {
                 entity.HasKey(x => x.Id);
 
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
                 entity.HasIndex(x => x.UserId);
 
                 entity.Property(x => x.ActivityType)
@@ -128,8 +169,14 @@ namespace AumoFinance.Models
                 entity.Property(x => x.Device)
                       .HasMaxLength(100);
 
+                entity.Property(x => x.Browser)
+                      .HasMaxLength(100);
+
                 entity.Property(x => x.IpAddress)
                       .HasMaxLength(50);
+
+                entity.Property(x => x.Country)
+                      .HasMaxLength(100);
             });
 
 
@@ -140,6 +187,11 @@ namespace AumoFinance.Models
             builder.Entity<RecoveryCode>(entity =>
             {
                 entity.HasKey(x => x.Id);
+
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasIndex(x => x.UserId);
 
@@ -155,6 +207,11 @@ namespace AumoFinance.Models
             builder.Entity<SecuritySetting>(entity =>
             {
                 entity.HasKey(x => x.UserId);
+
+                entity.HasOne(x => x.User)
+                      .WithOne()
+                      .HasForeignKey<SecuritySetting>(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.Property(x => x.SessionTimeoutMinutes)
                       .HasDefaultValue(30);
