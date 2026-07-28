@@ -1,102 +1,93 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    const terminateButtons =
-        document.querySelectorAll(".btn-terminate-session");
+    // Terminate Session
+    document.querySelectorAll(".btn-terminate-session")
+        .forEach(button => {
 
-    terminateButtons.forEach(button => {
+            button.addEventListener("click", function () {
 
-        button.addEventListener("click", function () {
-
-            const confirmed =
-                confirm(
-                    "Terminate this session?"
+                const confirmed = confirm(
+                    "Terminate this active session?"
                 );
 
-            if (!confirmed) {
-                return;
-            }
-
-            console.log(
-                "Session termination requested"
-            );
-
-            // TODO:
-            // AJAX POST
-            // /Guardian/TerminateSession
-
-        });
-
-    });
-
-
-    const removeDeviceButtons =
-        document.querySelectorAll(".btn-remove-device");
-
-
-    removeDeviceButtons.forEach(button => {
-
-        button.addEventListener("click", function () {
-
-            const confirmed =
-                confirm(
-                    "Remove this trusted device?"
-                );
-
-
-            if (!confirmed) {
-                return;
-            }
-
-
-            console.log(
-                "Device removal requested"
-            );
-
-            // TODO:
-            // AJAX POST
-            // /Guardian/RemoveDevice
-
-        });
-
-    });
-
-
-    const generateCodesButton =
-        document.querySelector(
-            ".btn-generate-codes"
-        );
-
-
-    if(generateCodesButton)
-    {
-
-        generateCodesButton.addEventListener(
-            "click",
-            function(){
-
-                const confirmed =
-                    confirm(
-                        "Generate new recovery codes?"
-                    );
-
-
-                if(!confirmed)
-                {
+                if (!confirmed) {
                     return;
                 }
 
-
                 console.log(
-                    "Generate recovery codes"
+                    "Terminate session request"
                 );
 
-                // TODO:
-                // AJAX POST
-                // /Guardian/GenerateRecoveryCodes
+                /*
+                    TODO:
+                    POST /Guardian/TerminateSession
+                */
+
+            });
+
+        });
+
+
+    // Remove Trusted Device
+    document.querySelectorAll(".btn-remove-device")
+        .forEach(button => {
+
+            button.addEventListener("click", function () {
+
+                const confirmed = confirm(
+                    "Remove this trusted device?"
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                console.log(
+                    "Remove device request"
+                );
+
+                /*
+                    TODO:
+                    POST /Guardian/RemoveDevice
+                */
+
+            });
+
+        });
+
+
+    // Generate Recovery Codes
+    const generateButton =
+        document.querySelector(".btn-generate-codes");
+
+
+    if (generateButton) {
+
+        generateButton.addEventListener(
+            "click",
+            function () {
+
+                const confirmed = confirm(
+                    "Generate new recovery codes?"
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                console.log(
+                    "Generate recovery codes request"
+                );
+
+                /*
+                    TODO:
+                    POST /Guardian/GenerateRecoveryCodes
+                */
 
             }
         );
 
     }
+
 
 });
