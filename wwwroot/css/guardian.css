@@ -1,0 +1,48 @@
+.guardian-card {
+    transition: all .2s ease;
+}
+
+.guardian-card:hover {
+    transform: translateY(-3px);
+}
+
+.security-score {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.guardian-icon {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.activity-success {
+    color: #198754;
+}
+
+.activity-warning {
+    color: #ffc107;
+}
+
+.device-card {
+    min-height: 220px;
+}
+
+.recovery-code {
+    font-family: monospace;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.security-panel {
+    border-left: 4px solid #ffc107;
+}
+
+.dark-panel {
+    background-color: #121212;
+    color: white;
+}
