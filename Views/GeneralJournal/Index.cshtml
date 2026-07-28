@@ -206,11 +206,12 @@
                                         <td class="text-center align-top">
                                             <code>@line.Account?.ReferenceNumber</code>
                                         </td>
+                                        <!-- PERBAIKAN: Jika 0 maka cetak null (kosong), tidak perlu mencetak "-" atau "0" -->
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
-                                            @(isDebit ? line.Debit.ToString("N0") : "-")
+                                            @(line.Debit > 0 ? line.Debit.ToString("N0") : null)
                                         </td>
                                         <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
-                                            @(!isDebit ? line.Credit.ToString("N0") : "-")
+                                            @(line.Credit > 0 ? line.Credit.ToString("N0") : null)
                                         </td>
                                     </tr>
                                 }
