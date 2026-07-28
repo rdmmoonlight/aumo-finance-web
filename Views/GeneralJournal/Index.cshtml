@@ -1,8 +1,6 @@
 @model List<AumoFinance.Models.JournalEntry>
 @{
     ViewData["Title"] = "General Journal";
-    var totalDebit = Model.SelectMany(e => e.Lines).Sum(l => l.Debit);
-    var totalCredit = Model.SelectMany(e => e.Lines).Sum(l => l.Credit);
 }
 
 <div class="container-fluid py-4 px-4">
@@ -63,106 +61,6 @@
                     <tbody class="border-top-0">
                         @if (Model.Any())
                         {
-                            // 1. Kunci pengurutan secara kronologis
-                            var sortedEntries = Model.OrderBy(e => e.EntryDate).ThenBy(e => e.Id).ToList();
-
-                            string lastDate = "";
-                            int dateGroupIndex = 0;
-
-                            for (int e = 0; e < sortedEntries.Count; e++)
-                            {
-                                var entry = sortedEntries[e];
-                                var allLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
-
-                                var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
-                                var showDate = (currentDateStr != lastDate);
-                                if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
-
-                                var nextEntryDateStr = (e + 1 < sortedEntries.Count) ? sortedEntries[e + 1].EntryDate.ToString("dd-MM-yyyy") : null;
-                                var isLastEntryInDateGroup = (nextEntryDateStr != currentDateStr);
-
-                                var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
-
-                                for (int i = 0; i < allLines.Count; i++)
-                                {
-                                    var line = allLines[i];
-                                    var isFirstRow = (i == 0);
-                                    var isLastRow = (i == allLines.Count - 1);
-                                    var isDebit = line.Debit > 0;
-
-                                    // 2. Logika penentuan akhir kelompok
-                                    var showBottomBorder = isLastRow && isLastEntryInDateGroup;
-
-                                    // 3. Eksekusi CSS yang lebih tegas untuk garis tebal
-                                    var borderStyle = showBottomBorder ? "border-bottom: 2px solid #495057 !important;" : "";
-                                    var rowClass = (showBottomBorder ? "" : "border-bottom-0") + " " + entryShade;
-
-                                    <tr class="@rowClass" style="@borderStyle">
-                                        <td class="ps-4 text-center align-top">
-                                            @if (isFirstRow && showDate)
-                                            {
-                                                <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold fs-6 px-3 py-2">@entry.EntryDate.Day</span>
-                                            }
-                                        </td>
-                                        <td class="align-top @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
-                                            @line.Account?.AccountName
-                                        </td>
-                                        <td class="text-secondary small align-top">
-                                            @line.LineDescription
-                                        </td>
-                                        <td class="text-center align-top">
-                                            <code>@line.Account?.ReferenceNumber</code>
-                                        </td>
-                                        <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
-                                            @(isDebit ? line.Debit.ToString("N0") : "-")
-                                        </td>
-                                        <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
-                                            @(!isDebit ? line.Credit.ToString("N0") : "-")
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center py-5 text-secondary">
-                                    <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                    No journal entries recorded yet in this period.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                    @if (Model.Any())
-                    {
-                        <tfoot class="table-light">
-                            <tr>
-                                <td colspan="4" class="ps-4 text-end fw-bold text-body-emphasis">Total</td>
-                                <td class="text-end fw-bold text-success">@totalDebit.ToString("N0")</td>
-                                <td class="text-end pe-4 fw-bold text-danger">@totalCredit.ToString("N0")</td>
-                            </tr>
-                        </tfoot>
-                    }
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4 text-center" style="width: 5%;">Tgl</th>
-                            <th style="width: 27%;">Account</th>
-                            <th style="width: 27%;">Description</th>
-                            <th class="text-center" style="width: 8%;">Ref.</th>
-                            <th class="text-end" style="width: 16%;">Debit</th>
-                            <th class="text-end pe-4" style="width: 16%;">Credit</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        @if (Model.Any())
-                        {
                             string lastDate = "";
                             int dateGroupIndex = 0;
 
@@ -206,7 +104,6 @@
                                         <td class="text-center align-top">
                                             <code>@line.Account?.ReferenceNumber</code>
                                         </td>
-                                        <!-- PERBAIKAN: Jika 0 maka cetak null (kosong), tidak perlu mencetak "-" atau "0" -->
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
                                             @(line.Debit > 0 ? line.Debit.ToString("N0") : null)
                                         </td>
@@ -227,16 +124,6 @@
                             </tr>
                         }
                     </tbody>
-                    @if (Model.Any())
-                    {
-                        <tfoot class="table-light">
-                            <tr>
-                                <td colspan="4" class="ps-4 text-end fw-bold text-body-emphasis">Total</td>
-                                <td class="text-end fw-bold text-success">@totalDebit.ToString("N0")</td>
-                                <td class="text-end pe-4 fw-bold text-danger">@totalCredit.ToString("N0")</td>
-                            </tr>
-                        </tfoot>
-                    }
                 </table>
             </div>
         </div>
