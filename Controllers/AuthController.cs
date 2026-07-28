@@ -152,7 +152,7 @@ namespace AumoFinance.Controllers
                 await _emailSender.SendEmailAsync(
                     user.Email!,
                     "Reset your Aumo Finance password",
-                    $"Reset your password by clicking <a href='{resetUrl}'>here</a>.");
+                    EmailTemplates.PasswordReset(user.FullName, resetUrl!));
             }
 
             // Same message whether or not the email is registered — avoids account enumeration.
@@ -283,7 +283,7 @@ namespace AumoFinance.Controllers
             await _emailSender.SendEmailAsync(
                 user.Email!,
                 "Confirm your Aumo Finance account",
-                $"Confirm your account by clicking <a href='{confirmUrl}'>here</a>.");
+                EmailTemplates.EmailConfirmation(user.FullName, confirmUrl!));
         }
     }
 }

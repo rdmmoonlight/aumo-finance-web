@@ -318,10 +318,127 @@ namespace AumoFinance.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        public IActionResult BackupDatabase()
+        // ==========================================
+        // EXPORT DATA (XLSX) — dipindah dari halaman Settings.
+        // Mengekspor Chart of Accounts, Journal Entries, dan Periods
+        // langsung dari database ke satu file .xlsx multi-sheet.
+        // ==========================================
+
+        public async Task<IActionResult> BackupDatabase()
         {
-            TempData["SuccessMessage"] = "Database backup export request received.";
-            return RedirectToAction(nameof(Index));
+            using var workbook = new XLWorkbook();
+
+            var accounts = await _context.ChartOfAccounts
+                .OrderBy(a => a.ReferenceNumber)
+                .ToListAsync();
+
+            var entries = await _context.JournalEntries
+                .Include(e => e.Lines)
+                    .ThenInclude(l => l.Account)
+                .OrderBy(e => e.EntryDate)
+                .ThenBy(e => e.Id)
+                .ToListAsync();
+
+            var periods = await _context.Periods
+                .OrderBy(p => p.StartDate)
+                .ToListAsync();
+
+            BuildChartOfAccountsSheet(workbook, accounts);
+            BuildJournalEntriesSheet(workbook, entries);
+            BuildPeriodsSheet(workbook, periods);
+
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            var content = stream.ToArray();
+
+            var fileName = $"AumoFinance_Export_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+
+            return File(
+                content,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+
+        private static void WriteHeaderRow(IXLWorksheet sheet, string[] headers)
+        {
+            for (int i = 0; i < headers.Length; i++)
+            {
+                var cell = sheet.Cell(1, i + 1);
+                cell.Value = headers[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#212529");
+                cell.Style.Font.FontColor = XLColor.White;
+            }
+        }
+
+        private static void BuildChartOfAccountsSheet(XLWorkbook workbook, List<ChartOfAccount> accounts)
+        {
+            var sheet = workbook.Worksheets.Add("Chart of Accounts");
+            WriteHeaderRow(sheet, new[] { "Ref", "Account Name", "Type", "Role", "Active" });
+
+            int row = 2;
+            foreach (var a in accounts)
+            {
+                sheet.Cell(row, 1).Value = a.ReferenceNumber;
+                sheet.Cell(row, 2).Value = a.AccountName;
+                sheet.Cell(row, 3).Value = a.Type;
+                sheet.Cell(row, 4).Value = a.Role;
+                sheet.Cell(row, 5).Value = a.IsActive ? "Yes" : "No";
+                row++;
+            }
+
+            sheet.Columns().AdjustToContents();
+        }
+
+        private static void BuildJournalEntriesSheet(XLWorkbook workbook, List<JournalEntry> entries)
+        {
+            var sheet = workbook.Worksheets.Add("Journal Entries");
+            WriteHeaderRow(sheet, new[] { "Date", "Type", "Entry Ref", "Account Ref", "Account Name", "Description", "Debit", "Credit" });
+
+            int row = 2;
+            foreach (var entry in entries)
+            {
+                foreach (var line in entry.Lines.OrderBy(l => l.LineOrder))
+                {
+                    sheet.Cell(row, 1).Value = entry.EntryDate;
+                    sheet.Cell(row, 2).Value = entry.JournalType;
+                    sheet.Cell(row, 3).Value = entry.ReferenceNumber;
+                    sheet.Cell(row, 4).Value = line.Account?.ReferenceNumber;
+                    sheet.Cell(row, 5).Value = line.Account?.AccountName;
+                    sheet.Cell(row, 6).Value = line.LineDescription;
+                    sheet.Cell(row, 7).Value = line.Debit;
+                    sheet.Cell(row, 8).Value = line.Credit;
+                    row++;
+                }
+            }
+
+            if (row > 2)
+            {
+                sheet.Range(2, 1, row - 1, 1).Style.DateFormat.Format = "yyyy-mm-dd";
+            }
+            sheet.Columns().AdjustToContents();
+        }
+
+        private static void BuildPeriodsSheet(XLWorkbook workbook, List<Period> periods)
+        {
+            var sheet = workbook.Worksheets.Add("Periods");
+            WriteHeaderRow(sheet, new[] { "Period Name", "Start Date", "End Date", "Status" });
+
+            int row = 2;
+            foreach (var p in periods)
+            {
+                sheet.Cell(row, 1).Value = p.PeriodName;
+                sheet.Cell(row, 2).Value = p.StartDate;
+                sheet.Cell(row, 3).Value = p.EndDate;
+                sheet.Cell(row, 4).Value = p.IsClosed ? "Closed" : "Open";
+                row++;
+            }
+
+            if (row > 2)
+            {
+                sheet.Range(2, 2, row - 1, 3).Style.DateFormat.Format = "yyyy-mm-dd";
+            }
+            sheet.Columns().AdjustToContents();
         }
     }
 }
