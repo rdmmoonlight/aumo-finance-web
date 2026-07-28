@@ -68,10 +68,15 @@
 
                             foreach (var entry in Model)
                             {
-                                var orderedLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
-                                var debitLines = orderedLines.Where(l => l.Debit > 0).ToList();
-                                var creditLines = orderedLines.Where(l => l.Credit > 0).ToList();
-                                var allLines = debitLines.Concat(creditLines).ToList();
+                                // PERBAIKAN: Hanya ambil baris yang tidak 0, dan hindari duplikasi Concat.
+                                // Urutkan Debit di atas, baru Kredit, lalu berdasarkan LineOrder asli
+                                var allLines = entry.Lines
+                                    .Where(l => l.Debit != 0 || l.Credit != 0)
+                                    .OrderByDescending(l => l.Debit > 0)
+                                    .ThenBy(l => l.LineOrder)
+                                    .ToList();
+
+                                if (!allLines.Any()) continue;
 
                                 var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
                                 var showDate = (currentDateStr != lastDate);
@@ -105,11 +110,12 @@
                                         <td class="text-center align-top">
                                             <code>@line.Account?.ReferenceNumber</code>
                                         </td>
+                                        <!-- PERBAIKAN: Jika 0 maka cetak null (kosong), tidak perlu mencetak "-" atau "0" -->
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
-                                            @(isDebit ? line.Debit.ToString("N0") : "-")
+                                            @(line.Debit > 0 ? line.Debit.ToString("N0") : null)
                                         </td>
                                         <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
-                                            @(!isDebit ? line.Credit.ToString("N0") : "-")
+                                            @(line.Credit > 0 ? line.Credit.ToString("N0") : null)
                                         </td>
                                     </tr>
                                 }
