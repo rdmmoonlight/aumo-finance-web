@@ -1,0 +1,445 @@
+@model AumoFinance.Models.Guardian.GuardianDashboardViewModel
+
+@{
+    ViewData["Title"] = "Guardian";
+}
+
+<div class="container-fluid">
+
+    <!-- ========================================= -->
+    <!-- PAGE HEADER                               -->
+    <!-- ========================================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-shield-check text-warning"></i>
+                Guardian
+            </h2>
+
+            <div class="text-secondary">
+                Manage your account security and authentication.
+            </div>
+        </div>
+
+        <div>
+            <span class="badge bg-success fs-6">
+                Security Score
+                @Model.SecurityScore%
+            </span>
+        </div>
+
+    </div>
+
+    <!-- ========================================= -->
+    <!-- STATUS CARDS                              -->
+    <!-- ========================================= -->
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-secondary small">
+                        Active Sessions
+                    </div>
+
+                    <div class="display-6 fw-bold">
+                        @Model.ActiveSessions
+                    </div>
+
+                    <div class="small text-muted">
+                        Logged in devices
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-secondary small">
+                        Trusted Devices
+                    </div>
+
+                    <div class="display-6 fw-bold">
+                        @Model.TrustedDevices
+                    </div>
+
+                    <div class="small text-muted">
+                        Registered devices
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-secondary small">
+                        Last Login
+                    </div>
+
+                    <div class="fw-semibold fs-5">
+
+                        @Model.LastLogin.ToString("dd MMM yyyy")
+
+                    </div>
+
+                    <div class="small text-muted">
+
+                        @Model.LastLogin.ToString("HH:mm")
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+
+            <div class="card border-0 shadow-sm h-100">
+
+                <div class="card-body">
+
+                    <div class="text-secondary small">
+
+                        Account
+
+                    </div>
+
+                    <div class="fw-semibold">
+
+                        @Model.Username
+
+                    </div>
+
+                    <div class="small text-muted">
+
+                        @Model.Email
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================= -->
+    <!-- SECURITY STATUS                           -->
+    <!-- ========================================= -->
+
+    <div class="card shadow-sm border-0 mb-4">
+
+        <div class="card-header bg-dark text-white">
+
+            <i class="bi bi-lock-fill me-2"></i>
+
+            Security Status
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-6">
+
+                    <table class="table table-sm align-middle">
+
+                        <tbody>
+
+                        <tr>
+
+                            <td>Email Verification</td>
+
+                            <td class="text-end">
+
+                                @if (Model.Security.EmailVerified)
+                                {
+                                    <span class="badge bg-success">
+                                        Verified
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        Not Verified
+                                    </span>
+                                }
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <td>Password</td>
+
+                            <td class="text-end">
+
+                                @if (Model.Security.PasswordProtected)
+                                {
+                                    <span class="badge bg-success">
+                                        Protected
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        Weak
+                                    </span>
+                                }
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <td>Multi-Factor Authentication</td>
+
+                            <td class="text-end">
+
+                                @if (Model.Security.MultiFactorEnabled)
+                                {
+                                    <span class="badge bg-success">
+                                        Enabled
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        Disabled
+                                    </span>
+                                }
+
+                            </td>
+
+                        </tr>
+
+                        <tr>
+
+                            <td>Recovery Codes</td>
+
+                            <td class="text-end">
+
+                                @if (Model.Security.RecoveryCodesAvailable)
+                                {
+                                    <span class="badge bg-success">
+                                        Available
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">
+                                        Missing
+                                    </span>
+                                }
+
+                            </td>
+
+                        </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <div class="col-md-6">
+
+                    <div class="alert alert-info mb-0">
+
+                        <h6 class="fw-bold">
+
+                            Recommendation
+
+                        </h6>
+
+                        @if (!Model.Security.MultiFactorEnabled)
+                        {
+                            <p class="mb-2">
+
+                                Enable Multi-Factor Authentication to
+                                significantly improve account security.
+
+                            </p>
+                        }
+                        else
+                        {
+                            <p class="mb-2">
+
+                                Your account security configuration
+                                is in good condition.
+
+                            </p>
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================= -->
+    <!-- QUICK ACTIONS                             -->
+    <!-- ========================================= -->
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white">
+
+            Quick Actions
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-lg-3">
+
+                    <a asp-action="Sessions"
+                       class="btn btn-outline-primary w-100">
+
+                        <i class="bi bi-pc-display me-2"></i>
+
+                        Active Sessions
+
+                    </a>
+
+                </div>
+
+                <div class="col-lg-3">
+
+                    <a asp-action="Devices"
+                       class="btn btn-outline-success w-100">
+
+                        <i class="bi bi-laptop me-2"></i>
+
+                        Trusted Devices
+
+                    </a>
+
+                </div>
+
+                <div class="col-lg-3">
+
+                    <a asp-action="Activity"
+                       class="btn btn-outline-warning w-100">
+
+                        <i class="bi bi-clock-history me-2"></i>
+
+                        Activity Log
+
+                    </a>
+
+                </div>
+
+                <div class="col-lg-3">
+
+                    <a asp-action="RecoveryCodes"
+                       class="btn btn-outline-danger w-100">
+
+                        <i class="bi bi-file-earmark-lock me-2"></i>
+
+                        Recovery Codes
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================= -->
+    <!-- RECENT ACTIVITY                           -->
+    <!-- ========================================= -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-dark text-white">
+
+            Recent Activity
+
+        </div>
+
+        <div class="card-body p-0">
+
+            <table class="table table-hover mb-0">
+
+                <thead>
+
+                <tr>
+
+                    <th>Activity</th>
+                    <th>Device</th>
+                    <th>Browser</th>
+                    <th>Country</th>
+                    <th>Time</th>
+
+                </tr>
+
+                </thead>
+
+                <tbody>
+
+                @foreach (var item in Model.RecentActivities)
+                {
+                    <tr>
+
+                        <td>@item.Activity</td>
+
+                        <td>@item.Device</td>
+
+                        <td>@item.Browser</td>
+
+                        <td>@item.Country</td>
+
+                        <td>
+
+                            @item.OccurredAt.ToString("dd MMM yyyy HH:mm")
+
+                        </td>
+
+                    </tr>
+                }
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
