@@ -5,8 +5,10 @@
 <!-- ========================================== -->
 <!-- ROW 1: Main Header (Flexible Height)       -->
 <!-- ========================================== -->
-<header class="navbar navbar-expand border-bottom px-3 py-2 bg-body-tertiary" style="min-height: 56px;">
-    <div class="container-fluid p-0 d-flex align-items-center justify-content-between h-100">
+<header class="navbar navbar-expand border-bottom py-2 bg-body-tertiary" style="min-height: 56px;">
+    
+    <!-- Ganti container-fluid menjadi container-xxl agar lebarnya dibatasi dan otomatis ke tengah -->
+    <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
         <!-- 1. Left Section: Title -->
         <div class="d-flex align-items-center me-2" style="max-width: 160px;">
@@ -15,7 +17,7 @@
             </span>
         </div>
 
-        <!-- 2. Center Section: Quran Verse Partial (2 Baris) -->
+        <!-- 2. Center Section: Quran Verse Partial -->
         <div class="d-none d-md-flex flex-column align-items-center justify-content-center flex-grow-1 mx-2 text-center" style="max-width: 800px;">
             <partial name="_QuranVerse" />
         </div>
@@ -23,7 +25,7 @@
         <!-- Right Section: Search & Kebab Menu -->
         <div class="d-flex align-items-center gap-0">
             
-            <!-- 3. Search Icon (Protected: Only visible if user is logged in) -->
+            <!-- 3. Search Icon (Protected) -->
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
