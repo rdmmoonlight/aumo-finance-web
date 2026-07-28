@@ -6,6 +6,8 @@ public class RecoveryCode
 
     public Guid UserId { get; set; }
 
+    public ApplicationUser User { get; set; } = null!;
+
     public string CodeHash { get; set; } = string.Empty;
 
     public bool Used { get; set; }
