@@ -7,8 +7,7 @@ namespace AumoFinance.Models;
 
 public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
-    public AppDbContext(
-        DbContextOptions<AppDbContext> options)
+    public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
@@ -23,7 +22,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<Period> Periods => Set<Period>();
 
 
-    // Guardian
+    // Guardian Security
     public DbSet<UserSession> UserSessions => Set<UserSession>();
 
     public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
@@ -35,6 +34,82 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         base.OnModelCreating(builder);
 
 
+
+        builder.Entity<ChartOfAccount>(entity =>
+        {
+            entity.HasIndex(x => x.ReferenceNumber)
+                .IsUnique();
+        });
+
+
+
+        builder.Entity<JournalEntry>(entity =>
+        {
+            entity.HasMany(x => x.Lines)
+                .WithOne(x => x.JournalEntry)
+                .HasForeignKey(x => x.JournalEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+
+        builder.Entity<JournalEntryLine>(entity =>
+        {
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
+
+        // ============================
+        // Guardian User Session
+        // ============================
+
+        builder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+
+            entity.HasIndex(x => new
+            {
+                x.UserId,
+                x.IsActive
+            });
+
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+
+        // ============================
+        // Guardian Login Activity
+        // ============================
+
+        builder.Entity<LoginActivity>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+
+            entity.HasIndex(x => new
+            {
+                x.UserId,
+                x.CreatedAt
+            });
+
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+}
 
         builder.Entity<ChartOfAccount>(entity =>
         {
