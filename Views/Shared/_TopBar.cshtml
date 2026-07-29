@@ -3,11 +3,63 @@
 @inject AppDbContext _context
 
 <!-- ========================================== -->
-<!-- ROW 1: Main Header (Flexible Height)       -->
+<!-- CSS & JS KHUSUS TOPBAR                     -->
+<!-- ========================================== -->
+<style>
+    /* Efek putaran untuk indikator Sync */
+    .icon-spin {
+        display: inline-block;
+        animation: spin 1.5s linear infinite;
+    }
+    @keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<script>
+    /**
+     * Memicu UI Sync Indicator.
+     * @param {boolean} isSuccess - true = sukses ke DB, false = error
+     * @param {number} queueTimeMs - Waktu tunggu, default 10 detik (10000 ms)
+     */
+    function triggerSyncProcess(isSuccess = true, queueTimeMs = 10000) {
+        const syncBtn = document.getElementById('syncBtn');
+        const syncIcon = document.getElementById('syncIcon');
+
+        if (!syncBtn || !syncIcon) return;
+
+        // 1. FASE QUEUE: Warna Oranye Ketela dan berputar
+        syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
+        syncBtn.style.color = '#d97706'; // Warna oranye ketela
+        syncBtn.title = "Syncing: Dalam antrean (10 detik)...";
+        syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
+
+        // 2. JEDA ANTREAN 10 DETIK
+        setTimeout(() => {
+            syncIcon.classList.remove('icon-spin');
+            syncBtn.style.color = ''; // Reset custom inline color
+
+            // 3. FASE HASIL EKSEKUSI DB
+            if (isSuccess) {
+                // Berhasil: Biru muda
+                syncBtn.classList.add('text-info');
+                syncBtn.title = "Sync: Tersimpan di Database";
+                syncIcon.className = "bi bi-cloud-check";
+            } else {
+                // Gagal: Merah
+                syncBtn.classList.add('text-danger');
+                syncBtn.title = "Sync: Error menyimpan data!";
+                syncIcon.className = "bi bi-cloud-slash";
+            }
+        }, queueTimeMs);
+    }
+</script>
+
+<!-- ========================================== -->
+<!-- ROW 1: Main Header                         -->
 <!-- ========================================== -->
 <header class="navbar navbar-expand border-bottom py-2 bg-body-tertiary" style="min-height: 56px;">
     
-    <!-- Ganti container-fluid menjadi container-xxl agar lebarnya dibatasi dan otomatis ke tengah -->
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
         <!-- 1. Left Section: Title -->
@@ -22,12 +74,22 @@
             <partial name="_QuranVerse" />
         </div>
 
-        <!-- Right Section: Search & Kebab Menu -->
-        <div class="d-flex align-items-center gap-0">
+        <!-- Right Section: Indicators, Search & Kebab Menu -->
+        <div class="d-flex align-items-center gap-1">
             
-            <!-- 3. Search Icon (Protected) -->
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
+                <!-- Indicator: Guardian (Tameng) -->
+                <button class="btn btn-sm btn-link text-success p-1 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
+                    <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
+                </button>
+
+                <!-- Indicator: Sync -->
+                <button id="syncBtn" class="btn btn-sm btn-link text-info p-1 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
+                    <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
+                </button>
+
+                <!-- 3. Search Icon -->
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                     <i class="bi bi-search" style="font-size: 0.825rem;"></i>
                 </button>
@@ -50,11 +112,10 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Active Period & Dropdown (Protected)-->
+<!-- ROW 2: Active Period & Dropdown            -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
-    // Cek langsung ke Database mencari Periode yang aktif (belum di-close)
     var activePeriodObj = _context.Periods
         .Where(p => !p.IsClosed)
         .OrderByDescending(p => p.StartDate)
@@ -75,17 +136,12 @@
             
             <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.75rem; min-width: 180px;">
                 <li><h6 class="dropdown-header py-1" style="font-size: 0.7rem;">Period Management</h6></li>
-                
-                <!-- Tombol Create Periode Baru -->
                 <li>
                     <a class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Create">
                         <i class="bi bi-plus-circle"></i> Open New Period
                     </a>
                 </li>
-                
                 <li><hr class="dropdown-divider my-1"></li>
-                
-                <!-- Opsi ke Daftar Periode (Index) -->
                 <li>
                     <a class="dropdown-item py-1 d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Index">
                         <i class="bi bi-list-ul"></i> View All Periods
@@ -96,7 +152,9 @@
     </div>
 }
 
-<!-- Search Modal (Optional: Also protected so modal code isn't rendered unless logged in) -->
+<!-- ========================================== -->
+<!-- Search Modal                               -->
+<!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
     <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
