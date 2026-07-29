@@ -1,16 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AumoFinance.Models;
+using AumoFinance.Models; // <-- Namespace folder Models
 
-namespace AumoFinance.Controllers.Api;
+namespace AumoFinance.Controllers;
 
 [ApiController]
 [Route("api/mobile")]
 public class MobileApiController : ControllerBase
 {
-    private readonly ApplicationDbContext _db; // DbContext Web Anda
+    private readonly AppDbContext _db; // <-- Menggunakan AppDbContext (bukan ApplicationDbContext)
 
-    public MobileApiController(ApplicationDbContext db)
+    public MobileApiController(AppDbContext db)
     {
         _db = db;
     }
@@ -19,7 +19,7 @@ public class MobileApiController : ControllerBase
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
-        // Contoh query langsung dari DB web yang sama
+        // Contoh query sederhana ke DbContext Anda
         var totalCash = await _db.Accounts
             .Where(a => a.IsCash)
             .SumAsync(a => a.Balance);
@@ -27,22 +27,10 @@ public class MobileApiController : ControllerBase
         return Ok(new 
         { 
             TotalCash = totalCash,
-            ActivePeriod = "2026-Q3"
+            ActivePeriod = "2026-Q3",
+            Revenue = 0,
+            Expenses = 0,
+            NetIncome = 0
         });
     }
-
-    // POST: api/mobile/journal
-    [HttpPost("journal")]
-    public async Task<IActionResult> CreateJournal([FromBody] MobileJournalDto dto)
-    {
-        if (!ModelState.IsValid) return BadRequest();
-
-        // Simpan data transaksi langsung ke DB Web
-        // ...
-        await _db.SaveChangesAsync();
-
-        return Ok(new { Message = "Berhasil disimpan" });
-    }
 }
-
-public record MobileJournalDto(DateTime Date, decimal Amount, string Description);
