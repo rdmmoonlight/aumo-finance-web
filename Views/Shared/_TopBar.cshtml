@@ -3,11 +3,65 @@
 @inject AppDbContext _context
 
 <!-- ========================================== -->
-<!-- ROW 1: Main Header (Flexible Height)       -->
+<!-- TOPBAR CSS & JS                            -->
+<!-- ========================================== -->
+<style>
+    /* Spin effect for the Sync indicator */
+    .icon-spin {
+        display: inline-block;
+        animation: spin 1.5s linear infinite;
+    }
+    
+    /* Escaping CSS keyframes for Razor compiler */
+    @@keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<script>
+    /**
+     * Triggers the UI Sync Indicator.
+     * param {boolean} isSuccess - true = success saving to DB, false = error
+     * param {number} queueTimeMs - Wait time, default 10 seconds (10000 ms)
+     */
+    function triggerSyncProcess(isSuccess = true, queueTimeMs = 10000) {
+        const syncBtn = document.getElementById('syncBtn');
+        const syncIcon = document.getElementById('syncIcon');
+
+        if (!syncBtn || !syncIcon) return;
+
+        // 1. QUEUE PHASE: Sweet potato orange color and spinning icon
+        syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
+        syncBtn.style.color = '#d97706'; // Sweet potato orange hex
+        syncBtn.title = "Syncing: In queue (10 seconds)...";
+        syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
+
+        // 2. 10-SECOND QUEUE DELAY
+        setTimeout(() => {
+            syncIcon.classList.remove('icon-spin');
+            syncBtn.style.color = ''; // Reset custom inline color
+
+            // 3. DB EXECUTION RESULT PHASE
+            if (isSuccess) {
+                // Success: Light blue
+                syncBtn.classList.add('text-info');
+                syncBtn.title = "Sync: Saved to Database";
+                syncIcon.className = "bi bi-cloud-check";
+            } else {
+                // Failed: Red
+                syncBtn.classList.add('text-danger');
+                syncBtn.title = "Sync: Error saving data!";
+                syncIcon.className = "bi bi-cloud-slash";
+            }
+        }, queueTimeMs);
+    }
+</script>
+
+<!-- ========================================== -->
+<!-- ROW 1: Main Header                         -->
 <!-- ========================================== -->
 <header class="navbar navbar-expand border-bottom py-2 bg-body-tertiary" style="min-height: 56px;">
     
-    <!-- Ganti container-fluid menjadi container-xxl agar lebarnya dibatasi dan otomatis ke tengah -->
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
         <!-- 1. Left Section: Title -->
@@ -23,11 +77,11 @@
         </div>
 
         <!-- Right Section: Search & Kebab Menu -->
-        <div class="d-flex align-items-center gap-0">
+        <div class="d-flex align-items-center gap-1">
             
-            <!-- 3. Search Icon (Protected) -->
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
+                <!-- 3. Search Icon -->
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                     <i class="bi bi-search" style="font-size: 0.825rem;"></i>
                 </button>
@@ -50,11 +104,11 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Active Period & Dropdown (Protected)-->
+<!-- ROW 2: Active Period & Status Indicators   -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
-    // Cek langsung ke Database mencari Periode yang aktif (belum di-close)
+    // Check database directly for the active (unclosed) period
     var activePeriodObj = _context.Periods
         .Where(p => !p.IsClosed)
         .OrderByDescending(p => p.StartDate)
@@ -65,7 +119,9 @@
     var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
     var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
 
-    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+        
+        <!-- Active Period Dropdown -->
         <div class="dropdown">
             <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi @iconClass"></i>
@@ -75,17 +131,12 @@
             
             <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.75rem; min-width: 180px;">
                 <li><h6 class="dropdown-header py-1" style="font-size: 0.7rem;">Period Management</h6></li>
-                
-                <!-- Tombol Create Periode Baru -->
                 <li>
                     <a class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Create">
                         <i class="bi bi-plus-circle"></i> Open New Period
                     </a>
                 </li>
-                
                 <li><hr class="dropdown-divider my-1"></li>
-                
-                <!-- Opsi ke Daftar Periode (Index) -->
                 <li>
                     <a class="dropdown-item py-1 d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Index">
                         <i class="bi bi-list-ul"></i> View All Periods
@@ -93,10 +144,29 @@
                 </li>
             </ul>
         </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- Row 2 Indicators: Guardian & Sync -->
+        <div class="d-flex align-items-center gap-1">
+            <!-- Indicator: Guardian (Shield) -->
+            <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
+                <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
+            </button>
+
+            <!-- Indicator: Sync -->
+            <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
+                <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
+            </button>
+        </div>
+
     </div>
 }
 
-<!-- Search Modal (Optional: Also protected so modal code isn't rendered unless logged in) -->
+<!-- ========================================== -->
+<!-- Search Modal                               -->
+<!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
     <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">

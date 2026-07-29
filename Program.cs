@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 // =====================================
 // Database - Neon PostgreSQL
 // =====================================
@@ -19,8 +18,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
-
-
 
 // =====================================
 // ASP.NET Core Identity
@@ -40,37 +37,25 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 .AddDefaultTokenProviders()
 .AddClaimsPrincipalFactory<AumoUserClaimsPrincipalFactory>();
 
-
-
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Auth/Login";
-
     options.AccessDeniedPath = "/Auth/Login";
-
-    options.ExpireTimeSpan =
-        TimeSpan.FromDays(30);
-
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
 });
-
-
 
 // =====================================
 // Services
 // =====================================
 
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
-
 builder.Services.AddScoped<IGuardianService, GuardianService>();
-
 builder.Services.AddMemoryCache();
 
-
-
 // =====================================
-// Forwarded Headers
-// For Railway / Render Proxy
+// Forwarded Headers (Railway / Render Proxy)
+// Updated for .NET 10 (Fix Warning ASPDEPR005)
 // =====================================
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -79,47 +64,36 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedFor |
         ForwardedHeaders.XForwardedProto;
 
-
-    options.KnownNetworks.Clear();
-
+    options.KnownIPNetworks.Clear(); // Menggantikan KnownNetworks yang obsolete
     options.KnownProxies.Clear();
 });
 
-
-
 // =====================================
-// MVC + Global Authorization
+// MVC + Global Authorization + Controllers API
 // =====================================
+
+builder.Services.AddControllers(); // PENTING: Untuk mengaktifkan Controller API Mobile
 
 builder.Services.AddControllersWithViews(options =>
 {
-    var policy =
-        new AuthorizationPolicyBuilder()
-            .RequireAuthenticatedUser()
-            .Build();
+    var policy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
 
-
-    options.Filters.Add(
-        new AuthorizeFilter(policy)
-    );
+    options.Filters.Add(new AuthorizeFilter(policy));
 });
 
-
-
 // =====================================
-// Google Login Optional
+// Google Login (Optional)
 // =====================================
 
 var googleClientId =
     builder.Configuration["Authentication:Google:ClientId"]
     ?? builder.Configuration["Google:ClientId"];
 
-
 var googleClientSecret =
     builder.Configuration["Authentication:Google:ClientSecret"]
     ?? builder.Configuration["Google:ClientSecret"];
-
-
 
 if (!string.IsNullOrWhiteSpace(googleClientId) &&
     !string.IsNullOrWhiteSpace(googleClientSecret))
@@ -130,24 +104,13 @@ if (!string.IsNullOrWhiteSpace(googleClientId) &&
             GoogleDefaults.AuthenticationScheme,
             options =>
             {
-                options.ClientId =
-                    googleClientId;
-
-
-                options.ClientSecret =
-                    googleClientSecret;
-
-
-                options.SignInScheme =
-                    IdentityConstants.ExternalScheme;
+                options.ClientId = googleClientId;
+                options.ClientSecret = googleClientSecret;
+                options.SignInScheme = IdentityConstants.ExternalScheme;
             });
 }
 
-
-
 var app = builder.Build();
-
-
 
 // =====================================
 // HTTP Pipeline
@@ -155,47 +118,28 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
-
-
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler(
-        "/Home/Error"
-    );
-
-
+    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
-
-
     app.UseHttpsRedirection();
 }
 
-
-
 app.UseStaticFiles();
-
-
 app.UseRouting();
 
-
-
 app.UseAuthentication();
-
-
 app.UseAuthorization();
 
-
-
 // =====================================
-// Routes
+// Routes Mapping
 // =====================================
+
+app.MapControllers(); // PENTING: Mengakses route [Route("api/mobile")] pada MobileApiController
 
 app.MapControllerRoute(
     name: "default",
-    pattern:
-        "{controller=Home}/{action=Index}/{id?}"
+    pattern: "{controller=Home}/{action=Index}/{id?}"
 );
-
-
 
 app.Run();
