@@ -1,0 +1,87 @@
+@using System.Globalization
+@model List<MobileClassificationListItem>
+@{
+    ViewData["Title"] = "Mobile Classification";
+    var cultureId = new CultureInfo("id-ID");
+}
+
+<div class="container-fluid py-4 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1">
+                <i class="bi bi-phone me-2 text-warning"></i> Mobile Classification
+            </h2>
+            <p class="text-secondary mb-0">Transaksi cepat dari Android yang masih menunggu diklasifikasikan ke akun yang sesuai.</p>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Tanggal</th>
+                            <th>Ref</th>
+                            <th>Jenis</th>
+                            <th class="text-end">Nominal</th>
+                            <th>Catatan Android</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center text-secondary py-4">
+                                    Tidak ada transaksi mobile yang menunggu klasifikasi.
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">@item.EntryDate.ToString("dd/MM/yyyy")</td>
+                                <td>@item.ReferenceNumber</td>
+                                <td>
+                                    @if (item.Type == "Income")
+                                    {
+                                        <span class="badge text-bg-success">Pemasukan</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-danger">Pengeluaran</span>
+                                    }
+                                </td>
+                                <td class="text-end">@item.Amount.ToString("C0", cultureId)</td>
+                                <td>@(string.IsNullOrWhiteSpace(item.MobileNote) ? "-" : item.MobileNote)</td>
+                                <td><span class="badge text-bg-warning">Menunggu Klasifikasi</span></td>
+                                <td class="text-end pe-4">
+                                    <a asp-action="Classify" asp-route-id="@item.JournalEntryId" class="btn btn-sm btn-warning fw-semibold">
+                                        <i class="bi bi-tags me-1"></i> Klasifikasi
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

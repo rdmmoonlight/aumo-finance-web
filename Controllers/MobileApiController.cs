@@ -158,6 +158,77 @@ public class MobileApiController : ControllerBase
         return Ok(new { message = $"Jurnal {entry.ReferenceNumber} berhasil disimpan." });
     }
 
+    // POST: api/mobile/simple-transaction
+    // Input cepat dari Android (Pemasukan/Pengeluaran saja, tanpa picker akun).
+    // Server yang membentuk dua baris jurnal seimbang: Kas <-> Unclassified.
+    [HttpPost("simple-transaction")]
+    public async Task<IActionResult> PostSimpleTransaction([FromBody] MobileSimpleTransactionDto dto)
+    {
+        if (dto.Amount <= 0)
+        {
+            return BadRequest(new { message = "Nominal harus lebih besar dari 0." });
+        }
+
+        if (dto.Type != "Income" && dto.Type != "Expense")
+        {
+            return BadRequest(new { message = "Jenis transaksi tidak valid. Gunakan 'Income' atau 'Expense'." });
+        }
+
+        var cashAccount = await _db.ChartOfAccounts
+            .Where(a => a.IsActive && a.Role == "CashAndEquivalents")
+            .OrderBy(a => a.ReferenceNumber)
+            .FirstOrDefaultAsync();
+
+        if (cashAccount == null)
+        {
+            return BadRequest(new { message = "Akun Kas (Role = CashAndEquivalents) belum tersedia di Chart of Accounts." });
+        }
+
+        var unclassifiedRole = dto.Type == "Income" ? "UnclassifiedIncome" : "UnclassifiedExpense";
+        var unclassifiedAccount = await _db.ChartOfAccounts
+            .Where(a => a.IsActive && a.Role == unclassifiedRole)
+            .OrderBy(a => a.ReferenceNumber)
+            .FirstOrDefaultAsync();
+
+        if (unclassifiedAccount == null)
+        {
+            return BadRequest(new { message = $"Akun sistem dengan Role = {unclassifiedRole} belum tersedia di Chart of Accounts." });
+        }
+
+        // Pemasukan: Kas (Debit) <-> Unclassified Income (Kredit)
+        // Pengeluaran: Unclassified Expense (Debit) <-> Kas (Kredit)
+        var lines = dto.Type == "Income"
+            ? new List<JournalEntryLine>
+              {
+                  new() { AccountId = cashAccount.Id, LineDescription = dto.Note, Debit = dto.Amount, Credit = 0, LineOrder = 0 },
+                  new() { AccountId = unclassifiedAccount.Id, LineDescription = dto.Note, Debit = 0, Credit = dto.Amount, LineOrder = 1 }
+              }
+            : new List<JournalEntryLine>
+              {
+                  new() { AccountId = unclassifiedAccount.Id, LineDescription = dto.Note, Debit = dto.Amount, Credit = 0, LineOrder = 0 },
+                  new() { AccountId = cashAccount.Id, LineDescription = dto.Note, Debit = 0, Credit = dto.Amount, LineOrder = 1 }
+              };
+
+        const string journalType = "General";
+        var referenceNumber = await GenerateReferenceNumberAsync(journalType);
+
+        var entry = new JournalEntry
+        {
+            ReferenceNumber = referenceNumber,
+            JournalType = journalType,
+            EntryDate = DateTime.SpecifyKind(dto.EntryDate == default ? DateTime.Today : dto.EntryDate, DateTimeKind.Utc),
+            NeedsClassification = true,
+            Source = "Mobile",
+            MobileNote = dto.Note,
+            Lines = lines
+        };
+
+        _db.JournalEntries.Add(entry);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = $"Transaksi {entry.ReferenceNumber} berhasil disimpan.", referenceNumber = entry.ReferenceNumber });
+    }
+
     // Sama persis dengan JournalEntryController.GenerateReferenceNumberAsync,
     // supaya penomoran referensi konsisten antara input via web dan via mobile.
     private async Task<string> GenerateReferenceNumberAsync(string journalType)
@@ -196,4 +267,16 @@ public class MobileCreateJournalLineDto
     public string? LineDescription { get; set; }
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
+}
+
+public class MobileSimpleTransactionDto
+{
+    public DateTime EntryDate { get; set; } = DateTime.Today;
+
+    // "Income" atau "Expense"
+    public string Type { get; set; } = string.Empty;
+
+    public decimal Amount { get; set; }
+
+    public string? Note { get; set; }
 }
