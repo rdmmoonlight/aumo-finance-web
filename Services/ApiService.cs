@@ -1,30 +1,20 @@
 using System.Net.Http.Json;
-using AumoFinance.Models;
-using Microsoft.Maui.Storage;
+using Aumo.Models;
 
-namespace AumoFinance.Services;
+namespace Aumo.Services;
 
 public class ApiService
 {
-    // Preset Domain Railway Anda
-    public const string UrlProduction = "https://aumo.up.railway.app/api/mobile/";
-    public const string UrlPreview = "https://aumo-preview.up.railway.app/api/mobile/";
+    private readonly HttpClient _http;
+    
+    // Kunci langsung ke Production Domain
+    private const string BaseUrl = "https://aumo.up.railway.app/api/mobile/";
 
-    // Mengambil URL aktif dari penyimpanan lokal HP (Preferences)
-    public static string CurrentBaseUrl
+    public ApiService()
     {
-        get => Preferences.Default.Get("api_base_url", UrlProduction);
-        set => Preferences.Default.Set("api_base_url", value);
-    }
-
-    private HttpClient GetClient()
-    {
-        var url = CurrentBaseUrl;
-        if (!url.EndsWith("/")) url += "/";
-
-        return new HttpClient 
+        _http = new HttpClient 
         { 
-            BaseAddress = new Uri(url),
+            BaseAddress = new Uri(BaseUrl),
             Timeout = TimeSpan.FromSeconds(10)
         };
     }
@@ -33,8 +23,7 @@ public class ApiService
     {
         try
         {
-            using var http = GetClient();
-            return await http.GetFromJsonAsync<DashboardModel>("dashboard");
+            return await _http.GetFromJsonAsync<DashboardModel>("dashboard");
         }
         catch (Exception ex)
         {
