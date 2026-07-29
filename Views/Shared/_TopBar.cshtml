@@ -76,21 +76,11 @@
             <partial name="_QuranVerse" />
         </div>
 
-        <!-- Right Section: Indicators, Search & Kebab Menu -->
+        <!-- Right Section: Search & Kebab Menu -->
         <div class="d-flex align-items-center gap-1">
             
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                <!-- Indicator: Guardian (Shield) -->
-                <button class="btn btn-sm btn-link text-success p-1 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
-                    <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
-                </button>
-
-                <!-- Indicator: Sync -->
-                <button id="syncBtn" class="btn btn-sm btn-link text-info p-1 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
-                    <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
-                </button>
-
                 <!-- 3. Search Icon -->
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                     <i class="bi bi-search" style="font-size: 0.825rem;"></i>
@@ -114,7 +104,7 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Active Period & Dropdown            -->
+<!-- ROW 2: Active Period & Status Indicators   -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
@@ -129,7 +119,9 @@
     var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
     var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
 
-    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+        
+        <!-- Active Period Dropdown -->
         <div class="dropdown">
             <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi @iconClass"></i>
@@ -152,6 +144,23 @@
                 </li>
             </ul>
         </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- Row 2 Indicators: Guardian & Sync -->
+        <div class="d-flex align-items-center gap-1">
+            <!-- Indicator: Guardian (Shield) -->
+            <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
+                <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
+            </button>
+
+            <!-- Indicator: Sync -->
+            <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
+                <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
+            </button>
+        </div>
+
     </div>
 }
 
