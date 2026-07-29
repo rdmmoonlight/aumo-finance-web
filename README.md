@@ -1,4 +1,4 @@
-# Aumo Finance
+# ^^
 
 An integrated, precision-driven financial and accounting information system. Built with C# and ASP.NET Core, Aurum Finance is designed to manage the full accounting cycle—from general journal entries to balance sheets—with absolute accuracy and strict adherence to financial standards.
 
