@@ -12,7 +12,7 @@
         animation: spin 1.5s linear infinite;
     }
     
-    /* Use @@ to escape the @ symbol in Razor views so it doesn't crash the build */
+    /* Escaping CSS keyframes for Razor compiler */
     @@keyframes spin {
         100% { transform: rotate(360deg); }
     }
@@ -21,8 +21,8 @@
 <script>
     /**
      * Triggers the UI Sync Indicator.
-     * @@param {boolean} isSuccess - true = success saving to DB, false = error
-     * @@param {number} queueTimeMs - Wait time, default 10 seconds (10000 ms)
+     * param {boolean} isSuccess - true = success saving to DB, false = error
+     * param {number} queueTimeMs - Wait time, default 10 seconds (10000 ms)
      */
     function triggerSyncProcess(isSuccess = true, queueTimeMs = 10000) {
         const syncBtn = document.getElementById('syncBtn');
