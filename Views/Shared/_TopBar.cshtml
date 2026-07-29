@@ -3,24 +3,26 @@
 @inject AppDbContext _context
 
 <!-- ========================================== -->
-<!-- CSS & JS KHUSUS TOPBAR                     -->
+<!-- TOPBAR CSS & JS                            -->
 <!-- ========================================== -->
 <style>
-    /* Efek putaran untuk indikator Sync */
+    /* Spin effect for the Sync indicator */
     .icon-spin {
         display: inline-block;
         animation: spin 1.5s linear infinite;
     }
-    @keyframes spin {
+    
+    /* Use @@ to escape the @ symbol in Razor views so it doesn't crash the build */
+    @@keyframes spin {
         100% { transform: rotate(360deg); }
     }
 </style>
 
 <script>
     /**
-     * Memicu UI Sync Indicator.
-     * @param {boolean} isSuccess - true = sukses ke DB, false = error
-     * @param {number} queueTimeMs - Waktu tunggu, default 10 detik (10000 ms)
+     * Triggers the UI Sync Indicator.
+     * @@param {boolean} isSuccess - true = success saving to DB, false = error
+     * @@param {number} queueTimeMs - Wait time, default 10 seconds (10000 ms)
      */
     function triggerSyncProcess(isSuccess = true, queueTimeMs = 10000) {
         const syncBtn = document.getElementById('syncBtn');
@@ -28,27 +30,27 @@
 
         if (!syncBtn || !syncIcon) return;
 
-        // 1. FASE QUEUE: Warna Oranye Ketela dan berputar
+        // 1. QUEUE PHASE: Sweet potato orange color and spinning icon
         syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
-        syncBtn.style.color = '#d97706'; // Warna oranye ketela
-        syncBtn.title = "Syncing: Dalam antrean (10 detik)...";
+        syncBtn.style.color = '#d97706'; // Sweet potato orange hex
+        syncBtn.title = "Syncing: In queue (10 seconds)...";
         syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
 
-        // 2. JEDA ANTREAN 10 DETIK
+        // 2. 10-SECOND QUEUE DELAY
         setTimeout(() => {
             syncIcon.classList.remove('icon-spin');
             syncBtn.style.color = ''; // Reset custom inline color
 
-            // 3. FASE HASIL EKSEKUSI DB
+            // 3. DB EXECUTION RESULT PHASE
             if (isSuccess) {
-                // Berhasil: Biru muda
+                // Success: Light blue
                 syncBtn.classList.add('text-info');
-                syncBtn.title = "Sync: Tersimpan di Database";
+                syncBtn.title = "Sync: Saved to Database";
                 syncIcon.className = "bi bi-cloud-check";
             } else {
-                // Gagal: Merah
+                // Failed: Red
                 syncBtn.classList.add('text-danger');
-                syncBtn.title = "Sync: Error menyimpan data!";
+                syncBtn.title = "Sync: Error saving data!";
                 syncIcon.className = "bi bi-cloud-slash";
             }
         }, queueTimeMs);
@@ -79,7 +81,7 @@
             
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                <!-- Indicator: Guardian (Tameng) -->
+                <!-- Indicator: Guardian (Shield) -->
                 <button class="btn btn-sm btn-link text-success p-1 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
                     <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
                 </button>
@@ -116,6 +118,7 @@
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
+    // Check database directly for the active (unclosed) period
     var activePeriodObj = _context.Periods
         .Where(p => !p.IsClosed)
         .OrderByDescending(p => p.StartDate)
