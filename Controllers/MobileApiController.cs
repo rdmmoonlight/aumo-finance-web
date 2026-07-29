@@ -86,4 +86,114 @@ public class MobileApiController : ControllerBase
             ActivePeriod = activePeriod?.PeriodName ?? "-"
         });
     }
+
+    // GET: api/mobile/accounts
+    [HttpGet("accounts")]
+    public async Task<IActionResult> GetAccounts()
+    {
+        var accounts = await _db.ChartOfAccounts
+            .Where(a => a.IsActive)
+            .OrderBy(a => a.ReferenceNumber)
+            .Select(a => new
+            {
+                Id = a.Id,
+                AccountName = a.AccountName,
+                ReferenceNumber = a.ReferenceNumber
+            })
+            .ToListAsync();
+
+        return Ok(accounts);
+    }
+
+    // POST: api/mobile/journal
+    [HttpPost("journal")]
+    public async Task<IActionResult> PostJournal([FromBody] MobileCreateJournalDto dto)
+    {
+        var lines = (dto.Lines ?? new List<MobileCreateJournalLineDto>())
+            .Where(l => l.AccountId != 0 && (l.Debit != 0 || l.Credit != 0))
+            .ToList();
+
+        if (lines.Count < 2)
+        {
+            return BadRequest(new { message = "Jurnal harus memiliki minimal dua baris." });
+        }
+
+        var totalDebit = lines.Sum(l => l.Debit);
+        var totalCredit = lines.Sum(l => l.Credit);
+
+        if (totalDebit != totalCredit || totalDebit == 0)
+        {
+            return BadRequest(new { message = $"Total Debit (Rp {totalDebit:N0}) dan Kredit (Rp {totalCredit:N0}) harus seimbang." });
+        }
+
+        var validAccountIds = (await _db.ChartOfAccounts.Where(a => a.IsActive).Select(a => a.Id).ToListAsync())
+            .ToHashSet();
+        if (lines.Any(l => !validAccountIds.Contains(l.AccountId)))
+        {
+            return BadRequest(new { message = "Salah satu akun yang dipilih tidak valid atau tidak aktif." });
+        }
+
+        // Input dari mobile selalu jurnal umum (General); jenis Adjusting hanya dibuat lewat web.
+        const string journalType = "General";
+        var referenceNumber = await GenerateReferenceNumberAsync(journalType);
+
+        var entry = new JournalEntry
+        {
+            ReferenceNumber = referenceNumber,
+            JournalType = journalType,
+            EntryDate = DateTime.SpecifyKind(dto.EntryDate == default ? DateTime.Today : dto.EntryDate, DateTimeKind.Utc),
+            Lines = lines.Select((l, index) => new JournalEntryLine
+            {
+                AccountId = l.AccountId,
+                LineDescription = l.LineDescription,
+                Debit = l.Debit,
+                Credit = l.Credit,
+                LineOrder = index
+            }).ToList()
+        };
+
+        _db.JournalEntries.Add(entry);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = $"Jurnal {entry.ReferenceNumber} berhasil disimpan." });
+    }
+
+    // Sama persis dengan JournalEntryController.GenerateReferenceNumberAsync,
+    // supaya penomoran referensi konsisten antara input via web dan via mobile.
+    private async Task<string> GenerateReferenceNumberAsync(string journalType)
+    {
+        var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
+
+        var lastNumber = await _db.JournalEntries
+            .Where(e => e.ReferenceNumber.StartsWith(prefix + "-"))
+            .OrderByDescending(e => e.Id)
+            .Select(e => e.ReferenceNumber)
+            .FirstOrDefaultAsync();
+
+        var nextSeq = 1;
+        if (lastNumber != null)
+        {
+            var parts = lastNumber.Split('-');
+            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+            {
+                nextSeq = lastSeq + 1;
+            }
+        }
+
+        return $"{prefix}-{nextSeq:D6}";
+    }
+}
+
+public class MobileCreateJournalDto
+{
+    public DateTime EntryDate { get; set; } = DateTime.Today;
+    public List<MobileCreateJournalLineDto> Lines { get; set; } = new();
+}
+
+public class MobileCreateJournalLineDto
+{
+    public int AccountId { get; set; }
+    public string? LineDescription { get; set; }
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
 }
