@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AumoFinance.Data;
 
 namespace AumoFinance.Controllers.Api;
 
