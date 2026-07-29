@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AumoFinance.Controllers.Api;
 
+[AllowAnonymous]
 [ApiController]
 [Route("api/mobile")]
 public class MobileApiController : ControllerBase
