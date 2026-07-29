@@ -89,7 +89,7 @@
                                         }
                                     </td>
                                     <td class="text-end fw-semibold @(account.Balance >= 0 ? "text-success" : "text-danger")">
-                                        Rp @account.Balance.ToString("N2")
+                                        Rp @account.Balance.ToString("N0")
                                     </td>
                                     <td class="text-center">
                                         <span class="badge @(account.IsActive ? "bg-success" : "bg-danger")">
