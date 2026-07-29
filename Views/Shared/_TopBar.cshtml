@@ -1,0 +1,115 @@
+@* Views/Shared/_TopBar.cshtml *@
+@using AumoFinance.Models
+@inject AppDbContext _context
+
+<!-- ========================================== -->
+<!-- ROW 1: Main Header (Flexible Height)       -->
+<!-- ========================================== -->
+<header class="navbar navbar-expand border-bottom py-2 bg-body-tertiary" style="min-height: 56px;">
+    
+    <!-- Ganti container-fluid menjadi container-xxl agar lebarnya dibatasi dan otomatis ke tengah -->
+    <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
+        
+        <!-- 1. Left Section: Title -->
+        <div class="d-flex align-items-center me-2" style="max-width: 160px;">
+            <span class="fw-semibold text-truncate text-body" style="font-size: 0.8rem;">
+                @(ViewData["Title"] ?? "Dashboard")
+            </span>
+        </div>
+
+        <!-- 2. Center Section: Quran Verse Partial -->
+        <div class="d-none d-md-flex flex-column align-items-center justify-content-center flex-grow-1 mx-2 text-center" style="max-width: 800px;">
+            <partial name="_QuranVerse" />
+        </div>
+
+        <!-- Right Section: Search & Kebab Menu -->
+        <div class="d-flex align-items-center gap-0">
+            
+            <!-- 3. Search Icon (Protected) -->
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
+                    <i class="bi bi-search" style="font-size: 0.825rem;"></i>
+                </button>
+            }
+
+            <!-- 4. Kebab Menu -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
+                    <i class="bi bi-three-dots-vertical" style="font-size: 0.875rem;"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem;">
+                    <li><h6 class="dropdown-header py-1" style="font-size: 0.725rem;">Theme Settings</h6></li>
+                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark</button></li>
+                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+</header>
+
+<!-- ========================================== -->
+<!-- ROW 2: Active Period & Dropdown (Protected)-->
+<!-- ========================================== -->
+@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    // Cek langsung ke Database mencari Periode yang aktif (belum di-close)
+    var activePeriodObj = _context.Periods
+        .Where(p => !p.IsClosed)
+        .OrderByDescending(p => p.StartDate)
+        .FirstOrDefault();
+
+    var activePeriodName = activePeriodObj?.PeriodName;
+    var hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);
+    var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
+    var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
+
+    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+        <div class="dropdown">
+            <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi @iconClass"></i>
+                <span class="text-secondary">Active Period:</span> 
+                <span class="text-body fw-bold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
+            </button>
+            
+            <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.75rem; min-width: 180px;">
+                <li><h6 class="dropdown-header py-1" style="font-size: 0.7rem;">Period Management</h6></li>
+                
+                <!-- Tombol Create Periode Baru -->
+                <li>
+                    <a class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Create">
+                        <i class="bi bi-plus-circle"></i> Open New Period
+                    </a>
+                </li>
+                
+                <li><hr class="dropdown-divider my-1"></li>
+                
+                <!-- Opsi ke Daftar Periode (Index) -->
+                <li>
+                    <a class="dropdown-item py-1 d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Index">
+                        <i class="bi bi-list-ul"></i> View All Periods
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+}
+
+<!-- Search Modal (Optional: Also protected so modal code isn't rendered unless logged in) -->
+@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-top modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body p-2">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-transparent border-0 text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="search" class="form-control border-0 shadow-none" placeholder="Search transactions, accounts..." autofocus>
+                        <button type="button" class="btn-close ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}

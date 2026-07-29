@@ -1,0 +1,106 @@
+@model AumoFinance.Models.WorksheetViewModel
+@{
+    ViewData["Title"] = "Worksheet";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-grid-3x3 me-2 text-info"></i> Worksheet</h2>
+            <p class="text-muted mb-0">Kertas kerja 10 kolom: Neraca Saldo, Penyesuaian, Neraca Saldo Disesuaikan, Laba Rugi, dan Posisi Keuangan.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Reports" asp-action="IncomeStatement" class="btn btn-outline-secondary">
+                <i class="bi bi-graph-up-arrow me-1"></i> Income Statement
+            </a>
+        </div>
+    </div>
+
+    <div class="card bg-dark border-secondary text-white shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0 small">
+                    <thead class="table-active border-bottom border-secondary text-center">
+                        <tr>
+                            <th rowspan="2" class="align-middle text-start">Account</th>
+                            <th colspan="2">Trial Balance</th>
+                            <th colspan="2">Adjustments</th>
+                            <th colspan="2">Adjusted Trial Balance</th>
+                            <th colspan="2">Income Statement</th>
+                            <th colspan="2">Financial Position</th>
+                        </tr>
+                        <tr>
+                            <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                            <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                            <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                            <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                            <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td class="text-nowrap"><code class="text-warning">@row.ReferenceNumber</code> @row.AccountName</td>
+                                <td class="text-end">@(row.UnadjustedDebit > 0 ? row.UnadjustedDebit.ToString("N0") : "-")</td>
+                                <td class="text-end">@(row.UnadjustedCredit > 0 ? row.UnadjustedCredit.ToString("N0") : "-")</td>
+                                <td class="text-end text-warning">@(row.AdjustmentDebit > 0 ? row.AdjustmentDebit.ToString("N0") : "-")</td>
+                                <td class="text-end text-warning">@(row.AdjustmentCredit > 0 ? row.AdjustmentCredit.ToString("N0") : "-")</td>
+                                <td class="text-end">@(row.AdjustedDebit > 0 ? row.AdjustedDebit.ToString("N0") : "-")</td>
+                                <td class="text-end">@(row.AdjustedCredit > 0 ? row.AdjustedCredit.ToString("N0") : "-")</td>
+                                <td class="text-end text-success">@(row.IncomeStatementDebit > 0 ? row.IncomeStatementDebit.ToString("N0") : "-")</td>
+                                <td class="text-end text-success">@(row.IncomeStatementCredit > 0 ? row.IncomeStatementCredit.ToString("N0") : "-")</td>
+                                <td class="text-end text-info">@(row.FinancialPositionDebit > 0 ? row.FinancialPositionDebit.ToString("N0") : "-")</td>
+                                <td class="text-end text-info">@(row.FinancialPositionCredit > 0 ? row.FinancialPositionCredit.ToString("N0") : "-")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="border-top border-secondary fw-bold">
+                            <td class="text-end">Total</td>
+                            <td class="text-end">@Model.TotalUnadjustedDebit.ToString("N0")</td>
+                            <td class="text-end">@Model.TotalUnadjustedCredit.ToString("N0")</td>
+                            <td class="text-end text-warning">@Model.TotalAdjustmentDebit.ToString("N0")</td>
+                            <td class="text-end text-warning">@Model.TotalAdjustmentCredit.ToString("N0")</td>
+                            <td class="text-end">@Model.TotalAdjustedDebit.ToString("N0")</td>
+                            <td class="text-end">@Model.TotalAdjustedCredit.ToString("N0")</td>
+                            <td class="text-end text-success">@Model.TotalIncomeStatementDebit.ToString("N0")</td>
+                            <td class="text-end text-success">@Model.TotalIncomeStatementCredit.ToString("N0")</td>
+                            <td class="text-end text-info">@Model.TotalFinancialPositionDebit.ToString("N0")</td>
+                            <td class="text-end text-info">@Model.TotalFinancialPositionCredit.ToString("N0")</td>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td class="text-end" colspan="7">Net Income (plug Income Statement → Financial Position)</td>
+                            @if (Model.NetIncome >= 0)
+                            {
+                                <td class="text-end text-success">@Model.NetIncome.ToString("N0")</td>
+                                <td class="text-end">-</td>
+                                <td class="text-end">-</td>
+                                <td class="text-end text-info">@Model.NetIncome.ToString("N0")</td>
+                            }
+                            else
+                            {
+                                <td class="text-end">-</td>
+                                <td class="text-end text-success">@((-Model.NetIncome).ToString("N0"))</td>
+                                <td class="text-end text-info">@((-Model.NetIncome).ToString("N0"))</td>
+                                <td class="text-end">-</td>
+                            }
+                        </tr>
+                        <tr class="border-top border-secondary fw-bold">
+                            <td class="text-end" colspan="7">Total (setelah plug)</td>
+                            <td class="text-end text-success">@((Model.TotalIncomeStatementDebit + (Model.NetIncome >= 0 ? Model.NetIncome : 0)).ToString("N0"))</td>
+                            <td class="text-end text-success">@((Model.TotalIncomeStatementCredit + (Model.NetIncome < 0 ? -Model.NetIncome : 0)).ToString("N0"))</td>
+                            <td class="text-end text-info">@((Model.TotalFinancialPositionDebit + (Model.NetIncome < 0 ? -Model.NetIncome : 0)).ToString("N0"))</td>
+                            <td class="text-end text-info">@((Model.TotalFinancialPositionCredit + (Model.NetIncome >= 0 ? Model.NetIncome : 0)).ToString("N0"))</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info bg-opacity-10 mt-3 mb-0 py-2 small">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Laba/Rugi Bersih: <strong>@Model.NetIncome.ToString("N2")</strong> — dipindahkan (plug) dari kolom Income Statement ke kolom Financial Position agar kedua kolom sama-sama seimbang.
+    </div>
+</div>

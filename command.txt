@@ -1,7 +1,0 @@
-git pull origin main
-git add .
-git commit -m "chore: inisiasi awal struktur backend Ktor"
-git push origin main
-
-bersih2:
-dotnet nuget locals all --clear

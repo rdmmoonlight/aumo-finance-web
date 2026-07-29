@@ -1,0 +1,113 @@
+@model List<AumoFinance.Models.JournalEntry>
+@{
+    ViewData["Title"] = "Adjusting Journal";
+}
+
+<div class="container-fluid py-4 px-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1">
+                <i class="bi bi-journal-medical me-2 text-warning"></i> Adjusting Journal
+            </h2>
+            <p class="text-secondary mb-0">Period-end adjusting entries (accruals, deferrals, depreciation) recorded under IAS 1's accrual basis of accounting.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
+                <i class="bi bi-plus-lg me-1"></i> Add Adjusting Entry
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm py-2" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Adjusting Journal Table -->
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 text-center" style="width: 8%;">Date</th>
+                            <th style="width: 27%;">Account</th>
+                            <th style="width: 27%;">Description</th>
+                            <th class="text-center" style="width: 10%;">Ref.</th>
+                            <th class="text-end" style="width: 14%;">Debit</th>
+                            <th class="text-end pe-4" style="width: 14%;">Credit</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @if (Model.Any())
+                        {
+                            string lastDate = "";
+
+                            foreach (var entry in Model)
+                            {
+                                var orderedLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
+                                var debitLines = orderedLines.Where(l => l.Debit > 0).ToList();
+                                var creditLines = orderedLines.Where(l => l.Credit > 0).ToList();
+                                var allLines = debitLines.Concat(creditLines).ToList();
+
+                                var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
+                                var showDate = (currentDateStr != lastDate);
+                                if (showDate)
+                                {
+                                    lastDate = currentDateStr;
+                                }
+
+                                for (int i = 0; i < allLines.Count; i++)
+                                {
+                                    var line = allLines[i];
+                                    var isFirstRow = (i == 0);
+                                    var isLastRow = (i == allLines.Count - 1);
+                                    var isDebit = line.Debit > 0;
+
+                                    var rowClass = isLastRow ? "border-bottom border-2" : "border-bottom-0";
+
+                                    <tr class="@rowClass">
+                                        <td class="ps-4 text-center align-top">
+                                            @if (isFirstRow && showDate)
+                                            {
+                                                <span class="fw-bold text-body small">@currentDateStr</span>
+                                            }
+                                        </td>
+                                        <td class="align-top @(isDebit ? "fw-bold text-body" : "ps-4 text-body")">
+                                            @line.Account?.AccountName
+                                        </td>
+                                        <td class="text-secondary small align-top">
+                                            @line.LineDescription
+                                        </td>
+                                        <td class="text-center align-top">
+                                            <code>@line.Account?.ReferenceNumber</code>
+                                        </td>
+                                        <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
+                                            @(isDebit ? line.Debit.ToString("N0") : "-")
+                                        </td>
+                                        <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
+                                            @(!isDebit ? line.Credit.ToString("N0") : "-")
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
+                                    No adjusting entries recorded yet for this period.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

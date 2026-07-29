@@ -1,26 +1,22 @@
-@model AurumFinance.Models.RegisterModel
+@model AumoFinance.Models.RegisterViewModel
 
 @{
     ViewData["Title"] = "Register";
 }
 
 <div class="container d-flex justify-content-center align-items-center vh-100">
-    <div class="card p-4 shadow-lg style-card" style="width: 100%; max-width: 420px;">
+    <div class="card p-4 shadow-lg" style="width: 100%; max-width: 420px;">
         <h3 class="mb-3 text-center fw-bold">Create Account</h3>
 
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="alert alert-danger p-2" role="alert">
-                <div asp-validation-summary="All" class="small mb-0"></div>
-            </div>
-        }
+        <!-- Penampung Pesan Error dari Server / API -->
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger p-2 small mb-3" role="alert"></div>
 
         <form method="post" asp-controller="Auth" asp-action="Register">
             @Html.AntiForgeryToken()
 
             <div class="mb-3">
                 <label asp-for="FullName" class="form-label">Full Name</label>
-                <input asp-for="FullName" class="form-control" placeholder="Abdul Ghofur" required />
+                <input asp-for="FullName" class="form-control" placeholder="Muhammad Al Fatih" required />
                 <span asp-validation-for="FullName" class="text-danger small"></span>
             </div>
 
@@ -29,7 +25,7 @@
                 <input asp-for="Email" type="email" class="form-control" placeholder="name@example.com" required />
                 <span asp-validation-for="Email" class="text-danger small"></span>
             </div>
-            
+
             <div class="mb-3">
                 <label asp-for="Password" class="form-label">Password</label>
                 <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" required />
@@ -38,5 +34,44 @@
 
             <button type="submit" class="btn btn-primary w-100 mt-2">Sign Up</button>
         </form>
+
+        <p class="text-center small mt-3 mb-0">
+            Sudah punya akun? <a asp-controller="Auth" asp-action="Login">Login</a>
+        </p>
     </div>
 </div>
+
+@if (ViewBag.ShowSuccessModal == true)
+{
+    <div class="modal fade show d-block" id="registerSuccessModal" tabindex="-1" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrasi Berhasil</h5>
+                    <button type="button" class="btn-close" id="registerSuccessCloseBtn"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">
+                        Akun untuk <strong>@ViewBag.RegisteredEmail</strong> berhasil dibuat.
+                        Silakan cek email Anda untuk verifikasi sebelum masuk.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <a asp-controller="Auth" asp-action="Login" class="btn btn-primary">Ke Halaman Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEl = document.getElementById('registerSuccessModal');
+            var closeBtn = document.getElementById('registerSuccessCloseBtn');
+            if (closeBtn && modalEl) {
+                closeBtn.addEventListener('click', function () {
+                    modalEl.remove();
+                });
+            }
+        });
+    </script>
+}

@@ -8,20 +8,28 @@
 [Ll]ogs/
 [Tt]emp/
 [Tt]mp/
+[Pp]ublish/
+[Pp]ublished/
+
+## Platform build artifacts
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
 
 ## ==========================================
-## Visual Studio / VS Code User & Cache Files
+## Visual Studio / VS Code / JetBrains
 ## ==========================================
 .vs/
 .vscode/
+.idea/
 *.user
 *.userosscache
 *.sln.docstates
 *.suo
 *.userprefs
-
-## Rider / JetBrains (jika ada yang pakai)
-.idea/
 *.sln.iml
 
 ## ==========================================
@@ -37,9 +45,14 @@
 ## ==========================================
 ## Environment & Sensitive Settings
 ## ==========================================
-# Abaikan file konfigurasi lokal yang berisi password/connection string
+# File konfigurasi lokal (JANGAN commit ini)
 appsettings.Development.json
 appsettings.Local.json
+appsettings.Production.json
+appsettings.*.json
+!appsettings.json
+
+# Environment variables & kunci rahasia
 *.env
 *.pem
 *.key
@@ -48,7 +61,6 @@ appsettings.Local.json
 ## ==========================================
 ## Web Frontend Assets (npm/node_modules)
 ## ==========================================
-# Jika nantinya proyek MVC-mu memakai npm / libman untuk JS/CSS library
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -66,4 +78,4 @@ $RECYCLE.BIN/
 # macOS
 .DS_Store
 .AppleDouble
-.LSSharedFileList
+.LSSharedFileListapp.db

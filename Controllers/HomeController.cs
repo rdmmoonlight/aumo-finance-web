@@ -1,20 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 
-namespace AurumFinance.Controllers
+namespace AumoFinance.Controllers
 {
     public class HomeController : Controller
     {
         public IActionResult Index()
         {
+            // Tampilkan halaman Home (Index.cshtml) beserta semua muatannya,
+            // tanpa peduli apakah user sudah login atau belum.
             return View();
         }
 
-        [Authorize]  // Protected by JWT cookie (you may need custom middleware for cookie JWT validation)
-        public IActionResult Welcome()
+        public IActionResult Privacy()
         {
-            ViewData["Message"] = "Selamat datang di aplikasi!";
             return View();
         }
+        
+        // ... action lain seperti Welcome, dll.
     }
 }

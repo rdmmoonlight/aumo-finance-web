@@ -1,21 +1,55 @@
+@model AumoFinance.Models.LoginViewModel
+
 @{
     ViewData["Title"] = "Login";
 }
 
-<h2>Login</h2>
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card p-4 shadow-lg" style="width: 100%; max-width: 420px;">
+        <h3 class="mb-3 text-center fw-bold">Welcome Back</h3>
+        <p class="text-muted text-center mb-4">Sign in to Aumo Finance</p>
 
-<form method="post">
-    <div class="form-group">
-        <label>Email</label>
-        <input type="email" name="email" class="form-control" required />
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success p-2" role="alert">
+                @TempData["SuccessMessage"]
+            </div>
+        }
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger p-2" role="alert">
+                <div asp-validation-summary="All" class="small mb-0"></div>
+            </div>
+        }
+
+        <form method="post" asp-controller="Auth" asp-action="Login">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label">Email Address</label>
+                <input asp-for="Email" type="email" class="form-control" placeholder="name@example.com" required />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label">Password</label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" required />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="text-end mb-3">
+                <a asp-controller="Auth" asp-action="ForgotPassword" class="small">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-2">Login</button>
+        </form>
+
+        <p class="text-center small mt-3 mb-0">
+            Don't have an account yet? <a asp-controller="Auth" asp-action="Register">Register</a>
+        </p>
+        <p class="text-center small mt-1 mb-0">
+            <a asp-controller="Auth" asp-action="ResendVerification">Resend verification email</a>
+        </p>
     </div>
-    <div class="form-group">
-        <label>Password</label>
-        <input type="password" name="password" class="form-control" required />
-    </div>
-    <button type="submit" class="btn btn-primary">Login</button>
-</form>
-
-<a href="/Auth/GoogleLogin" class="btn btn-danger">Login with Google</a>
-
-<p>Belum punya akun? <a href="/Auth/Register">Register</a></p>
+</div>

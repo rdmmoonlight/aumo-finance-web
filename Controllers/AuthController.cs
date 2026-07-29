@@ -1,59 +1,400 @@
+using System.Text;
+using AumoFinance.Models;
+using AumoFinance.Models.Security;
+using AumoFinance.Services;
+using AumoFinance.Services.Security;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using AurumFinance.Models;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 
-namespace AurumFinance.Controllers
+namespace AumoFinance.Controllers;
+
+public class AuthController : Controller
 {
-    public class AuthController : Controller
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly IEmailSender _emailSender;
+    private readonly IMemoryCache _cache;
+    private readonly IGuardianService _guardianService;
+
+    private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(60);
+
+    public AuthController(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        IEmailSender emailSender,
+        IMemoryCache cache,
+        IGuardianService guardianService)
     {
-        private readonly AppDbContext _context;
+        _userManager = userManager;
+        _signInManager = signInManager;
+        _emailSender = emailSender;
+        _cache = cache;
+        _guardianService = guardianService;
+    }
 
-        public AuthController(AppDbContext context)
-        {
-            _context = context;
-        }
+    // ============================
+    // LOGIN
+    // ============================
 
-        // GET: /Auth/Register
-        [HttpGet]
-        public IActionResult Register()
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult Login()
+    {
+        return View(new LoginViewModel());
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Login(LoginViewModel model)
+    {
+        if (!ModelState.IsValid)
         {
-            var model = new RegisterModel();
             return View(model);
         }
 
-        // POST: /Auth/Register
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterModel model)
+        var user = await _userManager.FindByEmailAsync(model.Email);
+
+        var result = await _signInManager.PasswordSignInAsync(
+            model.Email,
+            model.Password,
+            isPersistent: true,
+            lockoutOnFailure: true
+        );
+
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+        var userAgent = Request.Headers.UserAgent.ToString();
+
+        if (result.Succeeded && user != null)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            await _guardianService.CreateLoginActivityAsync(
+                user.Id,
+                "Login Success",
+                userAgent,
+                userAgent,
+                ipAddress,
+                "",
+                true
+            );
 
-            // 1. Cek apakah email sudah terdaftar di database
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
-            if (existingUser != null)
-            {
-                ModelState.AddModelError("Email", "Email address is already registered.");
-                return View(model);
-            }
+            await _guardianService.CreateSessionAsync(
+                user.Id,
+                userAgent,
+                userAgent,
+                ipAddress,
+                "",
+                Guid.NewGuid().ToString()
+            );
 
-            // 2. Buat entity User baru
-            var newUser = new User
-            {
-                Email = model.Email,
-                FullName = model.FullName,
-                // Sesuai best practice, lakukan hashing password di sini sebelum disimpan
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password) 
-            };
-
-            // 3. Simpan ke database via EF Core
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Registration successful! Please sign in.";
             return RedirectToAction("Index", "Home");
         }
+
+        if (user != null)
+        {
+            await _guardianService.CreateLoginActivityAsync(
+                user.Id,
+                "Login Failed",
+                userAgent,
+                userAgent,
+                ipAddress,
+                "",
+                false
+            );
+        }
+
+        if (result.IsNotAllowed)
+        {
+            ModelState.AddModelError(string.Empty, "Please verify your email address before logging in.");
+        }
+        else if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(string.Empty, "This account is temporarily locked out due to too many failed attempts.");
+        }
+        else
+        {
+            ModelState.AddModelError(string.Empty, "Invalid email or password.");
+        }
+
+        return View(model);
+    }
+
+    // ============================
+    // REGISTER
+    // ============================
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult Register()
+    {
+        return View(new RegisterViewModel());
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(RegisterViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = model.Email,
+            Email = model.Email,
+            FullName = model.FullName
+        };
+
+        var createResult = await _userManager.CreateAsync(user, model.Password);
+
+        if (!createResult.Succeeded)
+        {
+            foreach (var error in createResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+        await SendEmailConfirmationAsync(user);
+
+        ViewBag.ShowSuccessModal = true;
+        ViewBag.RegisteredEmail = model.Email;
+
+        ModelState.Clear();
+
+        return View(new RegisterViewModel());
+    }
+
+    // ============================
+    // LOGOUT
+    // ============================
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user != null)
+        {
+            var sessions = await _guardianService.GetActiveSessionsAsync(user.Id);
+            var currentSession = sessions.FirstOrDefault(x => x.IsCurrent);
+
+            if (currentSession != null)
+            {
+                await _guardianService.RevokeSessionAsync(currentSession.Id, user.Id);
+            }
+        }
+
+        await _signInManager.SignOutAsync();
+
+        return RedirectToAction("Login", "Auth");
+    }
+
+    // ============================
+    // FORGOT & RESET PASSWORD
+    // ============================
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult ForgotPassword()
+    {
+        return View(new ForgotPasswordModel());
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+
+        if (user != null)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+            var resetUrl = Url.Action(
+                "ResetPassword",
+                "Auth",
+                new { email = user.Email, token = encodedToken },
+                Request.Scheme
+            );
+
+            await _emailSender.SendEmailAsync(
+                user.Email!,
+                "Reset your Aumo Finance password",
+                EmailTemplates.PasswordReset(user.FullName, resetUrl!)
+            );
+        }
+
+        TempData["SuccessMessage"] = "If that email is registered, a password reset link has been sent.";
+
+        return RedirectToAction("Login");
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult ResetPassword(string email, string token)
+    {
+        return View(new ResetPasswordModel
+        {
+            Email = email ?? string.Empty,
+            Token = token ?? string.Empty
+        });
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+
+        if (user == null)
+        {
+            ModelState.AddModelError(string.Empty, "This reset link is invalid or has expired.");
+            return View(model);
+        }
+
+        string decodedToken;
+
+        try
+        {
+            decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Token));
+        }
+        catch (FormatException)
+        {
+            ModelState.AddModelError(string.Empty, "This reset link is invalid or has expired.");
+            return View(model);
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, model.NewPassword);
+
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] = "Password changed successfully. Please sign in with your new password.";
+
+        return RedirectToAction("Login");
+    }
+
+    // ============================
+    // EMAIL VERIFICATION
+    // ============================
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyEmail(string email, string token)
+    {
+        var user = string.IsNullOrEmpty(email) ? null : await _userManager.FindByEmailAsync(email);
+
+        if (user == null || string.IsNullOrEmpty(token))
+        {
+            ViewBag.Success = false;
+            ViewBag.Message = "This verification link is invalid.";
+            return View();
+        }
+
+        try
+        {
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+            var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+
+            ViewBag.Success = result.Succeeded;
+            ViewBag.Message = result.Succeeded
+                ? "Your email has been successfully verified!"
+                : "This verification link is invalid or has expired.";
+        }
+        catch (FormatException)
+        {
+            ViewBag.Success = false;
+            ViewBag.Message = "This verification link is invalid.";
+        }
+
+        return View();
+    }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult ResendVerification()
+    {
+        return View(new ResendVerificationModel());
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResendVerification(ResendVerificationModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var normalizedEmail = model.Email.Trim().ToLowerInvariant();
+        var cacheKey = $"resend-verification-cooldown:{normalizedEmail}";
+
+        if (!_cache.TryGetValue(cacheKey, out _))
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+
+            if (user != null && !await _userManager.IsEmailConfirmedAsync(user))
+            {
+                await SendEmailConfirmationAsync(user);
+            }
+
+            _cache.Set(cacheKey, true, ResendCooldown);
+        }
+
+        TempData["SuccessMessage"] = "If that email is registered and not yet verified, a new link has been sent.";
+
+        return RedirectToAction("Login");
+    }
+
+    // ============================
+    // PRIVATE HELPERS
+    // ============================
+
+    private async Task SendEmailConfirmationAsync(ApplicationUser user)
+    {
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        var confirmUrl = Url.Action(
+            "VerifyEmail",
+            "Auth",
+            new { email = user.Email, token = encodedToken },
+            Request.Scheme
+        );
+
+        await _emailSender.SendEmailAsync(
+            user.Email!,
+            "Confirm your Aumo Finance account",
+            EmailTemplates.EmailConfirmation(user.FullName, confirmUrl!)
+        );
     }
 }
