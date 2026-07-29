@@ -1,48 +1,64 @@
+using AumoFinance.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Controllers.Api;
+namespace AumoFinance.Controllers;
 
 [AllowAnonymous]
 [ApiController]
 [Route("api/mobile")]
 public class MobileApiController : ControllerBase
 {
-    private readonly ApplicationDbContext _db; // DbContext Web Anda
+    private readonly AppDbContext _context;
 
-    public MobileApiController(ApplicationDbContext db)
+    // Inject AppDbContext ke Controller
+    public MobileApiController(AppDbContext context)
     {
-        _db = db;
+        _context = context;
     }
 
-    // GET: api/mobile/dashboard
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
-        // Contoh query langsung dari DB web yang sama
-        var totalCash = await _db.Accounts
-            .Where(a => a.IsCash)
-            .SumAsync(a => a.Balance);
+        try
+        {
+            // Ambil data real dari tabel database Anda
+            // (Sesuaikan nama DbSet / Properti di DbContext Anda jika berbeda)
+            
+            // 1. Contoh hitung Total Kas (Misal dari perkiraan Kas/Bank)
+            var totalCash = await _context.Accounts
+                .Where(a => a.AccountType == "Cash" || a.AccountType == "Bank")
+                .SumAsync(a => a.Balance);
 
-        return Ok(new 
-        { 
-            TotalCash = totalCash,
-            ActivePeriod = "2026-Q3"
-        });
-    }
+            // 2. Hitung Total Revenue (Pendapatan)
+            var revenue = await _context.Accounts
+                .Where(a => a.AccountType == "Revenue")
+                .SumAsync(a => a.Balance);
 
-    // POST: api/mobile/journal
-    [HttpPost("journal")]
-    public async Task<IActionResult> CreateJournal([FromBody] MobileJournalDto dto)
-    {
-        if (!ModelState.IsValid) return BadRequest();
+            // 3. Hitung Total Expenses (Beban/Biaya)
+            var expenses = await _context.Accounts
+                .Where(a => a.AccountType == "Expense")
+                .SumAsync(a => a.Balance);
 
-        // Simpan data transaksi langsung ke DB Web
-        // ...
-        await _db.SaveChangesAsync();
+            // 4. Hitung Laba Bersih
+            var netIncome = revenue - expenses;
 
-        return Ok(new { Message = "Berhasil disimpan" });
+            var activePeriod = DateTime.Now.ToString("yyyy-MM"); // Periode Bulan Ini
+
+            return Ok(new
+            {
+                totalCash = totalCash,
+                revenue = revenue,
+                expenses = expenses,
+                netIncome = netIncome,
+                activePeriod = activePeriod
+            });
+        }
+        catch (Exception ex)
+        {
+            // Jika ada tabel yang belum di-query dengan pas, fallback nilai aman
+            return StatusCode(500, new { message = "Error reading database", error = ex.Message });
+        }
     }
 }
-
-public record MobileJournalDto(DateTime Date, decimal Amount, string Description);
