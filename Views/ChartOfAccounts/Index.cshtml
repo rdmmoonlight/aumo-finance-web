@@ -1,6 +1,8 @@
+@using System.Globalization
 @model IEnumerable<AumoFinance.Models.ChartOfAccount>
 @{
     ViewData["Title"] = "Chart of Accounts";
+    var cultureId = new CultureInfo("id-ID");
 }
 
 <div class="container-fluid py-4 px-4">
@@ -89,7 +91,7 @@
                                         }
                                     </td>
                                     <td class="text-end fw-semibold @(account.Balance >= 0 ? "text-success" : "text-danger")">
-                                        Rp @account.Balance.ToString("N0")
+                                        Rp @account.Balance.ToString("N0", cultureId)
                                     </td>
                                     <td class="text-center">
                                         <span class="badge @(account.IsActive ? "bg-success" : "bg-danger")">
