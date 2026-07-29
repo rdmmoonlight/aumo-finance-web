@@ -3,6 +3,7 @@ using AumoFinance.Models;
 
 namespace AumoFinance.Controllers;
 
+[AllowAnonymous]
 [ApiController]
 [Route("api/mobile")]
 public class MobileApiController : ControllerBase
