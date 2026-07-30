@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI; // <--- WAJIB ADA: Namespace untuk Microsoft.Extensions.AI
+using OpenAI;                  // <--- WAJIB ADA: SDK OpenAI resmi
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,7 +53,21 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
-builder.Services.AddScoped<IAiService, AiService>(); // REGISTERED: OpenAI ChatGPT Service
+builder.Services.AddScoped<IAiService, AiService>(); 
+
+// =====================================
+// Microsoft.Extensions.AI Registration
+// =====================================
+// Mendaftarkan IChatClient agar bisa di-inject ke AiApiController
+builder.Services.AddSingleton<IChatClient>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var apiKey = configuration["OpenAI:ApiKey"] ?? configuration["OPENAI_API_KEY"] ?? "YOUR_API_KEY";
+    
+    // Menggunakan OpenAI gpt-4o-mini sebagai standar IChatClient
+    return new OpenAIClient(apiKey).AsChatClient("gpt-4o-mini");
+});
+
 builder.Services.AddMemoryCache();
 
 // =====================================
