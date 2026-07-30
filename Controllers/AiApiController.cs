@@ -20,7 +20,6 @@ public class AiApiController : ControllerBase
         _db = db;
     }
 
-    // 1. LIVE SUMMARY ENDPOINT (Otomatis dibuat oleh LLM saat halaman dibuka)
     [HttpGet("quick-summary")]
     public async Task<IActionResult> GetQuickSummary()
     {
@@ -36,7 +35,7 @@ public class AiApiController : ControllerBase
 
             ChatResponse response = await _chatClient.GetResponseAsync(messages);
 
-            return Ok(new { summary = response.Message.Text });
+            return Ok(new { summary = response.Text ?? "No summary available." });
         }
         catch (Exception ex)
         {
@@ -44,7 +43,6 @@ public class AiApiController : ControllerBase
         }
     }
 
-    // 2. INTERACTIVE CHAT ENDPOINT (Tanya-jawab fleksibel berbasis LLM + Context DB)
     [HttpPost("chat")]
     public async Task<IActionResult> Chat([FromBody] AiChatRequest request)
     {
@@ -65,7 +63,7 @@ public class AiApiController : ControllerBase
 
             ChatResponse response = await _chatClient.GetResponseAsync(messages);
 
-            return Ok(new { reply = response.Message.Text });
+            return Ok(new { reply = response.Text ?? "No response generated." });
         }
         catch (Exception ex)
         {
