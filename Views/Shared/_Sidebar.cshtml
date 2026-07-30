@@ -65,6 +65,15 @@
             </li>
 
             <li class="nav-item mb-1">
+                <a asp-controller="MobileClassification"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn @(ViewContext.RouteData.Values["controller"]?.ToString()=="MobileClassification" ? "active" : "")"
+                   title="Mobile Classification">
+                    <i class="bi bi-phone fs-6"></i>
+                </a>
+            </li>
+
+            <li class="nav-item mb-1">
                 <a asp-controller="Tools"
                    asp-action="Index"
                    class="nav-link text-white icon-btn @(ViewContext.RouteData.Values["controller"]?.ToString()=="Tools" ? "active" : "")"
