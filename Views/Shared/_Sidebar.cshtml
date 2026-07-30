@@ -19,6 +19,16 @@
                 </a>
             </li>
 
+            <!-- MENU AI ASSISTANT -->
+            <li class="nav-item mb-1">
+                <a asp-controller="AiAssistant"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn @(ViewContext.RouteData.Values["controller"]?.ToString()=="AiAssistant" ? "active" : "")"
+                   title="AI Financial Assistant">
+                    <i class="bi bi-robot fs-6"></i>
+                </a>
+            </li>
+
             <li class="nav-item mb-1">
                 <a asp-controller="JournalEntry"
                    asp-action="Create"
@@ -201,7 +211,7 @@
             </a>
 
             <a asp-controller="Reports"
-               asp.action="StatementOfFinancialPosition"
+               asp-action="StatementOfFinancialPosition"
                class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
                 Financial Position
             </a>
