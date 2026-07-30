@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using AumoFinance.Models;
-using AumoFinance.Services;
 
 namespace AumoFinance.Controllers;
 
@@ -11,28 +11,35 @@ namespace AumoFinance.Controllers;
 [Route("api/ai")]
 public class AiApiController : ControllerBase
 {
-    private readonly IAiService _aiService;
+    private readonly IChatClient _chatClient;
     private readonly AppDbContext _db;
 
-    public AiApiController(IAiService aiService, AppDbContext db)
+    // Inject IChatClient dari Microsoft.Extensions.AI dan AppDbContext
+    public AiApiController(IChatClient chatClient, AppDbContext db)
     {
-        _aiService = aiService;
+        _chatClient = chatClient;
         _db = db;
     }
 
-    // 1. LIVE SUMMARY ENDPOINT (Automated prompt generated on load)
+    // 1. LIVE SUMMARY ENDPOINT (Otomatis dibuat oleh LLM saat halaman dibuka)
     [HttpGet("quick-summary")]
     public async Task<IActionResult> GetQuickSummary()
     {
         try
         {
-            var context = await GatherFinancialContextAsync();
-            var prompt = "Give a concise 1-sentence executive summary of the current financial health based on cash balance, active period, and net income.";
-            
-            // Generate live summary using LLM Service
-            string summary = await _aiService.AnalyzeFinancialQueryAsync(prompt, context.FullContextString);
+            var financialData = await GatherFinancialContextAsync();
 
-            return Ok(new { summary });
+            // Kumpulan pesan instruksi menggunakan tipe data bawaan Microsoft.Extensions.AI
+            var messages = new List<ChatMessage>
+            {
+                new(ChatRole.System, GetSystemInstruction()),
+                new(ChatRole.User, $"Here is the current real-time financial context:\n{financialData.FullContextString}\n\nTask: Provide a concise, professional, 1-to-2 sentence executive summary of the current financial health for the user.")
+            };
+
+            // Panggil LLM via IChatClient
+            ChatResponse response = await _chatClient.GetResponseAsync(messages);
+
+            return Ok(new { summary = response.Message.Text });
         }
         catch (Exception ex)
         {
@@ -40,7 +47,7 @@ public class AiApiController : ControllerBase
         }
     }
 
-    // 2. INTERACTIVE CHAT ENDPOINT (Connected to IAiService / LLM)
+    // 2. INTERACTIVE CHAT ENDPOINT (Tanya-jawab fleksibel berbasis LLM)
     [HttpPost("chat")]
     public async Task<IActionResult> Chat([FromBody] AiChatRequest request)
     {
@@ -51,12 +58,19 @@ public class AiApiController : ControllerBase
 
         try
         {
-            var context = await GatherFinancialContextAsync();
+            var financialData = await GatherFinancialContextAsync();
 
-            // Send financial context + user question to OpenAI/LLM Service
-            string aiResponse = await _aiService.AnalyzeFinancialQueryAsync(request.Message, context.FullContextString);
+            // Suntikkan System Context + Financial Data + Pertanyaan User
+            var messages = new List<ChatMessage>
+            {
+                new(ChatRole.System, GetSystemInstruction()),
+                new(ChatRole.User, $"[REAL-TIME FINANCIAL CONTEXT]\n{financialData.FullContextString}\n\n[USER QUESTION]\n{request.Message}")
+            };
 
-            return Ok(new { reply = aiResponse });
+            // Panggil LLM via IChatClient
+            ChatResponse response = await _chatClient.GetResponseAsync(messages);
+
+            return Ok(new { reply = response.Message.Text });
         }
         catch (Exception ex)
         {
@@ -64,7 +78,19 @@ public class AiApiController : ControllerBase
         }
     }
 
-    // Helper: Collects detailed real-time accounting data from DB
+    // System prompt standar untuk mengarahkan gaya bahasa & batasan AI
+    private string GetSystemInstruction()
+    {
+        return @"You are an expert AI Financial Assistant for Aumo Finance.
+Your task is to answer user queries accurately based strictly on the provided real-time financial context.
+Guidelines:
+1. Always use US Dollars ($) or the currency specified in the context when mentioning amounts.
+2. Be concise, objective, clear, and professional in your analysis.
+3. Highlight risks (e.g., negative cash flow, overspending) or positive trends when relevant.
+4. If asked for recommendations, provide pragmatic and actionable accounting advice.";
+    }
+
+    // Helper: Mengambil & menghitung data keuangan real-time dari Database
     private async Task<FinancialContextData> GatherFinancialContextAsync()
     {
         var activePeriod = await _db.Periods
@@ -140,18 +166,18 @@ public class AiApiController : ControllerBase
             .ToListAsync();
 
         string journalSummary = recentJournals.Any()
-            ? string.Join("\n", recentJournals.Select(j => $"- [{j.Date:dd MMM yyyy}] Debit: IDR {j.TotalDebit:N0} | Credit: IDR {j.TotalCredit:N0}"))
+            ? string.Join("\n", recentJournals.Select(j => $"- [{j.Date:dd MMM yyyy}] Debit: ${j.TotalDebit:N2} | Credit: ${j.TotalCredit:N2}"))
             : "No recent journal entries found.";
 
         string fullContext = $@"
 Financial Context (Aumo Finance System):
 - Active Period: {periodInfo}
-- Cash & Equivalents: IDR {totalCash:N2}
-- Total Assets: IDR {totalAssets:N2}
-- Total Liabilities: IDR {totalLiabilities:N2}
-- Revenue (Active Period): IDR {revenue:N2}
-- Operating Expenses (Active Period): IDR {expenses:N2}
-- Net Income (Active Period): IDR {netIncome:N2}
+- Cash & Equivalents: ${totalCash:N2}
+- Total Assets: ${totalAssets:N2}
+- Total Liabilities: ${totalLiabilities:N2}
+- Revenue (Active Period): ${revenue:N2}
+- Operating Expenses (Active Period): ${expenses:N2}
+- Net Income (Active Period): ${netIncome:N2}
 
 Recent 5 Journal Entries:
 {journalSummary}";
