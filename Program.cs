@@ -62,13 +62,12 @@ builder.Services.AddSingleton<IChatClient>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
     
-    // Mengambil langsung dari Environment Variable Railway (aman, tidak hardcode)
     var apiKey = configuration["OpenAI:ApiKey"] 
                  ?? configuration["OPENAI_API_KEY"] 
                  ?? throw new InvalidOperationException("OpenAI API Key is missing in environment variables.");
     
-    // Inisialisasi IChatClient menggunakan OpenAIClient langsung yang kompatibel dengan Microsoft.Extensions.AI
-    return new OpenAI.OpenAIClient(apiKey).AsChatClient("gpt-4o-mini");
+    // Menggunakan OpenAI.Chat.ChatClient yang mendukung .AsChatClient() secara native
+    return new OpenAI.Chat.ChatClient(model: "gpt-4o-mini", apiKey: apiKey).AsChatClient();
 });
 
 builder.Services.AddMemoryCache();
