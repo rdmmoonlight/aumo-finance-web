@@ -25,6 +25,10 @@
     .account-item { transition: background-color 0.15s ease; }
     .account-item:hover { background-color: rgba(255,255,255,0.04); }
     [data-bs-theme="light"] .account-item:hover { background-color: rgba(0,0,0,0.03); }
+    .ai-banner {
+        border: 1px solid rgba(13, 110, 253, 0.2);
+        background: rgba(13, 110, 253, 0.05);
+    }
 </style>
 
 <div class="container-fluid px-0">
@@ -53,6 +57,33 @@
                class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2 quick-action-btn">
                 <i class="bi bi-file-earmark-bar-graph"></i> Income Statement
             </a>
+        </div>
+    </div>
+
+    <!-- AI Financial Health & Strategic Recommendation Banner -->
+    <div class="card ai-banner border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-3 p-md-4">
+            <div class="d-flex align-items-start gap-3">
+                <div class="p-2 p-md-3 bg-primary text-white rounded-3 fs-4 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-robot"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-1 gap-2">
+                        <h6 class="fw-bold mb-0 text-body">AI Financial Health Insight</h6>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill">
+                            <i class="bi bi-cpu-fill me-1"></i> ChatGPT Engine
+                        </span>
+                    </div>
+                    <p class="mb-2 text-secondary small" id="aiInsightText">
+                        "Your cash flow remains structured for period @Model.ActivePeriodName. Total Cash stands at @Model.TotalCashAndEquivalents.ToString("C0", idr) with a net income of @Model.NetIncome.ToString("C0", idr). Click below to generate an executive AI audit."
+                    </p>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-primary rounded-2 px-3 fw-medium" id="btnRefreshAi" onclick="fetchAiSummary()">
+                            <i class="bi bi-arrow-repeat me-1"></i> Generate Executive Insight
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -228,6 +259,22 @@
         </div>
     </div>
 
+    <!-- Interactive AI Assistant Prompt Box -->
+    <div class="card bg-body border-0 shadow-sm rounded-3 p-3 mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold mb-2 text-body"><i class="bi bi-stars text-warning me-1"></i> Ask AI Financial Assistant</h6>
+            <div class="input-group">
+                <input type="text" id="aiQueryInput" class="form-control" placeholder="E.g., 'Analyze my expense risks for this period' or 'How can I optimize cash reserves?'">
+                <button class="btn btn-primary fw-medium" type="button" onclick="askAiAssistant()">
+                    <i class="bi bi-send-fill me-1"></i> Analyze
+                </button>
+            </div>
+            <div id="aiResponseArea" class="mt-3 p-3 bg-body-tertiary rounded-3 d-none border">
+                <p class="mb-0 text-body small" id="aiResponseText"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- Bottom -->
     <div class="row g-3">
         <div class="col-12 col-lg-4">
@@ -369,5 +416,58 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
+
+// Fetch AI Summary for Top Banner
+async function fetchAiSummary() {
+    const textElement = document.getElementById('aiInsightText');
+    const btn = document.getElementById('btnRefreshAi');
+    
+    textElement.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> <em>Analyzing journal entries and trial balance via OpenAI...</em>';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/ai/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: "Provide a 2-sentence executive financial health analysis and recommendation based on the current financial context." })
+        });
+
+        if (!res.ok) throw new Error('API Request failed');
+        const data = await res.json();
+        textElement.innerText = `"${data.response}"`;
+    } catch (err) {
+        textElement.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Unable to generate AI analysis. Please verify your OpenAI API Key.</span>';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// Fetch AI Response for Prompt Box
+async function askAiAssistant() {
+    const queryInput = document.getElementById('aiQueryInput');
+    const query = queryInput.value.trim();
+    const responseArea = document.getElementById('aiResponseArea');
+    const responseText = document.getElementById('aiResponseText');
+
+    if (!query) return;
+
+    responseArea.classList.remove('d-none');
+    responseText.innerHTML = '<i class="bi bi-cpu spinner-border spinner-border-sm me-2"></i> OpenAI is processing accounting data...';
+
+    try {
+        const res = await fetch('/api/ai/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: query })
+        });
+
+        if (!res.ok) throw new Error('API Request failed');
+        const data = await res.json();
+
+        responseText.innerHTML = `<strong>ChatGPT Analysis:</strong><br><br>${data.response.replace(/\n/g, '<br>')}`;
+    } catch (error) {
+        responseText.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Failed to connect to ChatGPT. Please check your API Key and connection.</span>';
+    }
+}
 </script>
 }

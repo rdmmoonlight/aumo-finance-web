@@ -14,10 +14,10 @@ public class MobileApiController : ControllerBase
 
     public MobileApiController(AppDbContext db)
     {
-        _db = db;
+        _context = context;
     }
 
-    // GET: api/mobile/dashboard
+    // 1. Endpoint Dashboard Real Data
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
