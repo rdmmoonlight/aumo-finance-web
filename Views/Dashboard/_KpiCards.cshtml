@@ -79,11 +79,13 @@
                 <div class="icon-square bg-primary-subtle text-primary rounded-3"><i class="bi bi-graph-up-arrow"></i></div>
             </div>
             <h4 class="fw-bold text-primary mb-1">@Model.RevenueThisPeriod.ToString("C0", idr)</h4>
-            <div class="small @(Model.RevenueTrendPercent >= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
+            <div class="small @(Model.RevenueTrendPercent.HasValue ? (Model.RevenueTrendPercent >= 0 ? "text-success" : "text-danger") : "text-secondary") fs-8 fw-semibold">
                 @if (Model.RevenueTrendPercent.HasValue) {
                     <i class="bi @(Model.RevenueTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
                     <span>@(Math.Abs(Model.RevenueTrendPercent.Value).ToString("0.0"))% vs prior</span>
-                } else { <span>—</span> }
+                } else { 
+                    <span>—</span> 
+                }
             </div>
         </div>
     </div>
@@ -96,11 +98,13 @@
                 <div class="icon-square bg-danger-subtle text-danger rounded-3"><i class="bi bi-arrow-down-left-circle"></i></div>
             </div>
             <h4 class="fw-bold text-danger mb-1">@Model.OperatingExpenses.ToString("C0", idr)</h4>
-            <div class="small @(Model.ExpenseTrendPercent <= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
+            <div class="small @(Model.ExpenseTrendPercent.HasValue ? (Model.ExpenseTrendPercent <= 0 ? "text-success" : "text-danger") : "text-secondary") fs-8 fw-semibold">
                 @if (Model.ExpenseTrendPercent.HasValue) {
                     <i class="bi @(Model.ExpenseTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
                     <span>@(Math.Abs(Model.ExpenseTrendPercent.Value).ToString("0.0"))% vs prior</span>
-                } else { <span>—</span> }
+                } else { 
+                    <span>—</span> 
+                }
             </div>
         </div>
     </div>
@@ -117,7 +121,9 @@
                 @if (Model.NetIncomeTrendPercent.HasValue) {
                     <i class="bi @(Model.NetIncomeTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
                     <span>@(Math.Abs(Model.NetIncomeTrendPercent.Value).ToString("0.0"))% vs prior</span>
-                } else { <span>—</span> }
+                } else { 
+                    <span>—</span> 
+                }
             </div>
         </div>
     </div>
@@ -144,70 +150,6 @@
                     <h5 class="fw-bold mb-0 mt-1">@Model.TotalLiabilities.ToString("C0", idr)</h5>
                 </div>
                 <div class="icon-square bg-warning-subtle text-warning rounded-3 fs-5"><i class="bi bi-credit-card"></i></div>
-            </div>
-        </div>
-    </div>
-</div>
-enseTrendPercent is null)
-                    {
-                        <span>—</span>
-                    }
-                    else
-                    {
-                        <i class="bi @(Model.ExpenseTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                        <span>@(Math.Abs(Model.ExpenseTrendPercent.Value).ToString("0.0"))% vs prior period</span>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Net Income -->
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 rounded-3" style="background: linear-gradient(135deg, var(--bs-primary), #0d6efdcc); color: white;">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="small fw-semibold text-white-50 text-uppercase">Net Income</span>
-                    <i class="bi bi-shield-check text-warning fs-5"></i>
-                </div>
-                <h4 class="fw-bold mb-1">@Model.NetIncome.ToString("C0", idr)</h4>
-                <div class="small text-white-50">
-                    @if (Model.NetIncomeTrendPercent is null)
-                    {
-                        <span>—</span>
-                    }
-                    else
-                    {
-                        <i class="bi @(Model.NetIncomeTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
-                        <span>@(Math.Abs(Model.NetIncomeTrendPercent.Value).ToString("0.0"))% vs prior period</span>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- KPI Row 2 -->
-<div class="row g-3 mb-4">
-    <div class="col-12 col-md-6">
-        <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-secondary small fw-semibold text-uppercase d-block">Total Assets</span>
-                    <h5 class="fw-bold mb-0 mt-1">@Model.TotalAssets.ToString("C0", idr)</h5>
-                </div>
-                <i class="bi bi-building text-info fs-3 opacity-75"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md-6">
-        <div class="card kpi-card border-0 shadow-sm h-100 rounded-3">
-            <div class="card-body d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-secondary small fw-semibold text-uppercase d-block">Total Liabilities</span>
-                    <h5 class="fw-bold mb-0 mt-1">@Model.TotalLiabilities.ToString("C0", idr)</h5>
-                </div>
-                <i class="bi bi-credit-card text-warning fs-3 opacity-75"></i>
             </div>
         </div>
     </div>
