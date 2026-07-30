@@ -1,39 +1,42 @@
 @model AumoFinance.Models.DashboardViewModel
 
 <div class="row g-3 mb-4">
-    <div class="col-12 col-lg-8">
-        <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
-            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0">Revenue vs Expenses Trend</h6>
-                <span class="badge bg-secondary-subtle text-secondary small">
-                    @(Model.ChartLabels.Count > 0 ? "Last " + Model.ChartLabels.Count + " months" : "No data")
-                </span>
+    <!-- Trend Revenue vs Expense Line Chart -->
+    <div class="col-12 col-xl-8">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h6 class="fw-bold mb-0">Financial Trend</h6>
+                    <span class="text-secondary fs-8">Revenue vs Operating Expenses</span>
+                </div>
+                <div class="icon-square bg-primary-subtle text-primary rounded-3">
+                    <i class="bi bi-graph-up"></i>
+                </div>
             </div>
-            <div class="card-body">
-                @if (Model.ChartLabels.Any())
-                {
-                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
-                }
-                else
-                {
-                    <div class="text-center text-secondary py-5">
-                        <i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-50"></i>
-                        No transaction data available for the chart.
-                    </div>
-                }
+            <div class="chart-container" style="position: relative; height: 280px;">
+                <canvas id="trendChart"></canvas>
             </div>
         </div>
     </div>
-    <div class="col-12 col-lg-4">
-        <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
-            <div class="card-header bg-transparent border-0 py-3">
-                <h6 class="fw-bold mb-0">Expense Composition</h6>
+
+    <!-- Expense Composition Doughnut Chart -->
+    <div class="col-12 col-xl-4">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h6 class="fw-bold mb-0">Expense Composition</h6>
+                    <span class="text-secondary fs-8">Breakdown by Account</span>
+                </div>
+                <div class="icon-square bg-danger-subtle text-danger rounded-3">
+                    <i class="bi bi-pie-chart"></i>
+                </div>
             </div>
-            <div class="card-body d-flex align-items-center justify-content-center">
-                @if (Model.ExpenseCategoryLabels.Any())
-                {
-                    <div class="chart-container" style="height:240px;width:100%;"><canvas id="expenseDoughnut"></canvas></div>
-                }
+            <div class="chart-container" style="position: relative; height: 280px;">
+                <canvas id="expenseDoughnut"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
                 else
                 {
                     <div class="text-center text-secondary py-4">
