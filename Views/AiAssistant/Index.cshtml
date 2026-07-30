@@ -1,92 +1,75 @@
-@{
-    ViewData["Title"] = "AI Financial Assistant";
-}
-
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex align-items-center mb-4 gap-3">
-        <div class="p-3 bg-primary text-white rounded-3 fs-3 d-flex align-items-center justify-content-center shadow-sm">
-            <i class="bi bi-robot"></i>
-        </div>
-        <div>
-            <h4 class="fw-bold mb-1">AI Financial Assistant</h4>
-            <p class="text-secondary small mb-0">
-                Powered by ChatGPT. Analyzes real-time General Journal and Chart of Accounts data.
+<div class="container py-4">
+    <!-- 1. KOTAK INFORMASI OTOMATIS (AI LIVE INSIGHTS) -->
+    <div class="card border-0 shadow-sm bg-primary bg-gradient text-white mb-4 rounded-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-robot fs-3 me-2"></i>
+                <h5 class="card-title mb-0 fw-bold">Ringkasan Otomatis AI</h5>
+            </div>
+            <!-- Pesan ini dimuat via Javascript saat halaman terbuka -->
+            <p id="aiSummaryText" class="card-text opacity-90 mb-0">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Menganalisis data keuangan kamu bulan ini...
             </p>
         </div>
     </div>
 
-    <!-- AI Prompt Interface -->
-    <div class="card bg-body border-0 shadow-sm rounded-3 mb-4">
+    <!-- 2. KOTAK-KOTAK PRESET PROMPT (KLIK LANGSUNG NANYA) -->
+    <h6 class="fw-bold mb-3 text-secondary">Tanyakan Sesuatu atau Pilih Topik:</h6>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <button class="card h-100 w-100 border-0 shadow-sm text-start p-3 preset-card rounded-3" onclick="sendQuickPrompt('Bagaimana kondisi arus kas saya bulan ini?')">
+                <div class="text-primary mb-2 fs-4"><i class="bi bi-cash-coin"></i></div>
+                <div class="fw-semibold text-dark small">Arus Kas Bulan Ini</div>
+                <div class="text-muted text-truncate" style="font-size: 0.75rem;">Apakah kas aman untuk operasional?</div>
+            </button>
+        </div>
+        <div class="col-md-3 col-6">
+            <button class="card h-100 w-100 border-0 shadow-sm text-start p-3 preset-card rounded-3" onclick="sendQuickPrompt('Apakah ada pengeluaran yang membengkak?')">
+                <div class="text-danger mb-2 fs-4"><i class="bi bi-graph-up-arrow"></i></div>
+                <div class="fw-semibold text-dark small">Deteksi Boros</div>
+                <div class="text-muted text-truncate" style="font-size: 0.75rem;">Cek pos pengeluaran terdepan.</div>
+            </button>
+        </div>
+        <div class="col-md-3 col-6">
+            <button class="card h-100 w-100 border-0 shadow-sm text-start p-3 preset-card rounded-3" onclick="sendQuickPrompt('Berapa estimasi laba bersih hingga akhir periode?')">
+                <div class="text-success mb-2 fs-4"><i class="bi bi-piggy-bank"></i></div>
+                <div class="fw-semibold text-dark small">Proyeksi Laba</div>
+                <div class="text-muted text-truncate" style="font-size: 0.75rem;">Estimasi profitabilitas berjalan.</div>
+            </button>
+        </div>
+        <div class="col-md-3 col-6">
+            <button class="card h-100 w-100 border-0 shadow-sm text-start p-3 preset-card rounded-3" onclick="sendQuickPrompt('Berikan saran efisiensi keuangan singkat.')">
+                <div class="text-warning mb-2 fs-4"><i class="bi bi-lightbulb"></i></div>
+                <div class="fw-semibold text-dark small">Saran Efisiensi</div>
+                <div class="text-muted text-truncate" style="font-size: 0.75rem;">Tips hemat rasional & pragmatis.</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 3. BOX CHAT / RESPONS AI -->
+    <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-4">
-            <h6 class="fw-bold mb-3 text-body">
-                <i class="bi bi-stars text-warning me-1"></i> Ask Your Financial Controller
-            </h6>
-            
-            <div class="input-group input-group-lg mb-3 shadow-sm">
-                <input type="text" id="aiQueryInput" class="form-control fs-6" 
-                       placeholder="E.g., 'What is the current net income trend?' or 'Are there any unusual expenses?'"
-                       onkeypress="handleKeyPress(event)">
-                <button class="btn btn-primary fw-medium px-4" type="button" onclick="askAiAssistant()" id="btnAnalyze">
-                    <i class="bi bi-send-fill me-1"></i> Analyze
-                </button>
+            <div id="chatHistory" class="mb-3 overflow-auto" style="max-height: 400px;">
+                <!-- Respons dari prompt yang di-klik atau diketik bakal muncul di sini -->
             </div>
             
-            <!-- Area Hasil Output AI -->
-            <div id="aiResponseArea" class="mt-4 p-4 bg-body-tertiary rounded-3 d-none border">
-                <div class="d-flex gap-3">
-                    <i class="bi bi-robot fs-4 text-primary mt-1"></i>
-                    <div class="w-100">
-                        <p class="mb-0 text-body" id="aiResponseText"></p>
-                    </div>
-                </div>
+            <div class="input-group">
+                <input type="text" id="userInput" class="form-control border-light-subtle" placeholder="Ketik pertanyaan lain di sini...">
+                <button class="btn btn-primary px-4" type="button" onclick="sendMessage()">Kirim</button>
             </div>
         </div>
     </div>
 </div>
 
-@section Scripts {
-<script>
-    // Memungkinkan user menekan tombol 'Enter' untuk mengirim prompt
-    function handleKeyPress(e) {
-        if (e.key === 'Enter') {
-            askAiAssistant();
-        }
+<style>
+    .preset-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        background-color: #ffffff;
     }
-
-    async function askAiAssistant() {
-        const queryInput = document.getElementById('aiQueryInput');
-        const query = queryInput.value.trim();
-        const responseArea = document.getElementById('aiResponseArea');
-        const responseText = document.getElementById('aiResponseText');
-        const btn = document.getElementById('btnAnalyze');
-
-        if (!query) return;
-
-        // Reset state & UI saat loading
-        responseArea.classList.remove('d-none');
-        responseText.innerHTML = '<i class="bi bi-cpu spinner-border spinner-border-sm me-2 text-primary"></i> <em>Processing accounting data via OpenAI...</em>';
-        btn.disabled = true;
-
-        try {
-            // Memanggil API Controller yang sudah kita buat sebelumnya
-            const res = await fetch('/api/ai/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: query })
-            });
-
-            if (!res.ok) throw new Error('API Request failed');
-            const data = await res.json();
-
-            // Render hasil dari ChatGPT (konversi newline ke <br>)
-            responseText.innerHTML = data.response.replace(/\n/g, '<br>');
-            
-        } catch (error) {
-            responseText.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Failed to connect to AI Engine. Check your OpenAI API Key or connection.</span>';
-        } finally {
-            btn.disabled = false;
-        }
+    .preset-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
     }
-</script>
-}
+</style>
