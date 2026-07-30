@@ -1,4 +1,5 @@
-using OpenAI.Chat;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace AumoFinance.Services
 {
@@ -9,12 +10,17 @@ namespace AumoFinance.Services
 
     public class AiService : IAiService
     {
+        private readonly HttpClient _httpClient;
         private readonly string _apiKey;
         private readonly ILogger<AiService> _logger;
 
-        public AiService(IConfiguration configuration, ILogger<AiService> logger)
+        // Model Gemini yang cepat dan gratis (dalam batas kuota harian)
+        private const string Model = "gemini-2.5-flash";
+
+        public AiService(HttpClient httpClient, IConfiguration configuration, ILogger<AiService> logger)
         {
-            _apiKey = configuration["OpenAI:ApiKey"] ?? string.Empty;
+            _httpClient = httpClient;
+            _apiKey = configuration["Gemini:ApiKey"] ?? string.Empty;
             _logger = logger;
         }
 
@@ -22,37 +28,65 @@ namespace AumoFinance.Services
         {
             if (string.IsNullOrWhiteSpace(_apiKey))
             {
-                _logger.LogWarning("OpenAI API Key is not configured.");
-                return "AI Service is currently offline. Please configure the OpenAI API key.";
+                _logger.LogWarning("Gemini API Key is not configured.");
+                return "AI Service is currently offline. Please configure the Gemini API key.";
             }
 
             try
             {
-                // Menggunakan model gpt-4o-mini (cepat, hemat biaya, dan sangat cerdas untuk analisis data)
-                ChatClient client = new(model: "gpt-4o-mini", apiKey: _apiKey);
-
-                // System Prompt: Menjamin AI bertindak tegas, rasional, profesional, dan dalam US English
                 string systemInstruction = @"You are the resident AI Financial Controller for Aumo Finance.
 Analyse accounting and financial queries with precision, discipline, and absolute accuracy.
-Provide concise, actionable insights in professional US English. 
+Provide concise, actionable insights in professional US English.
 Do not make assumptions beyond rational economic logic.";
 
-                string fullPrompt = string.IsNullOrWhiteSpace(contextData) 
-                    ? userPrompt 
+                string fullPrompt = string.IsNullOrWhiteSpace(contextData)
+                    ? userPrompt
                     : $"Context Financial Data:\n{contextData}\n\nUser Question: {userPrompt}";
 
-                List<ChatMessage> messages = new()
+                var requestBody = new
                 {
-                    new SystemChatMessage(systemInstruction),
-                    new UserChatMessage(fullPrompt)
+                    system_instruction = new
+                    {
+                        parts = new[] { new { text = systemInstruction } }
+                    },
+                    contents = new[]
+                    {
+                        new
+                        {
+                            role = "user",
+                            parts = new[] { new { text = fullPrompt } }
+                        }
+                    }
                 };
 
-                ChatCompletion completion = await client.CompleteChatAsync(messages);
-                return completion.Content[0].Text;
+                string url = $"https://generativelanguage.googleapis.com/v1beta/models/{Model}:generateContent?key={_apiKey}";
+
+                using var response = await _httpClient.PostAsJsonAsync(url, requestBody);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    string errorBody = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Gemini API returned {StatusCode}: {Body}", response.StatusCode, errorBody);
+                    return "Unable to generate AI analysis at this moment. Please try again later.";
+                }
+
+                using var stream = await response.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
+
+                var text = doc.RootElement
+                    .GetProperty("candidates")[0]
+                    .GetProperty("content")
+                    .GetProperty("parts")[0]
+                    .GetProperty("text")
+                    .GetString();
+
+                return string.IsNullOrWhiteSpace(text)
+                    ? "Unable to generate AI analysis at this moment. Please try again later."
+                    : text;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calling OpenAI API.");
+                _logger.LogError(ex, "Error calling Gemini API.");
                 return "Unable to generate AI analysis at this moment. Please try again later.";
             }
         }

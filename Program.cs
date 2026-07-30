@@ -7,9 +7,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.AI; // <--- Namespace Microsoft.Extensions.AI
-using OpenAI.Chat;             // <--- Namespace resmi OpenAI Chat Client
-
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
@@ -53,22 +50,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
-builder.Services.AddScoped<IAiService, AiService>(); 
-
-// =====================================
-// Microsoft.Extensions.AI Registration
-// =====================================
-builder.Services.AddSingleton<IChatClient>(sp =>
-{
-    var configuration = sp.GetRequiredService<IConfiguration>();
-    
-    var apiKey = configuration["OpenAI:ApiKey"] 
-                 ?? configuration["OPENAI_API_KEY"] 
-                 ?? throw new InvalidOperationException("OpenAI API Key is missing in environment variables.");
-    
-    // Menggunakan AsIChatClient() sesuai package Microsoft.Extensions.AI.OpenAI
-    return new OpenAI.Chat.ChatClient(model: "gpt-4o-mini", apiKey: apiKey).AsIChatClient();
-});
+builder.Services.AddHttpClient<IAiService, AiService>();
 
 builder.Services.AddMemoryCache();
 
