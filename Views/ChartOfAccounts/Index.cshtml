@@ -1,6 +1,8 @@
+@using System.Globalization
 @model IEnumerable<AumoFinance.Models.ChartOfAccount>
 @{
     ViewData["Title"] = "Chart of Accounts";
+    var cultureId = new CultureInfo("id-ID");
 }
 
 <div class="container-fluid py-4 px-4">
@@ -89,7 +91,7 @@
                                         }
                                     </td>
                                     <td class="text-end fw-semibold @(account.Balance >= 0 ? "text-success" : "text-danger")">
-                                        @account.Balance.ToString("C")
+                                        Rp @account.Balance.ToString("N0", cultureId)
                                     </td>
                                     <td class="text-center">
                                         <span class="badge @(account.IsActive ? "bg-success" : "bg-danger")">
@@ -145,7 +147,6 @@
                 <h5 class="modal-title fw-bold text-body-emphasis"><i class="bi bi-plus-circle me-2 text-warning"></i> Add New Account</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <!-- Perbaikan asp-controller ke ChartOfAccounts -->
             <form method="post" asp-controller="ChartOfAccounts" asp-action="Create">
                 <div class="modal-body p-4">
                     <div class="mb-3">
@@ -300,7 +301,6 @@
             }
         }
 
-        // Mengisi Modal Edit dengan data akun yang diklik
         function openEditModal(button) {
             document.getElementById('editId').value = button.dataset.id;
             document.getElementById('editAccountName').value = button.dataset.name;
@@ -313,7 +313,6 @@
             document.getElementById('editReferenceNumber').value = button.dataset.ref;
         }
 
-        // Konfirmasi sebelum menghapus akun
         function confirmDelete(id, accountName) {
             if (confirm(`Delete account "${accountName}"? This action cannot be undone.`)) {
                 document.getElementById('deleteId').value = id;

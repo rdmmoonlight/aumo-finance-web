@@ -85,6 +85,9 @@
                         <tbody id="journalBody" class="border-top-0">
                             @for (int i = 0; i < Model.Lines.Count; i++)
                             {
+                                var debitValue = (Model.Lines[i].Debit ?? 0) == 0 ? "" : string.Format("{0:N0}", Model.Lines[i].Debit).Replace(",", ".");
+                                var creditValue = (Model.Lines[i].Credit ?? 0) == 0 ? "" : string.Format("{0:N0}", Model.Lines[i].Credit).Replace(",", ".");
+
                                 <tr>
                                     <td class="ps-4">
                                         <input type="text" class="form-control text-center bg-body-secondary ref-display" readonly tabindex="-1" placeholder="---" />
@@ -104,10 +107,10 @@
                                         <input name="Lines[@i].LineDescription" type="text" value="@Model.Lines[i].LineDescription" class="form-control line-description" placeholder="Note..." autocomplete="off" />
                                     </td>
                                     <td>
-                                        <input name="Lines[@i].Debit" type="number" step="0.01" min="0" value="@((Model.Lines[i].Debit ?? 0) == 0 ? "" : Model.Lines[i].Debit.ToString())" class="form-control text-end input-debit" placeholder="0" />
+                                        <input name="Lines[@i].Debit" type="text" value="@debitValue" class="form-control text-end input-debit amount-input" placeholder="0" autocomplete="off" />
                                     </td>
                                     <td>
-                                        <input name="Lines[@i].Credit" type="number" step="0.01" min="0" value="@((Model.Lines[i].Credit ?? 0) == 0 ? "" : Model.Lines[i].Credit.ToString())" class="form-control text-end input-credit" placeholder="0" />
+                                        <input name="Lines[@i].Credit" type="text" value="@creditValue" class="form-control text-end input-credit amount-input" placeholder="0" autocomplete="off" />
                                     </td>
                                     <td class="text-center pe-4">
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
@@ -118,8 +121,8 @@
                         <tfoot class="table-light border-top fw-bold">
                             <tr>
                                 <td colspan="3" class="text-end py-3">Total Balance:</td>
-                                <td class="text-end text-success fs-6 py-3" id="totalDebit">0.00</td>
-                                <td class="text-end text-danger fs-6 py-3" id="totalCredit">0.00</td>
+                                <td class="text-end text-success fs-6 py-3" id="totalDebit">0</td>
+                                <td class="text-end text-danger fs-6 py-3" id="totalCredit">0</td>
                                 <td></td>
                             </tr>
                             <tr>
@@ -154,10 +157,10 @@
                     <input name="Lines[__INDEX__].LineDescription" type="text" class="form-control line-description" placeholder="Note..." autocomplete="off" />
                 </td>
                 <td>
-                    <input name="Lines[__INDEX__].Debit" type="number" step="0.01" min="0" class="form-control text-end input-debit" placeholder="0" />
+                    <input name="Lines[__INDEX__].Debit" type="text" class="form-control text-end input-debit amount-input" placeholder="0" autocomplete="off" />
                 </td>
                 <td>
-                    <input name="Lines[__INDEX__].Credit" type="number" step="0.01" min="0" class="form-control text-end input-credit" placeholder="0" />
+                    <input name="Lines[__INDEX__].Credit" type="text" class="form-control text-end input-credit amount-input" placeholder="0" autocomplete="off" />
                 </td>
                 <td class="text-center pe-4">
                     <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
@@ -174,11 +177,10 @@
         </div>
     </form>
 
-    <!-- Dropdown saran deskripsi (posisi diatur lewat JS, mengikuti input yang sedang aktif) -->
+    <!-- Dropdown saran deskripsi -->
     <div id="descSuggestions" class="list-group shadow-sm" style="display:none; position:absolute; z-index:1060; max-height:220px; overflow-y:auto;"></div>
 </div>
 
-<!-- Interactive Dynamic Logic (sama seperti Create.cshtml) -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const journalBody = document.getElementById("journalBody");
@@ -187,7 +189,19 @@
         const totalCreditEl = document.getElementById("totalCredit");
         const balanceStatusEl = document.getElementById("balanceStatus");
         const btnSubmit = document.getElementById("btnSubmit");
+        const journalForm = document.getElementById("journalForm");
         const rowTemplate = document.getElementById("rowTemplate").innerHTML;
+
+        // Fungsi pembantu format angka
+        function formatNumber(value) {
+            let numberString = value.replace(/[^0-9]/g, '');
+            if (!numberString) return '';
+            return parseInt(numberString, 10).toLocaleString('id-ID');
+        }
+
+        function parseRawNumber(value) {
+            return parseFloat(value.replace(/\./g, '')) || 0;
+        }
 
         // Auto-fill Ref No Logic
         function updateRefNumber(selectElement) {
@@ -207,8 +221,6 @@
             }
         });
 
-        // Trigger on load supaya baris yang sudah terisi (data lama) langsung
-        // menampilkan Ref No akunnya, bukan hanya baris baru.
         document.querySelectorAll(".account-select").forEach(select => {
             if (select.value) {
                 updateRefNumber(select);
@@ -241,37 +253,46 @@
             let totalCredit = 0;
 
             document.querySelectorAll(".input-debit").forEach(input => {
-                totalDebit += parseFloat(input.value) || 0;
+                totalDebit += parseRawNumber(input.value);
             });
 
             document.querySelectorAll(".input-credit").forEach(input => {
-                totalCredit += parseFloat(input.value) || 0;
+                totalCredit += parseRawNumber(input.value);
             });
 
-            totalDebitEl.textContent = totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            totalCreditEl.textContent = totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            totalDebitEl.textContent = totalDebit.toLocaleString('id-ID');
+            totalCreditEl.textContent = totalCredit.toLocaleString('id-ID');
 
             const difference = Math.abs(totalDebit - totalCredit);
 
-            if (totalDebit > 0 && totalCredit > 0 && difference < 0.001) {
+            if (totalDebit > 0 && totalCredit > 0 && difference === 0) {
                 balanceStatusEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2"><i class="bi bi-check-circle me-1"></i> Balanced</span>`;
                 btnSubmit.disabled = false;
             } else {
-                const diffFormatted = difference.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                const diffFormatted = difference.toLocaleString('id-ID');
                 balanceStatusEl.innerHTML = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2"><i class="bi bi-exclamation-triangle me-1"></i> Unbalanced (${diffFormatted})</span>`;
                 btnSubmit.disabled = true;
             }
         }
 
+        // Format input otomatis saat mengetik
         journalBody.addEventListener("input", function (e) {
-            if (e.target.classList.contains("input-debit") || e.target.classList.contains("input-credit")) {
+            if (e.target.classList.contains("amount-input")) {
+                e.target.value = formatNumber(e.target.value);
                 calculateTotals();
             }
         });
 
+        // Bersihkan titik sebelum form dikirim ke controller
+        journalForm.addEventListener("submit", function () {
+            document.querySelectorAll(".amount-input").forEach(input => {
+                input.value = input.value.replace(/\./g, '');
+            });
+        });
+
         calculateTotals();
 
-        // ==== Autocomplete Description (sama seperti Create.cshtml) ====
+        // ==== Autocomplete Description ====
         const descSuggestions = document.getElementById("descSuggestions");
         let activeDescInput = null;
         let searchTimer = null;
@@ -321,7 +342,7 @@
                         showSuggestions(e.target, data);
                     }
                 } catch (err) {
-                    // Diamkan saja kalau gagal fetch, autocomplete bukan fitur wajib
+                    // Ignore error
                 }
             }, 250);
         });

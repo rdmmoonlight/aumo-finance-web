@@ -3,6 +3,7 @@ using System;
 using AumoFinance.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AumoFinance.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260730020000_AddUnclassifiedAccounts")]
+    partial class AddUnclassifiedAccounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -143,19 +145,10 @@ namespace AumoFinance.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("MobileNote")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("NeedsClassification")
-                        .HasColumnType("boolean");
-
                     b.Property<string>("ReferenceNumber")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
-
-                    b.Property<string>("Source")
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

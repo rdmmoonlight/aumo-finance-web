@@ -3,24 +3,26 @@
 @inject AppDbContext _context
 
 <!-- ========================================== -->
-<!-- CSS & JS KHUSUS TOPBAR                     -->
+<!-- TOPBAR CSS & JS                            -->
 <!-- ========================================== -->
 <style>
-    /* Efek putaran untuk indikator Sync */
+    /* Spin effect for the Sync indicator */
     .icon-spin {
         display: inline-block;
         animation: spin 1.5s linear infinite;
     }
-    @keyframes spin {
+    
+    /* Escaping CSS keyframes for Razor compiler */
+    @@keyframes spin {
         100% { transform: rotate(360deg); }
     }
 </style>
 
 <script>
     /**
-     * Memicu UI Sync Indicator.
-     * @param {boolean} isSuccess - true = sukses ke DB, false = error
-     * @param {number} queueTimeMs - Waktu tunggu, default 10 detik (10000 ms)
+     * Triggers the UI Sync Indicator.
+     * param {boolean} isSuccess - true = success saving to DB, false = error
+     * param {number} queueTimeMs - Wait time, default 10 seconds (10000 ms)
      */
     function triggerSyncProcess(isSuccess = true, queueTimeMs = 10000) {
         const syncBtn = document.getElementById('syncBtn');
@@ -28,27 +30,27 @@
 
         if (!syncBtn || !syncIcon) return;
 
-        // 1. FASE QUEUE: Warna Oranye Ketela dan berputar
+        // 1. QUEUE PHASE: Sweet potato orange color and spinning icon
         syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
-        syncBtn.style.color = '#d97706'; // Warna oranye ketela
-        syncBtn.title = "Syncing: Dalam antrean (10 detik)...";
+        syncBtn.style.color = '#d97706'; // Sweet potato orange hex
+        syncBtn.title = "Syncing: In queue (10 seconds)...";
         syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
 
-        // 2. JEDA ANTREAN 10 DETIK
+        // 2. 10-SECOND QUEUE DELAY
         setTimeout(() => {
             syncIcon.classList.remove('icon-spin');
             syncBtn.style.color = ''; // Reset custom inline color
 
-            // 3. FASE HASIL EKSEKUSI DB
+            // 3. DB EXECUTION RESULT PHASE
             if (isSuccess) {
-                // Berhasil: Biru muda
+                // Success: Light blue
                 syncBtn.classList.add('text-info');
-                syncBtn.title = "Sync: Tersimpan di Database";
+                syncBtn.title = "Sync: Saved to Database";
                 syncIcon.className = "bi bi-cloud-check";
             } else {
-                // Gagal: Merah
+                // Failed: Red
                 syncBtn.classList.add('text-danger');
-                syncBtn.title = "Sync: Error menyimpan data!";
+                syncBtn.title = "Sync: Error saving data!";
                 syncIcon.className = "bi bi-cloud-slash";
             }
         }, queueTimeMs);
@@ -74,21 +76,11 @@
             <partial name="_QuranVerse" />
         </div>
 
-        <!-- Right Section: Indicators, Search & Kebab Menu -->
+        <!-- Right Section: Search & Kebab Menu -->
         <div class="d-flex align-items-center gap-1">
             
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                <!-- Indicator: Guardian (Tameng) -->
-                <button class="btn btn-sm btn-link text-success p-1 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
-                    <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
-                </button>
-
-                <!-- Indicator: Sync -->
-                <button id="syncBtn" class="btn btn-sm btn-link text-info p-1 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
-                    <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
-                </button>
-
                 <!-- 3. Search Icon -->
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                     <i class="bi bi-search" style="font-size: 0.825rem;"></i>
@@ -112,10 +104,11 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Active Period & Dropdown            -->
+<!-- ROW 2: Active Period & Status Indicators   -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
+    // Check database directly for the active (unclosed) period
     var activePeriodObj = _context.Periods
         .Where(p => !p.IsClosed)
         .OrderByDescending(p => p.StartDate)
@@ -126,7 +119,9 @@
     var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
     var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
 
-    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+        
+        <!-- Active Period Dropdown -->
         <div class="dropdown">
             <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi @iconClass"></i>
@@ -149,6 +144,23 @@
                 </li>
             </ul>
         </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- Row 2 Indicators: Guardian & Sync -->
+        <div class="d-flex align-items-center gap-1">
+            <!-- Indicator: Guardian (Shield) -->
+            <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
+                <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
+            </button>
+
+            <!-- Indicator: Sync -->
+            <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
+                <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
+            </button>
+        </div>
+
     </div>
 }
 

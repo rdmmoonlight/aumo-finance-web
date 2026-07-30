@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-list-columns me-2 text-info"></i> @Model.Title</h2>
-            <p class="text-muted mb-0">Saldo setiap akun aktif dari General Journal, disusun dalam format Debit/Kredit sebelum penyajian laporan keuangan.</p>
+            <p class="text-muted mb-0">Balances of each active account from the General Journal, formatted into Debit/Credit prior to preparing financial statements.</p>
         </div>
         <div>
             <a asp-controller="Reports" asp-action="GeneralLedger" class="btn btn-outline-secondary">
@@ -46,7 +46,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="5" class="text-center py-3 text-muted">Belum ada akun dengan mutasi.</td>
+                                <td colspan="5" class="text-center py-3 text-muted">No accounts with transaction history found.</td>
                             </tr>
                         }
                     </tbody>
@@ -67,11 +67,11 @@
         <div class="alert @(Model.IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 border-@(Model.IsBalanced ? "success" : "danger") mt-3 mb-0 py-2 small">
             @if (Model.IsBalanced)
             {
-                <i class="bi bi-check-circle-fill me-1"></i> @:Total Debit = Total Credit. Neraca saldo seimbang.
+                <i class="bi bi-check-circle-fill me-1"></i> @:Total Debit = Total Credit. The trial balance is balanced.
             }
             else
             {
-                <i class="bi bi-exclamation-triangle-fill me-1"></i> @:Neraca saldo tidak seimbang, periksa kembali entri jurnal.
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> @:The trial balance is unbalanced. Please review your journal entries.
             }
         </div>
     }

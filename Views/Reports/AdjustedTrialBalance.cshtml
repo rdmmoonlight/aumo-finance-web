@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-list-columns me-2 text-info"></i> @Model.Title</h2>
-            <p class="text-muted mb-0">Saldo setiap akun setelah memperhitungkan jurnal penyesuaian (Adjusting Journal) — dasar penyusunan Laporan Laba Rugi dan Laporan Posisi Keuangan.</p>
+            <p class="text-muted mb-0">Account balances after reflecting adjusting entries — the foundation for preparing the Income Statement and Balance Sheet.</p>
         </div>
         <div class="d-flex gap-2">
             <a asp-controller="Reports" asp-action="TrialBalance" class="btn btn-outline-secondary">
@@ -49,7 +49,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="5" class="text-center py-3 text-muted">Belum ada akun dengan mutasi.</td>
+                                <td colspan="5" class="text-center py-3 text-muted">No accounts with transaction history found.</td>
                             </tr>
                         }
                     </tbody>
@@ -70,11 +70,11 @@
         <div class="alert @(Model.IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 mt-3 mb-0 py-2 small">
             @if (Model.IsBalanced)
             {
-                <i class="bi bi-check-circle-fill me-1"></i> @:Total Debit = Total Credit. Neraca saldo disesuaikan seimbang.
+                <i class="bi bi-check-circle-fill me-1"></i> @:Total Debit = Total Credit. The adjusted trial balance is balanced.
             }
             else
             {
-                <i class="bi bi-exclamation-triangle-fill me-1"></i> @:Neraca saldo disesuaikan tidak seimbang, periksa kembali jurnal penyesuaian.
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> @:The adjusted trial balance is unbalanced. Please review your adjusting journal entries.
             }
         </div>
     }
