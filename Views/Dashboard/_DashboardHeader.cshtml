@@ -1,0 +1,27 @@
+@model AumoFinance.Models.DashboardViewModel
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h4 class="fw-bold mb-1">Financial Overview</h4>
+        <p class="text-secondary small mb-0">
+            Active Period: <span class="fw-semibold text-body">@Model.ActivePeriodName</span>
+            @if (Model.ActivePeriodStart.HasValue && Model.ActivePeriodEnd.HasValue)
+            {
+                <span class="ms-1">
+                    (@Model.ActivePeriodStart.Value.ToString("dd MMM yyyy") – @Model.ActivePeriodEnd.Value.ToString("dd MMM yyyy"))
+                </span>
+            }
+            · Last updated @DateTime.Now.ToString("dd MMM yyyy, HH:mm")
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="JournalEntry" asp-action="Create"
+           class="btn btn-warning btn-sm fw-semibold shadow-sm d-flex align-items-center gap-2 quick-action-btn">
+            <i class="bi bi-plus-lg"></i> New Journal Entry
+        </a>
+        <a asp-controller="Reports" asp-action="IncomeStatement"
+           class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2 quick-action-btn">
+            <i class="bi bi-file-earmark-bar-graph"></i> Income Statement
+        </a>
+    </div>
+</div>
