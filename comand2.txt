@@ -1,0 +1,123 @@
+cek remote:
+git remote -v
+
+git remote:
+git remote set-url origin https://github.com/rdmmoonlight/aumo-finance-android.git
+
+keterangan:
+git clone	Membuka cabang baru
+git commit	Membuat jurnal catatan (kunci perubahan)
+git pull	Menarik update dari pusat
+git push	Menyetor laporan ke pusat
+git push -f	Memaksa pusat sama dengan lokal
+
+
+lokal sbg folder utama:
+git rebase --abort
+git checkout main
+git add .
+git commit -m "Gunakan versi lokal sepenuhnya dan timpa versi remote"
+git push origin main --force
+
+commit preview:
+git checkout main
+git rebase --abort
+git add .
+git commit -m "Bismillah, fix atau update"
+git push origin main --force
+
+deploy APK:
+git checkout main
+git rebase --abort
+git add .
+git commit -m "Bismillah, fix atau update android"
+git push origin main --force
+
+commit production:
+git checkout production
+git add .
+git commit -m "Alhamdulillah, release"
+git push origin production --force
+
+kalo error:
+git pull origin main --rebase
+git push
+
+*kalo lokal paling benar:
+git push origin main --force
+
+cek lokal dan repo identik:
+git fetch origin
+git status
+
+npm run:
+npm install
+npm run build
+npm run dev
+npm run start:dev
+npm test (Setiap kali ada logika baru atau memperbaiki bug file *.spec.ts)
+npm outdated
+npm test -- --coverage (mengahsilkan folder /coverage, yg htmlnya bisa dibuka)
+
+gradlew di apps/android:
+.\gradlew clean
+.\gradlew :app:compileDebugKotlin
+.\gradlew --stop
+
+build APK:
+.\gradlew clean
+.\gradlew :app:assembleRelease
+
+./gradlew --stop
+
+gunakan PowerShell Remove-Item -Recurse -Force jika rmdir tidak cocok).
+rmdir /s /q dist menjadi Remove-Item -Recurse -Force /s /q dist
+
+folder2:
+E:\Proyek\aurum-finance-monorepo
+E:\Proyek\aurum-finance-monorepo\apps\android\app\src\main\res
+E:\Proyek\aurum-finance-monorepo\apps\android\app\src\main\java\com\aurumfinance\app
+
+email & password:
+Muhammad Al Fatih
+ndopoer@gmail.com
+Bismillah.tewe15
+
+https://aurum-finance-i233.onrender.com/api
+postgresql://neondb_owner:npg_fKs4YSze0qEn@ep-gentle-star-aol9i69e-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+env:
+Sandi Aplikasi: nvbwtymyczkqtwmc
+
+vercel stabil:
+7a17C5FsE
+aurum-finance-monorepo-msq4oq0a1-obscuron16-corp.vercel.app
+
+
+lihat folder tree:
+tree /f /a
+
+bersih2:
+Remove-Item -Recurse -Force .next
+Remove-Item -Force tsconfig.tsbuildinfo
+npm run lint --workspace=apps/web
+
+gunakan git apply untuk patch
+
+C#:
+lokal:
+dotnet clean
+dotnet build
+dotnet watch
+
+secret store:
+langsung bisa klik kanan di .csproj
+dotnet user-secrets set "NamaKey" "NilaiSecret"			add atau edit
+dotnet user-secrets list					list
+dotnet user-secrets remove "Authentication:Google:ClientId"	hapus
+dotnet user-secrets open					open di VS
+
+
+cleaning:
+Remove-Item -Recurse -Force bin, obj
+
