@@ -239,7 +239,6 @@ namespace AumoFinance.Controllers
             return View(model);
         }
 
-        // Helper Methods
         private static bool IsNormalBalanceDebitSafe(string? type)
         {
             if (string.IsNullOrWhiteSpace(type)) return true;
@@ -252,54 +251,6 @@ namespace AumoFinance.Controllers
             {
                 return type is "Assets" or "OperatingExpenses" or "OtherExpenses";
             }
-        }
-
-        private static decimal? CalcTrend(decimal current, decimal prior)
-        {
-            if (prior == 0) return current == 0 ? 0 : null;
-            return Math.Round((current - prior) / Math.Abs(prior) * 100m, 1);
-        }
-    }
-}
-turn View(model);
-        }
-
-        // Helper Aman dari NULL untuk Normal Balance
-        private static bool IsNormalBalanceDebitSafe(string? type)
-        {
-            if (string.IsNullOrWhiteSpace(type)) return true;
-            
-            try
-            {
-                return AccountClassification.NormalBalanceIsDebit(type);
-            }
-            catch
-            {
-                // Fallback default jika tipe tidak dikenali
-                return type is "Assets" or "OperatingExpenses" or "OtherExpenses";
-            }
-        }
-
-        private static decimal? CalcTrend(decimal current, decimal prior)
-        {
-            if (prior == 0) return current == 0 ? 0 : null;
-            return Math.Round((current - prior) / Math.Abs(prior) * 100m, 1);
-        }
-    }
-}
-}
-            else
-            {
-                healthScore += 25; // Tidak ada hutang
-            }
-
-            // Indikator Profitabilitas
-            if (model.NetIncome > 0) healthScore += 25;
-            else if (model.NetIncome < 0) healthScore -= 15;
-
-            model.FinancialHealthScore = Math.Clamp(healthScore, 10, 100);
-
-            return View(model);
         }
 
         private static decimal? CalcTrend(decimal current, decimal prior)
