@@ -51,6 +51,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
+builder.Services.AddScoped<IAiService, AiService>(); // REGISTERED: OpenAI ChatGPT Service
 builder.Services.AddMemoryCache();
 
 // =====================================
@@ -64,7 +65,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedFor |
         ForwardedHeaders.XForwardedProto;
 
-    options.KnownIPNetworks.Clear(); // Menggantikan KnownNetworks yang obsolete
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -72,7 +73,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // MVC + Global Authorization + Controllers API
 // =====================================
 
-builder.Services.AddControllers(); // PENTING: Untuk mengaktifkan Controller API Mobile
+builder.Services.AddControllers();
 
 builder.Services.AddControllersWithViews(options =>
 {
@@ -135,7 +136,7 @@ app.UseAuthorization();
 // Routes Mapping
 // =====================================
 
-app.MapControllers(); // PENTING: Mengakses route [Route("api/mobile")] pada MobileApiController
+app.MapControllers(); // Matches [Route("api/ai")] and [Route("api/mobile")]
 
 app.MapControllerRoute(
     name: "default",
