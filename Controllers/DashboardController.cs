@@ -33,7 +33,6 @@ namespace AumoFinance.Controllers
             }
             else
             {
-                // Cek periode aktif dari database jika ada
                 var activePeriod = await _db.Periods
                     .Where(p => !p.IsClosed)
                     .OrderByDescending(p => p.StartDate)
@@ -68,11 +67,11 @@ namespace AumoFinance.Controllers
                 .Where(l => l.JournalEntry != null)
                 .ToListAsync();
 
-            // 3. Hitung Net Balance Akun Kumulatif (Assets, Liabilities, Cash)
+            // 3. Hitung Net Balance Akun Kumulatif
             var accountBalances = new Dictionary<int, decimal>();
             foreach (var account in accounts)
             {
-                var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
+                var normalDebit = IsNormalBalanceDebitSafe(account.Type);
                 var accountLines = lines.Where(l => l.AccountId == account.Id);
                 var net = normalDebit
                     ? accountLines.Sum(l => l.Debit - l.Credit)
@@ -92,7 +91,7 @@ namespace AumoFinance.Controllers
                 .Where(a => a.Type == "Liabilities")
                 .Sum(a => accountBalances.GetValueOrDefault(a.Id));
 
-            // 4. Hitung Revenue & Expense Sesuai Periode Pilihan (Monthly / Annual)
+            // 4. Hitung Revenue & Expense Sesuai Periode Pilihan
             var filteredLines = lines.Where(l =>
                 l.JournalEntry!.EntryDate >= periodStart &&
                 l.JournalEntry!.EntryDate <= periodEnd);
@@ -100,7 +99,7 @@ namespace AumoFinance.Controllers
             decimal SumByType(string type)
             {
                 var ids = accounts.Where(a => a.Type == type).Select(a => a.Id).ToHashSet();
-                var normalDebit = AccountClassification.NormalBalanceIsDebit(type);
+                var normalDebit = IsNormalBalanceDebitSafe(type);
                 var relevant = filteredLines.Where(l => ids.Contains(l.AccountId));
                 return normalDebit
                     ? relevant.Sum(l => l.Debit - l.Credit)
@@ -111,7 +110,7 @@ namespace AumoFinance.Controllers
             model.OperatingExpenses = SumByType("OperatingExpenses") + SumByType("OtherExpenses");
             model.NetIncome = model.RevenueThisPeriod - model.OperatingExpenses;
 
-            // 5. Tren Periode Sebelumnya (Prior Month atau Prior Year)
+            // 5. Tren Periode Sebelumnya
             DateTime priorStart = isAnnual ? periodStart.AddYears(-1) : periodStart.AddMonths(-1);
             DateTime priorEnd = isAnnual ? periodEnd.AddYears(-1) : periodStart.AddDays(-1);
 
@@ -122,7 +121,7 @@ namespace AumoFinance.Controllers
             decimal PriorSumByType(string type)
             {
                 var ids = accounts.Where(a => a.Type == type).Select(a => a.Id).ToHashSet();
-                var normalDebit = AccountClassification.NormalBalanceIsDebit(type);
+                var normalDebit = IsNormalBalanceDebitSafe(type);
                 var relevant = priorLines.Where(l => ids.Contains(l.AccountId));
                 return normalDebit
                     ? relevant.Sum(l => l.Debit - l.Credit)
@@ -178,7 +177,7 @@ namespace AumoFinance.Controllers
             // 8. Key Account Balances
             var keyRoles = new[] { "CashAndEquivalents", "AccountsReceivable", "AccountsPayable" };
             var keyAccounts = accounts
-                .Where(a => keyRoles.Contains(a.Role) || a.Type == "Equity")
+                .Where(a => (a.Role != null && keyRoles.Contains(a.Role)) || a.Type == "Equity")
                 .OrderBy(a => a.ReferenceNumber)
                 .Take(6)
                 .ToList();
@@ -189,7 +188,7 @@ namespace AumoFinance.Controllers
                 {
                     AccountCode = acc.ReferenceNumber.ToString(),
                     AccountName = acc.AccountName,
-                    Category = acc.Type,
+                    Category = acc.Type ?? "Other",
                     Balance = accountBalances.GetValueOrDefault(acc.Id)
                 });
             }
@@ -207,7 +206,7 @@ namespace AumoFinance.Controllers
                 })
                 .ToListAsync();
 
-            // 10. [UPGRADE-FUT2] Kalkulasi Burn Rate, Cash Runway, & Financial Health Index
+            // 10. Predictive Metrics (Burn Rate, Cash Runway, Health Score)
             model.MonthlyBurnRate = isAnnual ? (model.OperatingExpenses / 12m) : model.OperatingExpenses;
 
             if (model.MonthlyBurnRate > 0)
@@ -216,12 +215,10 @@ namespace AumoFinance.Controllers
             }
             else
             {
-                model.CashRunwayMonths = 99; // Aman (tidak ada pengeluaran/burn rate)
+                model.CashRunwayMonths = 99;
             }
 
-            int healthScore = 50; // Base score
-
-            // Indikator Likuiditas (Cash vs Liabilities)
+            int healthScore = 50;
             if (model.TotalLiabilities > 0)
             {
                 var quickRatio = model.TotalCashAndEquivalents / model.TotalLiabilities;
@@ -229,6 +226,43 @@ namespace AumoFinance.Controllers
                 else if (quickRatio >= 1.0m) healthScore += 15;
                 else if (quickRatio >= 0.5m) healthScore += 5;
             }
+            else
+            {
+                healthScore += 25;
+            }
+
+            if (model.NetIncome > 0) healthScore += 25;
+            else if (model.NetIncome < 0) healthScore -= 15;
+
+            model.FinancialHealthScore = Math.Clamp(healthScore, 10, 100);
+
+            return View(model);
+        }
+
+        // Helper Aman dari NULL untuk Normal Balance
+        private static bool IsNormalBalanceDebitSafe(string? type)
+        {
+            if (string.IsNullOrWhiteSpace(type)) return true;
+            
+            try
+            {
+                return AccountClassification.NormalBalanceIsDebit(type);
+            }
+            catch
+            {
+                // Fallback default jika tipe tidak dikenali
+                return type is "Assets" or "OperatingExpenses" or "OtherExpenses";
+            }
+        }
+
+        private static decimal? CalcTrend(decimal current, decimal prior)
+        {
+            if (prior == 0) return current == 0 ? 0 : null;
+            return Math.Round((current - prior) / Math.Abs(prior) * 100m, 1);
+        }
+    }
+}
+}
             else
             {
                 healthScore += 25; // Tidak ada hutang
