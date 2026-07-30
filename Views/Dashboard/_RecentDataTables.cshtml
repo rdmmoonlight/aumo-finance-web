@@ -1,0 +1,73 @@
+@model AumoFinance.Models.DashboardViewModel
+@{
+    var idr = ViewData["IdrCulture"] as System.Globalization.CultureInfo;
+}
+
+<div class="row g-3">
+    <div class="col-12 col-lg-4">
+        <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">Key Account Balances</h6>
+                <a asp-controller="ChartOfAccounts" asp-action="Index" class="small text-decoration-none fw-semibold">Manage →</a>
+            </div>
+            <div class="list-group list-group-flush">
+                @if (Model.MainCoaBalances != null && Model.MainCoaBalances.Any())
+                {
+                    foreach (var coa in Model.MainCoaBalances)
+                    {
+                        <div class="list-group-item bg-transparent account-item d-flex justify-content-between align-items-center py-3 px-3 border-0 border-bottom">
+                            <div>
+                                <span class="fw-semibold d-block text-body small">@coa.AccountCode · @coa.AccountName</span>
+                                <span class="text-secondary fs-8">@coa.Category</span>
+                            </div>
+                            <span class="fw-bold text-body small">@coa.Balance.ToString("N0", idr)</span>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="list-group-item bg-transparent text-center text-secondary py-4">No account balances available.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+        <div class="card bg-body border-0 shadow-sm rounded-3 h-100">
+            <div class="card-header bg-transparent border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">Recent Journal Entries</h6>
+                <a asp-controller="GeneralJournal" asp-action="Index" class="btn btn-link btn-sm p-0 text-decoration-none">View All →</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                    <thead>
+                        <tr class="text-secondary">
+                            <th class="ps-3 fw-semibold border-0">Date</th>
+                            <th class="text-end fw-semibold border-0">Debit</th>
+                            <th class="text-end pe-3 fw-semibold border-0">Credit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.RecentJournals != null && Model.RecentJournals.Any())
+                        {
+                            foreach (var j in Model.RecentJournals)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-semibold">@j.Date.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end text-success">@j.TotalDebit.ToString("N0", idr)</td>
+                                    <td class="text-end pe-3 text-danger">@j.TotalCredit.ToString("N0", idr)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center text-secondary py-4">No journal entries recorded yet.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
