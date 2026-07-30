@@ -84,15 +84,10 @@ ndopoer@gmail.com
 Bismillah.tewe15
 
 https://aurum-finance-i233.onrender.com/api
-postgresql://neondb_owner:npg_fKs4YSze0qEn@ep-gentle-star-aol9i69e-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
-
-env:
-Sandi Aplikasi: nvbwtymyczkqtwmc
 
 vercel stabil:
 7a17C5FsE
 aurum-finance-monorepo-msq4oq0a1-obscuron16-corp.vercel.app
-
 
 lihat folder tree:
 tree /f /a
