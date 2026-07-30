@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-shield-check me-2 text-info"></i> Post-Closing Trial Balance</h2>
-            <p class="text-muted mb-0">Hanya menyajikan akun permanen (Assets, Liabilities, Equity) setelah jurnal penutup — seluruh akun nominal sudah bersaldo nol.</p>
+            <p class="text-muted mb-0">Displays permanent accounts (Assets, Liabilities, Equity) after closing entries — all nominal accounts have zero balances.</p>
         </div>
         <div>
             <a asp-controller="Reports" asp-action="CashFlowStatement" class="btn btn-outline-secondary">
@@ -87,11 +87,11 @@
     <div class="alert @(Model.IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 mt-4 mb-0 py-2 small">
         @if (Model.IsBalanced)
         {
-            <i class="bi bi-check-circle-fill me-1"></i> @:Total Assets = Total Liabilities + Equity. Neraca pasca-penutupan seimbang; buku siap dibuka untuk periode berikutnya.
+            <i class="bi bi-check-circle-fill me-1"></i> @:Total Assets = Total Liabilities + Equity. Post-closing trial balance is in balance; books are ready for the next period.
         }
         else
         {
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> @:Neraca pasca-penutupan tidak seimbang, periksa kembali jurnal penutup.
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> @:Post-closing trial balance is out of balance. Please check your closing journal entries.
         }
     </div>
 </div>
