@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
@@ -114,14 +115,17 @@ if (!string.IsNullOrWhiteSpace(googleClientId) &&
 var app = builder.Build();
 
 // =====================================
-// HTTP Pipeline
+// HTTP Pipeline (DEBUG ENABLED FOR RAILWAY)
 // =====================================
 
 app.UseForwardedHeaders();
 
+// Diaktifkan sementara untuk menampilkan layar error detail di browser
+app.UseDeveloperExceptionPage();
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    // app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
     app.UseHttpsRedirection();
 }
