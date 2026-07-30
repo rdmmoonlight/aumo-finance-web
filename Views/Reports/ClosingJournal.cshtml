@@ -1,13 +1,13 @@
 @model AumoFinance.Models.ClosingJournalViewModel
 @{
-    ViewData["Title"] = "Closing Journal";
+    ViewData["Title"] = "Closing Journal Entries";
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-1"><i class="bi bi-lock-fill me-2 text-warning"></i> Closing Journal</h2>
-            <p class="text-muted mb-0">Jurnal penutup dihitung otomatis dari saldo akun nominal saat ini — belum diposting ke General Journal.</p>
+            <h2 class="mb-1"><i class="bi bi-lock-fill me-2 text-warning"></i> Closing Journal Entries</h2>
+            <p class="text-muted mb-0">Closing entries are calculated automatically based on current nominal account balances — not yet posted to the General Journal.</p>
         </div>
         <div>
             <a asp-controller="Reports" asp-action="PostClosingTrialBalance" class="btn btn-outline-secondary">
@@ -18,7 +18,7 @@
 
     @if (!Model.Groups.Any())
     {
-        <div class="alert alert-secondary bg-dark text-muted border-secondary">Tidak ada akun nominal dengan saldo untuk ditutup.</div>
+        <div class="alert alert-secondary bg-dark text-muted border-secondary">There are no nominal accounts with balances to close.</div>
     }
 
     @foreach (var group in Model.Groups)
@@ -62,7 +62,7 @@
     {
         <div class="alert alert-info bg-opacity-10 mb-0 py-2 small">
             <i class="bi bi-info-circle-fill me-1"></i>
-            Setelah jurnal penutup diposting, seluruh akun nominal bersaldo nol dan Laba/Rugi Bersih sebesar <strong>@Model.NetIncome.ToString("N2")</strong> berpindah ke <strong>@Model.RetainedEarningsAccountName</strong>.
+            After closing entries are posted, all nominal accounts will have a zero balance and Net Income of <strong>@Model.NetIncome.ToString("N2")</strong> will transfer to <strong>@Model.RetainedEarningsAccountName</strong>.
         </div>
     }
 </div>
