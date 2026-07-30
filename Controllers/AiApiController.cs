@@ -12,12 +12,12 @@ namespace AumoFinance.Controllers
     public class AiApiController : ControllerBase
     {
         private readonly IAiService _aiService;
-        private readonly AppDbContext _dbContext;
+        private readonly AppDbContext _db;
 
-        public AiApiController(IAiService aiService, AppDbContext dbContext)
+        public AiApiController(IAiService aiService, AppDbContext db)
         {
             _aiService = aiService;
-            _dbContext = dbContext;
+            _db = db;
         }
 
         [HttpPost("analyze")]
@@ -28,40 +28,101 @@ namespace AumoFinance.Controllers
                 return BadRequest(new { message = "Prompt cannot be empty." });
             }
 
-            var now = DateTime.UtcNow;
+            // 1. Ambil Periode Aktif
+            var activePeriod = await _db.Periods
+                .Where(p => !p.IsClosed)
+                .OrderByDescending(p => p.StartDate)
+                .FirstOrDefaultAsync();
 
-            // 1. Ambil 5 transaksi jurnal terakhir dari DbSet JournalEntries
-            var recentJournals = await _dbContext.JournalEntries
-                .OrderByDescending(j => j.Date)
+            string periodInfo = activePeriod != null 
+                ? $"{activePeriod.PeriodName} ({activePeriod.StartDate:dd MMM yyyy} - {activePeriod.EndDate:dd MMM yyyy})"
+                : "All-Time / No Active Period";
+
+            // 2. Ambil Akun dan Jurnal Lines untuk Kalkulasi
+            var accounts = await _db.ChartOfAccounts
+                .Where(a => a.IsActive)
+                .ToListAsync();
+
+            var lines = await _db.JournalEntryLines
+                .Include(l => l.JournalEntry)
+                .Where(l => l.JournalEntry != null)
+                .ToListAsync();
+
+            // 3. Hitung Net Balance untuk Setiap Akun
+            var accountBalances = new Dictionary<int, decimal>();
+            foreach (var account in accounts)
+            {
+                var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
+                var accountLines = lines.Where(l => l.AccountId == account.Id);
+                var net = normalDebit
+                    ? accountLines.Sum(l => l.Debit - l.Credit)
+                    : accountLines.Sum(l => l.Credit - l.Debit);
+                accountBalances[account.Id] = net;
+            }
+
+            // 4. Hitung Nilai KPI Utama
+            var totalCash = accounts
+                .Where(a => a.Role == "CashAndEquivalents")
+                .Sum(a => accountBalances.GetValueOrDefault(a.Id));
+
+            var totalAssets = accounts
+                .Where(a => a.Type == "Assets")
+                .Sum(a => accountBalances.GetValueOrDefault(a.Id));
+
+            var totalLiabilities = accounts
+                .Where(a => a.Type == "Liabilities")
+                .Sum(a => accountBalances.GetValueOrDefault(a.Id));
+
+            // 5. Hitung Revenue & Expense untuk Periode Aktif
+            IEnumerable<JournalEntryLine> periodLines = lines;
+            if (activePeriod != null)
+            {
+                periodLines = lines.Where(l =>
+                    l.JournalEntry!.EntryDate >= activePeriod.StartDate &&
+                    l.JournalEntry!.EntryDate <= activePeriod.EndDate);
+            }
+
+            decimal SumByType(string type)
+            {
+                var ids = accounts.Where(a => a.Type == type).Select(a => a.Id).ToHashSet();
+                var normalDebit = AccountClassification.NormalBalanceIsDebit(type);
+                var relevant = periodLines.Where(l => ids.Contains(l.AccountId));
+                return normalDebit
+                    ? relevant.Sum(l => l.Debit - l.Credit)
+                    : relevant.Sum(l => l.Credit - l.Debit);
+            }
+
+            var revenueThisPeriod = SumByType("OperatingIncome") + SumByType("OtherIncome");
+            var operatingExpenses = SumByType("OperatingExpenses") + SumByType("OtherExpenses");
+            var netIncome = revenueThisPeriod - operatingExpenses;
+
+            // 6. Ambil 5 Jurnal Transaksi Terakhir
+            var recentJournals = await _db.JournalEntries
+                .OrderByDescending(j => j.EntryDate)
+                .ThenByDescending(j => j.Id)
                 .Take(5)
-                .Select(j => $"- [{j.Date:yyyy-MM-dd}] Ref: {j.ReferenceNumber} | Notes: {j.Description}")
+                .Select(j => $"- [{j.EntryDate:dd MMM yyyy}] Ref: {j.ReferenceNumber} | Description: {j.Description}")
                 .ToListAsync();
 
-            string journalSummary = recentJournals.Any()
-                ? string.Join("\n", recentJournals)
-                : "No recent journal entries found.";
+            string journalSummary = recentJournals.Any() 
+                ? string.Join("\n", recentJournals) 
+                : "No journal entries found.";
 
-            // 2. Ambil ringkasan akun dari DbSet ChartOfAccounts
-            var chartOfAccounts = await _dbContext.ChartOfAccounts
-                .Take(10)
-                .Select(a => $"- Account: {a.Name} (Ref: {a.ReferenceNumber})")
-                .ToListAsync();
-
-            string coaSummary = chartOfAccounts.Any()
-                ? string.Join("\n", chartOfAccounts)
-                : "No chart of accounts available.";
-
-            // 3. Gabungkan konteks data akuntansi riil dari database Neon PostgreSQL
+            // 7. Format Seluruh Konteks Keuangan Real-Time untuk OpenAI ChatGPT
             string contextData = $@"
-Financial Accounting Context as of {now:MMMM yyyy}:
+Financial Context (Aumo Finance System):
+- Active Period: {periodInfo}
+- Cash & Equivalents: IDR {totalCash:N0}
+- Total Assets: IDR {totalAssets:N0}
+- Total Liabilities: IDR {totalLiabilities:N0}
+- Revenue (This Period): IDR {revenueThisPeriod:N0}
+- Operating Expenses (This Period): IDR {operatingExpenses:N0}
+- Net Income (This Period): IDR {netIncome:N0}
 
-Recent Journal Entries:
-{journalSummary}
+Recent 5 Journal Entries:
+{journalSummary}";
 
-Chart of Accounts Summary:
-{coaSummary}";
-
-            // 4. Minta ChatGPT menganalisis prompt + konteks data
+            // 8. Panggil ChatGPT untuk Melakukan Analisis Akuntansi Presisi
             string aiResponse = await _aiService.AnalyzeFinancialQueryAsync(request.Prompt, contextData);
 
             return Ok(new { response = aiResponse });
