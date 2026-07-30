@@ -63,9 +63,8 @@ builder.Services.AddSingleton<IChatClient>(sp =>
     var configuration = sp.GetRequiredService<IConfiguration>();
     var apiKey = configuration["OpenAI:ApiKey"] ?? configuration["OPENAI_API_KEY"] ?? "YOUR_API_KEY";
     
-    // Inisialisasi ChatClient resmi OpenAI lalu jadikan IChatClient via .AsChatClient()
-    ChatClient client = new(model: "gpt-4o-mini", apiKey: apiKey);
-    return client.AsChatClient();
+    // Menggunakan OpenAIClient langsung dengan builder Microsoft.Extensions.AI.OpenAI
+    return new OpenAI.OpenAIClient(apiKey).AsChatClient("gpt-4o-mini");
 });
 
 builder.Services.AddMemoryCache();
