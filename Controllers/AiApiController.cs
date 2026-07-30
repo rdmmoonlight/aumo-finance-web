@@ -96,16 +96,21 @@ namespace AumoFinance.Controllers
             var operatingExpenses = SumByType("OperatingExpenses") + SumByType("OtherExpenses");
             var netIncome = revenueThisPeriod - operatingExpenses;
 
-            // 6. Ambil 5 Jurnal Transaksi Terakhir
+            // 6. Ambil 5 Jurnal Transaksi Terakhir (Logika presisi dari DashboardController)
             var recentJournals = await _db.JournalEntries
                 .OrderByDescending(j => j.EntryDate)
                 .ThenByDescending(j => j.Id)
                 .Take(5)
-                .Select(j => $"- [{j.EntryDate:dd MMM yyyy}] Ref: {j.ReferenceNumber} | Description: {j.Description}")
+                .Select(j => new 
+                {
+                    Date = j.EntryDate,
+                    TotalDebit = j.Lines.Sum(l => l.Debit),
+                    TotalCredit = j.Lines.Sum(l => l.Credit)
+                })
                 .ToListAsync();
 
             string journalSummary = recentJournals.Any() 
-                ? string.Join("\n", recentJournals) 
+                ? string.Join("\n", recentJournals.Select(j => $"- [{j.Date:dd MMM yyyy}] Debit: IDR {j.TotalDebit:N0} | Credit: IDR {j.TotalCredit:N0}")) 
                 : "No journal entries found.";
 
             // 7. Format Seluruh Konteks Keuangan Real-Time untuk OpenAI ChatGPT
