@@ -14,8 +14,8 @@ namespace AumoFinance.Services
         private readonly string _apiKey;
         private readonly ILogger<AiService> _logger;
 
-        // Model Gemini yang cepat dan gratis (dalam batas kuota harian)
-        private const string Model = "gemini-2.5-flash";
+        // Alias "latest" lebih tahan terhadap perubahan versi model dibanding pin versi spesifik
+        private const string Model = "gemini-flash-latest";
 
         public AiService(HttpClient httpClient, IConfiguration configuration, ILogger<AiService> logger)
         {
