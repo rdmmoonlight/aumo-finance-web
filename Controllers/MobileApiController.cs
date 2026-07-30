@@ -14,7 +14,7 @@ public class MobileApiController : ControllerBase
 
     public MobileApiController(AppDbContext db)
     {
-        _context = context;
+        _db = db;
     }
 
     // 1. Endpoint Dashboard Real Data
