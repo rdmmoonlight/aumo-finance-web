@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "AI Financial Assistant";
+}
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-4 gap-3">
+        <div class="p-3 bg-primary text-white rounded-3 fs-3 d-flex align-items-center justify-content-center shadow-sm">
+            <i class="bi bi-robot"></i>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-1">AI Financial Assistant</h4>
+            <p class="text-secondary small mb-0">
+                Powered by ChatGPT. Analyzes real-time General Journal and Chart of Accounts data.
+            </p>
+        </div>
+    </div>
+
+    <!-- AI Prompt Interface -->
+    <div class="card bg-body border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-4">
+            <h6 class="fw-bold mb-3 text-body">
+                <i class="bi bi-stars text-warning me-1"></i> Ask Your Financial Controller
+            </h6>
+            
+            <div class="input-group input-group-lg mb-3 shadow-sm">
+                <input type="text" id="aiQueryInput" class="form-control fs-6" 
+                       placeholder="E.g., 'What is the current net income trend?' or 'Are there any unusual expenses?'"
+                       onkeypress="handleKeyPress(event)">
+                <button class="btn btn-primary fw-medium px-4" type="button" onclick="askAiAssistant()" id="btnAnalyze">
+                    <i class="bi bi-send-fill me-1"></i> Analyze
+                </button>
+            </div>
+            
+            <!-- Area Hasil Output AI -->
+            <div id="aiResponseArea" class="mt-4 p-4 bg-body-tertiary rounded-3 d-none border">
+                <div class="d-flex gap-3">
+                    <i class="bi bi-robot fs-4 text-primary mt-1"></i>
+                    <div class="w-100">
+                        <p class="mb-0 text-body" id="aiResponseText"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Memungkinkan user menekan tombol 'Enter' untuk mengirim prompt
+    function handleKeyPress(e) {
+        if (e.key === 'Enter') {
+            askAiAssistant();
+        }
+    }
+
+    async function askAiAssistant() {
+        const queryInput = document.getElementById('aiQueryInput');
+        const query = queryInput.value.trim();
+        const responseArea = document.getElementById('aiResponseArea');
+        const responseText = document.getElementById('aiResponseText');
+        const btn = document.getElementById('btnAnalyze');
+
+        if (!query) return;
+
+        // Reset state & UI saat loading
+        responseArea.classList.remove('d-none');
+        responseText.innerHTML = '<i class="bi bi-cpu spinner-border spinner-border-sm me-2 text-primary"></i> <em>Processing accounting data via OpenAI...</em>';
+        btn.disabled = true;
+
+        try {
+            // Memanggil API Controller yang sudah kita buat sebelumnya
+            const res = await fetch('/api/ai/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: query })
+            });
+
+            if (!res.ok) throw new Error('API Request failed');
+            const data = await res.json();
+
+            // Render hasil dari ChatGPT (konversi newline ke <br>)
+            responseText.innerHTML = data.response.replace(/\n/g, '<br>');
+            
+        } catch (error) {
+            responseText.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Failed to connect to AI Engine. Check your OpenAI API Key or connection.</span>';
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+}
