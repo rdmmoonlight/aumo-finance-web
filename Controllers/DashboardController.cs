@@ -239,6 +239,31 @@ namespace AumoFinance.Controllers
             return View(model);
         }
 
+        // Helper Methods
+        private static bool IsNormalBalanceDebitSafe(string? type)
+        {
+            if (string.IsNullOrWhiteSpace(type)) return true;
+            
+            try
+            {
+                return AccountClassification.NormalBalanceIsDebit(type);
+            }
+            catch
+            {
+                return type is "Assets" or "OperatingExpenses" or "OtherExpenses";
+            }
+        }
+
+        private static decimal? CalcTrend(decimal current, decimal prior)
+        {
+            if (prior == 0) return current == 0 ? 0 : null;
+            return Math.Round((current - prior) / Math.Abs(prior) * 100m, 1);
+        }
+    }
+}
+turn View(model);
+        }
+
         // Helper Aman dari NULL untuk Normal Balance
         private static bool IsNormalBalanceDebitSafe(string? type)
         {
