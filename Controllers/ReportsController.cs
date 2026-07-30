@@ -13,6 +13,10 @@ namespace AumoFinance.Controllers
             _db = db;
         }
 
+        // ==========================================================
+        // GENERAL LEDGER
+        // ==========================================================
+
         // General Ledger: akun riil / permanen (Assets, Liabilities, Equity).
         public async Task<IActionResult> GeneralLedger()
         {
@@ -22,8 +26,7 @@ namespace AumoFinance.Controllers
         }
 
         // General Ledger (Temporary Accounts): akun nominal / sementara
-        // (Operating Income, Operating Expenses, Other Income, Other
-        // Expenses) yang ditutup ke Equity pada akhir periode.
+        // (Operating Income, Operating Expenses, Other Income, Other Expenses)
         public async Task<IActionResult> GeneralLedgerTemporary()
         {
             ViewData["Title"] = "General Ledger (Temporary Accounts)";
@@ -124,8 +127,6 @@ namespace AumoFinance.Controllers
                 var aDebit = a?.Debit ?? 0;
                 var aCredit = a?.Credit ?? 0;
 
-                // Kolom Penyesuaian = selisih Neraca Saldo Disesuaikan - Neraca Saldo awal,
-                // dinyatakan kembali sebagai pasangan Debit/Kredit.
                 var adjNet = (aDebit - aCredit) - (uDebit - uCredit);
 
                 var row = new WorksheetRow
@@ -215,7 +216,7 @@ namespace AumoFinance.Controllers
                 AccountName = reAccount?.AccountName ?? "Retained Earnings",
                 BeginningBalance = reAccount?.NetBalance ?? 0,
                 NetIncome = incomeStatement.NetIncome,
-                Dividends = 0 // Belum ada peran akun Dividends di Chart of Accounts.
+                Dividends = 0
             };
         }
 
@@ -226,17 +227,21 @@ namespace AumoFinance.Controllers
         {
             ViewData["Title"] = "Statement of Financial Position";
             var vm = await BuildSofpAsync(isPostClosing: false);
-            return View(vm);
+            
+            // Ditegaskan untuk me-render View "StatementOfFinancialPosition.cshtml"
+            return View("StatementOfFinancialPosition", vm);
         }
 
-        // Neraca Pasca-Penutupan: SOFP yang sama, karena akun nominal
-        // (sementara) memang tidak pernah tampil di Laporan Posisi
-        // Keuangan — hanya akun permanen (Assets, Liabilities, Equity).
+        // ==========================================================
+        // POST-CLOSING TRIAL BALANCE
+        // ==========================================================
         public async Task<IActionResult> PostClosingTrialBalance()
         {
             ViewData["Title"] = "Post-Closing Trial Balance";
             var vm = await BuildSofpAsync(isPostClosing: true);
-            return View(vm);
+            
+            // PERBAIKAN UTAMA: Menggunakan file view spesifik PostClosingTrialBalance.cshtml
+            return View("PostClosingTrialBalance", vm);
         }
 
         private async Task<StatementOfFinancialPositionViewModel> BuildSofpAsync(bool isPostClosing)
@@ -265,7 +270,7 @@ namespace AumoFinance.Controllers
         }
 
         // ==========================================================
-        // CLOSING JOURNAL (terkomputasi, tidak diposting ke database)
+        // CLOSING JOURNAL
         // ==========================================================
         public async Task<IActionResult> ClosingJournal()
         {
@@ -281,7 +286,7 @@ namespace AumoFinance.Controllers
                 RetainedEarningsAccountName = reAccountName
             };
 
-            // Entri 1: tutup akun Pendapatan (Operating & Other Income) ke Retained Earnings.
+            // Entri 1: tutup akun Pendapatan ke Retained Earnings
             var incomeRows = rows.Where(r => r.Type == "OperatingIncome" || r.Type == "OtherIncome").Where(r => r.NetBalance != 0).ToList();
             if (incomeRows.Any())
             {
@@ -294,7 +299,7 @@ namespace AumoFinance.Controllers
                 vm.Groups.Add(group1);
             }
 
-            // Entri 2: tutup akun Beban (Operating & Other Expenses) ke Retained Earnings.
+            // Entri 2: tutup akun Beban ke Retained Earnings
             var expenseRows = rows.Where(r => r.Type == "OperatingExpenses" || r.Type == "OtherExpenses").Where(r => r.NetBalance != 0).ToList();
             if (expenseRows.Any())
             {
@@ -311,7 +316,7 @@ namespace AumoFinance.Controllers
         }
 
         // ==========================================================
-        // CASH FLOW STATEMENT (metode langsung, IAS 7)
+        // CASH FLOW STATEMENT (Direct Method - IAS 7)
         // ==========================================================
         public async Task<IActionResult> CashFlowStatement()
         {
@@ -329,7 +334,6 @@ namespace AumoFinance.Controllers
                 return View(vm);
             }
 
-            // Semua jurnal (General + Adjusting) yang melibatkan minimal satu akun kas.
             var entryIds = await _db.JournalEntryLines
                 .Where(l => cashAccountIds.Contains(l.AccountId))
                 .Select(l => l.JournalEntryId)
@@ -354,7 +358,7 @@ namespace AumoFinance.Controllers
             foreach (var entry in entries)
             {
                 var cashLines = entry.Lines.Where(l => cashAccountIds.Contains(l.AccountId)).ToList();
-                var cashNet = cashLines.Sum(l => l.Debit - l.Credit); // + = kas masuk, - = kas keluar
+                var cashNet = cashLines.Sum(l => l.Debit - l.Credit);
                 if (cashNet == 0) continue;
 
                 var contraLines = entry.Lines.Where(l => !cashAccountIds.Contains(l.AccountId)).ToList();
@@ -366,7 +370,6 @@ namespace AumoFinance.Controllers
                     var contraAmount = Math.Abs(contra.Debit - contra.Credit);
                     if (contraAmount == 0) continue;
 
-                    // Bagi proporsional bila satu jurnal kas menyentuh beberapa akun lawan.
                     var portion = cashNet * (contraAmount / contraTotal);
                     var type = contra.Account?.Type ?? "";
                     var description = contra.Account?.AccountName ?? "Uncategorized";
@@ -377,15 +380,10 @@ namespace AumoFinance.Controllers
                     }
                     else if (type == "Liabilities")
                     {
-                        // Penyederhanaan: liabilitas jangka pendek (utang usaha, utang pajak,
-                        // beban akrual) diperlakukan sebagai aktivitas Operasi.
                         Add(operating, description, portion);
                     }
                     else if (type == "Assets")
                     {
-                        // Penyederhanaan: mutasi akun Aset non-kas (selain modal kerja
-                        // operasional) diperlakukan sebagai aktivitas Investasi karena
-                        // Chart of Accounts belum membedakan aset lancar vs. tidak lancar.
                         Add(investing, description, portion);
                     }
                     else if (type == "Equity")
@@ -406,6 +404,7 @@ namespace AumoFinance.Controllers
             return View(vm);
         }
 
+        // Helper private untuk me-load data Ledger
         private async Task<List<LedgerAccountViewModel>> BuildLedgersAsync(Func<string, bool> typeFilter)
         {
             var accounts = (await _db.ChartOfAccounts
@@ -417,9 +416,6 @@ namespace AumoFinance.Controllers
 
             var accountIds = accounts.Select(a => a.Id).ToList();
 
-            // Setiap baris ledger berasal langsung dari JournalEntryLine yang
-            // sama dengan yang tampil di General Journal — satu sumber data,
-            // tidak ada duplikasi input.
             var lines = await _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
                 .Where(l => accountIds.Contains(l.AccountId))
