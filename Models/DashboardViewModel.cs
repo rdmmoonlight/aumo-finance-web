@@ -18,6 +18,11 @@ namespace AumoFinance.Models
         public decimal? ExpenseTrendPercent { get; set; }
         public decimal? NetIncomeTrendPercent { get; set; }
 
+        // Properti Baru Upgrade-Fut2 (Predictive & Financial Health Metrics)
+        public decimal MonthlyBurnRate { get; set; }
+        public double CashRunwayMonths { get; set; }
+        public int FinancialHealthScore { get; set; }
+
         public List<string> ChartLabels { get; set; } = new();
         public List<decimal> ChartRevenue { get; set; } = new();
         public List<decimal> ChartExpenses { get; set; } = new();
