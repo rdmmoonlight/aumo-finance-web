@@ -5,39 +5,42 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
-        <h4 class="fw-bold mb-1">Financial Overview</h4>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="pulse-dot"></span>
+            <h4 class="fw-bold mb-0">Financial Overview</h4>
+        </div>
         <p class="text-secondary small mb-0">
             Active Period: <span class="fw-semibold text-body">@Model.ActivePeriodName</span>
             @if (Model.ActivePeriodStart.HasValue && Model.ActivePeriodEnd.HasValue)
             {
-                <span class="ms-1">
+                <span class="ms-1 opacity-75">
                     (@Model.ActivePeriodStart.Value.ToString("dd MMM yyyy") – @Model.ActivePeriodEnd.Value.ToString("dd MMM yyyy"))
                 </span>
             }
-            · Last updated @DateTime.Now.ToString("dd MMM yyyy, HH:mm")
+            · <i class="bi bi-clock-history me-1"></i> Live updated
         </p>
     </div>
     
     <div class="d-flex flex-wrap align-items-center gap-2">
         <!-- Monthly vs Annual Switch Toggle -->
-        <div class="btn-group btn-group-sm p-1 bg-body-tertiary border rounded-pill shadow-sm" role="group" aria-label="Period Switch">
+        <div class="btn-group btn-group-sm p-1 bg-body-tertiary border border-opacity-10 rounded-pill shadow-sm" role="group" aria-label="Period Switch">
             <a asp-controller="Dashboard" asp-action="Index" asp-route-period="monthly"
-               class="btn btn-sm rounded-pill px-3 fw-semibold @(currentPeriod == "monthly" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none")">
+               class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(currentPeriod == "monthly" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none opacity-75")">
                 Monthly
             </a>
             <a asp-controller="Dashboard" asp-action="Index" asp-route-period="annual"
-               class="btn btn-sm rounded-pill px-3 fw-semibold @(currentPeriod == "annual" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none")">
+               class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(currentPeriod == "annual" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none opacity-75")">
                 Annual
             </a>
         </div>
 
         <a asp-controller="JournalEntry" asp-action="Create"
-           class="btn btn-warning btn-sm fw-semibold shadow-sm d-flex align-items-center gap-2 quick-action-btn">
-            <i class="bi bi-plus-lg"></i> New Journal Entry
+           class="btn btn-warning btn-sm fw-semibold shadow-sm d-flex align-items-center gap-2 px-3 rounded-3">
+            <i class="bi bi-plus-lg"></i> New Entry
         </a>
         <a asp-controller="Reports" asp-action="IncomeStatement"
-           class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2 quick-action-btn">
-            <i class="bi bi-file-earmark-bar-graph"></i> Income Statement
+           class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2 px-3 rounded-3">
+            <i class="bi bi-file-earmark-bar-graph"></i> Report
         </a>
     </div>
 </div>

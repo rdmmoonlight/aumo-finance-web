@@ -207,6 +207,39 @@ namespace AumoFinance.Controllers
                 })
                 .ToListAsync();
 
+            // 10. [UPGRADE-FUT2] Kalkulasi Burn Rate, Cash Runway, & Financial Health Index
+            model.MonthlyBurnRate = isAnnual ? (model.OperatingExpenses / 12m) : model.OperatingExpenses;
+
+            if (model.MonthlyBurnRate > 0)
+            {
+                model.CashRunwayMonths = (double)Math.Round(model.TotalCashAndEquivalents / model.MonthlyBurnRate, 1);
+            }
+            else
+            {
+                model.CashRunwayMonths = 99; // Aman (tidak ada pengeluaran/burn rate)
+            }
+
+            int healthScore = 50; // Base score
+
+            // Indikator Likuiditas (Cash vs Liabilities)
+            if (model.TotalLiabilities > 0)
+            {
+                var quickRatio = model.TotalCashAndEquivalents / model.TotalLiabilities;
+                if (quickRatio >= 1.5m) healthScore += 25;
+                else if (quickRatio >= 1.0m) healthScore += 15;
+                else if (quickRatio >= 0.5m) healthScore += 5;
+            }
+            else
+            {
+                healthScore += 25; // Tidak ada hutang
+            }
+
+            // Indikator Profitabilitas
+            if (model.NetIncome > 0) healthScore += 25;
+            else if (model.NetIncome < 0) healthScore -= 15;
+
+            model.FinancialHealthScore = Math.Clamp(healthScore, 10, 100);
+
             return View(model);
         }
 
