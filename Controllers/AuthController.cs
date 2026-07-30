@@ -18,6 +18,7 @@ public class AuthController : Controller
     private readonly IEmailSender _emailSender;
     private readonly IMemoryCache _cache;
     private readonly IGuardianService _guardianService;
+    private readonly ILogger<AuthController> _logger;
 
     private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(60);
 
@@ -26,13 +27,15 @@ public class AuthController : Controller
         SignInManager<ApplicationUser> signInManager,
         IEmailSender emailSender,
         IMemoryCache cache,
-        IGuardianService guardianService)
+        IGuardianService guardianService,
+        ILogger<AuthController> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _emailSender = emailSender;
         _cache = cache;
         _guardianService = guardianService;
+        _logger = logger;
     }
 
     // ============================
@@ -56,10 +59,18 @@ public class AuthController : Controller
             return View(model);
         }
 
+        // 1. Cari user berdasarkan email terlebih dahulu
         var user = await _userManager.FindByEmailAsync(model.Email);
 
+        if (user == null)
+        {
+            ModelState.AddModelError(string.Empty, "Invalid email or password.");
+            return View(model);
+        }
+
+        // 2. Gunakan user.UserName untuk PasswordSignInAsync agar akurat
         var result = await _signInManager.PasswordSignInAsync(
-            model.Email,
+            user.UserName!,
             model.Password,
             isPersistent: true,
             lockoutOnFailure: true
@@ -68,7 +79,7 @@ public class AuthController : Controller
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
         var userAgent = Request.Headers.UserAgent.ToString();
 
-        if (result.Succeeded && user != null)
+        if (result.Succeeded)
         {
             await _guardianService.CreateLoginActivityAsync(
                 user.Id,
@@ -92,18 +103,16 @@ public class AuthController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        if (user != null)
-        {
-            await _guardianService.CreateLoginActivityAsync(
-                user.Id,
-                "Login Failed",
-                userAgent,
-                userAgent,
-                ipAddress,
-                "",
-                false
-            );
-        }
+        // Ambil riwayat kegagalan login untuk sistem Guardian Security
+        await _guardianService.CreateLoginActivityAsync(
+            user.Id,
+            "Login Failed",
+            userAgent,
+            userAgent,
+            ipAddress,
+            "",
+            false
+        );
 
         if (result.IsNotAllowed)
         {
@@ -232,11 +241,18 @@ public class AuthController : Controller
                 Request.Scheme
             );
 
-            await _emailSender.SendEmailAsync(
-                user.Email!,
-                "Reset your Aumo Finance password",
-                EmailTemplates.PasswordReset(user.FullName, resetUrl!)
-            );
+            try
+            {
+                await _emailSender.SendEmailAsync(
+                    user.Email!,
+                    "Reset your Aumo Finance password",
+                    EmailTemplates.PasswordReset(user.FullName, resetUrl!)
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending reset password email.");
+            }
         }
 
         TempData["SuccessMessage"] = "If that email is registered, a password reset link has been sent.";
@@ -391,10 +407,18 @@ public class AuthController : Controller
             Request.Scheme
         );
 
-        await _emailSender.SendEmailAsync(
-            user.Email!,
-            "Confirm your Aumo Finance account",
-            EmailTemplates.EmailConfirmation(user.FullName, confirmUrl!)
-        );
+        try
+        {
+            await _emailSender.SendEmailAsync(
+                user.Email!,
+                "Confirm your Aumo Finance account",
+                EmailTemplates.EmailConfirmation(user.FullName, confirmUrl!)
+            );
+        }
+        catch (Exception ex)
+        {
+            // Menangkap error pengiriman email agar aplikasi TIDAK melempar HTTP 500
+            _logger.LogError(ex, "Failed to send email confirmation to {Email}", user.Email);
+        }
     }
 }
