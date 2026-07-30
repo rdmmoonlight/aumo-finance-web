@@ -56,15 +56,19 @@ builder.Services.AddScoped<IGuardianService, GuardianService>();
 builder.Services.AddScoped<IAiService, AiService>(); 
 
 // =====================================
-// Microsoft.Extensions.AI Registration (Fixed)
+// Microsoft.Extensions.AI Registration
 // =====================================
 builder.Services.AddSingleton<IChatClient>(sp =>
 {
     var configuration = sp.GetRequiredService<IConfiguration>();
-    var apiKey = configuration["OpenAI:ApiKey"] ?? configuration["OPENAI_API_KEY"] ?? "YOUR_API_KEY";
     
-    // Menggunakan OpenAIClient langsung dengan builder Microsoft.Extensions.AI.OpenAI
-    return new OpenAI.OpenAIClient(apiKey).AsChatClient("gpt-4o-mini");
+    // Mengambil langsung dari Environment Variable / Railway Configuration
+    var apiKey = configuration["OpenAI:ApiKey"] 
+                 ?? configuration["OPENAI_API_KEY"] 
+                 ?? throw new InvalidOperationException("OpenAI API Key is not configured in Railway variables.");
+    
+    OpenAI.Chat.ChatClient client = new(model: "gpt-4o-mini", apiKey: apiKey);
+    return client.AsChatClient();
 });
 
 builder.Services.AddMemoryCache();
