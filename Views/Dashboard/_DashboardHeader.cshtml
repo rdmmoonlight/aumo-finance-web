@@ -1,4 +1,7 @@
 @model AumoFinance.Models.DashboardViewModel
+@{
+    var currentPeriod = ViewData["CurrentPeriodType"]?.ToString() ?? "monthly";
+}
 
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
     <div>
@@ -14,7 +17,20 @@
             · Last updated @DateTime.Now.ToString("dd MMM yyyy, HH:mm")
         </p>
     </div>
-    <div class="d-flex flex-wrap gap-2">
+    
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <!-- Monthly vs Annual Switch Toggle -->
+        <div class="btn-group btn-group-sm p-1 bg-body-tertiary border rounded-pill shadow-sm" role="group" aria-label="Period Switch">
+            <a asp-controller="Dashboard" asp-action="Index" asp-route-period="monthly"
+               class="btn btn-sm rounded-pill px-3 fw-semibold @(currentPeriod == "monthly" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none")">
+                Monthly
+            </a>
+            <a asp-controller="Dashboard" asp-action="Index" asp-route-period="annual"
+               class="btn btn-sm rounded-pill px-3 fw-semibold @(currentPeriod == "annual" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none")">
+                Annual
+            </a>
+        </div>
+
         <a asp-controller="JournalEntry" asp-action="Create"
            class="btn btn-warning btn-sm fw-semibold shadow-sm d-flex align-items-center gap-2 quick-action-btn">
             <i class="bi bi-plus-lg"></i> New Journal Entry
