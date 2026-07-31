@@ -1,5 +1,5 @@
 @using System.Globalization
-@model MobileClassifyViewModel
+@model MobileClassifySimpleViewModel
 @{
     ViewData["Title"] = "Klasifikasi Transaksi";
     var cultureId = new CultureInfo("id-ID");
@@ -11,7 +11,7 @@
             <h2 class="fw-bold text-body-emphasis mb-1">
                 <i class="bi bi-tags me-2 text-warning"></i> Klasifikasi Transaksi
             </h2>
-            <p class="text-secondary mb-0">Pilih akun @(Model.Type == "Income" ? "pendapatan" : "beban") yang sesuai untuk transaksi ini.</p>
+            <p class="text-secondary mb-0">Pilih akun kas dan akun @(Model.Type == "Income" ? "pendapatan" : "beban") yang sesuai. Jurnal baru dibuat di tabel utama setelah disimpan.</p>
         </div>
         <a asp-action="Index" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i> Kembali
@@ -30,13 +30,10 @@
         <div class="col-12 col-lg-5">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
                 <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
-                    <h5 class="fw-bold">Ringkasan Transaksi</h5>
+                    <h5 class="fw-bold">Ringkasan Input Mobile</h5>
                 </div>
                 <div class="card-body px-4">
                     <dl class="row mb-0">
-                        <dt class="col-5 text-secondary">Referensi</dt>
-                        <dd class="col-7">@Model.ReferenceNumber</dd>
-
                         <dt class="col-5 text-secondary">Tanggal</dt>
                         <dd class="col-7">@Model.EntryDate.ToString("dd/MM/yyyy")</dd>
 
@@ -56,7 +53,7 @@
                         <dd class="col-7 fw-bold">@Model.Amount.ToString("C0", cultureId)</dd>
 
                         <dt class="col-5 text-secondary">Catatan Android</dt>
-                        <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.MobileNote) ? "-" : Model.MobileNote)</dd>
+                        <dd class="col-7">@(string.IsNullOrWhiteSpace(Model.Note) ? "-" : Model.Note)</dd>
                     </dl>
                 </div>
             </div>
@@ -65,22 +62,18 @@
         <div class="col-12 col-lg-7">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
                 <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
-                    <h5 class="fw-bold">Klasifikasikan Ke</h5>
+                    <h5 class="fw-bold">Verifikasi &amp; Gabungkan</h5>
                 </div>
                 <div class="card-body px-4">
-                    <form asp-action="Classify" asp-route-id="@Model.JournalEntryId" method="post">
+                    <form asp-action="Classify" asp-route-id="@Model.MobileJournalEntryId" method="post">
                         @Html.AntiForgeryToken()
-                        <input type="hidden" asp-for="JournalEntryId" />
-                        <input type="hidden" asp-for="UnclassifiedLineId" />
-                        <input type="hidden" asp-for="Type" />
+                        <input type="hidden" asp-for="MobileJournalEntryId" />
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">
-                                Akun @(Model.Type == "Income" ? "Pendapatan" : "Beban")
-                            </label>
-                            <select asp-for="SelectedAccountId" class="form-select" required>
-                                <option value="">-- Pilih Akun --</option>
-                                @foreach (var acc in Model.AvailableAccounts)
+                            <label class="form-label fw-semibold">Akun Kas / Bank</label>
+                            <select asp-for="CashAccountId" class="form-select" required>
+                                <option value="">-- Pilih Akun Kas --</option>
+                                @foreach (var acc in Model.CashAccounts)
                                 {
                                     <option value="@acc.Id">@acc.DisplayLabel</option>
                                 }
@@ -88,21 +81,28 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">Deskripsi</label>
-                            <input asp-for="Description" class="form-control" placeholder="Deskripsi transaksi" />
-                            <div class="form-text">Pre-fill dari catatan Android, boleh diedit.</div>
+                            <label class="form-label fw-semibold">
+                                Akun @(Model.Type == "Income" ? "Pendapatan" : "Beban")
+                            </label>
+                            <select asp-for="ClassifiedAccountId" class="form-select" required>
+                                <option value="">-- Pilih Akun --</option>
+                                @foreach (var acc in Model.IncomeOrExpenseAccounts)
+                                {
+                                    <option value="@acc.Id">@acc.DisplayLabel</option>
+                                }
+                            </select>
                         </div>
 
                         <div class="d-flex justify-content-between">
                             <button type="submit" class="btn btn-warning fw-semibold">
-                                <i class="bi bi-check-lg me-1"></i> Simpan
+                                <i class="bi bi-check-lg me-1"></i> Verifikasi &amp; Posting
                             </button>
 
                             <button type="submit"
-                                    formaction="@Url.Action("Reject", new { id = Model.JournalEntryId })"
+                                    formaction="@Url.Action("Reject", new { id = Model.MobileJournalEntryId })"
                                     class="btn btn-outline-danger"
-                                    onclick="return confirm('Hapus transaksi ini? Efek saldo akan dibatalkan dan tidak bisa dikembalikan.');">
-                                <i class="bi bi-trash me-1"></i> Tolak / Hapus
+                                    onclick="return confirm('Tolak transaksi ini? Tidak akan masuk ke pembukuan utama.');">
+                                <i class="bi bi-x-lg me-1"></i> Tolak
                             </button>
                         </div>
                     </form>

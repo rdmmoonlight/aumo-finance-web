@@ -17,17 +17,18 @@ public class MobileApiController : ControllerBase
         _db = db;
     }
 
-    // 1. Endpoint Dashboard Real Data
+    // 1. Endpoint Dashboard Real Data.
+    // Catatan: dashboard tetap membaca dari tabel utama (JournalEntries),
+    // karena hanya menampilkan data yang SUDAH terverifikasi/terposting.
+    // Transaksi mobile yang masih Pending tidak memengaruhi saldo apa pun.
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {
-        // 1. Periode aktif (sama seperti DashboardController versi web)
         var activePeriod = await _db.Periods
             .Where(p => !p.IsClosed)
             .OrderByDescending(p => p.StartDate)
             .FirstOrDefaultAsync();
 
-        // 2. Semua akun aktif + seluruh baris jurnal
         var accounts = await _db.ChartOfAccounts
             .Where(a => a.IsActive)
             .ToListAsync();
@@ -38,7 +39,6 @@ public class MobileApiController : ControllerBase
             .Where(l => l.JournalEntry != null)
             .ToListAsync();
 
-        // 3. Saldo bersih tiap akun (aturan sama dengan ReportsController/DashboardController)
         var accountBalances = new Dictionary<int, decimal>();
         foreach (var account in accounts)
         {
@@ -54,7 +54,6 @@ public class MobileApiController : ControllerBase
             .Where(a => a.Role == "CashAndEquivalents")
             .Sum(a => accountBalances.GetValueOrDefault(a.Id));
 
-        // Revenue & Expenses dibatasi ke periode aktif bila ada
         IEnumerable<JournalEntryLine> periodLines = lines;
         if (activePeriod != null)
         {
@@ -77,13 +76,18 @@ public class MobileApiController : ControllerBase
         var expenses = SumByType("OperatingExpenses") + SumByType("OtherExpenses");
         var netIncome = revenue - expenses;
 
+        var pendingCount = await _db.MobileJournalEntries
+            .Where(m => m.Status == "Pending")
+            .CountAsync();
+
         return Ok(new
         {
             TotalCash = totalCash,
             Revenue = revenue,
             Expenses = expenses,
             NetIncome = netIncome,
-            ActivePeriod = activePeriod?.PeriodName ?? "-"
+            ActivePeriod = activePeriod?.PeriodName ?? "-",
+            PendingVerification = pendingCount
         });
     }
 
@@ -106,6 +110,9 @@ public class MobileApiController : ControllerBase
     }
 
     // POST: api/mobile/journal
+    // Jurnal manual (akun dipilih sendiri di Android). TIDAK langsung masuk
+    // JournalEntries — disimpan dulu ke MobileJournalEntries/Lines dengan
+    // Status = Pending, menunggu di-approve lewat halaman Mobile Classification.
     [HttpPost("journal")]
     public async Task<IActionResult> PostJournal([FromBody] MobileCreateJournalDto dto)
     {
@@ -133,16 +140,13 @@ public class MobileApiController : ControllerBase
             return BadRequest(new { message = "Salah satu akun yang dipilih tidak valid atau tidak aktif." });
         }
 
-        // Input dari mobile selalu jurnal umum (General); jenis Adjusting hanya dibuat lewat web.
-        const string journalType = "General";
-        var referenceNumber = await GenerateReferenceNumberAsync(journalType);
-
-        var entry = new JournalEntry
+        var mobileEntry = new MobileJournalEntry
         {
-            ReferenceNumber = referenceNumber,
-            JournalType = journalType,
             EntryDate = DateTime.SpecifyKind(dto.EntryDate == default ? DateTime.Today : dto.EntryDate, DateTimeKind.Utc),
-            Lines = lines.Select((l, index) => new JournalEntryLine
+            Mode = "Manual",
+            Status = "Pending",
+            SubmittedAt = DateTime.UtcNow,
+            Lines = lines.Select((l, index) => new MobileJournalEntryLine
             {
                 AccountId = l.AccountId,
                 LineDescription = l.LineDescription,
@@ -152,15 +156,17 @@ public class MobileApiController : ControllerBase
             }).ToList()
         };
 
-        _db.JournalEntries.Add(entry);
+        _db.MobileJournalEntries.Add(mobileEntry);
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = $"Jurnal {entry.ReferenceNumber} berhasil disimpan." });
+        return Ok(new { message = "Jurnal berhasil dikirim, menunggu verifikasi.", mobileEntryId = mobileEntry.Id });
     }
 
     // POST: api/mobile/simple-transaction
-    // Input cepat dari Android (Pemasukan/Pengeluaran saja, tanpa picker akun).
-    // Server yang membentuk dua baris jurnal seimbang: Kas <-> Unclassified.
+    // Input cepat dari Android (Pemasukan/Pengeluaran, tanpa picker akun).
+    // TIDAK langsung masuk JournalEntries — disimpan ke MobileJournalEntries
+    // dengan Status = Pending, menunggu diklasifikasikan ke akun yang sesuai
+    // lewat halaman Mobile Classification.
     [HttpPost("simple-transaction")]
     public async Task<IActionResult> PostSimpleTransaction([FromBody] MobileSimpleTransactionDto dto)
     {
@@ -174,68 +180,32 @@ public class MobileApiController : ControllerBase
             return BadRequest(new { message = "Jenis transaksi tidak valid. Gunakan 'Income' atau 'Expense'." });
         }
 
-        var cashAccount = await _db.ChartOfAccounts
-            .Where(a => a.IsActive && a.Role == "CashAndEquivalents")
-            .OrderBy(a => a.ReferenceNumber)
-            .FirstOrDefaultAsync();
-
-        if (cashAccount == null)
+        var mobileEntry = new MobileJournalEntry
         {
-            return BadRequest(new { message = "Akun Kas (Role = CashAndEquivalents) belum tersedia di Chart of Accounts." });
-        }
-
-        var unclassifiedRole = dto.Type == "Income" ? "UnclassifiedIncome" : "UnclassifiedExpense";
-        var unclassifiedAccount = await _db.ChartOfAccounts
-            .Where(a => a.IsActive && a.Role == unclassifiedRole)
-            .OrderBy(a => a.ReferenceNumber)
-            .FirstOrDefaultAsync();
-
-        if (unclassifiedAccount == null)
-        {
-            return BadRequest(new { message = $"Akun sistem dengan Role = {unclassifiedRole} belum tersedia di Chart of Accounts." });
-        }
-
-        // Pemasukan: Kas (Debit) <-> Unclassified Income (Kredit)
-        // Pengeluaran: Unclassified Expense (Debit) <-> Kas (Kredit)
-        var lines = dto.Type == "Income"
-            ? new List<JournalEntryLine>
-              {
-                  new() { AccountId = cashAccount.Id, LineDescription = dto.Note, Debit = dto.Amount, Credit = 0, LineOrder = 0 },
-                  new() { AccountId = unclassifiedAccount.Id, LineDescription = dto.Note, Debit = 0, Credit = dto.Amount, LineOrder = 1 }
-              }
-            : new List<JournalEntryLine>
-              {
-                  new() { AccountId = unclassifiedAccount.Id, LineDescription = dto.Note, Debit = dto.Amount, Credit = 0, LineOrder = 0 },
-                  new() { AccountId = cashAccount.Id, LineDescription = dto.Note, Debit = 0, Credit = dto.Amount, LineOrder = 1 }
-              };
-
-        const string journalType = "General";
-        var referenceNumber = await GenerateReferenceNumberAsync(journalType);
-
-        var entry = new JournalEntry
-        {
-            ReferenceNumber = referenceNumber,
-            JournalType = journalType,
             EntryDate = DateTime.SpecifyKind(dto.EntryDate == default ? DateTime.Today : dto.EntryDate, DateTimeKind.Utc),
-            NeedsClassification = true,
-            Source = "Mobile",
-            MobileNote = dto.Note,
-            Lines = lines
+            Mode = "Simple",
+            Type = dto.Type,
+            Amount = dto.Amount,
+            Note = dto.Note,
+            Status = "Pending",
+            SubmittedAt = DateTime.UtcNow
         };
 
-        _db.JournalEntries.Add(entry);
+        _db.MobileJournalEntries.Add(mobileEntry);
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = $"Transaksi {entry.ReferenceNumber} berhasil disimpan.", referenceNumber = entry.ReferenceNumber });
+        return Ok(new { message = "Transaksi berhasil dikirim, menunggu verifikasi.", mobileEntryId = mobileEntry.Id });
     }
 
     // Sama persis dengan JournalEntryController.GenerateReferenceNumberAsync,
-    // supaya penomoran referensi konsisten antara input via web dan via mobile.
-    private async Task<string> GenerateReferenceNumberAsync(string journalType)
+    // supaya penomoran referensi konsisten antara input via web dan via mobile
+    // yang sudah diverifikasi. Dipakai oleh MobileClassificationController
+    // saat memposting entri terverifikasi ke JournalEntries.
+    internal static async Task<string> GenerateReferenceNumberAsync(AppDbContext db, string journalType)
     {
         var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
 
-        var lastNumber = await _db.JournalEntries
+        var lastNumber = await db.JournalEntries
             .Where(e => e.ReferenceNumber.StartsWith(prefix + "-"))
             .OrderByDescending(e => e.Id)
             .Select(e => e.ReferenceNumber)

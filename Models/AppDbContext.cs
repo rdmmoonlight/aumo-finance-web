@@ -34,6 +34,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
     public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
 
+    // Mobile Input (tabel terpisah dari JournalEntries/JournalEntryLines).
+    // Semua input dari Android masuk ke sini dulu, digabung ke tabel utama
+    // hanya lewat mekanisme verifikasi di halaman web "Mobile Classification".
+    public DbSet<MobileJournalEntry> MobileJournalEntries => Set<MobileJournalEntry>();
+
+    public DbSet<MobileJournalEntryLine> MobileJournalEntryLines => Set<MobileJournalEntryLine>();
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -96,6 +103,30 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Mobile Input
+        builder.Entity<MobileJournalEntry>(entity =>
+        {
+            entity.HasIndex(x => x.Status);
+
+            entity.HasOne(x => x.VerifiedJournalEntry)
+                .WithMany()
+                .HasForeignKey(x => x.VerifiedJournalEntryId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<MobileJournalEntryLine>(entity =>
+        {
+            entity.HasOne(x => x.MobileJournalEntry)
+                .WithMany(x => x.Lines)
+                .HasForeignKey(x => x.MobileJournalEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(x => x.Account)
+                .WithMany()
+                .HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
