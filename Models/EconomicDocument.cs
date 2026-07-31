@@ -1,45 +1,51 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AumoFinance.Models
+namespace AumoFinance.Models;
+
+public class EconomicDocument
 {
-    public class EconomicDocument
-    {
-        [Key]
-        public int Id { get; set; }
+    [Key]
+    public int Id { get; set; }
 
-        [Required]
-        [StringLength(200)]
-        [Display(Name = "Document Title")]
-        public string Title { get; set; }
+    [Required]
+    [StringLength(200)]
+    public string Title { get; set; } = string.Empty;
 
-        [Required]
-        [StringLength(50)]
-        public string Category { get; set; } // e.g., Invoice, Receipt, Tax Return, Contract
+    [Required]
+    [StringLength(50)]
+    public string Category { get; set; } = string.Empty;
 
-        [Display(Name = "Reference Number")]
-        [StringLength(100)]
-        public string ReferenceNumber { get; set; } // For Journal/GL linking
+    [StringLength(100)]
+    public string? ReferenceNumber { get; set; }
 
-        [Required]
-        [StringLength(255)]
-        public string FileName { get; set; }
+    // --- INTEGRASI SSOT (Foreign Key ke JournalEntry) ---
+    [Display(Name = "Linked Journal Entry")]
+    public int? JournalEntryId { get; set; }
 
-        [Required]
-        [StringLength(500)]
-        public string FilePath { get; set; }
+    [ForeignKey("JournalEntryId")]
+    public JournalEntry? JournalEntry { get; set; }
+    // ----------------------------------------------------
 
-        public long FileSize { get; set; } // In bytes
+    [Required]
+    [StringLength(255)]
+    public string FileName { get; set; } = string.Empty;
 
-        [StringLength(100)]
-        public string ContentType { get; set; }
+    [Required]
+    [StringLength(500)]
+    public string FilePath { get; set; } = string.Empty;
 
-        [Required]
-        public string UploadedBy { get; set; }
+    public long FileSize { get; set; }
 
-        [Required]
-        public DateTime UploadDate { get; set; } = DateTime.UtcNow;
+    [StringLength(100)]
+    public string? ContentType { get; set; }
 
-        public string Description { get; set; }
-    }
+    [Required]
+    public string UploadedBy { get; set; } = "System";
+
+    [Required]
+    public DateTime UploadDate { get; set; } = DateTime.UtcNow;
+
+    public string? Description { get; set; }
 }
