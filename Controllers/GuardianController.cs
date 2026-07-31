@@ -1,7 +1,9 @@
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
+using AumoFinance.Services.Security;
 
 namespace AumoFinance.Controllers;
 
@@ -9,13 +11,92 @@ public class GuardianController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly AppDbContext _context;
+    private readonly IGuardianService _guardianService;
 
     public GuardianController(
         UserManager<ApplicationUser> userManager,
-        AppDbContext context)
+        AppDbContext context,
+        IGuardianService guardianService)
     {
         _userManager = userManager;
         _context = context;
+        _guardianService = guardianService;
+    }
+
+    // GET: /Guardian
+    public async Task<IActionResult> Index()
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var model = new GuardianViewModel
+        {
+            Sessions = await _guardianService.GetActiveSessionsAsync(user.Id),
+            Activities = await _guardianService.GetLoginActivitiesAsync(user.Id)
+        };
+
+        return View(model);
+    }
+
+    // POST: /Guardian/RevokeSession
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeSession(Guid id)
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        await _guardianService.RevokeSessionAsync(id, user.Id);
+
+        TempData["SuccessMessage"] = "Session has been signed out.";
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    // GET: /Guardian/ExportAuditLog
+    public async Task<IActionResult> ExportAuditLog()
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        var activities = await _guardianService.GetLoginActivitiesAsync(user.Id);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("ActivityType,Device,IpAddress,Country,IsSuccess,CreatedAt");
+
+        foreach (var activity in activities)
+        {
+            sb.AppendLine(string.Join(",",
+                Csv(activity.ActivityType),
+                Csv(activity.Device),
+                Csv(activity.IpAddress),
+                Csv(activity.Country),
+                activity.IsSuccess,
+                activity.CreatedAt.ToString("u")));
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", $"guardian-audit-log-{DateTime.UtcNow:yyyyMMdd}.csv");
+    }
+
+    private static string Csv(string? value)
+    {
+        value ??= string.Empty;
+        return value.Contains(',') || value.Contains('"')
+            ? $"\"{value.Replace("\"", "\"\"")}\""
+            : value;
     }
 
     // POST: /Guardian/RevokeAllSessions
