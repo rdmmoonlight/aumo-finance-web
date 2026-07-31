@@ -16,6 +16,7 @@
 
     <!-- Aumo Theme (colors + typography) -->
     <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/guardian.css" asp-append-version="true" />
     
     <!-- Instant Theme Loader -->
     <script>
@@ -100,16 +101,16 @@
         .fs-7 { font-size: 0.825rem; }
         .fs-8 { font-size: 0.725rem; }
     </style>
-<link rel="stylesheet" href="~/css/guardian.css" asp-append-version="true" />
+
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <div class="d-flex vh-100 overflow-hidden">
-@if (User.Identity != null && User.Identity.IsAuthenticated)
-{
-    <!-- Sidebar hanya muncul KALAU user SUDAH login -->
-    <partial name="_Sidebar" />
-}
+        @if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            <!-- Sidebar hanya muncul KALAU user SUDAH login -->
+            <partial name="_Sidebar" />
+        }
 
         <!-- Area Kanan Utama -->
         <div class="d-flex flex-column flex-grow-1 min-vw-0">
@@ -125,8 +126,11 @@
         </div>
     </div>
 
-    <!-- JS Dependencies -->
+    <!-- JS Dependencies (Urutan Wajib: jQuery -> Bootstrap -> Validation) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/4.0.0/jquery.validate.unobtrusive.min.js"></script>
 
     <!-- Sidebar & Theme Toggle Script -->
     <script>
@@ -157,7 +161,7 @@
         });
     </script>
 
-    <!-- Custom Script Quran Banner (Modul Eksternal) -->
+    <!-- Custom Script Modul Eksternal -->
     <script src="~/js/quran-banner.js" asp-append-version="true"></script>
     <script src="~/js/guardian.js" asp-append-version="true"></script>
 
