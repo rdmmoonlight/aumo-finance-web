@@ -1,11 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AumoFinance.Models
+namespace AumoFinance.Models;
+
+public class ResendVerificationModel
 {
-    public class ResendVerificationModel
-    {
-        [Required(ErrorMessage = "Email address is required")]
-        [EmailAddress(ErrorMessage = "Invalid email address format")]
-        public string Email { get; set; } = string.Empty;
-    }
+    [Required(ErrorMessage = "Email wajib diisi.")]
+    [EmailAddress(ErrorMessage = "Format email tidak valid.")]
+    public string Email { get; set; } = string.Empty;
 }
