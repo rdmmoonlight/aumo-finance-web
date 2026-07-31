@@ -79,107 +79,56 @@
     }
 
     /**
-     * High Precision Financial Fetcher Engine
-     * Uses Fast Reliable CORS-enabled APIs
+     * Internal Server Fetcher (CORS Free & Always Working)
      */
-    const MarketEngine = {
-        CACHE_KEY_USD: 'aumo_usd_rate',
-        CACHE_KEY_IHSG: 'aumo_ihsg_index',
+    async function fetchMarketData() {
+        const usdEl = document.getElementById('usdRate');
+        const ihsgEl = document.getElementById('ihsgIndex');
 
-        init() {
-            this.loadFromCache();
-            this.fetchAll();
-            setInterval(() => this.fetchAll(), 60000); // Auto-refresh 60 detik
-        },
+        try {
+            const res = await fetch('/Market/GetMarketData');
+            const data = await res.json();
 
-        loadFromCache() {
-            const usdCache = localStorage.getItem(this.CACHE_KEY_USD);
-            const ihsgCache = localStorage.getItem(this.CACHE_KEY_IHSG);
-            if (usdCache) document.getElementById('usdRate').innerHTML = usdCache;
-            if (ihsgCache) document.getElementById('ihsgIndex').innerHTML = ihsgCache;
-        },
+            if (data.success) {
+                // Render USD
+                if (usdEl && data.usd) {
+                    const price = Math.round(data.usd.price);
+                    const colorClass = data.usd.isUp ? 'market-up' : 'market-down';
+                    const iconClass = data.usd.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+                    const percent = Math.abs(data.usd.percent).toFixed(2);
 
-        async fetchAll() {
-            await Promise.allSettled([this.fetchUSD(), this.fetchIHSG()]);
-        },
-
-        async fetchUSD() {
-            const usdEl = document.getElementById('usdRate');
-            if (!usdEl) return;
-
-            try {
-                // Fetch USD/IDR via ExchangeRate API (Inludes Trend Data)
-                const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-                const data = await res.json();
-                
-                if (data && data.rates && data.rates.IDR) {
-                    const price = Math.round(data.rates.IDR);
-                    
-                    // Gunakan kalkulasi deviasi perkiraan atau persentase stabil jika prevClose tidak tersedia
-                    const htmlContent = `
+                    usdEl.innerHTML = `
                         Rp ${price.toLocaleString('id-ID')} 
-                        <span class="market-up ms-1" style="font-size: 0.68rem;">
-                            <i class="bi bi-caret-up-fill"></i>0.05%
+                        <span class="${colorClass} ms-1" style="font-size: 0.68rem;">
+                            <i class="bi ${iconClass}"></i>${percent}%
                         </span>`;
-
-                    usdEl.innerHTML = htmlContent;
-                    localStorage.setItem(this.CACHE_KEY_USD, htmlContent);
                 }
-            } catch (err) {
-                if (!usdEl.innerHTML || usdEl.innerText === 'Loading...') {
-                    usdEl.innerText = '-';
-                }
-            }
-        },
 
-        async fetchIHSG() {
-            const ihsgEl = document.getElementById('ihsgIndex');
-            if (!ihsgEl) return;
-
-            try {
-                // Fetch via Financial Data Engine Proxy (Reliable Anti-CORS)
-                const res = await fetch('https://query2.finance.yahoo.com/v8/finance/chart/^JKSE?interval=1d');
-                const data = await res.json();
-                const meta = data?.chart?.result[0]?.meta;
-
-                if (meta) {
-                    const price = meta.regularMarketPrice;
-                    const prevClose = meta.chartPreviousClose || meta.previousClose || price;
-                    const diff = price - prevClose;
-                    const percent = prevClose ? ((diff / prevClose) * 100).toFixed(2) : "0.00";
-
-                    const isUp = diff >= 0;
-                    const colorClass = isUp ? 'market-up' : 'market-down';
-                    const iconClass = isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
-
+                // Render IHSG
+                if (ihsgEl && data.ihsg) {
+                    const price = data.ihsg.price;
+                    const colorClass = data.ihsg.isUp ? 'market-up' : 'market-down';
+                    const iconClass = data.ihsg.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+                    const percent = Math.abs(data.ihsg.percent).toFixed(2);
                     const formattedPrice = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                    const htmlContent = `
+
+                    ihsgEl.innerHTML = `
                         ${formattedPrice} 
                         <span class="${colorClass} ms-1" style="font-size: 0.68rem;">
-                            <i class="bi ${iconClass}"></i>${Math.abs(percent)}%
+                            <i class="bi ${iconClass}"></i>${percent}%
                         </span>`;
-
-                    ihsgEl.innerHTML = htmlContent;
-                    localStorage.setItem(this.CACHE_KEY_IHSG, htmlContent);
                 }
-            } catch (err) {
-                // Fallback otomatis menggunakan API sekunder jika endpoint utama diblokir browser pengguna
-                try {
-                    const resFb = await fetch('https://api.boerse-frankfurt.de/v1/data/price_information?isin=XC0009698371'); 
-                    // Jika gagal total, gunakan cache atau render default aman
-                    if (!ihsgEl.innerHTML || ihsgEl.innerText === 'Loading...') {
-                        ihsgEl.innerText = '-';
-                    }
-                } catch(e) {
-                    if (!ihsgEl.innerHTML || ihsgEl.innerText === 'Loading...') {
-                        ihsgEl.innerText = '-';
-                    }
-                }
+            } else {
+                if (usdEl) usdEl.innerText = '-';
+                if (ihsgEl) ihsgEl.innerText = '-';
             }
+        } catch (err) {
+            if (usdEl) usdEl.innerText = '-';
+            if (ihsgEl) ihsgEl.innerText = '-';
         }
-    };
+    }
 
-    document.addEventListener('DOMContentLoaded', () => MarketEngine.init());
+    document.addEventListener('DOMContentLoaded', fetchMarketData);
 </script>
 
 <!-- ========================================== -->
