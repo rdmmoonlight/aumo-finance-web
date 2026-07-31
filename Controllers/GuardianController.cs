@@ -1,23 +1,44 @@
-// POST: /Guardian/RevokeAllSessions
-[HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> RevokeAllSessions()
-{
-    var user = await _userManager.GetUserAsync(User);
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using AumoFinance.Models;
+using AumoFinance.Services; // Sesuaikan namespace service Anda
 
-    if (user == null)
+namespace AumoFinance.Controllers;
+
+public class GuardianController : Controller
+{
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IGuardianService _guardianService; // Sesuaikan nama service Anda
+
+    public GuardianController(
+        UserManager<ApplicationUser> userManager,
+        IGuardianService guardianService)
     {
-        return Unauthorized();
+        _userManager = userManager;
+        _guardianService = guardianService;
     }
 
-    // 1. Matikan seluruh record di DB
-    await _guardianService.RevokeAllSessionsAsync(user.Id);
+    // POST: /Guardian/RevokeAllSessions
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeAllSessions()
+    {
+        var user = await _userManager.GetUserAsync(User);
 
-    // 2. Kunci Utama: Perbarui Security Stamp agar cookie ASP.NET di semua browser hangus!
-    await _userManager.UpdateSecurityStampAsync(user);
+        if (user == null)
+        {
+            return Unauthorized();
+        }
 
-    TempData["SuccessMessage"] = "All active sessions have been revoked. Please log in again.";
+        // 1. Matikan seluruh record di DB
+        await _guardianService.RevokeAllSessionsAsync(user.Id);
 
-    // Redirect ke Login karena cookie milik pengguna saat ini juga otomatis hangus
-    return RedirectToAction("Login", "Auth");
+        // 2. Kunci Utama: Perbarui Security Stamp agar cookie ASP.NET di semua browser hangus!
+        await _userManager.UpdateSecurityStampAsync(user);
+
+        TempData["SuccessMessage"] = "All active sessions have been revoked. Please log in again.";
+
+        // Redirect ke Login karena cookie milik pengguna saat ini juga otomatis hangus
+        return RedirectToAction("Login", "Auth");
+    }
 }
