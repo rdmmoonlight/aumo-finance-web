@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System;
 using System.Linq;
@@ -23,7 +24,9 @@ public class DocumentController : Controller
     // GET: /Document/
     public IActionResult Index(string searchString, string category)
     {
-        var query = _context.EconomicDocuments.AsQueryable();
+        var query = _context.EconomicDocuments
+                            .Include(d => d.JournalEntry) // Include relasi SSOT untuk tampilan
+                            .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchString))
         {
@@ -65,7 +68,7 @@ public class DocumentController : Controller
             AppAgeDays = ageInDays > 0 ? ageInDays : 1,
             TotalJournalEntries = _context.JournalEntries.Count(),
             TotalChartOfAccounts = _context.ChartOfAccounts.Count(),
-            TotalActivePeriods = _context.Periods.Count(), // Disesuaikan dengan struktur tabel Period
+            TotalActivePeriods = _context.Periods.Count(),
             TotalSystemUsers = _context.Users.Count()
         };
 
@@ -75,6 +78,12 @@ public class DocumentController : Controller
     // GET: /Document/Create
     public IActionResult Create()
     {
+        // Mengirim daftar Journal Entry agar bisa dipilih untuk menjaga integritas SSOT
+        ViewBag.JournalEntries = _context.JournalEntries
+            .OrderByDescending(j => j.Id)
+            .Take(100) // Batasi 100 jurnal terakhir agar dropdown tetap ringan
+            .ToList();
+
         return View();
     }
 
@@ -106,6 +115,7 @@ public class DocumentController : Controller
                     Title = model.Title,
                     Category = model.Category,
                     ReferenceNumber = model.ReferenceNumber,
+                    JournalEntryId = model.JournalEntryId, // Integrasi SSOT Terjaga
                     Description = model.Description,
                     FileName = model.UploadedFile.FileName,
                     FilePath = filePath,
@@ -118,11 +128,18 @@ public class DocumentController : Controller
                 _context.EconomicDocuments.Add(newDoc);
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = "Document uploaded successfully.";
+                TempData["SuccessMessage"] = "Document uploaded and linked to SSOT successfully.";
                 return RedirectToAction(nameof(Index));
             }
             ModelState.AddModelError("UploadedFile", "Please select a valid file.");
         }
+
+        // Jika gagal, muat ulang dropdown journal entries
+        ViewBag.JournalEntries = _context.JournalEntries
+            .OrderByDescending(j => j.Id)
+            .Take(100)
+            .ToList();
+
         return View(model);
     }
 
