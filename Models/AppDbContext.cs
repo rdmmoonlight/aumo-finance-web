@@ -1,5 +1,5 @@
 using AumoFinance.Models.Security;
-using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore; // Namespace untuk DataProtectionKey
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +25,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
 
     public DbSet<Period> Periods => Set<Period>();
+
+    // Economic Document Repository (BARU)
+    public DbSet<EconomicDocument> EconomicDocuments => Set<EconomicDocument>();
 
     // Guardian
     public DbSet<UserSession> UserSessions => Set<UserSession>();
@@ -56,6 +59,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .WithMany()
                 .HasForeignKey(x => x.AccountId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Document Repository Indexing (BARU - Mempercepat pencarian)
+        builder.Entity<EconomicDocument>(entity =>
+        {
+            entity.HasIndex(x => x.Category);
+            entity.HasIndex(x => x.ReferenceNumber);
         });
 
         // Guardian Session
