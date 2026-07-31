@@ -2,7 +2,7 @@
 <html lang="en-US" data-bs-theme="dark">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>@ViewData["Title"] - Aumo Finance</title>
     
     <!-- CSS Dependencies -->
@@ -100,6 +100,31 @@
 
         .fs-7 { font-size: 0.825rem; }
         .fs-8 { font-size: 0.725rem; }
+
+        /* ========================================== */
+        /* RESPONSIVE MOBILE TWEAKS (< 768px)         */
+        /* ========================================== */
+        @media (max-width: 767.98px) {
+            /* Sembunyikan Sidebar Statis di HP agar layar utama lega */
+            .sidebar-wrapper {
+                display: none !important;
+            }
+
+            /* Kurangi padding utama di HP dari p-4 menjadi px-2 py-3 */
+            #mainContent {
+                padding: 0.75rem 0.5rem !important;
+            }
+
+            /* Paksa semua tabel agar bisa digeser horizontal di HP */
+            .table-responsive {
+                border: 0;
+            }
+
+            /* Ukuran font global sedikit lebih rapat di HP */
+            body {
+                font-size: 0.85rem;
+            }
+        }
     </style>
 
     @await RenderSectionAsync("Styles", required: false)
@@ -108,8 +133,10 @@
     <div class="d-flex vh-100 overflow-hidden">
         @if (User.Identity != null && User.Identity.IsAuthenticated)
         {
-            <!-- Sidebar hanya muncul KALAU user SUDAH login -->
-            <partial name="_Sidebar" />
+            <!-- Sidebar (Otomatis tersembunyi di HP lewat CSS media query) -->
+            <div class="sidebar-wrapper d-none d-md-block">
+                <partial name="_Sidebar" />
+            </div>
         }
 
         <!-- Area Kanan Utama -->
@@ -118,8 +145,8 @@
             <!-- TopBar Partial View -->
             <partial name="_TopBar" />
 
-            <!-- Main Content Area -->
-            <main id="mainContent" class="content flex-grow-1 p-4 overflow-auto" role="main">
+            <!-- Main Content Area (Padding dinamis: tipis di HP, luas di Laptop) -->
+            <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto" role="main">
                 @RenderBody()
             </main>
 
