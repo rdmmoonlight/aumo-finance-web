@@ -98,7 +98,8 @@ public partial class AuthController
 
         try
         {
-            decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlEncode(model.Token));
+            // Pastikan baris ini persis seperti ini:
+            decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Token));
         }
         catch (FormatException)
         {
@@ -142,7 +143,8 @@ public partial class AuthController
 
         try
         {
-            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlEncode(token));
+            // Pastikan baris ini persis seperti ini:
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
             var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
 
             ViewBag.Success = result.Succeeded;
