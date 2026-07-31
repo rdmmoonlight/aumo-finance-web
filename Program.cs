@@ -3,6 +3,7 @@ using AumoFinance.Services;
 using AumoFinance.Services.Security;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection; // Namespace untuk Data Protection
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -18,6 +19,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
+
+// =====================================
+// Data Protection (Fix Warning & Session Logout di Cloud/Railway)
+// =====================================
+
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AppDbContext>()
+    .SetApplicationName("AumoFinanceApp");
 
 // =====================================
 // ASP.NET Core Identity
