@@ -79,7 +79,7 @@
     }
 
     /**
-     * Market Fetcher Engine dengan Fallback Anti-CORS
+     * Market Fetcher Engine (Anti-CORS / High Reliability)
      */
     const MarketEngine = {
         CACHE_KEY_USD: 'aumo_usd_rate',
@@ -127,57 +127,39 @@
             const ihsgEl = document.getElementById('ihsgIndex');
             if (!ihsgEl) return;
 
-            // Percobaan 1: Direct Yahoo Finance Query
             try {
-                const res = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/^JKSE');
+                // Menggunakan Stooq API yang mendukung CORS secara native
+                const res = await fetch('https://stooq.com/q/l/data/p/?s=^IHSG&f=sdohlcv&e=json');
                 const data = await res.json();
-                const meta = data?.chart?.result[0]?.meta;
+                const symbolData = data?.symbols?.[0];
 
-                if (meta) {
-                    this.renderIHSG(meta.regularMarketPrice, meta.chartPreviousClose);
-                    return;
-                }
-            } catch (err) {
-                // Lanjut ke percobaan 2 jika CORS terblokir
-            }
+                if (symbolData && symbolData.close) {
+                    const price = parseFloat(symbolData.close);
+                    const open = parseFloat(symbolData.open) || price;
+                    const diff = price - open;
+                    const percent = open ? ((diff / open) * 100).toFixed(2) : "0.00";
 
-            // Percobaan 2: Menggunakan AllOrigins CORS Proxy
-            try {
-                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/^JKSE');
-                const res = await fetch(proxyUrl);
-                const proxyData = await res.json();
-                const data = JSON.parse(proxyData.contents);
-                const meta = data?.chart?.result[0]?.meta;
+                    const isUp = diff >= 0;
+                    const colorClass = isUp ? 'market-up' : 'market-down';
+                    const iconClass = isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
 
-                if (meta) {
-                    this.renderIHSG(meta.regularMarketPrice, meta.chartPreviousClose);
-                    return;
+                    const formattedPrice = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const htmlContent = `
+                        ${formattedPrice} 
+                        <span class="${colorClass} ms-1" style="font-size: 0.68rem;">
+                            <i class="bi ${iconClass}"></i>${Math.abs(percent)}%
+                        </span>`;
+
+                    ihsgEl.innerHTML = htmlContent;
+                    localStorage.setItem(this.CACHE_KEY_IHSG, htmlContent);
+                } else {
+                    throw new Error('Invalid Stooq Payload');
                 }
             } catch (err) {
                 if (!ihsgEl.innerHTML || ihsgEl.innerText === 'Loading...') {
                     ihsgEl.innerText = '-';
                 }
             }
-        },
-
-        renderIHSG(price, prevClose) {
-            const ihsgEl = document.getElementById('ihsgIndex');
-            const diff = price - (prevClose || price);
-            const percent = prevClose ? ((diff / prevClose) * 100).toFixed(2) : "0.00";
-
-            const isUp = diff >= 0;
-            const colorClass = isUp ? 'market-up' : 'market-down';
-            const iconClass = isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
-
-            const formattedPrice = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            const htmlContent = `
-                ${formattedPrice} 
-                <span class="${colorClass} ms-1" style="font-size: 0.68rem;">
-                    <i class="bi ${iconClass}"></i>${Math.abs(percent)}%
-                </span>`;
-
-            ihsgEl.innerHTML = htmlContent;
-            localStorage.setItem(this.CACHE_KEY_IHSG, htmlContent);
         }
     };
 
