@@ -30,32 +30,31 @@
     .ticker-pill-futuristic {
         background: rgba(15, 23, 42, 0.6);
         border: 1px solid rgba(148, 163, 184, 0.15);
-        border-radius: 6px;
-        padding: 2px 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 4px;
+        padding: 1px 6px;
+        white-space: nowrap;
+        transition: all 0.2s ease;
     }
 
     .ticker-pill-futuristic:hover {
         border-color: rgba(56, 189, 248, 0.4);
-        box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
-        transform: translateY(-1px);
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.15);
     }
 
     /* Neon Glow Text Colors */
     .neon-green {
         color: #10b981 !important;
-        text-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+        text-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
     }
 
     .neon-red {
         color: #f43f5e !important;
-        text-shadow: 0 0 8px rgba(244, 63, 94, 0.35);
+        text-shadow: 0 0 6px rgba(244, 63, 94, 0.3);
     }
 
     .neon-cyan {
         color: #38bdf8 !important;
-        text-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+        text-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
     }
 
     /* Pulse Radar Indicator */
@@ -66,18 +65,13 @@
         border-radius: 50%;
         box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
         animation: pulse-ring 1.8s infinite;
+        display: inline-block;
     }
 
     @@keyframes pulse-ring {
-        0% {
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-        }
-        70% {
-            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-        }
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 
     /* Spin effect for Sync */
@@ -163,14 +157,14 @@
                     biRateEl.innerHTML = `<span class="neon-cyan">${data.biRate}</span>`;
                 }
             } else {
-                if (usdEl) usdEl.innerText = 'OFFLINE';
-                if (ihsgEl) ihsgEl.innerText = 'OFFLINE';
-                if (biRateEl) biRateEl.innerText = 'OFFLINE';
+                if (usdEl) usdEl.innerText = '-';
+                if (ihsgEl) ihsgEl.innerText = '-';
+                if (biRateEl) biRateEl.innerText = '-';
             }
         } catch (err) {
-            if (usdEl) usdEl.innerText = 'ERR';
-            if (ihsgEl) ihsgEl.innerText = 'ERR';
-            if (biRateEl) biRateEl.innerText = 'ERR';
+            if (usdEl) usdEl.innerText = '-';
+            if (ihsgEl) ihsgEl.innerText = '-';
+            if (biRateEl) biRateEl.innerText = '-';
         }
     }
 
@@ -219,7 +213,7 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Cyber Terminal HUD                  -->
+<!-- ROW 2: Cyber Terminal HUD (Layout Rapih)   -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
@@ -233,13 +227,13 @@
     var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
     var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
 
-    <div class="border-bottom row2-cyber px-3 py-1 d-flex justify-content-center align-items-center gap-3 shadow-sm cyber-font" style="min-height: 30px; font-size: 0.725rem;">
+    <div class="border-bottom row2-cyber px-3 py-1 d-flex justify-content-between align-items-center gap-2 shadow-sm cyber-font text-nowrap" style="min-height: 30px; font-size: 0.725rem;">
         
-        <!-- Active Period Dropdown -->
-        <div class="dropdown">
-            <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1.5 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <!-- 1. SEBELAH KIRI: Active Period Dropdown -->
+        <div class="dropdown d-flex align-items-center">
+            <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi @iconClass"></i>
-                <span class="text-secondary opacity-75">PERIOD:</span> 
+                <span class="text-secondary opacity-75 d-none d-sm-inline">PERIOD:</span> 
                 <span class="text-body fw-bold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
             </button>
             
@@ -259,10 +253,7 @@
             </ul>
         </div>
 
-        <!-- Cyber Divider -->
-        <span class="text-secondary opacity-25">/</span>
-
-        <!-- Market Ticker Pills -->
+        <!-- 2. SEBELAH TENGAH: Market Ticker Pills -->
         <div class="d-flex align-items-center gap-2">
             <!-- USD -->
             <div class="ticker-pill-futuristic d-flex align-items-center gap-1" title="US Dollar / Indonesian Rupiah">
@@ -283,10 +274,7 @@
             </div>
         </div>
 
-        <!-- Cyber Divider -->
-        <span class="text-secondary opacity-25">/</span>
-
-        <!-- Status Indicators -->
+        <!-- 3. SEBELAH KANAN: Status Indicators -->
         <div class="d-flex align-items-center gap-2">
             <!-- Live Pulse Dot -->
             <div class="radar-pulse" title="System Live Telemetry Active"></div>
