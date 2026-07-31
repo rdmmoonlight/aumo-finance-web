@@ -84,6 +84,7 @@
     async function fetchMarketData() {
         const usdEl = document.getElementById('usdRate');
         const ihsgEl = document.getElementById('ihsgIndex');
+        const biRateEl = document.getElementById('biRate');
 
         try {
             const res = await fetch('/Market/GetMarketData');
@@ -118,13 +119,20 @@
                             <i class="bi ${iconClass}"></i>${percent}%
                         </span>`;
                 }
+
+                // Render BI-Rate
+                if (biRateEl && data.biRate) {
+                    biRateEl.innerText = data.biRate;
+                }
             } else {
                 if (usdEl) usdEl.innerText = '-';
                 if (ihsgEl) ihsgEl.innerText = '-';
+                if (biRateEl) biRateEl.innerText = '-';
             }
         } catch (err) {
             if (usdEl) usdEl.innerText = '-';
             if (ihsgEl) ihsgEl.innerText = '-';
+            if (biRateEl) biRateEl.innerText = '-';
         }
     }
 
@@ -222,7 +230,7 @@
         <!-- Vertical Divider -->
         <span class="text-secondary opacity-50">|</span>
 
-        <!-- Market Ticker: USD/IDR & IHSG -->
+        <!-- Market Ticker: USD/IDR, IHSG & BI-Rate -->
         <div class="d-flex align-items-center gap-2 market-badge">
             <div class="ticker-pill d-flex align-items-center gap-1" title="USD to IDR Rate">
                 <span class="text-secondary fw-bold" style="font-size: 0.65rem;">USD:</span>
@@ -232,6 +240,11 @@
             <div class="ticker-pill d-flex align-items-center gap-1" title="IHSG Index">
                 <span class="text-secondary fw-bold" style="font-size: 0.65rem;">IHSG:</span>
                 <span id="ihsgIndex" class="fw-semibold text-body">Loading...</span>
+            </div>
+
+            <div class="ticker-pill d-flex align-items-center gap-1" title="BI Rate (Bank Indonesia)">
+                <span class="text-secondary fw-bold" style="font-size: 0.65rem;">BI-Rate:</span>
+                <span id="biRate" class="fw-semibold text-body">Loading...</span>
             </div>
         </div>
 
