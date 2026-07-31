@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AumoFinance.Models;
 
@@ -18,6 +19,14 @@ public class EconomicDocument
 
     [StringLength(100)]
     public string? ReferenceNumber { get; set; }
+
+    // --- INTEGRASI SSOT (Foreign Key ke JournalEntry) ---
+    [Display(Name = "Linked Journal Entry")]
+    public int? JournalEntryId { get; set; }
+
+    [ForeignKey("JournalEntryId")]
+    public JournalEntry? JournalEntry { get; set; }
+    // ----------------------------------------------------
 
     [Required]
     [StringLength(255)]
