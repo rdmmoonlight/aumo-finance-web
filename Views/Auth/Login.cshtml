@@ -9,17 +9,36 @@
         <h3 class="mb-3 text-center fw-bold">Welcome Back</h3>
         <p class="text-muted text-center mb-4">Sign in to Aumo Finance</p>
 
+        @* --- DISPLAY TEMPDATA NOTIFICATIONS --- *@
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success p-2" role="alert">
+            <div class="alert alert-success alert-dismissible fade show p-2 small" role="alert">
                 @TempData["SuccessMessage"]
+                <button type="button" class="btn-close p-2" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         }
 
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show p-2 small" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close p-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["InfoMessage"] != null)
+        {
+            <div class="alert alert-info alert-dismissible fade show p-2 small" role="alert">
+                @TempData["InfoMessage"]
+                <button type="button" class="btn-close p-2" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @* --- DISPLAY MODELSTATE / LOGIN ERRORS --- *@
         @if (!ViewData.ModelState.IsValid)
         {
-            <div class="alert alert-danger p-2" role="alert">
-                <div asp-validation-summary="All" class="small mb-0"></div>
+            <div class="alert alert-danger p-2 small" role="alert">
+                <div asp-validation-summary="ModelOnly" class="mb-0"></div>
             </div>
         }
 
@@ -39,17 +58,21 @@
             </div>
 
             <div class="text-end mb-3">
-                <a asp-controller="Auth" asp-action="ForgotPassword" class="small">Forgot password?</a>
+                <a asp-controller="Auth" asp-action="ForgotPassword" class="small text-decoration-none">Forgot password?</a>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 mt-2">Login</button>
         </form>
 
         <p class="text-center small mt-3 mb-0">
-            Don't have an account yet? <a asp-controller="Auth" asp-action="Register">Register</a>
+            Don't have an account yet? <a asp-controller="Auth" asp-action="Register" class="text-decoration-none">Register</a>
         </p>
         <p class="text-center small mt-1 mb-0">
-            <a asp-controller="Auth" asp-action="ResendVerification">Resend verification email</a>
+            <a asp-controller="Auth" asp-action="ResendVerification" class="text-decoration-none">Resend verification email</a>
         </p>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
