@@ -2,6 +2,7 @@ using System.Text;
 using AumoFinance.Models;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -40,15 +41,17 @@ public partial class AuthController : Controller
     // GET: /Auth/ResendVerification
     // ============================
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult ResendVerification()
     {
-        return View();
+        return View(new ResendVerificationModel());
     }
 
     // ============================
     // POST: /Auth/ResendVerification
     // ============================
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResendVerification(ResendVerificationModel model)
     {
@@ -57,45 +60,45 @@ public partial class AuthController : Controller
             return View(model);
         }
 
-        // 1. Cek Cooldown Anti-Spam via MemoryCache
-        var cacheKey = $"ResendCooldown_{model.Email.ToLowerInvariant()}";
+        // 1. Anti-Spam Cooldown Check via MemoryCache
+        var cacheKey = $"ResendCooldown_{model.Email.Trim().ToLowerInvariant()}";
         if (_cache.TryGetValue(cacheKey, out _))
         {
-            ModelState.AddModelError(string.Empty, "Tunggu 1 menit sebelum meminta email verifikasi lagi.");
+            ModelState.AddModelError(string.Empty, "Please wait 1 minute before requesting another verification email.");
             return View(model);
         }
 
-        // 2. Cari User Berdasarkan Email
+        // 2. Find User by Email
         var user = await _userManager.FindByEmailAsync(model.Email);
         
-        // Praktik Keamanan (Anti-User Enumeration):
-        // Jika user tidak ditemukan, tampilkan pesan sukses seolah-olah dikirim agar tidak membocorkan data email
+        // Anti-User Enumeration Practice:
+        // If the user is not found, display a generic success message to prevent user enumeration
         if (user == null)
         {
-            _logger.LogWarning("ResendVerification dipanggil untuk email yang tidak terdaftar: {Email}", model.Email);
-            TempData["SuccessMessage"] = "Jika email terdaftar, instruksi verifikasi telah dikirim ke inbox Anda.";
+            _logger.LogWarning("ResendVerification called for an unregistered email: {Email}", model.Email);
+            _cache.Set(cacheKey, true, ResendCooldown);
+            TempData["SuccessMessage"] = "If that email is registered, a new verification link has been sent to your inbox.";
             return RedirectToAction("Login");
         }
 
-        // 3. Cek Apakah Email Sudah Terverifikasi
+        // 3. Check if Email is Already Verified
         if (await _userManager.IsEmailConfirmedAsync(user))
         {
-            TempData["InfoMessage"] = "Email Anda sudah terverifikasi. Silakan login.";
+            TempData["InfoMessage"] = "Your email is already verified. Please sign in.";
             return RedirectToAction("Login");
         }
 
-        // 4. Kirim Email Verifikasi
+        // 4. Send Verification Email
         bool isSent = await SendEmailConfirmationAsync(user);
 
         if (isSent)
         {
-            // Simpan cooldown ke cache jika sukses
             _cache.Set(cacheKey, true, ResendCooldown);
-            TempData["SuccessMessage"] = "Link verifikasi telah dikirim ke email Anda. Silakan cek inbox/spam.";
+            TempData["SuccessMessage"] = "A verification link has been sent to your email. Please check your inbox or spam folder.";
         }
         else
         {
-            TempData["ErrorMessage"] = "Gagal mengirim email verifikasi. Pastikan konfigurasi SMTP aktif atau coba lagi nanti.";
+            TempData["ErrorMessage"] = "Failed to send verification email. Please ensure your SMTP configuration is active or try again later.";
         }
 
         return RedirectToAction("Login");
@@ -109,7 +112,7 @@ public partial class AuthController : Controller
     {
         if (string.IsNullOrEmpty(user.Email))
         {
-            _logger.LogWarning("User ID {UserId} tidak memiliki alamat email yang valid.", user.Id);
+            _logger.LogWarning("User ID {UserId} does not have a valid email address.", user.Id);
             return false;
         }
 
@@ -123,17 +126,17 @@ public partial class AuthController : Controller
             var confirmUrl = Url.Action(
                 "VerifyEmail",
                 "Auth",
-                new { userId = user.Id, token = encodedToken },
+                new { email = user.Email, token = encodedToken },
                 Request.Scheme
             );
 
             if (string.IsNullOrEmpty(confirmUrl))
             {
-                _logger.LogError("Gagal membuat confirmUrl untuk {Email}", user.Email);
+                _logger.LogError("Failed to generate confirmUrl for {Email}", user.Email);
                 return false;
             }
 
-            // Kirim Email via Service
+            // Send Email via Service
             await _emailSender.SendEmailAsync(
                 user.Email,
                 "Confirm your Aumo Finance account",
@@ -144,8 +147,7 @@ public partial class AuthController : Controller
         }
         catch (Exception ex)
         {
-            // Catat error lengkap di log console/file
-            _logger.LogError(ex, "Terjadi kesalahan saat pengiriman email verifikasi ke {Email}", user.Email);
+            _logger.LogError(ex, "An error occurred while sending the verification email to {Email}", user.Email);
             return false;
         }
     }
