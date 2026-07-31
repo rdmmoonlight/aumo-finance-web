@@ -1,113 +1,23 @@
-using System.Text;
-using AumoFinance.Models;
-using AumoFinance.Services.Security;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-
-namespace AumoFinance.Controllers;
-
-[Authorize]
-public class GuardianController : Controller
+// POST: /Guardian/RevokeAllSessions
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> RevokeAllSessions()
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IGuardianService _guardianService;
+    var user = await _userManager.GetUserAsync(User);
 
-    public GuardianController(
-        UserManager<ApplicationUser> userManager,
-        IGuardianService guardianService)
+    if (user == null)
     {
-        _userManager = userManager;
-        _guardianService = guardianService;
+        return Unauthorized();
     }
 
-    // GET: /Guardian
-    public async Task<IActionResult> Index()
-    {
-        var user = await _userManager.GetUserAsync(User);
+    // 1. Matikan seluruh record di DB
+    await _guardianService.RevokeAllSessionsAsync(user.Id);
 
-        if (user == null)
-        {
-            return RedirectToAction("Login", "Auth");
-        }
+    // 2. Kunci Utama: Perbarui Security Stamp agar cookie ASP.NET di semua browser hangus!
+    await _userManager.UpdateSecurityStampAsync(user);
 
-        var sessions = await _guardianService.GetActiveSessionsAsync(user.Id);
-        var activities = await _guardianService.GetLoginActivitiesAsync(user.Id);
+    TempData["SuccessMessage"] = "All active sessions have been revoked. Please log in again.";
 
-        var model = new GuardianViewModel
-        {
-            Sessions = sessions,
-            Activities = activities
-        };
-
-        return View(model);
-    }
-
-    // POST: /Guardian/RevokeSession
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RevokeSession(Guid id)
-    {
-        var user = await _userManager.GetUserAsync(User);
-
-        if (user == null)
-        {
-            return Unauthorized();
-        }
-
-        await _guardianService.RevokeSessionAsync(id, user.Id);
-
-        TempData["SuccessMessage"] = "Device session has been signed out.";
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    // POST: /Guardian/RevokeAllSessions (Emergency Kill Switch)
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RevokeAllSessions()
-    {
-        var user = await _userManager.GetUserAsync(User);
-
-        if (user == null)
-        {
-            return Unauthorized();
-        }
-
-        // Call service method to revoke all active sessions for this user
-        await _guardianService.RevokeAllSessionsAsync(user.Id);
-
-        TempData["SuccessMessage"] = "All active sessions have been signed out successfully.";
-
-        return RedirectToAction(nameof(Index));
-    }
-
-    // GET: /Guardian/ExportAuditLog
-    [HttpGet]
-    public async Task<IActionResult> ExportAuditLog()
-    {
-        var user = await _userManager.GetUserAsync(User);
-
-        if (user == null)
-        {
-            return Unauthorized();
-        }
-
-        var activities = await _guardianService.GetLoginActivitiesAsync(user.Id);
-
-        // Build CSV content
-        var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("Activity,Device,IP Address,Status,Date");
-
-        foreach (var activity in activities)
-        {
-            var status = activity.IsSuccess ? "Success" : "Failed";
-            csvBuilder.AppendLine($"\"{activity.ActivityType}\",\"{activity.Device}\",\"{activity.IpAddress}\",\"{status}\",\"{activity.CreatedAt}\"");
-        }
-
-        var bytes = Encoding.UTF8.GetBytes(csvBuilder.ToString());
-        var fileName = $"security-audit-log-{DateTime.UtcNow:yyyyMMdd-HHmmss}.csv";
-
-        return File(bytes, "text/csv", fileName);
-    }
+    // Redirect ke Login karena cookie milik pengguna saat ini juga otomatis hangus
+    return RedirectToAction("Login", "Auth");
 }
