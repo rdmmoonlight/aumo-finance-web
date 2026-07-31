@@ -6,16 +6,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using AumoFinance.Models;
 using AumoFinance.ViewModels;
-using AumoFinance.Data; // Sesuaikan dengan namespace DbContext Anda
+using AumoFinance.Data; // Memanggil namespace dari ApplicationDbContext
 
 namespace AumoFinance.Controllers
 {
-    // [Authorize] // Aktifkan jika menggunakan otentikasi
     public class DocumentController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
 
+        // Dependency Injection untuk Database Context dan Web Hosting Environment
         public DocumentController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
@@ -55,24 +55,24 @@ namespace AumoFinance.Controllers
             {
                 if (model.UploadedFile != null && model.UploadedFile.Length > 0)
                 {
-                    // Tentukan folder penyimpanan yang aman
+                    // Menentukan direktori penyimpanan fisik yang aman
                     var uploadFolder = Path.Combine(_env.ContentRootPath, "SecureDocuments");
                     if (!Directory.Exists(uploadFolder))
                     {
                         Directory.CreateDirectory(uploadFolder);
                     }
 
-                    // Buat nama file unik
+                    // Membuat penamaan file yang unik untuk mencegah konflik (overwriting)
                     var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(model.UploadedFile.FileName);
                     var filePath = Path.Combine(uploadFolder, uniqueFileName);
 
-                    // Simpan file ke server
+                    // Proses I/O menyimpan file fisik ke server
                     using (var fileStream = new FileStream(filePath, FileMode.Create))
                     {
                         await model.UploadedFile.CopyToAsync(fileStream);
                     }
 
-                    // Rekam metadata ke Database
+                    // Mencatat metadata ke dalam Database secara disiplin
                     var newDoc = new EconomicDocument
                     {
                         Title = model.Title,
@@ -98,7 +98,7 @@ namespace AumoFinance.Controllers
             return View(model);
         }
 
-        // GET: /Document/Download/5
+        // GET: /Document/Download/{id}
         public async Task<IActionResult> Download(int id)
         {
             var document = await _context.EconomicDocuments.FindAsync(id);
