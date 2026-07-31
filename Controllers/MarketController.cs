@@ -12,14 +12,13 @@ namespace AumoFinance.Controllers
         {
             try
             {
-                // Set User-Agent agar tidak diblokir Yahoo Finance di level Server
                 _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
 
-                // 1. Fetch USD/IDR
+                // 1. USD/IDR
                 var usdRes = await _httpClient.GetFromJsonAsync<YahooResponse>("https://query1.finance.yahoo.com/v8/finance/chart/IDR=X?interval=1d");
                 var usdMeta = usdRes?.Chart?.Result?.FirstOrDefault()?.Meta;
 
-                // 2. Fetch IHSG (^JKSE)
+                // 2. IHSG (^JKSE)
                 var ihsgRes = await _httpClient.GetFromJsonAsync<YahooResponse>("https://query1.finance.yahoo.com/v8/finance/chart/^JKSE?interval=1d");
                 var ihsgMeta = ihsgRes?.Chart?.Result?.FirstOrDefault()?.Meta;
 
@@ -35,8 +34,8 @@ namespace AumoFinance.Controllers
                 double ihsgDiff = ihsgPrice - ihsgPrev;
                 double ihsgPercent = ihsgPrev != 0 ? (ihsgDiff / ihsgPrev) * 100 : 0;
 
-                // 3. BI-Rate (Nilai Suku Bunga BI Terbaru)
-                string biRateVal = "6.25%"; 
+                // 3. BI-Rate Terbaru
+                string biRateVal = "5.75%";
 
                 return Json(new
                 {
@@ -53,7 +52,7 @@ namespace AumoFinance.Controllers
         }
     }
 
-    // Helper Models DTO
+    // DTO Helper
     public class YahooResponse { public ChartData? Chart { get; set; } }
     public class ChartData { public List<ChartResult>? Result { get; set; } }
     public class ChartResult { public ChartMeta? Meta { get; set; } }
