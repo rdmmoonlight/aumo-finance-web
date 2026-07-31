@@ -3,84 +3,122 @@
 @inject AppDbContext _context
 
 <!-- ========================================== -->
-<!-- TOPBAR CSS & JS                            -->
+<!-- FUTURISTIC STYLING & JS ENGINE             -->
 <!-- ========================================== -->
 <style>
-    /* Spin effect for the Sync indicator */
+    /* Glassmorphism & Cyber Layout */
+    .topbar-futuristic {
+        background: rgba(15, 23, 42, 0.75) !important;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(56, 189, 248, 0.15) !important;
+    }
+
+    .row2-cyber {
+        background: rgba(2, 6, 23, 0.6) !important;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Font Monospace Khas Terminal Finansial */
+    .cyber-font {
+        font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', Consolas, monospace;
+        letter-spacing: -0.3px;
+    }
+
+    /* Holographic / Cyber Pill Badge */
+    .ticker-pill-futuristic {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 6px;
+        padding: 2px 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ticker-pill-futuristic:hover {
+        border-color: rgba(56, 189, 248, 0.4);
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+        transform: translateY(-1px);
+    }
+
+    /* Neon Glow Text Colors */
+    .neon-green {
+        color: #10b981 !important;
+        text-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+    }
+
+    .neon-red {
+        color: #f43f5e !important;
+        text-shadow: 0 0 8px rgba(244, 63, 94, 0.35);
+    }
+
+    .neon-cyan {
+        color: #38bdf8 !important;
+        text-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+    }
+
+    /* Pulse Radar Indicator */
+    .radar-pulse {
+        width: 6px;
+        height: 6px;
+        background-color: #10b981;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-ring 1.8s infinite;
+    }
+
+    @@keyframes pulse-ring {
+        0% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+        }
+    }
+
+    /* Spin effect for Sync */
     .icon-spin {
         display: inline-block;
         animation: spin 1.5s linear infinite;
     }
-    
-    /* Escaping CSS keyframes for Razor compiler */
+
     @@keyframes spin {
         100% { transform: rotate(360deg); }
-    }
-
-    /* Financial Ticker Styling */
-    .market-badge {
-        font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
-        font-size: 0.725rem;
-        letter-spacing: -0.2px;
-    }
-    
-    .market-up {
-        color: #10b981 !important; /* Green */
-    }
-    
-    .market-down {
-        color: #ef4444 !important; /* Red */
-    }
-
-    .ticker-pill {
-        background-color: var(--bs-tertiary-bg);
-        border: 1px solid var(--bs-border-color-translucent);
-        border-radius: 4px;
-        padding: 1px 6px;
     }
 </style>
 
 <script>
-    /**
-     * Triggers the UI Sync Indicator.
-     * param {boolean} isSuccess - true = success saving to DB, false = error
-     * param {number} queueTimeMs - Wait time, default 10 seconds (10000 ms)
-     */
     function triggerSyncProcess(isSuccess = true, queueTimeMs = 10000) {
         const syncBtn = document.getElementById('syncBtn');
         const syncIcon = document.getElementById('syncIcon');
 
         if (!syncBtn || !syncIcon) return;
 
-        // 1. QUEUE PHASE: Sweet potato orange color and spinning icon
         syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
-        syncBtn.style.color = '#d97706'; // Sweet potato orange hex
-        syncBtn.title = "Syncing: In queue (10 seconds)...";
+        syncBtn.style.color = '#d97706';
+        syncBtn.title = "Syncing: In queue...";
         syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
 
-        // 2. 10-SECOND QUEUE DELAY
         setTimeout(() => {
             syncIcon.classList.remove('icon-spin');
-            syncBtn.style.color = ''; // Reset custom inline color
+            syncBtn.style.color = '';
 
-            // 3. DB EXECUTION RESULT PHASE
             if (isSuccess) {
-                // Success: Light blue
-                syncBtn.classList.add('text-info');
-                syncBtn.title = "Sync: Saved to Database";
+                syncBtn.classList.add('neon-cyan');
+                syncBtn.title = "Sync: Database Operational";
                 syncIcon.className = "bi bi-cloud-check";
             } else {
-                // Failed: Red
-                syncBtn.classList.add('text-danger');
-                syncBtn.title = "Sync: Error saving data!";
+                syncBtn.classList.add('neon-red');
+                syncBtn.title = "Sync: Offline Error";
                 syncIcon.className = "bi bi-cloud-slash";
             }
         }, queueTimeMs);
     }
 
-    /**
-     * Internal Server Fetcher (CORS Free & Always Working)
-     */
     async function fetchMarketData() {
         const usdEl = document.getElementById('usdRate');
         const ihsgEl = document.getElementById('ihsgIndex');
@@ -91,48 +129,48 @@
             const data = await res.json();
 
             if (data.success) {
-                // Render USD
+                // USD Render
                 if (usdEl && data.usd) {
                     const price = Math.round(data.usd.price);
-                    const colorClass = data.usd.isUp ? 'market-up' : 'market-down';
+                    const colorClass = data.usd.isUp ? 'neon-green' : 'neon-red';
                     const iconClass = data.usd.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
                     const percent = Math.abs(data.usd.percent).toFixed(2);
 
                     usdEl.innerHTML = `
                         Rp ${price.toLocaleString('id-ID')} 
-                        <span class="${colorClass} ms-1" style="font-size: 0.68rem;">
+                        <span class="${colorClass} ms-1" style="font-size: 0.65rem;">
                             <i class="bi ${iconClass}"></i>${percent}%
                         </span>`;
                 }
 
-                // Render IHSG
+                // IHSG Render
                 if (ihsgEl && data.ihsg) {
                     const price = data.ihsg.price;
-                    const colorClass = data.ihsg.isUp ? 'market-up' : 'market-down';
+                    const colorClass = data.ihsg.isUp ? 'neon-green' : 'neon-red';
                     const iconClass = data.ihsg.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
                     const percent = Math.abs(data.ihsg.percent).toFixed(2);
                     const formattedPrice = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                     ihsgEl.innerHTML = `
                         ${formattedPrice} 
-                        <span class="${colorClass} ms-1" style="font-size: 0.68rem;">
+                        <span class="${colorClass} ms-1" style="font-size: 0.65rem;">
                             <i class="bi ${iconClass}"></i>${percent}%
                         </span>`;
                 }
 
-                // Render BI-Rate
+                // BI Rate Render
                 if (biRateEl && data.biRate) {
-                    biRateEl.innerText = data.biRate;
+                    biRateEl.innerHTML = `<span class="neon-cyan">${data.biRate}</span>`;
                 }
             } else {
-                if (usdEl) usdEl.innerText = '-';
-                if (ihsgEl) ihsgEl.innerText = '-';
-                if (biRateEl) biRateEl.innerText = '-';
+                if (usdEl) usdEl.innerText = 'OFFLINE';
+                if (ihsgEl) ihsgEl.innerText = 'OFFLINE';
+                if (biRateEl) biRateEl.innerText = 'OFFLINE';
             }
         } catch (err) {
-            if (usdEl) usdEl.innerText = '-';
-            if (ihsgEl) ihsgEl.innerText = '-';
-            if (biRateEl) biRateEl.innerText = '-';
+            if (usdEl) usdEl.innerText = 'ERR';
+            if (ihsgEl) ihsgEl.innerText = 'ERR';
+            if (biRateEl) biRateEl.innerText = 'ERR';
         }
     }
 
@@ -140,36 +178,32 @@
 </script>
 
 <!-- ========================================== -->
-<!-- ROW 1: Main Header                         -->
+<!-- ROW 1: Cyber Main Header                   -->
 <!-- ========================================== -->
-<header class="navbar navbar-expand border-bottom py-2 bg-body-tertiary" style="min-height: 56px;">
-    
+<header class="navbar navbar-expand border-bottom py-2 topbar-futuristic" style="min-height: 56px;">
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
-        <!-- 1. Left Section: Title -->
-        <div class="d-flex align-items-center me-2" style="max-width: 160px;">
-            <span class="fw-semibold text-truncate text-body" style="font-size: 0.8rem;">
-                @(ViewData["Title"] ?? "Dashboard")
+        <!-- Left Title -->
+        <div class="d-flex align-items-center me-2" style="max-width: 180px;">
+            <span class="fw-bold text-truncate text-body cyber-font" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                @(ViewData["Title"] ?? "DASHBOARD")
             </span>
         </div>
 
-        <!-- 2. Center Section: Quran Verse Partial -->
+        <!-- Center Verse -->
         <div class="d-none d-md-flex flex-column align-items-center justify-content-center flex-grow-1 mx-2 text-center" style="max-width: 800px;">
             <partial name="_QuranVerse" />
         </div>
 
-        <!-- Right Section: Search & Kebab Menu -->
+        <!-- Right Controls -->
         <div class="d-flex align-items-center gap-1">
-            
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                <!-- 3. Search Icon -->
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                     <i class="bi bi-search" style="font-size: 0.825rem;"></i>
                 </button>
             }
 
-            <!-- 4. Kebab Menu -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
                     <i class="bi bi-three-dots-vertical" style="font-size: 0.875rem;"></i>
@@ -180,17 +214,15 @@
                     <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>
                 </ul>
             </div>
-
         </div>
     </div>
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Active Period (CENTER) & Market     -->
+<!-- ROW 2: Cyber Terminal HUD                  -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
-    // Check database directly for the active (unclosed) period
     var activePeriodObj = _context.Periods
         .Where(p => !p.IsClosed)
         .OrderByDescending(p => p.StartDate)
@@ -201,13 +233,13 @@
     var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
     var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
 
-    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+    <div class="border-bottom row2-cyber px-3 py-1 d-flex justify-content-center align-items-center gap-3 shadow-sm cyber-font" style="min-height: 30px; font-size: 0.725rem;">
         
-        <!-- Active Period Dropdown (TETAP DI TENGAH) -->
+        <!-- Active Period Dropdown -->
         <div class="dropdown">
-            <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1.5 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi @iconClass"></i>
-                <span class="text-secondary">Active Period:</span> 
+                <span class="text-secondary opacity-75">PERIOD:</span> 
                 <span class="text-body fw-bold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
             </button>
             
@@ -227,56 +259,62 @@
             </ul>
         </div>
 
-        <!-- Vertical Divider -->
-        <span class="text-secondary opacity-50">|</span>
+        <!-- Cyber Divider -->
+        <span class="text-secondary opacity-25">/</span>
 
-        <!-- Market Ticker: USD/IDR, IHSG & BI-Rate -->
-        <div class="d-flex align-items-center gap-2 market-badge">
-            <div class="ticker-pill d-flex align-items-center gap-1" title="USD to IDR Rate">
-                <span class="text-secondary fw-bold" style="font-size: 0.65rem;">USD:</span>
-                <span id="usdRate" class="fw-semibold text-body">Loading...</span>
+        <!-- Market Ticker Pills -->
+        <div class="d-flex align-items-center gap-2">
+            <!-- USD -->
+            <div class="ticker-pill-futuristic d-flex align-items-center gap-1" title="US Dollar / Indonesian Rupiah">
+                <span class="text-secondary opacity-75 fw-bold" style="font-size: 0.625rem;">USD:</span>
+                <span id="usdRate" class="fw-semibold text-body">...</span>
             </div>
 
-            <div class="ticker-pill d-flex align-items-center gap-1" title="IHSG Index">
-                <span class="text-secondary fw-bold" style="font-size: 0.65rem;">IHSG:</span>
-                <span id="ihsgIndex" class="fw-semibold text-body">Loading...</span>
+            <!-- IHSG -->
+            <div class="ticker-pill-futuristic d-flex align-items-center gap-1" title="IDX Composite Index">
+                <span class="text-secondary opacity-75 fw-bold" style="font-size: 0.625rem;">IHSG:</span>
+                <span id="ihsgIndex" class="fw-semibold text-body">...</span>
             </div>
 
-            <div class="ticker-pill d-flex align-items-center gap-1" title="BI Rate (Bank Indonesia)">
-                <span class="text-secondary fw-bold" style="font-size: 0.65rem;">BI-Rate:</span>
-                <span id="biRate" class="fw-semibold text-body">Loading...</span>
+            <!-- BI-RATE -->
+            <div class="ticker-pill-futuristic d-flex align-items-center gap-1" title="Bank Indonesia Policy Rate">
+                <span class="text-secondary opacity-75 fw-bold" style="font-size: 0.625rem;">BI-RATE:</span>
+                <span id="biRate" class="fw-semibold text-body">...</span>
             </div>
         </div>
 
-        <!-- Vertical Divider -->
-        <span class="text-secondary opacity-50">|</span>
+        <!-- Cyber Divider -->
+        <span class="text-secondary opacity-25">/</span>
 
-        <!-- Indicators: Guardian & Sync -->
-        <div class="d-flex align-items-center gap-1">
-            <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
-                <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
+        <!-- Status Indicators -->
+        <div class="d-flex align-items-center gap-2">
+            <!-- Live Pulse Dot -->
+            <div class="radar-pulse" title="System Live Telemetry Active"></div>
+
+            <!-- Guardian Shield -->
+            <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Security Active" aria-label="Guardian Status">
+                <i class="bi bi-shield-check neon-green" style="font-size: 0.825rem;"></i>
             </button>
 
-            <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
-                <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
+            <!-- Sync Cloud -->
+            <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Database Online" aria-label="Sync Status">
+                <i id="syncIcon" class="bi bi-cloud-check neon-cyan" style="font-size: 0.825rem;"></i>
             </button>
         </div>
 
     </div>
 }
 
-<!-- ========================================== -->
-<!-- Search Modal                               -->
-<!-- ========================================== -->
+<!-- Modal Search -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
     <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-top modal-sm">
-            <div class="modal-content border-0 shadow">
+            <div class="modal-content border-0 shadow-lg topbar-futuristic">
                 <div class="modal-body p-2">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-transparent border-0 text-secondary"><i class="bi bi-search"></i></span>
-                        <input type="search" class="form-control border-0 shadow-none" placeholder="Search transactions, accounts..." autofocus>
+                        <input type="search" class="form-control border-0 shadow-none text-body cyber-font" placeholder="Search transactions, accounts..." autofocus>
                         <button type="button" class="btn-close ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                 </div>
