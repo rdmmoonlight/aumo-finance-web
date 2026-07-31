@@ -27,5 +27,10 @@ public interface IGuardianService
 
     Task RevokeSessionAsync(Guid sessionId, Guid userId);
 
+    /// <summary>
+    /// Revokes all active sessions for a given user (Emergency Kill Switch).
+    /// </summary>
+    Task RevokeAllSessionsAsync(Guid userId);
+
     Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId);
 }
