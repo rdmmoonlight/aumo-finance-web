@@ -1,11 +1,8 @@
+using System.Net;
+using System.Net.Mail;
+
 namespace AumoFinance.Services;
 
-public interface IEmailSender
-{
-    Task SendEmailAsync(string email, string subject, string htmlMessage);
-}
-
-// Contoh implementasi menggunakan Mailkit / SmtpClient
 public class EmailSender : IEmailSender
 {
     private readonly IConfiguration _config;
@@ -17,32 +14,41 @@ public class EmailSender : IEmailSender
         _logger = logger;
     }
 
-    public async Task SendEmailAsync(string email, string subject, string htmlMessage)
+    public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage, CancellationToken ct = default)
     {
-        // Pastikan konfigurasi SMTP tersedia
         var host = _config["Smtp:Host"];
         var port = int.Parse(_config["Smtp:Port"] ?? "587");
         var username = _config["Smtp:Username"];
         var password = _config["Smtp:Password"];
 
-        using var client = new System.Net.Mail.SmtpClient(host, port)
+        if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(username))
         {
-            Credentials = new System.Net.NetworkCredential(username, password),
+            _logger.LogWarning("SMTP Configuration is missing. Skipping email send to {Email}", toEmail);
+            return;
+        }
+
+        using var client = new SmtpClient(host, port)
+        {
+            Credentials = new NetworkCredential(username, password),
             EnableSsl = true
         };
 
-        var mailMessage = new System.Net.Mail.MailMessage
+        using var mailMessage = new MailMessage
         {
-            From = new System.Net.Mail.MailAddress(username!, "Aumo Finance"),
+            From = new MailAddress(username, "Aumo Finance"),
             Subject = subject,
             Body = htmlMessage,
             IsBodyHtml = true
         };
 
-        mailMessage.To.Add(email);
+        mailMessage.To.Add(toEmail);
 
-        _logger.LogInformation("Attempting to send email to {Email} via SMTP...", email);
-        await client.SendMailAsync(mailMessage);
-        _logger.LogInformation("Email successfully sent to {Email}", email);
+        _logger.LogInformation("Attempting to send email to {Email} via SMTP...", toEmail);
+
+        // .NET SmtpClient tidak mendukung CancellationToken secara langsung di SendMailAsync, 
+        // tapi kita bisa membungkusnya dengan Task.Run agar cancellation token dipatuhi.
+        await Task.Run(() => client.SendMailAsync(mailMessage), ct);
+
+        _logger.LogInformation("Email successfully sent to {Email}", toEmail);
     }
 }
