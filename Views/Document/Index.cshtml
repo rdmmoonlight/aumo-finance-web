@@ -1,0 +1,61 @@
+@model IEnumerable<AumoFinance.Models.EconomicDocument>
+
+@{
+    ViewData["Title"] = "Economic Documents";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 text-dark mb-0"><i class="bi bi-file-earmark-text me-2"></i> Document Repository</h2>
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="bi bi-upload me-1"></i> Upload New Document
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small">
+                        <tr>
+                            <th class="ps-4">Title</th>
+                            <th>Category</th>
+                            <th>Reference No.</th>
+                            <th>Upload Date</th>
+                            <th>Uploaded By</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-medium">
+                                    @item.Title <br />
+                                    <small class="text-muted fw-normal">@item.FileName</small>
+                                </td>
+                                <td><span class="badge bg-secondary">@item.Category</span></td>
+                                <td>@item.ReferenceNumber</td>
+                                <td>@item.UploadDate.ToString("dd MMM yyyy")</td>
+                                <td>@item.UploadedBy</td>
+                                <td class="text-end pe-4">
+                                    <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary" title="Download">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
