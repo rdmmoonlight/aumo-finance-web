@@ -112,7 +112,7 @@
             </div>
         </div>
 
-        <!-- ==================== TAB 2: ACTIVE SESSIONS (DIBATASI MAKSIMAL 5) ==================== -->
+        <!-- ==================== TAB 2: ACTIVE SESSIONS ==================== -->
         <div class="tab-pane fade" id="sessions-content" role="tabpanel">
             <div class="card bg-dark border-secondary">
                 <div class="card-header border-secondary d-flex justify-content-between align-items-center">
@@ -141,7 +141,7 @@
                                         <th>Browser</th>
                                         <th>IP Address</th>
                                         <th>Last Activity</th>
-                                        <th class="text-end">Action</th>
+                                        <th class="text-end">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -171,7 +171,7 @@
                                             }
                                             else
                                             {
-                                                <span class="text-secondary small">Active now</span>
+                                                <span class="badge bg-success">Active now</span>
                                             }
                                         </td>
                                     </tr>
@@ -247,8 +247,8 @@
                                         <th>Activity</th>
                                         <th>Device</th>
                                         <th>IP Address</th>
-                                        <th>Status</th>
                                         <th>Date</th>
+                                        <th class="text-end">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -258,7 +258,8 @@
                                         <td>@activity.ActivityType</td>
                                         <td>@activity.Device</td>
                                         <td class="font-monospace">@activity.IpAddress</td>
-                                        <td>
+                                        <td>@activity.CreatedAt</td>
+                                        <td class="text-end">
                                             @if (activity.IsSuccess)
                                             {
                                                 <span class="badge bg-success">Success</span>
@@ -268,7 +269,6 @@
                                                 <span class="badge bg-danger">Failed</span>
                                             }
                                         </td>
-                                        <td>@activity.CreatedAt</td>
                                     </tr>
                                 }
                                 </tbody>
