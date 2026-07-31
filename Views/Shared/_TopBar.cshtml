@@ -55,6 +55,41 @@
             }
         }, queueTimeMs);
     }
+
+    /**
+     * Fetch Nilai Kurs USD/IDR dan IHSG
+     */
+    async function fetchMarketData() {
+        const usdEl = document.getElementById('usdRate');
+        const ihsgEl = document.getElementById('ihsgIndex');
+
+        // 1. Fetch Kurs USD to IDR
+        try {
+            const resUsd = await fetch('https://open.er-api.com/v6/latest/USD');
+            const dataUsd = await resUsd.json();
+            if (dataUsd && dataUsd.rates && dataUsd.rates.IDR) {
+                const rate = Math.round(dataUsd.rates.IDR);
+                if (usdEl) usdEl.innerText = `Rp ${rate.toLocaleString('id-ID')}`;
+            }
+        } catch (err) {
+            if (usdEl) usdEl.innerText = 'Err';
+        }
+
+        // 2. Fetch IHSG (^JKSE)
+        try {
+            const resIhsg = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/^JKSE');
+            const dataIhsg = await resIhsg.json();
+            const price = dataIhsg?.chart?.result[0]?.meta?.regularMarketPrice;
+            if (price && ihsgEl) {
+                ihsgEl.innerText = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        } catch (err) {
+            // Fallback jika API terblokir CORS / Rate limited
+            if (ihsgEl) ihsgEl.innerText = '-';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchMarketData);
 </script>
 
 <!-- ========================================== -->
@@ -104,7 +139,7 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Active Period & Status Indicators   -->
+<!-- ROW 2: Active Period, Market & Indicators  -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
@@ -143,6 +178,26 @@
                     </a>
                 </li>
             </ul>
+        </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- USD / IDR Rate Indicator -->
+        <div class="d-flex align-items-center gap-1 text-nowrap" title="USD to IDR Rate">
+            <i class="bi bi-currency-dollar text-success"></i>
+            <span class="text-secondary">USD:</span>
+            <span id="usdRate" class="fw-semibold text-body">Loading...</span>
+        </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- IHSG Index Indicator -->
+        <div class="d-flex align-items-center gap-1 text-nowrap" title="IHSG Index">
+            <i class="bi bi-graph-up-arrow text-primary"></i>
+            <span class="text-secondary">IHSG:</span>
+            <span id="ihsgIndex" class="fw-semibold text-body">Loading...</span>
         </div>
 
         <!-- Vertical Divider -->
