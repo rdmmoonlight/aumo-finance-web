@@ -3,6 +3,7 @@ using AumoFinance.Services;
 using AumoFinance.Services.Security;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection; // Namespace untuk Data Protection
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -18,6 +19,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
+
+// =====================================
+// Data Protection (Fix Warning & Session Logout di Cloud/Railway)
+// =====================================
+
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<AppDbContext>()
+    .SetApplicationName("AumoFinanceApp");
 
 // =====================================
 // ASP.NET Core Identity
@@ -51,6 +60,8 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
+builder.Services.AddHttpClient<IAiService, AiService>();
+
 builder.Services.AddMemoryCache();
 
 // =====================================
@@ -64,7 +75,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
         ForwardedHeaders.XForwardedFor |
         ForwardedHeaders.XForwardedProto;
 
-    options.KnownIPNetworks.Clear(); // Menggantikan KnownNetworks yang obsolete
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -72,7 +83,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // MVC + Global Authorization + Controllers API
 // =====================================
 
-builder.Services.AddControllers(); // PENTING: Untuk mengaktifkan Controller API Mobile
+builder.Services.AddControllers();
 
 builder.Services.AddControllersWithViews(options =>
 {
@@ -113,14 +124,17 @@ if (!string.IsNullOrWhiteSpace(googleClientId) &&
 var app = builder.Build();
 
 // =====================================
-// HTTP Pipeline
+// HTTP Pipeline (DEBUG ENABLED FOR RAILWAY)
 // =====================================
 
 app.UseForwardedHeaders();
 
+// Diaktifkan sementara untuk menampilkan layar error detail di browser
+app.UseDeveloperExceptionPage();
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    // app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
     app.UseHttpsRedirection();
 }
@@ -135,7 +149,7 @@ app.UseAuthorization();
 // Routes Mapping
 // =====================================
 
-app.MapControllers(); // PENTING: Mengakses route [Route("api/mobile")] pada MobileApiController
+app.MapControllers(); // Matches [Route("api/ai")] and [Route("api/mobile")]
 
 app.MapControllerRoute(
     name: "default",

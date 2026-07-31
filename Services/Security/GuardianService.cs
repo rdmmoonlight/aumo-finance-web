@@ -108,6 +108,28 @@ public class GuardianService : IGuardianService
     }
 
 
+    public async Task RevokeAllSessionsAsync(Guid userId)
+    {
+        var activeSessions = await _context.UserSessions
+            .Where(x => x.UserId == userId && x.IsActive)
+            .ToListAsync();
+
+        if (!activeSessions.Any())
+        {
+            return;
+        }
+
+        foreach (var session in activeSessions)
+        {
+            session.IsActive = false;
+            session.IsCurrent = false;
+            session.RevokedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
+
     public async Task<List<LoginActivity>> GetLoginActivitiesAsync(
         Guid userId)
     {

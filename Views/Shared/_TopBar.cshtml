@@ -55,6 +55,66 @@
             }
         }, queueTimeMs);
     }
+
+    /**
+     * Internal Server Fetcher (CORS Free & Always Working)
+     */
+    async function fetchMarketData() {
+        const usdEl = document.getElementById('usdRate');
+        const ihsgEl = document.getElementById('ihsgIndex');
+        const biRateEl = document.getElementById('biRate');
+
+        try {
+            const res = await fetch('/Market/GetMarketData');
+            const data = await res.json();
+
+            if (data.success) {
+                // Render USD
+                if (usdEl && data.usd) {
+                    const price = Math.round(data.usd.price);
+                    const colorClass = data.usd.isUp ? 'text-success' : 'text-danger';
+                    const iconClass = data.usd.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+                    const percent = Math.abs(data.usd.percent).toFixed(2);
+
+                    usdEl.innerHTML = `
+                        Rp ${price.toLocaleString('id-ID')} 
+                        <span class="${colorClass} ms-1" style="font-size: 0.65rem;">
+                            <i class="bi ${iconClass}"></i>${percent}%
+                        </span>`;
+                }
+
+                // Render IHSG
+                if (ihsgEl && data.ihsg) {
+                    const price = data.ihsg.price;
+                    const colorClass = data.ihsg.isUp ? 'text-success' : 'text-danger';
+                    const iconClass = data.ihsg.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+                    const percent = Math.abs(data.ihsg.percent).toFixed(2);
+                    const formattedPrice = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                    ihsgEl.innerHTML = `
+                        ${formattedPrice} 
+                        <span class="${colorClass} ms-1" style="font-size: 0.65rem;">
+                            <i class="bi ${iconClass}"></i>${percent}%
+                        </span>`;
+                }
+
+                // Render BI-Rate
+                if (biRateEl && data.biRate) {
+                    biRateEl.innerText = data.biRate;
+                }
+            } else {
+                if (usdEl) usdEl.innerText = '-';
+                if (ihsgEl) ihsgEl.innerText = '-';
+                if (biRateEl) biRateEl.innerText = '-';
+            }
+        } catch (err) {
+            if (usdEl) usdEl.innerText = '-';
+            if (ihsgEl) ihsgEl.innerText = '-';
+            if (biRateEl) biRateEl.innerText = '-';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchMarketData);
 </script>
 
 <!-- ========================================== -->
@@ -104,7 +164,7 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Active Period & Status Indicators   -->
+<!-- ROW 2: Active Period, Market & Indicators  -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
@@ -119,7 +179,7 @@
     var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
     var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
 
-    <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm" style="min-height: 28px; font-size: 0.75rem;">
+    <div class="topbar-indicators border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm text-nowrap" style="min-height: 28px; font-size: 0.75rem;">
         
         <!-- Active Period Dropdown -->
         <div class="dropdown">
@@ -143,6 +203,33 @@
                     </a>
                 </li>
             </ul>
+        </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- USD Rate Indicator -->
+        <div class="d-flex align-items-center gap-1" title="USD to IDR Rate">
+            <span class="text-secondary fw-bold" style="font-size: 0.7rem;">USD:</span>
+            <span id="usdRate" class="fw-semibold text-body">Loading...</span>
+        </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- IHSG Index Indicator -->
+        <div class="d-flex align-items-center gap-1" title="IHSG Index">
+            <span class="text-secondary fw-bold" style="font-size: 0.7rem;">IHSG:</span>
+            <span id="ihsgIndex" class="fw-semibold text-body">Loading...</span>
+        </div>
+
+        <!-- Vertical Divider -->
+        <span class="text-secondary opacity-50">|</span>
+
+        <!-- BI-Rate Indicator -->
+        <div class="d-flex align-items-center gap-1" title="Bank Indonesia Policy Rate">
+            <span class="text-secondary fw-bold" style="font-size: 0.7rem;">BI-RATE:</span>
+            <span id="biRate" class="fw-semibold text-body">Loading...</span>
         </div>
 
         <!-- Vertical Divider -->

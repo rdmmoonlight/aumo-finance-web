@@ -17,7 +17,7 @@ public class MobileApiController : ControllerBase
         _db = db;
     }
 
-    // GET: api/mobile/dashboard
+    // 1. Endpoint Dashboard Real Data
     [HttpGet("dashboard")]
     public async Task<IActionResult> GetDashboard()
     {

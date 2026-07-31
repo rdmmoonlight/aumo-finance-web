@@ -1,0 +1,50 @@
+@model AumoFinance.Models.DashboardViewModel
+
+<div class="row g-3 mb-4">
+    <!-- Trend Revenue vs Expense Line Chart -->
+    <div class="col-12 col-xl-8">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h6 class="fw-bold mb-0">Financial Trend</h6>
+                    <span class="text-secondary fs-8">Revenue vs Operating Expenses</span>
+                </div>
+                <div class="icon-square bg-primary-subtle text-primary rounded-3">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+            </div>
+            <div class="chart-container" style="position: relative; height: 280px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Composition Doughnut Chart -->
+    <div class="col-12 col-xl-4">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h6 class="fw-bold mb-0">Expense Composition</h6>
+                    <span class="text-secondary fs-8">Breakdown by Account</span>
+                </div>
+                <div class="icon-square bg-danger-subtle text-danger rounded-3">
+                    <i class="bi bi-pie-chart"></i>
+                </div>
+            </div>
+            
+            @if (Model.HasExpenseData)
+            {
+                <div class="chart-container" style="position: relative; height: 280px;">
+                    <canvas id="expenseDoughnut"></canvas>
+                </div>
+            }
+            else
+            {
+                <div class="text-center text-secondary py-4 d-flex flex-column align-items-center justify-content-center h-100">
+                    <i class="bi bi-pie-chart fs-1 d-block mb-2 opacity-50"></i>
+                    <span>No expense data for this period.</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>

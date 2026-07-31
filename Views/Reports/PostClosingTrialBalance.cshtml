@@ -4,10 +4,10 @@
 }
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-shield-check me-2 text-info"></i> Post-Closing Trial Balance</h2>
-            <p class="text-muted mb-0">Hanya menyajikan akun permanen (Assets, Liabilities, Equity) setelah jurnal penutup — seluruh akun nominal sudah bersaldo nol.</p>
+            <p class="text-muted mb-0">Displays permanent accounts (Assets, Liabilities, Equity) after closing entries — all nominal accounts have zero balances.</p>
         </div>
         <div>
             <a asp-controller="Reports" asp-action="CashFlowStatement" class="btn btn-outline-secondary">
@@ -21,7 +21,8 @@
             <div class="card bg-dark border-secondary text-white shadow-sm h-100">
                 <div class="card-header bg-transparent border-secondary fw-bold text-uppercase small text-warning">Assets</div>
                 <div class="card-body">
-                    <table class="table table-dark table-borderless align-middle mb-0">
+                    <div class="table-responsive">
+<table class="table table-dark table-borderless align-middle mb-0">
                         <tbody>
                             @foreach (var l in Model.Assets)
                             {
@@ -33,6 +34,7 @@
                             </tr>
                         </tbody>
                     </table>
+</div>
                 </div>
             </div>
         </div>
@@ -41,7 +43,8 @@
             <div class="card bg-dark border-secondary text-white shadow-sm h-100">
                 <div class="card-header bg-transparent border-secondary fw-bold text-uppercase small text-warning">Liabilities</div>
                 <div class="card-body">
-                    <table class="table table-dark table-borderless align-middle mb-0">
+                    <div class="table-responsive">
+<table class="table table-dark table-borderless align-middle mb-0">
                         <tbody>
                             @foreach (var l in Model.Liabilities)
                             {
@@ -53,13 +56,15 @@
                             </tr>
                         </tbody>
                     </table>
+</div>
                 </div>
             </div>
 
             <div class="card bg-dark border-secondary text-white shadow-sm h-100 mt-4">
                 <div class="card-header bg-transparent border-secondary fw-bold text-uppercase small text-warning">Equity</div>
                 <div class="card-body">
-                    <table class="table table-dark table-borderless align-middle mb-0">
+                    <div class="table-responsive">
+<table class="table table-dark table-borderless align-middle mb-0">
                         <tbody>
                             @foreach (var l in Model.EquityExcludingRetainedEarnings)
                             {
@@ -72,6 +77,7 @@
                             </tr>
                         </tbody>
                     </table>
+</div>
                 </div>
             </div>
 
@@ -87,11 +93,11 @@
     <div class="alert @(Model.IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 mt-4 mb-0 py-2 small">
         @if (Model.IsBalanced)
         {
-            <i class="bi bi-check-circle-fill me-1"></i> @:Total Assets = Total Liabilities + Equity. Neraca pasca-penutupan seimbang; buku siap dibuka untuk periode berikutnya.
+            <i class="bi bi-check-circle-fill me-1"></i> @:Total Assets = Total Liabilities + Equity. Post-closing trial balance is in balance; books are ready for the next period.
         }
         else
         {
-            <i class="bi bi-exclamation-triangle-fill me-1"></i> @:Neraca pasca-penutupan tidak seimbang, periksa kembali jurnal penutup.
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> @:Post-closing trial balance is out of balance. Please check your closing journal entries.
         }
     </div>
 </div>

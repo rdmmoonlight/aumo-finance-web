@@ -11,7 +11,7 @@
             <h2 class="fw-bold text-body-emphasis mb-1">
                 <i class="bi bi-phone me-2 text-warning"></i> Mobile Classification
             </h2>
-            <p class="text-secondary mb-0">Transaksi cepat dari Android yang masih menunggu diklasifikasikan ke akun yang sesuai.</p>
+            <p class="text-secondary mb-0">Quick transactions from Android pending account classification.</p>
         </div>
     </div>
 
@@ -36,13 +36,13 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4">Tanggal</th>
+                            <th class="ps-4">Date</th>
                             <th>Ref</th>
-                            <th>Jenis</th>
-                            <th class="text-end">Nominal</th>
-                            <th>Catatan Android</th>
+                            <th>Type</th>
+                            <th class="text-end">Amount</th>
+                            <th>Android Notes</th>
                             <th>Status</th>
-                            <th class="text-end pe-4">Aksi</th>
+                            <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -50,7 +50,7 @@
                         {
                             <tr>
                                 <td colspan="7" class="text-center text-secondary py-4">
-                                    Tidak ada transaksi mobile yang menunggu klasifikasi.
+                                    No mobile transactions pending classification.
                                 </td>
                             </tr>
                         }
@@ -62,19 +62,19 @@
                                 <td>
                                     @if (item.Type == "Income")
                                     {
-                                        <span class="badge text-bg-success">Pemasukan</span>
+                                        <span class="badge text-bg-success">Income</span>
                                     }
                                     else
                                     {
-                                        <span class="badge text-bg-danger">Pengeluaran</span>
+                                        <span class="badge text-bg-danger">Expense</span>
                                     }
                                 </td>
                                 <td class="text-end">@item.Amount.ToString("C0", cultureId)</td>
                                 <td>@(string.IsNullOrWhiteSpace(item.MobileNote) ? "-" : item.MobileNote)</td>
-                                <td><span class="badge text-bg-warning">Menunggu Klasifikasi</span></td>
+                                <td><span class="badge text-bg-warning">Pending Classification</span></td>
                                 <td class="text-end pe-4">
                                     <a asp-action="Classify" asp-route-id="@item.JournalEntryId" class="btn btn-sm btn-warning fw-semibold">
-                                        <i class="bi bi-tags me-1"></i> Klasifikasi
+                                        <i class="bi bi-tags me-1"></i> Classify
                                     </a>
                                 </td>
                             </tr>

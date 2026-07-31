@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-grid-3x3 me-2 text-info"></i> Worksheet</h2>
-            <p class="text-muted mb-0">Kertas kerja 10 kolom: Neraca Saldo, Penyesuaian, Neraca Saldo Disesuaikan, Laba Rugi, dan Posisi Keuangan.</p>
+            <p class="text-muted mb-0">10-column worksheet: Trial Balance, Adjustments, Adjusted Trial Balance, Income Statement, and Balance Sheet.</p>
         </div>
         <div class="d-flex gap-2">
             <a asp-controller="Reports" asp-action="IncomeStatement" class="btn btn-outline-secondary">
@@ -27,7 +27,7 @@
                             <th colspan="2">Adjustments</th>
                             <th colspan="2">Adjusted Trial Balance</th>
                             <th colspan="2">Income Statement</th>
-                            <th colspan="2">Financial Position</th>
+                            <th colspan="2">Balance Sheet</th>
                         </tr>
                         <tr>
                             <th class="text-end">Dr</th><th class="text-end">Cr</th>
@@ -70,7 +70,7 @@
                             <td class="text-end text-info">@Model.TotalFinancialPositionCredit.ToString("N0")</td>
                         </tr>
                         <tr class="fw-bold">
-                            <td class="text-end" colspan="7">Net Income (plug Income Statement → Financial Position)</td>
+                            <td class="text-end" colspan="7">Net Income (plug Income Statement → Balance Sheet)</td>
                             @if (Model.NetIncome >= 0)
                             {
                                 <td class="text-end text-success">@Model.NetIncome.ToString("N0")</td>
@@ -87,7 +87,7 @@
                             }
                         </tr>
                         <tr class="border-top border-secondary fw-bold">
-                            <td class="text-end" colspan="7">Total (setelah plug)</td>
+                            <td class="text-end" colspan="7">Total (after plug)</td>
                             <td class="text-end text-success">@((Model.TotalIncomeStatementDebit + (Model.NetIncome >= 0 ? Model.NetIncome : 0)).ToString("N0"))</td>
                             <td class="text-end text-success">@((Model.TotalIncomeStatementCredit + (Model.NetIncome < 0 ? -Model.NetIncome : 0)).ToString("N0"))</td>
                             <td class="text-end text-info">@((Model.TotalFinancialPositionDebit + (Model.NetIncome < 0 ? -Model.NetIncome : 0)).ToString("N0"))</td>
@@ -101,6 +101,6 @@
 
     <div class="alert alert-info bg-opacity-10 mt-3 mb-0 py-2 small">
         <i class="bi bi-info-circle-fill me-1"></i>
-        Laba/Rugi Bersih: <strong>@Model.NetIncome.ToString("N2")</strong> — dipindahkan (plug) dari kolom Income Statement ke kolom Financial Position agar kedua kolom sama-sama seimbang.
+        Net Income / (Loss): <strong>@Model.NetIncome.ToString("N2")</strong> — plugged from the Income Statement column to the Balance Sheet column to balance both sections.
     </div>
 </div>

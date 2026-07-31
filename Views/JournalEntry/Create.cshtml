@@ -71,7 +71,6 @@
                     <table class="table table-hover align-middle mb-0" id="journalTable">
                         <thead class="table-light">
                             <tr>
-                                <!-- Kolom Ref No dipisah dan dikecilkan lebarnya -->
                                 <th style="width: 10%;" class="ps-4">Ref No.</th>
                                 <th style="width: 25%;">Account Name</th>
                                 <th style="width: 25%;">Description</th>
@@ -85,7 +84,6 @@
                             {
                                 <tr>
                                     <td class="ps-4">
-                                        <!-- Field Read-Only untuk Ref No -->
                                         <input type="text" class="form-control text-center bg-body-secondary ref-display" readonly tabindex="-1" placeholder="---" />
                                     </td>
                                     <td>
@@ -93,7 +91,6 @@
                                             <option value="" selected disabled>Select Account...</option>
                                             @foreach (var acc in Model.AvailableAccounts)
                                             {
-                                                <!-- Menambahkan data-ref untuk ditangkap oleh JavaScript -->
                                                 <option value="@acc.Id" data-ref="@acc.ReferenceNumber" selected="@(acc.Id == Model.Lines[i].AccountId)">
                                                     @acc.AccountName
                                                 </option>
@@ -104,10 +101,10 @@
                                         <input name="Lines[@i].LineDescription" type="text" value="@Model.Lines[i].LineDescription" class="form-control line-description" placeholder="Note..." autocomplete="off" />
                                     </td>
                                     <td>
-                                        <input name="Lines[@i].Debit" type="number" step="0.01" min="0" value="@((Model.Lines[i].Debit ?? 0) == 0 ? "" : Model.Lines[i].Debit.ToString())" class="form-control text-end input-debit" placeholder="0" />
+                                        <input name="Lines[@i].Debit" type="text" value="@((Model.Lines[i].Debit ?? 0) == 0 ? "" : Model.Lines[i].Debit?.ToString("N0"))" class="form-control text-end input-debit currency-input" placeholder="0" autocomplete="off" />
                                     </td>
                                     <td>
-                                        <input name="Lines[@i].Credit" type="number" step="0.01" min="0" value="@((Model.Lines[i].Credit ?? 0) == 0 ? "" : Model.Lines[i].Credit.ToString())" class="form-control text-end input-credit" placeholder="0" />
+                                        <input name="Lines[@i].Credit" type="text" value="@((Model.Lines[i].Credit ?? 0) == 0 ? "" : Model.Lines[i].Credit?.ToString("N0"))" class="form-control text-end input-credit currency-input" placeholder="0" autocomplete="off" />
                                     </td>
                                     <td class="text-center pe-4">
                                         <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
@@ -118,8 +115,8 @@
                         <tfoot class="table-light border-top fw-bold">
                             <tr>
                                 <td colspan="3" class="text-end py-3">Total Balance:</td>
-                                <td class="text-end text-success fs-6 py-3" id="totalDebit">0.00</td>
-                                <td class="text-end text-danger fs-6 py-3" id="totalCredit">0.00</td>
+                                <td class="text-end text-success fs-6 py-3" id="totalDebit">0</td>
+                                <td class="text-end text-danger fs-6 py-3" id="totalCredit">0</td>
                                 <td></td>
                             </tr>
                             <tr>
@@ -154,10 +151,10 @@
                     <input name="Lines[__INDEX__].LineDescription" type="text" class="form-control line-description" placeholder="Note..." autocomplete="off" />
                 </td>
                 <td>
-                    <input name="Lines[__INDEX__].Debit" type="number" step="0.01" min="0" class="form-control text-end input-debit" placeholder="0" />
+                    <input name="Lines[__INDEX__].Debit" type="text" class="form-control text-end input-debit currency-input" placeholder="0" autocomplete="off" />
                 </td>
                 <td>
-                    <input name="Lines[__INDEX__].Credit" type="number" step="0.01" min="0" class="form-control text-end input-credit" placeholder="0" />
+                    <input name="Lines[__INDEX__].Credit" type="text" class="form-control text-end input-credit currency-input" placeholder="0" autocomplete="off" />
                 </td>
                 <td class="text-center pe-4">
                     <button type="button" class="btn btn-sm btn-outline-danger btn-remove"><i class="bi bi-trash"></i></button>
@@ -174,13 +171,14 @@
         </div>
     </form>
 
-    <!-- Dropdown saran deskripsi (posisi diatur lewat JS, mengikuti input yang sedang aktif) -->
+    <!-- Dropdown saran deskripsi -->
     <div id="descSuggestions" class="list-group shadow-sm" style="display:none; position:absolute; z-index:1060; max-height:220px; overflow-y:auto;"></div>
 </div>
 
 <!-- Interactive Dynamic Logic -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        const journalForm = document.getElementById("journalForm");
         const journalBody = document.getElementById("journalBody");
         const btnAddRow = document.getElementById("btnAddRow");
         const totalDebitEl = document.getElementById("totalDebit");
@@ -189,7 +187,23 @@
         const btnSubmit = document.getElementById("btnSubmit");
         const rowTemplate = document.getElementById("rowTemplate").innerHTML;
 
-        // Auto-fill Ref No Logic
+        // --- Helper Formatting Functions (Pemisah Titik & Tanpa Desimal) ---
+        function formatNumber(value) {
+            if (!value) return "";
+            // Hanya ambil digit angka
+            let cleanValue = value.replace(/\D/g, "");
+            if (!cleanValue) return "";
+            // Format pemisah ribuan dengan titik
+            return parseInt(cleanValue, 10).toLocaleString("id-ID");
+        }
+
+        function parseRawNumber(value) {
+            if (!value) return 0;
+            // Hapus titik untuk mendapatkan angka murni
+            return parseInt(value.replace(/\./g, ""), 10) || 0;
+        }
+
+        // --- Auto-fill Ref No Logic ---
         function updateRefNumber(selectElement) {
             const selectedOption = selectElement.options[selectElement.selectedIndex];
             const refNumber = selectedOption.getAttribute("data-ref");
@@ -201,20 +215,19 @@
             }
         }
 
-        // Handle dropdown change event for auto-filling Ref No
         journalBody.addEventListener("change", function (e) {
             if (e.target.classList.contains("account-select")) {
                 updateRefNumber(e.target);
             }
         });
 
-        // Trigger on load for server-rendered fields (e.g. returning from failed validation)
         document.querySelectorAll(".account-select").forEach(select => {
             if (select.value) {
                 updateRefNumber(select);
             }
         });
 
+        // --- Dynamic Rows Logic ---
         function nextIndex() {
             return journalBody.querySelectorAll("tr").length;
         }
@@ -236,42 +249,68 @@
             }
         });
 
+        // --- Calculations & Formatting Logic ---
         function calculateTotals() {
             let totalDebit = 0;
             let totalCredit = 0;
 
             document.querySelectorAll(".input-debit").forEach(input => {
-                totalDebit += parseFloat(input.value) || 0;
+                totalDebit += parseRawNumber(input.value);
             });
 
             document.querySelectorAll(".input-credit").forEach(input => {
-                totalCredit += parseFloat(input.value) || 0;
+                totalCredit += parseRawNumber(input.value);
             });
 
-            totalDebitEl.textContent = totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2 });
-            totalCreditEl.textContent = totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            totalDebitEl.textContent = totalDebit.toLocaleString('id-ID');
+            totalCreditEl.textContent = totalCredit.toLocaleString('id-ID');
 
             const difference = Math.abs(totalDebit - totalCredit);
 
-            if (totalDebit > 0 && totalCredit > 0 && difference < 0.001) {
+            if (totalDebit > 0 && totalCredit > 0 && difference === 0) {
                 balanceStatusEl.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2"><i class="bi bi-check-circle me-1"></i> Balanced</span>`;
                 btnSubmit.disabled = false;
             } else {
-                const diffFormatted = difference.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                const diffFormatted = difference.toLocaleString('id-ID');
                 balanceStatusEl.innerHTML = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2"><i class="bi bi-exclamation-triangle me-1"></i> Unbalanced (${diffFormatted})</span>`;
                 btnSubmit.disabled = true;
             }
         }
 
+        // Live formatting saat ngetik
         journalBody.addEventListener("input", function (e) {
-            if (e.target.classList.contains("input-debit") || e.target.classList.contains("input-credit")) {
+            if (e.target.classList.contains("currency-input")) {
+                const cursorPosition = e.target.selectionStart;
+                const originalLength = e.target.value.length;
+
+                e.target.value = formatNumber(e.target.value);
+
+                // Menjaga posisi kursor agar tetap nyaman saat mengetik di tengah
+                const newLength = e.target.value.length;
+                e.target.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
+
                 calculateTotals();
+            }
+        });
+
+        // Terapkan formatting awal pada baris yang dirender dari server
+        document.querySelectorAll(".currency-input").forEach(input => {
+            if (input.value) {
+                input.value = formatNumber(input.value);
             }
         });
 
         calculateTotals();
 
-        // ==== Autocomplete Description (mirip transaksi sebelumnya) ====
+        // --- Clean Format Before Submit ---
+        journalForm.addEventListener("submit", function () {
+            document.querySelectorAll(".currency-input").forEach(input => {
+                // Bersihkan titik sebelum data dikirim ke backend
+                input.value = input.value.replace(/\./g, "");
+            });
+        });
+
+        // --- Autocomplete Description ---
         const descSuggestions = document.getElementById("descSuggestions");
         let activeDescInput = null;
         let searchTimer = null;
@@ -321,27 +360,24 @@
                         showSuggestions(e.target, data);
                     }
                 } catch (err) {
-                    // Diamkan saja kalau gagal fetch, autocomplete bukan fitur wajib
+                    // Fail silently
                 }
             }, 250);
         });
 
-        // Klik salah satu saran -> isi ke input yang sedang aktif
         descSuggestions.addEventListener("mousedown", function (e) {
             const item = e.target.closest(".desc-suggestion-item");
             if (!item || !activeDescInput) return;
-            e.preventDefault(); // supaya blur tidak keburu menutup dropdown sebelum klik diproses
+            e.preventDefault();
             activeDescInput.value = item.textContent;
             hideSuggestions();
         });
 
-        // Tutup dropdown saat klik di luar
         document.addEventListener("click", function (e) {
             if (e.target.closest("#descSuggestions") || e.target.classList.contains("line-description")) return;
             hideSuggestions();
         });
 
-        // Tutup dropdown saat baris dihapus atau field description hilang dari DOM
         journalBody.addEventListener("click", function (e) {
             if (e.target.closest(".btn-remove")) {
                 hideSuggestions();

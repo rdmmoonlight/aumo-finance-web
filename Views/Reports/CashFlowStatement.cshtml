@@ -4,78 +4,80 @@
 }
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-cash-coin me-2 text-success"></i> Cash Flow Statement</h2>
-            <p class="text-muted mb-0">Metode langsung (IAS 7), disusun dari seluruh mutasi akun Kas &amp; Setara Kas.</p>
+            <p class="text-muted mb-0">Direct method (IAS 7), prepared from all transactions in Cash &amp; Cash Equivalents accounts.</p>
         </div>
     </div>
 
     <div class="card bg-dark border-secondary text-white shadow-sm">
         <div class="card-body">
-            <table class="table table-dark table-borderless align-middle mb-0">
+            <div class="table-responsive">
+<table class="table table-dark table-borderless align-middle mb-0">
                 <tbody>
                     <tr><td colspan="2" class="fw-bold text-warning text-uppercase small">Operating Activities</td></tr>
                     @if (!Model.OperatingActivities.Any())
                     {
-                        <tr><td class="ps-4 text-muted">Tidak ada mutasi.</td><td></td></tr>
+                        <tr><td class="ps-4 text-muted">No transactions recorded.</td><td></td></tr>
                     }
                     @foreach (var l in Model.OperatingActivities)
                     {
                         <tr><td class="ps-4">@l.Description</td><td class="text-end @(l.Amount >= 0 ? "text-success" : "text-danger")">@l.Amount.ToString("N2")</td></tr>
                     }
                     <tr class="border-top border-secondary fw-semibold">
-                        <td class="ps-4">Net Cash from Operating Activities</td>
+                        <td class="ps-4">Net Cash Provided by (Used in) Operating Activities</td>
                         <td class="text-end @(Model.NetOperating >= 0 ? "text-success" : "text-danger")">@Model.NetOperating.ToString("N2")</td>
                     </tr>
 
                     <tr><td colspan="2" class="pt-3 fw-bold text-warning text-uppercase small">Investing Activities</td></tr>
                     @if (!Model.InvestingActivities.Any())
                     {
-                        <tr><td class="ps-4 text-muted">Tidak ada mutasi.</td><td></td></tr>
+                        <tr><td class="ps-4 text-muted">No transactions recorded.</td><td></td></tr>
                     }
                     @foreach (var l in Model.InvestingActivities)
                     {
                         <tr><td class="ps-4">@l.Description</td><td class="text-end @(l.Amount >= 0 ? "text-success" : "text-danger")">@l.Amount.ToString("N2")</td></tr>
                     }
                     <tr class="border-top border-secondary fw-semibold">
-                        <td class="ps-4">Net Cash from Investing Activities</td>
+                        <td class="ps-4">Net Cash Provided by (Used in) Investing Activities</td>
                         <td class="text-end @(Model.NetInvesting >= 0 ? "text-success" : "text-danger")">@Model.NetInvesting.ToString("N2")</td>
                     </tr>
 
                     <tr><td colspan="2" class="pt-3 fw-bold text-warning text-uppercase small">Financing Activities</td></tr>
                     @if (!Model.FinancingActivities.Any())
                     {
-                        <tr><td class="ps-4 text-muted">Tidak ada mutasi.</td><td></td></tr>
+                        <tr><td class="ps-4 text-muted">No transactions recorded.</td><td></td></tr>
                     }
                     @foreach (var l in Model.FinancingActivities)
                     {
                         <tr><td class="ps-4">@l.Description</td><td class="text-end @(l.Amount >= 0 ? "text-success" : "text-danger")">@l.Amount.ToString("N2")</td></tr>
                     }
                     <tr class="border-top border-secondary fw-semibold">
-                        <td class="ps-4">Net Cash from Financing Activities</td>
+                        <td class="ps-4">Net Cash Provided by (Used in) Financing Activities</td>
                         <td class="text-end @(Model.NetFinancing >= 0 ? "text-success" : "text-danger")">@Model.NetFinancing.ToString("N2")</td>
                     </tr>
 
                     <tr class="border-top border-secondary" style="border-top-width: 3px !important;">
-                        <td class="fw-bold fs-5 pt-2">Net Increase (Decrease) in Cash</td>
+                        <td class="fw-bold fs-5 pt-2">Net Increase (Decrease) in Cash and Cash Equivalents</td>
                         <td class="text-end fw-bold fs-5 pt-2 @(Model.NetChangeInCash >= 0 ? "text-success" : "text-danger")">@Model.NetChangeInCash.ToString("N2")</td>
                     </tr>
                     <tr>
-                        <td>Cash, Beginning of Period</td>
+                        <td>Cash and Cash Equivalents, Beginning of Period</td>
                         <td class="text-end">@Model.BeginningCash.ToString("N2")</td>
                     </tr>
                     <tr class="fw-bold">
-                        <td>Cash, End of Period</td>
+                        <td>Cash and Cash Equivalents, End of Period</td>
                         <td class="text-end">@Model.EndingCash.ToString("N2")</td>
                     </tr>
                 </tbody>
             </table>
+</div>
         </div>
     </div>
 
     <div class="alert alert-info bg-opacity-10 mt-3 mb-0 py-2 small">
         <i class="bi bi-info-circle-fill me-1"></i>
-        Klasifikasi Investasi/Operasi mengikuti tipe akun lawan (Assets non-kas → Investasi; akun nominal &amp; Liabilities → Operasi; Equity → Pendanaan). Sesuaikan lewat Role akun di Chart of Accounts bila diperlukan.
+        Investing and Operating activity classifications are determined by the opposing account type (Non-cash Assets &rarr; Investing; Nominal &amp; Liabilities accounts &rarr; Operating; Equity &rarr; Financing). Adjust via Account Roles in the Chart of Accounts if necessary.
     </div>
 </div>

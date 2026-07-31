@@ -1,11 +1,12 @@
 using AumoFinance.Models.Security;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace AumoFinance.Models;
 
-public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IDataProtectionKeyContext
 {
     public AppDbContext(
         DbContextOptions<AppDbContext> options)
@@ -13,7 +14,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     {
     }
 
+    // Data Protection Keys Table
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
+    // Accounting Core
     public DbSet<ChartOfAccount> ChartOfAccounts => Set<ChartOfAccount>();
 
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
@@ -22,6 +26,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
     public DbSet<Period> Periods => Set<Period>();
 
+    // Economic Document Repository (BARU)
+    public DbSet<EconomicDocument> EconomicDocuments => Set<EconomicDocument>();
 
     // Guardian
     public DbSet<UserSession> UserSessions => Set<UserSession>();
@@ -29,20 +35,15 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
 
 
-
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-
-
 
         builder.Entity<ChartOfAccount>(entity =>
         {
             entity.HasIndex(x => x.ReferenceNumber)
                 .IsUnique();
         });
-
-
 
         builder.Entity<JournalEntry>(entity =>
         {
@@ -52,8 +53,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-
-
         builder.Entity<JournalEntryLine>(entity =>
         {
             entity.HasOne(x => x.Account)
@@ -62,7 +61,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-
+        // Document Repository Indexing (BARU - Mempercepat pencarian)
+        builder.Entity<EconomicDocument>(entity =>
+        {
+            entity.HasIndex(x => x.Category);
+            entity.HasIndex(x => x.ReferenceNumber);
+        });
 
         // Guardian Session
         builder.Entity<UserSession>(entity =>
@@ -73,14 +77,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 x.IsActive
             });
 
-
             entity.HasOne(x => x.User)
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-
-
 
         // Guardian Activity
         builder.Entity<LoginActivity>(entity =>
@@ -90,7 +91,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 x.UserId,
                 x.CreatedAt
             });
-
 
             entity.HasOne(x => x.User)
                 .WithMany()

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq; // Tambahkan namespace System.Linq
 
 namespace AumoFinance.Models
 {
@@ -12,11 +13,16 @@ namespace AumoFinance.Models
         public decimal TotalAssets { get; set; }
         public decimal TotalLiabilities { get; set; }
 
-        // Trend percentages (null when no comparable prior period exists)
+        // Trend percentages
         public decimal? CashTrendPercent { get; set; }
         public decimal? RevenueTrendPercent { get; set; }
         public decimal? ExpenseTrendPercent { get; set; }
         public decimal? NetIncomeTrendPercent { get; set; }
+
+        // Properti Predictive & Financial Health Metrics
+        public decimal MonthlyBurnRate { get; set; }
+        public double CashRunwayMonths { get; set; }
+        public int FinancialHealthScore { get; set; }
 
         public List<string> ChartLabels { get; set; } = new();
         public List<decimal> ChartRevenue { get; set; } = new();
@@ -24,6 +30,9 @@ namespace AumoFinance.Models
 
         public List<string> ExpenseCategoryLabels { get; set; } = new();
         public List<decimal> ExpenseCategoryValues { get; set; } = new();
+
+        // TAMBAHKAN PROPERTI INI:
+        public bool HasExpenseData => ExpenseCategoryValues != null && ExpenseCategoryValues.Any(v => v > 0);
 
         public List<JournalEntryDto> RecentJournals { get; set; } = new();
         public List<CoaBalanceDto> MainCoaBalances { get; set; } = new();

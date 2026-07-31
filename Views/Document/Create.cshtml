@@ -1,0 +1,66 @@
+@model AumoFinance.ViewModels.DocumentUploadViewModel
+
+@{
+    ViewData["Title"] = "Upload Document";
+}
+
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 col-lg-8 mx-auto">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 text-dark">Upload Economic Document</h5>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Create" enctype="multipart/form-data" method="post">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Title" class="form-label fw-bold"></label>
+                        <input asp-for="Title" class="form-control" placeholder="e.g., Q3 Financial Report" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label asp-for="Category" class="form-label fw-bold"></label>
+                        <select asp-for="Category" class="form-select">
+                            <option value="">-- Select Category --</option>
+                            <option value="Invoice">Invoice</option>
+                            <option value="Receipt">Receipt</option>
+                            <option value="Bank Statement">Bank Statement</option>
+                            <option value="Tax Return">Tax Return</option>
+                            <option value="Contract">Contract</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label asp-for="ReferenceNumber" class="form-label fw-bold"></label>
+                        <input asp-for="ReferenceNumber" class="form-control" placeholder="Journal entry ID, vendor code, etc." />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label asp-for="Description" class="form-label fw-bold"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label asp-for="UploadedFile" class="form-label fw-bold"></label>
+                        <input asp-for="UploadedFile" class="form-control" type="file" />
+                        <span asp-validation-for="UploadedFile" class="text-danger small"></span>
+                        <div class="form-text">Accepted formats: PDF, JPG, PNG, DOCX, XLSX.</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-light border text-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cloud-arrow-up me-1"></i> Secure Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

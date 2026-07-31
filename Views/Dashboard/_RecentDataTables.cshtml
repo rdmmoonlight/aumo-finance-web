@@ -1,0 +1,87 @@
+@model AumoFinance.Models.DashboardViewModel
+@{
+    var idr = (ViewData["IdrCulture"] as System.Globalization.CultureInfo) 
+              ?? new System.Globalization.CultureInfo("id-ID");
+}
+
+<div class="row g-3">
+    <!-- Key Coa Balances -->
+    <div class="col-12 col-xl-6">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-bold mb-0">Key Accounts Overview</h6>
+                <a asp-controller="ChartOfAccounts" asp-action="Index" class="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-borderless align-middle mb-0">
+                    <thead class="text-secondary fs-8 border-bottom">
+                        <tr>
+                            <th>CODE</th>
+                            <th>ACCOUNT NAME</th>
+                            <th class="text-end">BALANCE</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        @if (Model.MainCoaBalances != null && Model.MainCoaBalances.Any())
+                        {
+                            @foreach (var item in Model.MainCoaBalances)
+                            {
+                                <tr class="account-item">
+                                    <td class="fw-bold text-secondary">@item.AccountCode</td>
+                                    <td class="fw-semibold">@item.AccountName</td>
+                                    <td class="text-end fw-bold">@item.Balance.ToString("C0", idr)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center text-secondary py-3">No account balances found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Journal Entries -->
+    <div class="col-12 col-xl-6">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h6 class="fw-bold mb-0">Recent Activity</h6>
+                <a asp-controller="JournalEntry" asp-action="Index" class="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold">View All</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-borderless align-middle mb-0">
+                    <thead class="text-secondary fs-8 border-bottom">
+                        <tr>
+                            <th>DATE</th>
+                            <th class="text-end">DEBIT</th>
+                            <th class="text-end">CREDIT</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        @if (Model.RecentJournals != null && Model.RecentJournals.Any())
+                        {
+                            @foreach (var journal in Model.RecentJournals)
+                            {
+                                <tr class="account-item">
+                                    <td class="text-secondary">@journal.Date.ToString("dd MMM yyyy")</td>
+                                    <td class="text-end fw-semibold text-success">@journal.TotalDebit.ToString("C0", idr)</td>
+                                    <td class="text-end fw-semibold text-danger">@journal.TotalCredit.ToString("C0", idr)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center text-secondary py-3">No recent journals recorded.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
