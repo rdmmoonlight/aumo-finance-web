@@ -1,3 +1,4 @@
+using AumoFinance.Models;
 using AumoFinance.Models.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
