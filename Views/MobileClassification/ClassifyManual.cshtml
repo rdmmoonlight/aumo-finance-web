@@ -1,0 +1,89 @@
+@using System.Globalization
+@model MobileClassifyManualViewModel
+@{
+    ViewData["Title"] = "Review Jurnal Mobile";
+    var cultureId = new CultureInfo("id-ID");
+}
+
+<div class="container-fluid py-4 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1">
+                <i class="bi bi-check2-square me-2 text-warning"></i> Review Jurnal Mobile
+            </h2>
+            <p class="text-secondary mb-0">Akun tiap baris sudah dipilih dari aplikasi Android. Setujui untuk memposting ke JournalEntries.</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
+        </a>
+    </div>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+        <div class="card-body px-4">
+            <dl class="row mb-0">
+                <dt class="col-2 text-secondary">Tanggal</dt>
+                <dd class="col-10">@Model.EntryDate.ToString("dd/MM/yyyy")</dd>
+
+                <dt class="col-2 text-secondary">Catatan</dt>
+                <dd class="col-10">@(string.IsNullOrWhiteSpace(Model.Note) ? "-" : Model.Note)</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Akun</th>
+                            <th>Deskripsi</th>
+                            <th class="text-end">Debit</th>
+                            <th class="text-end pe-4">Kredit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var line in Model.Lines)
+                        {
+                            <tr>
+                                <td class="ps-4">@line.AccountName</td>
+                                <td>@(string.IsNullOrWhiteSpace(line.LineDescription) ? "-" : line.LineDescription)</td>
+                                <td class="text-end">@(line.Debit == 0 ? "-" : line.Debit.ToString("C0", cultureId))</td>
+                                <td class="text-end pe-4">@(line.Credit == 0 ? "-" : line.Credit.ToString("C0", cultureId))</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td class="ps-4" colspan="2">Total</td>
+                            <td class="text-end">@Model.TotalDebit.ToString("C0", cultureId)</td>
+                            <td class="text-end pe-4">@Model.TotalCredit.ToString("C0", cultureId)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="ApproveManual" asp-route-id="@Model.MobileJournalEntryId" method="post" class="mt-4 d-flex justify-content-between">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-warning fw-semibold">
+            <i class="bi bi-check-lg me-1"></i> Setujui &amp; Posting
+        </button>
+
+        <button type="submit"
+                formaction="@Url.Action("Reject", new { id = Model.MobileJournalEntryId })"
+                class="btn btn-outline-danger"
+                onclick="return confirm('Tolak jurnal ini? Tidak akan masuk ke pembukuan utama.');">
+            <i class="bi bi-x-lg me-1"></i> Tolak
+        </button>
+    </form>
+</div>
