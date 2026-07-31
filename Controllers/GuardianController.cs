@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using AumoFinance.Data; // Sesuaikan jika AppDbContext berada di namespace AumoFinance.Models
 using AumoFinance.Models;
 
 namespace AumoFinance.Controllers;
