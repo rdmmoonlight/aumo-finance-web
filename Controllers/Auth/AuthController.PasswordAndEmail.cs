@@ -5,6 +5,7 @@ using AumoFinance.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace AumoFinance.Controllers;
 
