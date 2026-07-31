@@ -65,6 +65,16 @@
                 </a>
             </li>
 
+            <!-- MENU DOCUMENTS (BARU) -->
+            <li class="nav-item mb-1">
+                <a asp-controller="Document"
+                   asp-action="Index"
+                   class="nav-link text-white icon-btn @(ViewContext.RouteData.Values["controller"]?.ToString()=="Document" ? "active" : "")"
+                   title="Economic Documents">
+                    <i class="bi bi-file-earmark-text fs-6"></i>
+                </a>
+            </li>
+
             <li class="nav-item mb-1">
                 <a asp-controller="Guardian"
                    asp-action="Index"
@@ -136,7 +146,7 @@
 
     </nav>
 
-
+    <!-- FLYOUT REPORTS -->
     <div id="reports-flyout"
          class="sidebar-flyout bg-dark border-end border-secondary text-white">
 
@@ -151,7 +161,6 @@
                     aria-label="Close">
             </button>
         </div>
-
 
         <div class="list-group list-group-flush p-1 small"
              style="min-width:270px;">
