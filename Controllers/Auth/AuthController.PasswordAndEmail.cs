@@ -5,7 +5,6 @@ using AumoFinance.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace AumoFinance.Controllers;
 
@@ -174,57 +173,5 @@ public partial class AuthController
         }
 
         return RedirectToAction("ResendVerification");
-    }
-
-    [HttpGet]
-    [AllowAnonymous]
-    public IActionResult ResendVerification()
-    {
-        return View(new ResendVerificationModel());
-    }
-
-    [HttpPost]
-    [AllowAnonymous]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ResendVerification(ResendVerificationModel model)
-    {
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        var normalizedEmail = model.Email.Trim().ToLowerInvariant();
-        var cacheKey = $"resend-verification-cooldown:{normalizedEmail}";
-
-        if (_cache.TryGetValue(cacheKey, out _))
-        {
-            ModelState.AddModelError(string.Empty, "Please wait a moment before requesting another verification link.");
-            return View(model);
-        }
-
-        var user = await _userManager.FindByEmailAsync(model.Email);
-
-        if (user != null && !await _userManager.IsEmailConfirmedAsync(user))
-        {
-            try
-            {
-                await SendEmailConfirmationAsync(user);
-                _cache.Set(cacheKey, true, ResendCooldown);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while resending verification email to {Email}", model.Email);
-                TempData["ErrorMessage"] = "Failed to send verification email. Please try again later.";
-                return RedirectToAction("Login");
-            }
-        }
-        else
-        {
-            // Set cooldown walau user null (Anti-enumeration)
-            _cache.Set(cacheKey, true, ResendCooldown);
-        }
-
-        TempData["SuccessMessage"] = "If that email is registered and not yet verified, a new link has been sent.";
-        return RedirectToAction("Login");
     }
 }
