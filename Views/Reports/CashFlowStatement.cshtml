@@ -4,7 +4,7 @@
 }
 
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-cash-coin me-2 text-success"></i> Cash Flow Statement</h2>
             <p class="text-muted mb-0">Direct method (IAS 7), prepared from all transactions in Cash &amp; Cash Equivalents accounts.</p>
@@ -13,7 +13,8 @@
 
     <div class="card bg-dark border-secondary text-white shadow-sm">
         <div class="card-body">
-            <table class="table table-dark table-borderless align-middle mb-0">
+            <div class="table-responsive">
+<table class="table table-dark table-borderless align-middle mb-0">
                 <tbody>
                     <tr><td colspan="2" class="fw-bold text-warning text-uppercase small">Operating Activities</td></tr>
                     @if (!Model.OperatingActivities.Any())
@@ -71,6 +72,7 @@
                     </tr>
                 </tbody>
             </table>
+</div>
         </div>
     </div>
 
