@@ -1,15 +1,32 @@
 /**
- * Dashboard Charts Module - AumoFinance
- * Menangani inisialisasi Line Chart (Trend) & Doughnut Chart (Expense)
+ * Dashboard Module - AumoFinance
+ * Menangani Command Palette Keyboard Shortcut & Inisialisasi Chart.js (Line + Doughnut)
  */
 
-function initDashboardCharts(config) {
-    const colorPalette = [
-        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
-        '#858796', '#5a5c69', '#6f42c1', '#fd7e14', '#20c997'
-    ];
+function initDashboard(config) {
+    // 1. Shortcut Keyboard (Ctrl + K / Cmd + K) untuk Command Palette Modal
+    const cmdModalEl = document.getElementById('commandPaletteModal');
+    if (cmdModalEl && typeof bootstrap !== 'undefined') {
+        const cmdModal = new bootstrap.Modal(cmdModalEl);
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                cmdModal.show();
+            }
+        });
+    }
 
-    // Helper Format Rupiah
+    // Detector Theme Dark / Light Bootstrap
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const textColor = isDark ? '#adb5bd' : '#6c757d';
+    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.color = textColor;
+        Chart.defaults.borderColor = gridColor;
+    }
+
+    // Helper Format Currency Rupiah
     const formatIDR = (value) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -18,10 +35,10 @@ function initDashboardCharts(config) {
         }).format(value);
     };
 
-    // 1. Inisialisasi Line Chart (Financial Trend)
+    // 2. Setup Line Chart (Financial Trend)
     const trendCanvas = document.getElementById('trendChart');
     if (trendCanvas && config.trendData) {
-        new Chart(trendCanvas, {
+        new Chart(trendCanvas.getContext('2d'), {
             type: 'line',
             data: {
                 labels: config.trendData.labels || [],
@@ -29,18 +46,24 @@ function initDashboardCharts(config) {
                     {
                         label: 'Revenue',
                         data: config.trendData.revenue || [],
-                        borderColor: '#1cc88a',
-                        backgroundColor: 'rgba(28, 200, 138, 0.05)',
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13,110,253,0.12)',
                         fill: true,
-                        tension: 0.3
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     },
                     {
-                        label: 'Operating Expenses',
+                        label: 'Expenses',
                         data: config.trendData.expenses || [],
-                        borderColor: '#e74a3b',
-                        backgroundColor: 'rgba(231, 74, 59, 0.05)',
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220,53,69,0.08)',
                         fill: true,
-                        tension: 0.3
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }
                 ]
             },
@@ -57,38 +80,36 @@ function initDashboardCharts(config) {
                 },
                 scales: {
                     y: {
+                        beginAtZero: true,
                         ticks: {
-                            callback: (val) => formatIDR(val)
+                            callback: (v) => formatIDR(v)
                         }
-                    }
+                    },
+                    x: { grid: { display: false } }
                 }
             }
         });
     }
 
-    // 2. Inisialisasi Doughnut Chart (Expense Composition)
+    // 3. Setup Doughnut Chart (Expense Composition)
     const doughnutCanvas = document.getElementById('expenseDoughnut');
     if (doughnutCanvas && config.expenseData) {
-        new Chart(doughnutCanvas, {
+        new Chart(doughnutCanvas.getContext('2d'), {
             type: 'doughnut',
             data: {
                 labels: config.expenseData.labels || [],
                 datasets: [{
                     data: config.expenseData.values || [],
-                    backgroundColor: colorPalette.slice(0, config.expenseData.labels.length),
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
+                    backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#0dcaf0', '#fd7e14'],
+                    borderWidth: 0
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '70%',
+                cutout: '72%',
                 plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, padding: 15 }
-                    },
+                    legend: { position: 'bottom' },
                     tooltip: {
                         callbacks: {
                             label: (ctx) => ` ${ctx.label}: ${formatIDR(ctx.parsed)}`
