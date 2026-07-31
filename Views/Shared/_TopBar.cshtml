@@ -3,75 +3,60 @@
 @inject AppDbContext _context
 
 <!-- ========================================== -->
-<!-- FUTURISTIC STYLING & JS ENGINE             -->
+<!-- GOTHIC STYLING & JS ENGINE                 -->
 <!-- ========================================== -->
 <style>
-    /* Glassmorphism & Cyber Layout */
-    .topbar-futuristic {
-        background: rgba(15, 23, 42, 0.75) !important;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border-bottom: 1px solid rgba(56, 189, 248, 0.15) !important;
+    /* Google Fonts Import for Gothic Aesthetic */
+    @@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,500;0,700;1,400&display=swap');
+
+    /* Gothic Bar Backdrops */
+    .topbar-gothic {
+        background: #090a0f !important; /* Deep Obsidian Black */
+        border-bottom: 1px solid rgba(180, 142, 60, 0.25) !important; /* Muted Gold Border */
     }
 
-    .row2-cyber {
-        background: rgba(2, 6, 23, 0.6) !important;
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    .row2-gothic {
+        background: #0d0e14 !important;
+        border-bottom: 1px solid rgba(180, 142, 60, 0.15);
     }
 
-    /* Font Monospace Khas Terminal Finansial */
-    .cyber-font {
-        font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', Consolas, monospace;
-        letter-spacing: -0.3px;
+    /* Gothic Font Classes */
+    .gothic-header-font {
+        font-family: 'Cinzel', serif;
+        letter-spacing: 1px;
     }
 
-    /* Holographic / Cyber Pill Badge */
-    .ticker-pill-futuristic {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(148, 163, 184, 0.15);
-        border-radius: 4px;
-        padding: 1px 6px;
-        white-space: nowrap;
-        transition: all 0.2s ease;
+    .gothic-font {
+        font-family: 'EB Garamond', Georgia, serif;
+        font-size: 0.85rem;
+        letter-spacing: 0.2px;
     }
 
-    .ticker-pill-futuristic:hover {
-        border-color: rgba(56, 189, 248, 0.4);
-        box-shadow: 0 0 8px rgba(56, 189, 248, 0.15);
+    /* Gothic Palette & Glows */
+    .gothic-gold {
+        color: #d4af37 !important; /* Classic Gold */
+        text-shadow: 0 0 4px rgba(212, 175, 55, 0.2);
     }
 
-    /* Neon Glow Text Colors */
-    .neon-green {
-        color: #10b981 !important;
-        text-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
+    .gothic-silver {
+        color: #c0c0c0 !important;
     }
 
-    .neon-red {
-        color: #f43f5e !important;
-        text-shadow: 0 0 6px rgba(244, 63, 94, 0.3);
+    .gothic-crimson {
+        color: #e63946 !important; /* Crimson Red for Down Market */
+        text-shadow: 0 0 4px rgba(230, 57, 70, 0.2);
     }
 
-    .neon-cyan {
-        color: #38bdf8 !important;
-        text-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
+    .gothic-emerald {
+        color: #2a9d8f !important; /* Dark Emerald Green for Up Market */
+        text-shadow: 0 0 4px rgba(42, 157, 143, 0.2);
     }
 
-    /* Pulse Radar Indicator */
-    .radar-pulse {
-        width: 6px;
-        height: 6px;
-        background-color: #10b981;
-        border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-        animation: pulse-ring 1.8s infinite;
-        display: inline-block;
-    }
-
-    @@keyframes pulse-ring {
-        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    .gothic-divider {
+        color: #7b6f52;
+        opacity: 0.6;
+        font-size: 0.65rem;
+        margin: 0 4px;
     }
 
     /* Spin effect for Sync */
@@ -93,8 +78,8 @@
         if (!syncBtn || !syncIcon) return;
 
         syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
-        syncBtn.style.color = '#d97706';
-        syncBtn.title = "Syncing: In queue...";
+        syncBtn.style.color = '#d4af37';
+        syncBtn.title = "Syncing in progress...";
         syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
 
         setTimeout(() => {
@@ -102,11 +87,11 @@
             syncBtn.style.color = '';
 
             if (isSuccess) {
-                syncBtn.classList.add('neon-cyan');
-                syncBtn.title = "Sync: Database Operational";
+                syncBtn.classList.add('gothic-gold');
+                syncBtn.title = "Sync: Database Synchronized";
                 syncIcon.className = "bi bi-cloud-check";
             } else {
-                syncBtn.classList.add('neon-red');
+                syncBtn.classList.add('gothic-crimson');
                 syncBtn.title = "Sync: Offline Error";
                 syncIcon.className = "bi bi-cloud-slash";
             }
@@ -126,13 +111,13 @@
                 // USD Render
                 if (usdEl && data.usd) {
                     const price = Math.round(data.usd.price);
-                    const colorClass = data.usd.isUp ? 'neon-green' : 'neon-red';
+                    const colorClass = data.usd.isUp ? 'gothic-emerald' : 'gothic-crimson';
                     const iconClass = data.usd.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
                     const percent = Math.abs(data.usd.percent).toFixed(2);
 
                     usdEl.innerHTML = `
                         Rp ${price.toLocaleString('id-ID')} 
-                        <span class="${colorClass} ms-1" style="font-size: 0.65rem;">
+                        <span class="${colorClass} ms-1" style="font-size: 0.7rem;">
                             <i class="bi ${iconClass}"></i>${percent}%
                         </span>`;
                 }
@@ -140,21 +125,21 @@
                 // IHSG Render
                 if (ihsgEl && data.ihsg) {
                     const price = data.ihsg.price;
-                    const colorClass = data.ihsg.isUp ? 'neon-green' : 'neon-red';
+                    const colorClass = data.ihsg.isUp ? 'gothic-emerald' : 'gothic-crimson';
                     const iconClass = data.ihsg.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
                     const percent = Math.abs(data.ihsg.percent).toFixed(2);
                     const formattedPrice = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
                     ihsgEl.innerHTML = `
                         ${formattedPrice} 
-                        <span class="${colorClass} ms-1" style="font-size: 0.65rem;">
+                        <span class="${colorClass} ms-1" style="font-size: 0.7rem;">
                             <i class="bi ${iconClass}"></i>${percent}%
                         </span>`;
                 }
 
                 // BI Rate Render
                 if (biRateEl && data.biRate) {
-                    biRateEl.innerHTML = `<span class="neon-cyan">${data.biRate}</span>`;
+                    biRateEl.innerHTML = `<span class="gothic-gold">${data.biRate}</span>`;
                 }
             } else {
                 if (usdEl) usdEl.innerText = '-';
@@ -172,14 +157,14 @@
 </script>
 
 <!-- ========================================== -->
-<!-- ROW 1: Cyber Main Header                   -->
+<!-- ROW 1: Gothic Main Header                  -->
 <!-- ========================================== -->
-<header class="navbar navbar-expand border-bottom py-2 topbar-futuristic" style="min-height: 56px;">
+<header class="navbar navbar-expand border-bottom py-2 topbar-gothic" style="min-height: 56px;">
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
         <!-- Left Title -->
         <div class="d-flex align-items-center me-2" style="max-width: 180px;">
-            <span class="fw-bold text-truncate text-body cyber-font" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+            <span class="fw-bold text-truncate gothic-gold gothic-header-font" style="font-size: 0.85rem;">
                 @(ViewData["Title"] ?? "DASHBOARD")
             </span>
         </div>
@@ -193,19 +178,19 @@
         <div class="d-flex align-items-center gap-1">
             @if (User.Identity != null && User.Identity.IsAuthenticated)
             {
-                <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
+                <button class="btn btn-sm btn-link gothic-gold p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                     <i class="bi bi-search" style="font-size: 0.825rem;"></i>
                 </button>
             }
 
             <div class="dropdown">
-                <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
+                <button class="btn btn-sm btn-link gothic-gold p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
                     <i class="bi bi-three-dots-vertical" style="font-size: 0.875rem;"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem;">
-                    <li><h6 class="dropdown-header py-1" style="font-size: 0.725rem;">Theme Settings</h6></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark</button></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm gothic-font" style="font-size: 0.8rem; background: #0d0e14; border: 1px solid rgba(180, 142, 60, 0.3);">
+                    <li><h6 class="dropdown-header py-1 gothic-gold" style="font-size: 0.725rem;">Theme Settings</h6></li>
+                    <li><button type="button" class="dropdown-item py-1 gothic-silver d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill gothic-gold"></i> Dark</button></li>
+                    <li><button type="button" class="dropdown-item py-1 gothic-silver d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill gothic-gold"></i> Light</button></li>
                 </ul>
             </div>
         </div>
@@ -213,7 +198,7 @@
 </header>
 
 <!-- ========================================== -->
-<!-- ROW 2: Cyber Terminal HUD (Layout Rapih)   -->
+<!-- ROW 2: Gothic Financial Console            -->
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
@@ -225,68 +210,72 @@
     var activePeriodName = activePeriodObj?.PeriodName;
     var hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);
     var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
-    var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
+    var iconClass = hasActivePeriod ? "bi-calendar2-check gothic-gold" : "bi-calendar-x gothic-crimson";
 
-    <div class="border-bottom row2-cyber px-3 py-1 d-flex justify-content-between align-items-center gap-2 shadow-sm cyber-font text-nowrap" style="min-height: 30px; font-size: 0.725rem;">
+    <div class="border-bottom row2-gothic px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm gothic-font text-nowrap" style="min-height: 28px;">
         
-        <!-- 1. SEBELAH KIRI: Active Period Dropdown -->
-        <div class="dropdown d-flex align-items-center">
+        <!-- Active Period Dropdown -->
+        <div class="dropdown">
             <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi @iconClass"></i>
-                <span class="text-secondary opacity-75 d-none d-sm-inline">PERIOD:</span> 
-                <span class="text-body fw-bold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
+                <span class="gothic-silver opacity-75">Period:</span> 
+                <span class="gothic-gold fw-bold @(!hasActivePeriod ? "gothic-crimson" : "")">@periodText</span>
             </button>
             
-            <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.75rem; min-width: 180px;">
-                <li><h6 class="dropdown-header py-1" style="font-size: 0.7rem;">Period Management</h6></li>
+            <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.8rem; min-width: 180px; background: #0d0e14; border: 1px solid rgba(180, 142, 60, 0.3);">
+                <li><h6 class="dropdown-header py-1 gothic-gold" style="font-size: 0.7rem;">Period Management</h6></li>
                 <li>
-                    <a class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Create">
+                    <a class="dropdown-item py-1 gothic-gold fw-semibold d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Create">
                         <i class="bi bi-plus-circle"></i> Open New Period
                     </a>
                 </li>
-                <li><hr class="dropdown-divider my-1"></li>
+                <li><hr class="dropdown-divider my-1" style="border-color: rgba(180, 142, 60, 0.2);"></li>
                 <li>
-                    <a class="dropdown-item py-1 d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Index">
+                    <a class="dropdown-item py-1 gothic-silver d-flex align-items-center gap-2" asp-controller="Periods" asp-action="Index">
                         <i class="bi bi-list-ul"></i> View All Periods
                     </a>
                 </li>
             </ul>
         </div>
 
-        <!-- 2. SEBELAH TENGAH: Market Ticker Pills -->
-        <div class="d-flex align-items-center gap-2">
-            <!-- USD -->
-            <div class="ticker-pill-futuristic d-flex align-items-center gap-1" title="US Dollar / Indonesian Rupiah">
-                <span class="text-secondary opacity-75 fw-bold" style="font-size: 0.625rem;">USD:</span>
-                <span id="usdRate" class="fw-semibold text-body">...</span>
-            </div>
+        <!-- Gothic Fleur-de-lis Ornaments Divider -->
+        <span class="gothic-divider">⚜</span>
 
-            <!-- IHSG -->
-            <div class="ticker-pill-futuristic d-flex align-items-center gap-1" title="IDX Composite Index">
-                <span class="text-secondary opacity-75 fw-bold" style="font-size: 0.625rem;">IHSG:</span>
-                <span id="ihsgIndex" class="fw-semibold text-body">...</span>
-            </div>
-
-            <!-- BI-RATE -->
-            <div class="ticker-pill-futuristic d-flex align-items-center gap-1" title="Bank Indonesia Policy Rate">
-                <span class="text-secondary opacity-75 fw-bold" style="font-size: 0.625rem;">BI-RATE:</span>
-                <span id="biRate" class="fw-semibold text-body">...</span>
-            </div>
+        <!-- USD Rate -->
+        <div class="d-flex align-items-center gap-1" title="US Dollar / Indonesian Rupiah">
+            <span class="gothic-silver opacity-75 fw-bold" style="font-size: 0.75rem;">USD:</span>
+            <span id="usdRate" class="fw-semibold gothic-gold">Loading...</span>
         </div>
 
-        <!-- 3. SEBELAH KANAN: Status Indicators -->
-        <div class="d-flex align-items-center gap-2">
-            <!-- Live Pulse Dot -->
-            <div class="radar-pulse" title="System Live Telemetry Active"></div>
+        <!-- Gothic Divider -->
+        <span class="gothic-divider">⚜</span>
 
-            <!-- Guardian Shield -->
-            <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Security Active" aria-label="Guardian Status">
-                <i class="bi bi-shield-check neon-green" style="font-size: 0.825rem;"></i>
+        <!-- IHSG Index -->
+        <div class="d-flex align-items-center gap-1" title="IDX Composite Index">
+            <span class="gothic-silver opacity-75 fw-bold" style="font-size: 0.75rem;">IHSG:</span>
+            <span id="ihsgIndex" class="fw-semibold gothic-gold">Loading...</span>
+        </div>
+
+        <!-- Gothic Divider -->
+        <span class="gothic-divider">⚜</span>
+
+        <!-- BI-Rate -->
+        <div class="d-flex align-items-center gap-1" title="Bank Indonesia Policy Rate">
+            <span class="gothic-silver opacity-75 fw-bold" style="font-size: 0.75rem;">BI-RATE:</span>
+            <span id="biRate" class="fw-semibold gothic-gold">Loading...</span>
+        </div>
+
+        <!-- Gothic Divider -->
+        <span class="gothic-divider">⚜</span>
+
+        <!-- Indicators: Guardian & Sync -->
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-link gothic-gold p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
+                <i class="bi bi-shield-check" style="font-size: 0.85rem;"></i>
             </button>
 
-            <!-- Sync Cloud -->
-            <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Database Online" aria-label="Sync Status">
-                <i id="syncIcon" class="bi bi-cloud-check neon-cyan" style="font-size: 0.825rem;"></i>
+            <button id="syncBtn" class="btn btn-sm btn-link gothic-gold p-0 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
+                <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.85rem;"></i>
             </button>
         </div>
 
@@ -298,12 +287,12 @@
 {
     <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-top modal-sm">
-            <div class="modal-content border-0 shadow-lg topbar-futuristic">
+            <div class="modal-content border-0 shadow-lg topbar-gothic">
                 <div class="modal-body p-2">
                     <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-transparent border-0 text-secondary"><i class="bi bi-search"></i></span>
-                        <input type="search" class="form-control border-0 shadow-none text-body cyber-font" placeholder="Search transactions, accounts..." autofocus>
-                        <button type="button" class="btn-close ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <span class="input-group-text bg-transparent border-0 gothic-gold"><i class="bi bi-search"></i></span>
+                        <input type="search" class="form-control border-0 shadow-none gothic-silver gothic-font" placeholder="Search transactions, accounts..." autofocus style="background: transparent;">
+                        <button type="button" class="btn-close btn-close-white ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                 </div>
             </div>
