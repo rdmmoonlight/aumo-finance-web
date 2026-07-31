@@ -57,7 +57,7 @@
     }
 
     /**
-     * Fetch Nilai Kurs USD/IDR dan IHSG
+     * Fetch Nilai Kurs USD/IDR dan IHSG beserta Indikator Up/Down
      */
     async function fetchMarketData() {
         const usdEl = document.getElementById('usdRate');
@@ -65,26 +65,53 @@
 
         // 1. Fetch Kurs USD to IDR
         try {
-            const resUsd = await fetch('https://open.er-api.com/v6/latest/USD');
+            const resUsd = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/IDR=X');
             const dataUsd = await resUsd.json();
-            if (dataUsd && dataUsd.rates && dataUsd.rates.IDR) {
-                const rate = Math.round(dataUsd.rates.IDR);
-                if (usdEl) usdEl.innerText = `Rp ${rate.toLocaleString('id-ID')}`;
+            const meta = dataUsd?.chart?.result[0]?.meta;
+
+            if (meta && usdEl) {
+                const price = Math.round(meta.regularMarketPrice);
+                const prevClose = meta.chartPreviousClose;
+                const diff = price - prevClose;
+                const percent = ((diff / prevClose) * 100).toFixed(2);
+                
+                const isUp = diff >= 0;
+                const colorClass = isUp ? 'text-success' : 'text-danger';
+                const iconClass = isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+                
+                usdEl.innerHTML = `
+                    Rp ${price.toLocaleString('id-ID')} 
+                    <span class="${colorClass} ms-1" style="font-size: 0.7rem;">
+                        <i class="bi ${iconClass}"></i> ${Math.abs(percent)}%
+                    </span>`;
             }
         } catch (err) {
-            if (usdEl) usdEl.innerText = 'Err';
+            if (usdEl) usdEl.innerText = '-';
         }
 
         // 2. Fetch IHSG (^JKSE)
         try {
             const resIhsg = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/^JKSE');
             const dataIhsg = await resIhsg.json();
-            const price = dataIhsg?.chart?.result[0]?.meta?.regularMarketPrice;
-            if (price && ihsgEl) {
-                ihsgEl.innerText = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const meta = dataIhsg?.chart?.result[0]?.meta;
+
+            if (meta && ihsgEl) {
+                const price = meta.regularMarketPrice;
+                const prevClose = meta.chartPreviousClose;
+                const diff = price - prevClose;
+                const percent = ((diff / prevClose) * 100).toFixed(2);
+
+                const isUp = diff >= 0;
+                const colorClass = isUp ? 'text-success' : 'text-danger';
+                const iconClass = isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
+
+                ihsgEl.innerHTML = `
+                    ${price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
+                    <span class="${colorClass} ms-1" style="font-size: 0.7rem;">
+                        <i class="bi ${iconClass}"></i> ${Math.abs(percent)}%
+                    </span>`;
             }
         } catch (err) {
-            // Fallback jika API terblokir CORS / Rate limited
             if (ihsgEl) ihsgEl.innerText = '-';
         }
     }
