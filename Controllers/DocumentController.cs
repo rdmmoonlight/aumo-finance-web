@@ -65,7 +65,7 @@ public class DocumentController : Controller
             AppAgeDays = ageInDays > 0 ? ageInDays : 1,
             TotalJournalEntries = _context.JournalEntries.Count(),
             TotalChartOfAccounts = _context.ChartOfAccounts.Count(),
-            TotalActivePeriods = _context.Periods.Count(p => p.IsActive),
+            TotalActivePeriods = _context.Periods.Count(), // Disesuaikan dengan struktur tabel Period
             TotalSystemUsers = _context.Users.Count()
         };
 
@@ -141,6 +141,6 @@ public class DocumentController : Controller
             await stream.CopyToAsync(memory);
         }
         memory.Position = 0;
-        return File(memory, document.ContentType, document.FileName);
+        return File(memory, document.ContentType ?? "application/octet-stream", document.FileName);
     }
 }
