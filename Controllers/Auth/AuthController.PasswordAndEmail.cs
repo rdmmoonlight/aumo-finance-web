@@ -25,7 +25,7 @@ public partial class AuthController
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ForgotPassword(ForgotPasswordModel model)
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordModel model, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
@@ -34,7 +34,7 @@ public partial class AuthController
 
         var user = await _userManager.FindByEmailAsync(model.Email);
 
-        if (user != null)
+        if (user != null && !string.IsNullOrEmpty(user.Email))
         {
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
             var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
@@ -46,22 +46,27 @@ public partial class AuthController
                 Request.Scheme
             );
 
-            try
+            if (!string.IsNullOrEmpty(resetUrl))
             {
-                await _emailSender.SendEmailAsync(
-                    user.Email!,
-                    "Reset your Aumo Finance password",
-                    EmailTemplates.PasswordReset(user.FullName, resetUrl!)
-                );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending reset password email.");
+                try
+                {
+                    await _emailSender.SendEmailAsync(
+                        user.Email,
+                        "Reset your Aumo Finance password",
+                        EmailTemplates.PasswordReset(user.FullName, resetUrl),
+                        cancellationToken
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send reset password email to {Email}", user.Email);
+                    TempData["ErrorMessage"] = "Failed to send reset email due to a system error. Please try again later.";
+                    return RedirectToAction("Login");
+                }
             }
         }
 
         TempData["SuccessMessage"] = "If that email is registered, a password reset link has been sent.";
-
         return RedirectToAction("Login");
     }
 
@@ -98,7 +103,6 @@ public partial class AuthController
 
         try
         {
-            // Pastikan baris ini persis seperti ini:
             decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Token));
         }
         catch (FormatException)
@@ -120,7 +124,6 @@ public partial class AuthController
         }
 
         TempData["SuccessMessage"] = "Password changed successfully. Please sign in with your new password.";
-
         return RedirectToAction("Login");
     }
 
@@ -132,33 +135,45 @@ public partial class AuthController
     [AllowAnonymous]
     public async Task<IActionResult> VerifyEmail(string email, string token)
     {
-        var user = string.IsNullOrEmpty(email) ? null : await _userManager.FindByEmailAsync(email);
-
-        if (user == null || string.IsNullOrEmpty(token))
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
         {
-            ViewBag.Success = false;
-            ViewBag.Message = "This verification link is invalid.";
-            return View();
+            TempData["ErrorMessage"] = "This verification link is invalid.";
+            return RedirectToAction("Login");
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user == null)
+        {
+            TempData["ErrorMessage"] = "This verification link is invalid.";
+            return RedirectToAction("Login");
+        }
+
+        if (await _userManager.IsEmailConfirmedAsync(user))
+        {
+            TempData["InfoMessage"] = "Your email is already verified. Please sign in.";
+            return RedirectToAction("Login");
         }
 
         try
         {
-            // Pastikan baris ini persis seperti ini:
             var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
             var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
 
-            ViewBag.Success = result.Succeeded;
-            ViewBag.Message = result.Succeeded
-                ? "Your email has been successfully verified!"
-                : "This verification link is invalid or has expired.";
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = "Your email has been successfully verified! Please sign in.";
+                return RedirectToAction("Login");
+            }
+
+            TempData["ErrorMessage"] = "This verification link is invalid or has expired.";
         }
         catch (FormatException)
         {
-            ViewBag.Success = false;
-            ViewBag.Message = "This verification link is invalid.";
+            TempData["ErrorMessage"] = "This verification link format is invalid.";
         }
 
-        return View();
+        return RedirectToAction("ResendVerification");
     }
 
     [HttpGet]
@@ -181,20 +196,35 @@ public partial class AuthController
         var normalizedEmail = model.Email.Trim().ToLowerInvariant();
         var cacheKey = $"resend-verification-cooldown:{normalizedEmail}";
 
-        if (!_cache.TryGetValue(cacheKey, out _))
+        if (_cache.TryGetValue(cacheKey, out _))
         {
-            var user = await _userManager.FindByEmailAsync(model.Email);
+            ModelState.AddModelError(string.Empty, "Please wait a moment before requesting another verification link.");
+            return View(model);
+        }
 
-            if (user != null && !await _userManager.IsEmailConfirmedAsync(user))
+        var user = await _userManager.FindByEmailAsync(model.Email);
+
+        if (user != null && !await _userManager.IsEmailConfirmedAsync(user))
+        {
+            try
             {
                 await SendEmailConfirmationAsync(user);
+                _cache.Set(cacheKey, true, ResendCooldown);
             }
-
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while resending verification email to {Email}", model.Email);
+                TempData["ErrorMessage"] = "Failed to send verification email. Please try again later.";
+                return RedirectToAction("Login");
+            }
+        }
+        else
+        {
+            // Set cooldown walau user null (Anti-enumeration)
             _cache.Set(cacheKey, true, ResendCooldown);
         }
 
         TempData["SuccessMessage"] = "If that email is registered and not yet verified, a new link has been sent.";
-
         return RedirectToAction("Login");
     }
 }
