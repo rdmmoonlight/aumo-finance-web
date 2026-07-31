@@ -11,7 +11,7 @@
             <h4 class="mb-1">
                 <i class="bi bi-shield-check text-warning me-2"></i>Guardian
             </h4>
-            <small class="text-secondary">Comprehensive account security, active sessions, and privacy controls</small>
+            <small class="text-secondary">Security health monitoring, active sessions, and protection controls</small>
         </div>
         <div class="d-flex align-items-center gap-2">
             <span class="badge bg-success fs-6">
@@ -51,56 +51,60 @@
     <!-- TAB CONTENTS -->
     <div class="tab-content" id="guardianTabsContent">
 
-        <!-- ==================== SUB-TAB 1: SECURITY HEALTH ==================== -->
+        <!-- ==================== TAB 1: SECURITY HEALTH ==================== -->
         <div class="tab-pane fade show active" id="health-content" role="tabpanel">
             <div class="card bg-dark border-secondary">
                 <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-heart-pulse me-2"></i>System Health Checkup</strong>
-                    <small class="text-secondary">Automated Security Analysis</small>
+                    <strong><i class="bi bi-heart-pulse me-2"></i>Security & Account Health Checkup</strong>
+                    <small class="text-secondary">Automated Analysis</small>
                 </div>
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush bg-transparent">
                         
-                        <!-- Item 1: Sessions Check -->
+                        <!-- Health Point 1: Active Sessions -->
                         <div class="list-group-item bg-transparent text-white border-secondary p-3 d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-bold"><i class="bi bi-laptop text-info me-2"></i>Active Device Sessions</div>
-                                <small class="text-secondary">Monitors active logins across your devices.</small>
+                                <small class="text-secondary">Monitors how many devices are currently signed in.</small>
                             </div>
-                            <span class="badge bg-success">@(Model.Sessions?.Count ?? 0) Active Session(s)</span>
+                            <div>
+                                <span class="badge bg-success">@(Model.Sessions?.Count ?? 0) Active Session(s)</span>
+                            </div>
                         </div>
 
-                        <!-- Item 2: Transaction PIN -->
+                        <!-- Health Point 2: Transaction PIN -->
                         <div class="list-group-item bg-transparent text-white border-secondary p-3 d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-bold"><i class="bi bi-key text-warning me-2"></i>Transaction PIN</div>
-                                <small class="text-secondary">Secondary 6-digit protection for high-risk financial actions.</small>
+                                <small class="text-secondary">Secondary protection for sensitive financial actions.</small>
                             </div>
                             <div>
-                                <span class="badge bg-warning text-dark me-2">Not Configured</span>
+                                <span class="badge bg-warning text-dark me-2">Not Set</span>
                                 <a href="#" class="btn btn-sm btn-outline-warning py-0">Set Up PIN</a>
                             </div>
                         </div>
 
-                        <!-- Item 3: Password Age -->
+                        <!-- Health Point 3: Password Age Monitor -->
                         <div class="list-group-item bg-transparent text-white border-secondary p-3 d-flex justify-content-between align-items-center">
                             <div>
-                                <div class="fw-bold"><i class="bi bi-shield-lock text-primary me-2"></i>Password Age Monitor</div>
-                                <small class="text-secondary">Ensure regular updates to prevent credential leaks (Target: &lt; 90 days).</small>
+                                <div class="fw-bold"><i class="bi bi-shield-lock text-primary me-2"></i>Password Age</div>
+                                <small class="text-secondary">Tracks when your password was last changed (Recommended: &lt; 90 days).</small>
                             </div>
                             <div>
-                                <span class="badge bg-success me-2">Up to date</span>
+                                <span class="badge bg-success me-2">Updated Recently</span>
                                 <a href="#" class="btn btn-sm btn-outline-light py-0">Change</a>
                             </div>
                         </div>
 
-                        <!-- Item 4: Failed Logins -->
+                        <!-- Health Point 4: Failed Login Attempts -->
                         <div class="list-group-item bg-transparent text-white border-secondary p-3 d-flex justify-content-between align-items-center">
                             <div>
                                 <div class="fw-bold"><i class="bi bi-shield-exclamation text-danger me-2"></i>Failed Login Attempts</div>
-                                <small class="text-secondary">Suspicious attempts flagged in the last 30 days.</small>
+                                <small class="text-secondary">Unrecognized access attempts detected in the last 30 days.</small>
                             </div>
-                            <span class="badge bg-success">0 Threat(s) Found</span>
+                            <div>
+                                <span class="badge bg-success">0 Threat(s) Found</span>
+                            </div>
                         </div>
 
                     </div>
@@ -108,14 +112,14 @@
             </div>
         </div>
 
-        <!-- ==================== SUB-TAB 2: ACTIVE SESSIONS ==================== -->
+        <!-- ==================== TAB 2: ACTIVE SESSIONS (DIBATASI MAKSIMAL 5) ==================== -->
         <div class="tab-pane fade" id="sessions-content" role="tabpanel">
             <div class="card bg-dark border-secondary">
                 <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-laptop me-2"></i>Device Sessions</strong>
+                    <strong><i class="bi bi-laptop me-2"></i>Active Sessions (Max 5)</strong>
                     
                     <!-- Emergency Kill Switch -->
-                    <form asp-action="RevokeAllSessions" method="post" onsubmit="return confirm('Emergency Lockout: Sign out of ALL active devices? You will need to log back in.');">
+                    <form asp-action="RevokeAllSessions" method="post" onsubmit="return confirm('Emergency Lockout: Are you sure you want to sign out of ALL devices? You will be required to log in again.');">
                         <button type="submit" class="btn btn-sm btn-outline-danger">
                             <i class="bi bi-exclamation-octagon me-1"></i> Revoke All Sessions
                         </button>
@@ -141,7 +145,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                @foreach (var session in Model.Sessions)
+                                @foreach (var session in Model.Sessions.Take(5))
                                 {
                                     <tr>
                                         <td>
@@ -180,13 +184,13 @@
             </div>
         </div>
 
-        <!-- ==================== SUB-TAB 3: PROTECTION & LOGS ==================== -->
+        <!-- ==================== TAB 3: PROTECTION & LOGS ==================== -->
         <div class="tab-pane fade" id="protection-content" role="tabpanel">
             
             <!-- Quick Settings Card -->
             <div class="card bg-dark border-secondary mb-4">
                 <div class="card-header border-secondary">
-                    <strong><i class="bi bi-sliders me-2"></i>Protection Preferences</strong>
+                    <strong><i class="bi bi-sliders me-2"></i>Protection Settings</strong>
                 </div>
                 <div class="card-body">
                     <div class="row align-items-center">
@@ -194,8 +198,8 @@
                         <div class="col-md-6 mb-3 mb-md-0">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <div class="fw-bold">Privacy Mode (Mask Nominal)</div>
-                                    <small class="text-secondary">Hide sensitive balance numbers across views ($ •••••)</small>
+                                    <div class="fw-bold">Privacy Mode (Mask Balances)</div>
+                                    <small class="text-secondary">Conceal monetary values across the app ($ •••••)</small>
                                 </div>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" id="privacyToggle">
@@ -208,7 +212,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="fw-bold">Auto-Lock Timeout</div>
-                                    <small class="text-secondary">Lock screen automatically on inactivity</small>
+                                    <small class="text-secondary">Automatically lock screen when idle</small>
                                 </div>
                                 <select class="form-select form-select-sm bg-dark text-white border-secondary w-auto">
                                     <option value="0">Disabled</option>
@@ -224,7 +228,7 @@
             <!-- Login Activity Log (Max 5) -->
             <div class="card bg-dark border-secondary">
                 <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                    <strong><i class="bi bi-clock-history me-2"></i>Recent Logins (Max 5)</strong>
+                    <strong><i class="bi bi-clock-history me-2"></i>Recent Login History (Max 5)</strong>
                     <a asp-action="ExportAuditLog" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-download me-1"></i> Export Log (CSV)
                     </a>
@@ -232,7 +236,7 @@
                 <div class="card-body p-0">
                     @if (Model.Activities == null || Model.Activities.Count == 0)
                     {
-                        <div class="p-3 text-secondary">No login activity recorded.</div>
+                        <div class="p-3 text-secondary">No login activity found.</div>
                     }
                     else
                     {
