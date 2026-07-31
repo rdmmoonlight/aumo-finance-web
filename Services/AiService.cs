@@ -14,7 +14,6 @@ namespace AumoFinance.Services
         private readonly string _apiKey;
         private readonly ILogger<AiService> _logger;
 
-        // Alias "latest" lebih tahan terhadap perubahan versi model dibanding pin versi spesifik
         private const string Model = "gemini-flash-latest";
 
         public AiService(HttpClient httpClient, IConfiguration configuration, ILogger<AiService> logger)
@@ -34,10 +33,16 @@ namespace AumoFinance.Services
 
             try
             {
-                string systemInstruction = @"You are the resident AI Financial Controller for Aumo Finance.
+                // PERBAIKAN: Menambahkan instruksi tegas untuk format mata uang Rupiah (Rp)
+                string systemInstruction = @"You are the resident AI Financial Controller for Aumo Finance in Indonesia.
 Analyse accounting and financial queries with precision, discipline, and absolute accuracy.
-Provide concise, actionable insights in professional US English.
-Do not make assumptions beyond rational economic logic.";
+Provide concise, actionable insights in professional English or Indonesian.
+
+CURRENCY MANDATE:
+1. ALL monetary values MUST be presented in Indonesian Rupiah (Rp). 
+2. NEVER use USD, Dollar, or the '$' symbol under any circumstances.
+3. Use dot (.) as thousand separators and comma (,) for decimals (e.g., Rp 1.500.000,00 or Rp 250.000).
+4. Do not make assumptions beyond rational economic logic.";
 
                 string fullPrompt = string.IsNullOrWhiteSpace(contextData)
                     ? userPrompt
