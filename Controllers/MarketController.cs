@@ -35,11 +35,15 @@ namespace AumoFinance.Controllers
                 double ihsgDiff = ihsgPrice - ihsgPrev;
                 double ihsgPercent = ihsgPrev != 0 ? (ihsgDiff / ihsgPrev) * 100 : 0;
 
+                // 3. BI-Rate (Nilai Suku Bunga BI Terbaru)
+                string biRateVal = "6.25%"; 
+
                 return Json(new
                 {
                     success = true,
                     usd = new { price = usdPrice, percent = usdPercent, isUp = usdDiff >= 0 },
-                    ihsg = new { price = ihsgPrice, percent = ihsgPercent, isUp = ihsgDiff >= 0 }
+                    ihsg = new { price = ihsgPrice, percent = ihsgPercent, isUp = ihsgDiff >= 0 },
+                    biRate = biRateVal
                 });
             }
             catch
