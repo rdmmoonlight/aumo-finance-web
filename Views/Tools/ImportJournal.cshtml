@@ -16,7 +16,7 @@
                 <h2 class="fw-bold text-body-emphasis mb-1">
                     <i class="bi bi-file-earmark-spreadsheet-fill me-2 text-success"></i> Import Journal Entries (.xlsx)
                 </h2>
-                <p class="text-secondary mb-0">Upload batch journal entries from Excel with instant modal preview.</p>
+                <p class="text-secondary mb-0">Upload batch journal entries from Excel with instant preview.</p>
             </div>
             <a asp-action="Index" class="btn btn-outline-secondary rounded-3">
                 <i class="bi bi-arrow-left me-1"></i> Back to Tools
@@ -40,13 +40,13 @@
         </div>
     }
 
-    <!-- UPLOAD FORM CARD -->
+    <!-- UPLOAD CARD -->
     <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
         <div class="card-body p-4">
             <div class="row align-items-center mb-3">
                 <div class="col-12 col-md-8">
                     <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i> Select Excel File</h5>
-                    <p class="text-secondary small mb-0">Select an <code>.xlsx</code> file, then click <strong>"Preview"</strong> to inspect entries inside a pop-up modal before saving.</p>
+                    <p class="text-secondary small mb-0">Select an <code>.xlsx</code> file, then click <strong>"Preview"</strong> to inspect entries inside the pop-up modal.</p>
                 </div>
                 <div class="col-12 col-md-4 text-md-end mt-2 mt-md-0">
                     <a asp-action="DownloadJournalTemplate" class="btn btn-outline-success btn-sm rounded-3">
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <form id="previewForm" enctype="multipart/form-data">
+            <form id="previewForm" asp-action="PreviewJournal" method="post" enctype="multipart/form-data">
                 <div class="row g-3">
                     <div class="col-12 col-md-9">
                         <input class="form-control form-control-lg rounded-3" 
@@ -92,7 +92,7 @@
             </div>
             
             <div class="modal-body p-4" id="modalBodyContainer">
-                <!-- Parsed transactions table loaded dynamically via JavaScript -->
+                <!-- Data transaksi di-render via JavaScript -->
             </div>
 
             <div class="modal-footer border-top px-4 py-3">
@@ -122,7 +122,6 @@
             const btnSpinner = document.getElementById('btnSpinner');
             const btnIcon = document.getElementById('btnIcon');
 
-            // UI Loading state
             btnPreview.disabled = true;
             btnSpinner.classList.remove('d-none');
             btnIcon.classList.add('d-none');
@@ -136,6 +135,10 @@
                     body: formData
                 });
 
+                if (!response.ok) {
+                    throw new Error(`Server returned status ${response.status}`);
+                }
+
                 const result = await response.json();
 
                 if (!result.success) {
@@ -143,18 +146,15 @@
                     return;
                 }
 
-                // Render Modal Content
                 renderModalBody(result.data);
 
-                // Open Bootstrap Modal
                 const modal = new bootstrap.Modal(document.getElementById('previewModal'));
                 modal.show();
 
             } catch (err) {
-                alert('An unexpected error occurred while parsing the Excel file.');
+                alert('An error occurred while parsing the file: ' + err.message);
                 console.error(err);
             } finally {
-                // Restore button state
                 btnPreview.disabled = false;
                 btnSpinner.classList.add('d-none');
                 btnIcon.classList.remove('d-none');
@@ -163,18 +163,16 @@
 
         function renderModalBody(data) {
             const container = document.getElementById('modalBodyContainer');
-            document.getElementById('modalSubHeader').innerText = `Found ${data.totalTransactionsRead} transactions with ${data.totalLinesRead} line entries.`;
+            document.getElementById('modalSubHeader').innerText = `Found ${data.totalTransactionsRead} transactions with ${data.totalLinesRead} row entries.`;
 
             let html = '';
 
-            // Warnings section
             if (data.warnings && data.warnings.length > 0) {
                 html += `<div class="alert alert-warning rounded-3 mb-4"><ul class="small mb-0 ps-3">`;
                 data.warnings.forEach(w => html += `<li>${w}</li>`);
                 html += `</ul></div>`;
             }
 
-            // Transactions tables loop
             data.transactions.forEach(tx => {
                 let totalDebit = 0;
                 let totalCredit = 0;
