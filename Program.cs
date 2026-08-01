@@ -61,6 +61,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
+builder.Services.AddScoped<IJournalImportService, JournalImportService>();
 
 builder.Services.AddMemoryCache();
 
