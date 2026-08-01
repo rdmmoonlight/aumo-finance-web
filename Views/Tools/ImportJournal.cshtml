@@ -1,14 +1,26 @@
 @{
-    ViewData["Title"] = "Tools & Utilities";
+    ViewData["Title"] = "Import Journal Entries";
 }
 
 <div class="container-fluid py-4 px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-body-emphasis mb-1">
-                <i class="bi bi-tools me-2 text-warning"></i> Tools & Utilities
-            </h2>
-            <p class="text-secondary mb-0">System operations, batch data processing, and period-end maintenance.</p>
+    <!-- Header Navigation -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Tools & Utilities</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Import Journal</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-file-earmark-spreadsheet-fill me-2 text-success"></i> Import Journal Entries (.xlsx)
+                </h2>
+                <p class="text-secondary mb-0">Upload batch journal entries from Excel with instant preview.</p>
+            </div>
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to Tools
+            </a>
         </div>
     </div>
 
@@ -28,119 +40,50 @@
         </div>
     }
 
-    <div class="row g-4">
-        
-        <!-- ========================================== -->
-        <!-- 1. IMPORT JOURNAL ENTRIES (.XLSX)          -->
-        <!-- ========================================== -->
-        <div class="col-12 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
-                <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
-                    <h5 class="fw-bold"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i> Import Journal Entries</h5>
+    <!-- UPLOAD CARD -->
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center mb-3">
+                <div class="col-12 col-md-8">
+                    <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i> Select Excel File</h5>
+                    <p class="text-secondary small mb-0">Select an <code>.xlsx</code> file, then click <strong>"Preview"</strong> to inspect entries inside the pop-up modal.</p>
                 </div>
-                <div class="card-body px-4">
-                    <p class="text-secondary small mb-4">
-                        Upload batch journal entries using the standard <code>.xlsx</code> format. Strict validation will be applied to verify debit/credit balance before committing records to the ledger.
-                    </p>
+                <div class="col-12 col-md-4 text-md-end mt-2 mt-md-0">
+                    <a asp-action="DownloadJournalTemplate" class="btn btn-outline-success btn-sm rounded-3">
+                        <i class="bi bi-download me-1"></i> Download Template (.xlsx)
+                    </a>
+                </div>
+            </div>
 
-                    <!-- Template Format Info -->
-                    <div class="bg-body rounded-3 p-3 mb-4 border">
-                        <span class="d-block fw-semibold small mb-2">Required Columns (Row 1 Header):</span>
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            <span class="badge bg-secondary">Date</span>
-                            <span class="badge bg-secondary">Account Name</span>
-                            <span class="badge bg-secondary">Description</span>
-                            <span class="badge bg-secondary">Ref</span>
-                            <span class="badge bg-secondary">Debit</span>
-                            <span class="badge bg-secondary">Credit</span>
-                        </div>
-                        <ul class="text-secondary small mb-3 ps-3">
-                            <li>2 Worksheets: <strong>GJ</strong> (General Journal) and <strong>AJ</strong> (Adjusting Journal).</li>
-                            <li>Rows sharing the same <strong>Date</strong> will be grouped as a single entry.</li>
-                            <li><strong>Ref</strong> corresponds to Chart of Accounts (COA) numbers. Missing accounts will be created automatically.</li>
-                        </ul>
-                        <a asp-action="DownloadJournalTemplate" class="btn btn-sm btn-outline-success rounded-3">
-                            <i class="bi bi-download me-1"></i> Download Template (.xlsx)
-                        </a>
+            <form id="previewForm" asp-action="PreviewJournal" method="post" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-12 col-md-9">
+                        <input class="form-control form-control-lg rounded-3" 
+                               type="file" 
+                               id="excelFileInput" 
+                               name="excelFile" 
+                               accept=".xlsx" 
+                               required />
                     </div>
-
-                    <!-- Upload & Preview Form -->
-                    <form id="indexPreviewForm" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="indexExcelFileInput" class="form-label fw-semibold small">Select Excel File</label>
-                            <input class="form-control" type="file" id="indexExcelFileInput" name="excelFile" accept=".xlsx" required>
-                        </div>
-                        <button type="submit" id="btnIndexPreview" class="btn btn-primary px-4 fw-semibold shadow-sm w-100 rounded-3">
-                            <span id="btnIndexSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
-                            <i class="bi bi-eye me-2" id="btnIndexIcon"></i> Preview Entries
+                    <div class="col-12 col-md-3">
+                        <button type="submit" id="btnPreview" class="btn btn-primary btn-lg w-100 fw-semibold rounded-3 shadow-sm">
+                            <span id="btnSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status"></span>
+                            <i class="bi bi-eye me-2" id="btnIcon"></i> Preview
                         </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- 2. END OF PERIOD / MONTH-END CLOSE         -->
-        <!-- ========================================== -->
-        <div class="col-12 col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
-                <div class="card-body p-4 d-flex flex-column">
-                    <div class="mb-3">
-                        <i class="bi bi-calendar-check text-warning" style="font-size: 2.5rem;"></i>
-                    </div>
-                    <h5 class="fw-bold">Month-End Close</h5>
-                    <p class="text-secondary small">
-                        Lock transactions for the selected accounting period and calculate Retained Earnings to ensure historical ledger integrity.
-                    </p>
-                    
-                    <form asp-action="MonthEndClose" method="post" class="mt-auto">
-                        <div class="mb-3">
-                            <input type="month" class="form-control form-control-sm rounded-3" name="period" required />
-                        </div>
-                        <button type="submit" class="btn btn-outline-warning w-100 btn-sm fw-semibold rounded-3" onclick="return confirm('Are you sure you want to close this period? No further edits will be allowed.')">
-                            <i class="bi bi-lock me-1"></i> Execute Closing
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- 3. SYSTEM MAINTENANCE & UTILITIES          -->
-        <!-- ========================================== -->
-        <div class="col-12 col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
-                <div class="card-body p-4 d-flex flex-column">
-                    <div class="mb-3">
-                        <i class="bi bi-database-gear text-info" style="font-size: 2.5rem;"></i>
-                    </div>
-                    <h5 class="fw-bold">System Maintenance</h5>
-                    <p class="text-secondary small mb-4">
-                        Utilities to verify structural integrity and safeguard financial records across all ledgers.
-                    </p>
-
-                    <div class="d-grid gap-2 mt-auto">
-                        <a asp-action="RecalculateLedger" class="btn btn-outline-info btn-sm text-start rounded-3" onclick="return confirm('This will rebuild all running ledger balances. Continue?')">
-                            <i class="bi bi-arrow-repeat me-2"></i> Recalculate Ledger Balances
-                        </a>
-                        <a asp-action="BackupDatabase" class="btn btn-outline-secondary btn-sm text-start rounded-3">
-                            <i class="bi bi-file-earmark-excel me-2"></i> Export All Data (.xlsx)
-                        </a>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
-
     </div>
 </div>
 
-<!-- INSTANT PREVIEW MODAL -->
-<div class="modal fade" id="indexPreviewModal" tabindex="-1" aria-labelledby="indexPreviewModalLabel" aria-hidden="true">
+<!-- PREVIEW MODAL -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-bottom px-4 py-3">
                 <div>
-                    <h5 class="modal-title fw-bold mb-0" id="indexPreviewModalLabel">
+                    <h5 class="modal-title fw-bold mb-0" id="previewModalLabel">
                         <i class="bi bi-file-earmark-check me-2 text-success"></i> Journal Entries Preview
                     </h5>
                     <small class="text-secondary" id="modalSubHeader">Review entries below before importing.</small>
@@ -149,7 +92,7 @@
             </div>
             
             <div class="modal-body p-4" id="modalBodyContainer">
-                <!-- Parsed transactions table loaded dynamically via JS -->
+                <!-- Data transaksi di-render via JavaScript -->
             </div>
 
             <div class="modal-footer border-top px-4 py-3">
@@ -166,18 +109,18 @@
 
 @section Scripts {
     <script>
-        document.getElementById('indexPreviewForm').addEventListener('submit', async function (e) {
+        document.getElementById('previewForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            const fileInput = document.getElementById('indexExcelFileInput');
+            const fileInput = document.getElementById('excelFileInput');
             if (!fileInput.files || fileInput.files.length === 0) {
                 alert('Please select an Excel file first.');
                 return;
             }
 
-            const btnPreview = document.getElementById('btnIndexPreview');
-            const btnSpinner = document.getElementById('btnIndexSpinner');
-            const btnIcon = document.getElementById('btnIndexIcon');
+            const btnPreview = document.getElementById('btnPreview');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const btnIcon = document.getElementById('btnIcon');
 
             btnPreview.disabled = true;
             btnSpinner.classList.remove('d-none');
@@ -193,7 +136,7 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Server status ${response.status}`);
+                    throw new Error(`Server returned status ${response.status}`);
                 }
 
                 const result = await response.json();
@@ -205,11 +148,11 @@
 
                 renderModalBody(result.data);
 
-                const modal = new bootstrap.Modal(document.getElementById('indexPreviewModal'));
+                const modal = new bootstrap.Modal(document.getElementById('previewModal'));
                 modal.show();
 
             } catch (err) {
-                alert('Failed to process file: ' + err.message);
+                alert('An error occurred while parsing the file: ' + err.message);
                 console.error(err);
             } finally {
                 btnPreview.disabled = false;
@@ -220,7 +163,7 @@
 
         function renderModalBody(data) {
             const container = document.getElementById('modalBodyContainer');
-            document.getElementById('modalSubHeader').innerText = `Found ${data.totalTransactionsRead} transactions with ${data.totalLinesRead} line entries.`;
+            document.getElementById('modalSubHeader').innerText = `Found ${data.totalTransactionsRead} transactions with ${data.totalLinesRead} row entries.`;
 
             let html = '';
 

@@ -107,7 +107,7 @@ namespace AumoFinance.Controllers
             }
 
             var amount = entry.Amount ?? 0;
-            var referenceNumber = await MobileApiController.GenerateReferenceNumberAsync(_context, "General");
+            var referenceNumber = await GenerateReferenceNumberAsync("General");
 
             var journalEntry = new JournalEntry
             {
@@ -202,7 +202,7 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(ClassifyManual), new { id });
             }
 
-            var referenceNumber = await MobileApiController.GenerateReferenceNumberAsync(_context, "General");
+            var referenceNumber = await GenerateReferenceNumberAsync("General");
 
             var journalEntry = new JournalEntry
             {
@@ -279,6 +279,32 @@ namespace AumoFinance.Controllers
                 .Where(a => a.IsActive && types.Contains(a.Type))
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
+        }
+
+        // Sama persis dengan JournalEntryController.GenerateReferenceNumberAsync,
+        // supaya penomoran referensi konsisten antara input via web dan via
+        // mobile yang sudah diverifikasi.
+        private async Task<string> GenerateReferenceNumberAsync(string journalType)
+        {
+            var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
+
+            var lastNumber = await _context.JournalEntries
+                .Where(e => e.ReferenceNumber.StartsWith(prefix + "-"))
+                .OrderByDescending(e => e.Id)
+                .Select(e => e.ReferenceNumber)
+                .FirstOrDefaultAsync();
+
+            var nextSeq = 1;
+            if (lastNumber != null)
+            {
+                var parts = lastNumber.Split('-');
+                if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+                {
+                    nextSeq = lastSeq + 1;
+                }
+            }
+
+            return $"{prefix}-{nextSeq:D6}";
         }
     }
 }

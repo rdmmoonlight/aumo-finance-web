@@ -1,0 +1,65 @@
+name: Deploy ASP.NET Core MVC (Production)
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+    # 1. Checkout repository lengkap dengan riwayat commit
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # 2. Hitung Versi 3 Tingkat Otomatis dari Volume Commit
+    - name: Generate 3-Tier Version Number
+      id: get_version
+      run: |
+        # Ambil total jumlah commit
+        COMMITS=$(git rev-list --count HEAD)
+        
+        # Kalkulasi Rumus 3 Tingkat
+        MAJOR=$(( COMMITS / 1000 + 1 ))
+        MINOR=$(( (COMMITS / 100) % 10 ))
+        PATCH=$(( COMMITS % 100 ))
+        
+        VERSION_NUMBER="$MAJOR.$MINOR.$PATCH"
+        TAG_NAME="v$VERSION_NUMBER"
+        
+        echo "NEW_VERSION=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+        echo "NEW_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
+        echo "Total Commit: $COMMITS -> Versi Otomatis: $TAG_NAME"
+
+    # 3. Setup .NET SDK
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x' # Sesuaikan dengan versi .NET Anda
+
+    # 4. Publish MVC App (Inject versi 3 tingkat ke DLL)
+    - name: Publish MVC Web App
+      run: >
+        dotnet publish
+        -c Release
+        -o ./publish
+        -p:Version=${{ steps.get_version.outputs.NEW_VERSION }}
+        -p:AssemblyVersion=${{ steps.get_version.outputs.NEW_VERSION }}
+        -p:FileVersion=${{ steps.get_version.outputs.NEW_VERSION }}
+
+    # 5. Buat Tag & GitHub Release Otomatis
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.get_version.outputs.NEW_TAG }}
+        name: Release ${{ steps.get_version.outputs.NEW_TAG }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
