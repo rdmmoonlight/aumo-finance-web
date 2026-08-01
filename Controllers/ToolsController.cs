@@ -28,14 +28,14 @@ namespace AumoFinance.Controllers
         }
 
         // ==========================================
-        // 1. STAGE 1: PREVIEW EXCEL (RETURN JSON FOR MODAL)
+        // 1. PREVIEW DATA EXCEL (AJAX POST)
         // ==========================================
         [HttpPost]
         public async Task<IActionResult> PreviewJournal(IFormFile excelFile)
         {
             if (excelFile == null || excelFile.Length == 0)
             {
-                return Json(new { success = false, message = "Please select a valid non-empty Excel file." });
+                return Json(new { success = false, message = "Please select a valid Excel file." });
             }
 
             var parseResult = await ParseJournalExcelAsync(excelFile);
@@ -45,28 +45,28 @@ namespace AumoFinance.Controllers
                 return Json(new { success = false, message = parseResult.Message });
             }
 
-            // Simpan sementara data parsed di TempData/Session untuk proses simpan nanti
+            // Simpan data parsed ke TempData
             TempData["ParsedImportData"] = JsonSerializer.Serialize(parseResult);
 
             return Json(new { success = true, data = parseResult });
         }
 
         // ==========================================
-        // 2. STAGE 2: CONFIRM & SAVE TO DATABASE
+        // 2. IMPORT / SAVE DATA TO DATABASE
         // ==========================================
         [HttpPost]
         public async Task<IActionResult> ConfirmImport()
         {
             if (TempData["ParsedImportData"] is not string jsonStr)
             {
-                TempData["ErrorMessage"] = "Import session expired or data missing. Please re-upload the file.";
+                TempData["ErrorMessage"] = "Import session expired. Please preview the file again.";
                 return RedirectToAction(nameof(ImportJournal));
             }
 
             var parseResult = JsonSerializer.Deserialize<JournalImportResultDto>(jsonStr);
             if (parseResult == null || parseResult.Transactions.Count == 0)
             {
-                TempData["ErrorMessage"] = "No transactions found to import.";
+                TempData["ErrorMessage"] = "No valid transactions to import.";
                 return RedirectToAction(nameof(ImportJournal));
             }
 
@@ -124,17 +124,17 @@ namespace AumoFinance.Controllers
 
                 await _context.SaveChangesAsync();
 
-                TempData["SuccessMessage"] = $"Import completed! Saved {transactionsImported} transactions and created {accountsCreated} new COA accounts.";
+                TempData["SuccessMessage"] = $"Successfully imported {transactionsImported} journal entries with {accountsCreated} new COA accounts created.";
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Failed to save entries to database: {ex.Message}";
+                TempData["ErrorMessage"] = $"Failed to save entries: {ex.Message}";
             }
 
             return RedirectToAction(nameof(ImportJournal));
         }
 
-        // Private Excel Parser Method
+        // Private Excel Parser
         private async Task<JournalImportResultDto> ParseJournalExcelAsync(IFormFile excelFile)
         {
             var result = new JournalImportResultDto();
@@ -177,7 +177,6 @@ namespace AumoFinance.Controllers
                         if (dateCell.IsEmpty() && accountCell.IsEmpty() && refCell.IsEmpty())
                             continue;
 
-                        // Transaction Date Grouping
                         if (!dateCell.IsEmpty())
                         {
                             if (dateCell.TryGetValue(out DateTime parsedDate))
@@ -196,24 +195,13 @@ namespace AumoFinance.Controllers
                             }
                         }
 
-                        if (currentTx == null)
-                        {
-                            result.Warnings.Add($"{sheetName} Row {r}: Row skipped because it is not grouped under an initial transaction date.");
-                            continue;
-                        }
+                        if (currentTx == null) continue;
 
-                        // Handle Nullable Debit / Credit
                         decimal? debitValue = null;
-                        if (!debitCell.IsEmpty() && debitCell.TryGetValue(out decimal dVal))
-                        {
-                            debitValue = dVal;
-                        }
+                        if (!debitCell.IsEmpty() && debitCell.TryGetValue(out decimal dVal)) debitValue = dVal;
 
                         decimal? creditValue = null;
-                        if (!creditCell.IsEmpty() && creditCell.TryGetValue(out decimal cVal))
-                        {
-                            creditValue = cVal;
-                        }
+                        if (!creditCell.IsEmpty() && creditCell.TryGetValue(out decimal cVal)) creditValue = cVal;
 
                         refCell.TryGetValue(out int refNum);
 
@@ -244,7 +232,6 @@ namespace AumoFinance.Controllers
             return result;
         }
 
-        // Download Template
         [HttpGet]
         public IActionResult DownloadJournalTemplate()
         {
