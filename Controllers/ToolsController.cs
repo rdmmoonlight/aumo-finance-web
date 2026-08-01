@@ -28,30 +28,27 @@ namespace AumoFinance.Controllers
         }
 
         // ==========================================
-        // 1. STAGE 1: PREVIEW EXCEL DATA
+        // 1. STAGE 1: PREVIEW EXCEL (RETURN JSON FOR MODAL)
         // ==========================================
         [HttpPost]
         public async Task<IActionResult> PreviewJournal(IFormFile excelFile)
         {
             if (excelFile == null || excelFile.Length == 0)
             {
-                TempData["ErrorMessage"] = "Please select a valid non-empty Excel file.";
-                return RedirectToAction(nameof(ImportJournal));
+                return Json(new { success = false, message = "Please select a valid non-empty Excel file." });
             }
 
             var parseResult = await ParseJournalExcelAsync(excelFile);
 
             if (!parseResult.IsSuccess)
             {
-                TempData["ErrorMessage"] = parseResult.Message;
-                return RedirectToAction(nameof(ImportJournal));
+                return Json(new { success = false, message = parseResult.Message });
             }
 
-            // Save JSON preview state into TempData
+            // Simpan sementara data parsed di TempData/Session untuk proses simpan nanti
             TempData["ParsedImportData"] = JsonSerializer.Serialize(parseResult);
-            TempData["SuccessMessage"] = $"Preview generated successfully. Please review the {parseResult.TotalTransactionsRead} transactions below.";
 
-            return View("ImportJournal", parseResult);
+            return Json(new { success = true, data = parseResult });
         }
 
         // ==========================================
@@ -131,7 +128,7 @@ namespace AumoFinance.Controllers
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = $"Failed to save entries to the database: {ex.Message}";
+                TempData["ErrorMessage"] = $"Failed to save entries to database: {ex.Message}";
             }
 
             return RedirectToAction(nameof(ImportJournal));
@@ -247,93 +244,82 @@ namespace AumoFinance.Controllers
             return result;
         }
 
-[HttpGet]
-public IActionResult DownloadJournalTemplate()
-{
-    using var workbook = new XLWorkbook();
-
-    // 1. Sheet GJ (General Journal)
-    BuildJournalSheetTemplate(
-        workbook,
-        sheetName: "GJ",
-        rows: new[]
+        // Download Template
+        [HttpGet]
+        public IActionResult DownloadJournalTemplate()
         {
-            (Account: "Cash on Hand", Desc: "Initial Owner Equity Contribution", Ref: 101, Debit: (decimal?)50000000m, Credit: (decimal?)null),
-            (Account: "Owner's Equity", Desc: "Initial Owner Equity Contribution", Ref: 301, Debit: (decimal?)null, Credit: (decimal?)50000000m),
-            (Account: "Prepaid Rent", Desc: "1-Year Office Rent Payment", Ref: 103, Debit: (decimal?)12000000m, Credit: (decimal?)null),
-            (Account: "Cash on Hand", Desc: "1-Year Office Rent Payment", Ref: 101, Debit: (decimal?)null, Credit: (decimal?)12000000m),
-            (Account: "Office Equipment", Desc: "Computer & Printer Purchase", Ref: 104, Debit: (decimal?)15000000m, Credit: (decimal?)null),
-            (Account: "Cash on Hand", Desc: "Computer & Printer Purchase (DP)", Ref: 101, Debit: (decimal?)null, Credit: (decimal?)5000000m),
-            (Account: "Accounts Payable", Desc: "Computer & Printer Purchase (Remaining)", Ref: 201, Debit: (decimal?)null, Credit: (decimal?)10000000m),
-        });
+            using var workbook = new XLWorkbook();
 
-    // 2. Sheet AJ (Adjusting Journal)
-    BuildJournalSheetTemplate(
-        workbook,
-        sheetName: "AJ",
-        rows: new[]
-        {
-            (Account: "Rent Expense", Desc: "Monthly Rent Adjustment - January", Ref: 502, Debit: (decimal?)1000000m, Credit: (decimal?)null),
-            (Account: "Prepaid Rent", Desc: "Monthly Rent Adjustment - January", Ref: 103, Debit: (decimal?)null, Credit: (decimal?)1000000m),
-        });
+            BuildJournalSheetTemplate(
+                workbook,
+                sheetName: "GJ",
+                rows: new[]
+                {
+                    (Account: "Cash on Hand", Desc: "Initial Owner Equity Contribution", Ref: 101, Debit: (decimal?)50000000m, Credit: (decimal?)null),
+                    (Account: "Owner's Equity", Desc: "Initial Owner Equity Contribution", Ref: 301, Debit: (decimal?)null, Credit: (decimal?)50000000m),
+                    (Account: "Prepaid Rent", Desc: "1-Year Office Rent Payment", Ref: 103, Debit: (decimal?)12000000m, Credit: (decimal?)null),
+                    (Account: "Cash on Hand", Desc: "1-Year Office Rent Payment", Ref: 101, Debit: (decimal?)null, Credit: (decimal?)12000000m),
+                });
 
-    using var stream = new MemoryStream();
-    workbook.SaveAs(stream);
-    var content = stream.ToArray();
+            BuildJournalSheetTemplate(
+                workbook,
+                sheetName: "AJ",
+                rows: new[]
+                {
+                    (Account: "Rent Expense", Desc: "Monthly Rent Adjustment - January", Ref: 502, Debit: (decimal?)1000000m, Credit: (decimal?)null),
+                    (Account: "Prepaid Rent", Desc: "Monthly Rent Adjustment - January", Ref: 103, Debit: (decimal?)null, Credit: (decimal?)1000000m),
+                });
 
-    return File(
-        content,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "JournalImportTemplate_EN.xlsx");
-}
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
 
-// Private Helper Method untuk Membangun Sheet Template di Memory
-private static void BuildJournalSheetTemplate(
-    XLWorkbook workbook,
-    string sheetName,
-    (string Account, string Desc, int Ref, decimal? Debit, decimal? Credit)[] rows)
-{
-    string[] headers = { "Date", "Account Name", "Description", "Ref", "Debit", "Credit" };
-    var sheet = workbook.Worksheets.Add(sheetName);
-
-    // Style Header Row
-    for (int i = 0; i < headers.Length; i++)
-    {
-        var cell = sheet.Cell(1, i + 1);
-        cell.Value = headers[i];
-        cell.Style.Font.Bold = true;
-        cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#212529");
-        cell.Style.Font.FontColor = XLColor.White;
-        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-    }
-
-    var exampleDate = DateTime.Today;
-    int row = 2;
-    bool isFirstRowOfTransaction = true;
-
-    foreach (var r in rows)
-    {
-        // Tanggal HANYA ditulis di baris pertama transaksi
-        if (isFirstRowOfTransaction)
-        {
-            sheet.Cell(row, 1).Value = exampleDate;
-            isFirstRowOfTransaction = false;
+            return File(
+                stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "JournalImportTemplate_EN.xlsx");
         }
 
-        sheet.Cell(row, 2).Value = r.Account;
-        sheet.Cell(row, 3).Value = r.Desc;
-        sheet.Cell(row, 4).Value = r.Ref;
+        private static void BuildJournalSheetTemplate(
+            XLWorkbook workbook,
+            string sheetName,
+            (string Account, string Desc, int Ref, decimal? Debit, decimal? Credit)[] rows)
+        {
+            string[] headers = { "Date", "Account Name", "Description", "Ref", "Debit", "Credit" };
+            var sheet = workbook.Worksheets.Add(sheetName);
 
-        // Debit / Credit Value Handling
-        if (r.Debit.HasValue) sheet.Cell(row, 5).Value = r.Debit.Value;
-        if (r.Credit.HasValue) sheet.Cell(row, 6).Value = r.Credit.Value;
+            for (int i = 0; i < headers.Length; i++)
+            {
+                var cell = sheet.Cell(1, i + 1);
+                cell.Value = headers[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#212529");
+                cell.Style.Font.FontColor = XLColor.White;
+            }
 
-        row++;
-    }
+            var exampleDate = DateTime.Today;
+            int row = 2;
+            bool isFirstRowOfTransaction = true;
 
-    // Format Kolom Tanggal dan Lebar Kolom Otomatis
-    sheet.Range(2, 1, row - 1, 1).Style.DateFormat.Format = "yyyy-mm-dd";
-    sheet.Columns().AdjustToContents();
-}
+            foreach (var r in rows)
+            {
+                if (isFirstRowOfTransaction)
+                {
+                    sheet.Cell(row, 1).Value = exampleDate;
+                    isFirstRowOfTransaction = false;
+                }
+
+                sheet.Cell(row, 2).Value = r.Account;
+                sheet.Cell(row, 3).Value = r.Desc;
+                sheet.Cell(row, 4).Value = r.Ref;
+
+                if (r.Debit.HasValue) sheet.Cell(row, 5).Value = r.Debit.Value;
+                if (r.Credit.HasValue) sheet.Cell(row, 6).Value = r.Credit.Value;
+
+                row++;
+            }
+
+            sheet.Range(2, 1, row - 1, 1).Style.DateFormat.Format = "yyyy-mm-dd";
+            sheet.Columns().AdjustToContents();
+        }
     }
 }
