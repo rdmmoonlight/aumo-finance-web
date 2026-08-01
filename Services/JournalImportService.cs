@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using ExcelDataReader; // Install via NuGet: ExcelDataReader & ExcelDataReader.DataSet
-using YourProject.Models.DTOs;
+using ClosedXML.Excel;
+using AumoFinance.Models.DTOs;
 
-namespace YourProject.Services
+namespace AumoFinance.Services
 {
     public class JournalImportService : IJournalImportService
     {
@@ -17,12 +16,9 @@ namespace YourProject.Services
             if (file == null || file.Length == 0)
             {
                 result.IsSuccess = false;
-                result.Message = "File Excel kosong atau tidak terdeteksi.";
+                result.Message = "File Excel tidak ditemukan atau kosong.";
                 return result;
             }
-
-            // Register provider encoding untuk support file .xlsx
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             try
             {
@@ -30,143 +26,99 @@ namespace YourProject.Services
                 await file.CopyToAsync(stream);
                 stream.Position = 0;
 
-                using var reader = ExcelReaderFactory.CreateReader(stream);
-                var dataSet = reader.AsDataSet();
+                using var workbook = new XLWorkbook(stream);
 
-                // Iterasi setiap Sheet (Mendukung GJ dan AJ)
-                foreach (System.Data.DataTable table in dataSet.Tables)
+                var sheetMap = new (string SheetName, string JournalType)[]
                 {
-                    string sheetName = table.TableName.Trim().ToUpper();
-                    string journalType = sheetName.Contains("AJ") ? "AJ" : "GJ";
+                    ("GJ", "General"),
+                    ("AJ", "Adjusting")
+                };
 
-                    JournalTransactionImportDto? currentTransaction = null;
-                    DateTime? lastValidDate = null;
+                foreach (var (sheetName, journalType) in sheetMap)
+                {
+                    if (!workbook.Worksheets.TryGetWorksheet(sheetName, out var sheet))
+                        continue;
 
-                    // Baris 1-3 dianggap Title/Header Info. Header tabel di Baris index 3 (Row 4 di Excel)
-                    int startRow = 4; 
+                    var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
+                    JournalTransactionImportDto? currentTx = null;
 
-                    for (int rowIdx = startRow; rowIdx < table.Rows.Count; rowIdx++)
+                    for (int r = 2; r <= lastRow; r++)
                     {
-                        var row = table.Rows[rowIdx];
+                        var dateCell = sheet.Cell(r, 1);
+                        var accountCell = sheet.Cell(r, 2);
+                        var descCell = sheet.Cell(r, 3);
+                        var refCell = sheet.Cell(r, 4);
+                        var debitCell = sheet.Cell(r, 5);
+                        var creditCell = sheet.Cell(r, 6);
 
-                        // Ambil mentah per kolom
-                        string? dateRaw = GetValueOrNull(row[0]);
-                        string? accountName = GetValueOrNull(row[1]);
-                        string? description = GetValueOrNull(row[2]);
-                        string? refCode = GetValueOrNull(row[3]);
-                        decimal? debit = ParseDecimalOrNull(row[4]);
-                        decimal? credit = ParseDecimalOrNull(row[5]);
+                        if (dateCell.IsEmpty() && accountCell.IsEmpty() && refCell.IsEmpty())
+                            continue;
 
-                        // Jika seluruh baris kosong, abaikan / skip
-                        if (dateRaw == null && accountName == null && description == null && 
-                            refCode == null && debit == null && credit == null)
+                        // Grouping Tanggal
+                        if (!dateCell.IsEmpty())
                         {
+                            if (dateCell.TryGetValue(out DateTime parsedDate))
+                            {
+                                currentTx = new JournalTransactionImportDto
+                                {
+                                    Date = parsedDate.Date,
+                                    JournalType = journalType
+                                };
+                                result.Transactions.Add(currentTx);
+                            }
+                            else
+                            {
+                                result.Warnings.Add($"{sheetName} Baris {r}: Format tanggal tidak valid.");
+                                continue;
+                            }
+                        }
+
+                        if (currentTx == null)
+                        {
+                            result.Warnings.Add($"{sheetName} Baris {r}: Baris diabaikan karena tidak ada tanggal awal transaksi.");
                             continue;
                         }
 
-                        // Parse Tanggal jika ada di baris ini
-                        DateTime? rowDate = ParseDateOrNull(dateRaw);
-
-                        // LOGIKA PERPINDAHAN TRANSAKSI (Grup berdasarkan Tanggal Pertama)
-                        if (rowDate.HasValue)
+                        // Nullable Debit / Credit
+                        decimal? debitValue = null;
+                        if (!debitCell.IsEmpty() && debitCell.TryGetValue(out decimal dVal))
                         {
-                            // Tanggal baru ditemukan -> Buat Transaksi Baru
-                            lastValidDate = rowDate.Value;
-                            currentTransaction = new JournalTransactionImportDto
-                            {
-                                Date = lastValidDate.Value,
-                                JournalType = journalType
-                            };
-                            result.Transactions.Add(currentTransaction);
-                        }
-                        else if (currentTransaction == null && lastValidDate.HasValue)
-                        {
-                            // Baris lanjutan tanpa tanggal -> Sambung ke transaksi aktif sebelumnya
-                            currentTransaction = new JournalTransactionImportDto
-                            {
-                                Date = lastValidDate.Value,
-                                JournalType = journalType
-                            };
-                            result.Transactions.Add(currentTransaction);
+                            debitValue = dVal;
                         }
 
-                        // Jika tetap tidak ada tanggal sama sekali di awal baris
-                        if (currentTransaction == null)
+                        decimal? creditValue = null;
+                        if (!creditCell.IsEmpty() && creditCell.TryGetValue(out decimal cVal))
                         {
-                            result.Warnings.Add($"Baris ke-{rowIdx + 1} di sheet '{table.TableName}' diabaikan karena tidak memiliki tanggal transaksi awal.");
-                            continue;
+                            creditValue = cVal;
                         }
 
-                        // Tambahkan detail baris (Line Debit / Kredit)
-                        var line = new JournalLineImportDto
-                        {
-                            RowIndex = rowIdx + 1,
-                            AccountName = accountName,
-                            Description = description,
-                            Ref = refCode,
-                            Debit = debit,   // Akan null jika kolom kosong di Excel
-                            Credit = credit  // Akan null jika kolom kosong di Excel
-                        };
+                        refCell.TryGetValue(out int refNum);
 
-                        currentTransaction.Lines.Add(line);
+                        currentTx.Lines.Add(new JournalLineImportDto
+                        {
+                            RowIndex = r,
+                            AccountName = accountCell.GetString().Trim(),
+                            Description = descCell.GetString().Trim(),
+                            RefNumber = refNum,
+                            Debit = debitValue,
+                            Credit = creditValue
+                        });
+
                         result.TotalLinesRead++;
                     }
                 }
 
                 result.TotalTransactionsRead = result.Transactions.Count;
                 result.IsSuccess = true;
-                result.Message = $"Berhasil membaca {result.TotalTransactionsRead} transaksi ({result.TotalLinesRead} baris detail).";
+                result.Message = $"Berhasil membaca {result.TotalTransactionsRead} transaksi.";
             }
             catch (Exception ex)
             {
                 result.IsSuccess = false;
-                result.Message = $"Gagal memproses file Excel: {ex.Message}";
+                result.Message = $"Gagal membaca file Excel: {ex.Message}";
             }
 
             return result;
         }
-
-        #region Helper Parsing Nilai Nullable
-
-        private string? GetValueOrNull(object obj)
-        {
-            if (obj == null || obj == DBNull.Value) return null;
-            string str = obj.ToString()?.Trim() ?? string.Empty;
-            return string.IsNullOrWhiteSpace(str) ? null : str;
-        }
-
-        private decimal? ParseDecimalOrNull(object obj)
-        {
-            if (obj == null || obj == DBNull.Value) return null;
-            
-            string str = obj.ToString()?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(str)) return null;
-
-            if (decimal.TryParse(str, out decimal value))
-            {
-                return value;
-            }
-            return null;
-        }
-
-        private DateTime? ParseDateOrNull(string? dateStr)
-        {
-            if (string.IsNullOrWhiteSpace(dateStr)) return null;
-
-            if (DateTime.TryParse(dateStr, out DateTime parsedDate))
-            {
-                return parsedDate;
-            }
-            
-            // Handle jika angka serial date Excel
-            if (double.TryParse(dateStr, out double oaDate))
-            {
-                return DateTime.FromOADate(oaDate);
-            }
-
-            return null;
-        }
-
-        #endregion
     }
 }
