@@ -16,8 +16,9 @@ namespace AumoFinance.Models.DTOs
         public string AccountName { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int RefNumber { get; set; }
-        public decimal? Debit { get; set; }
-        public decimal? Credit { get; set; }
+        public decimal? Debit { get; set; }  // Null if blank in Excel
+        public decimal? Credit { get; set; } // Null if blank in Excel
+        public bool IsNewAccount { get; set; } // Marked true if Ref doesn't exist in COA
     }
 
     public class JournalImportResultDto
