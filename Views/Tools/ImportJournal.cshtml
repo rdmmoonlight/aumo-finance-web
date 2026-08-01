@@ -1,0 +1,190 @@
+@model AumoFinance.Models.DTOs.JournalImportResultDto
+
+@{
+    ViewData["Title"] = "Import Journal Entries";
+}
+
+<div class="container-fluid py-4 px-4">
+    <!-- Header Navigation -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none">Tools & Utilities</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Import Journal</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-file-earmark-spreadsheet-fill me-2 text-success"></i> Import Journal Entries (.xlsx)
+                </h2>
+                <p class="text-secondary mb-0">Upload, preview, and review batch journal entries before saving to the database.</p>
+            </div>
+            <a asp-action="Index" class="btn btn-outline-secondary rounded-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to Tools
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- STEP 1: FILE UPLOAD SECTION -->
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-12 col-md-8">
+                    <h5 class="fw-bold mb-2"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i> 1. Select Excel File</h5>
+                    <p class="text-secondary small mb-3 mb-md-0">
+                        Upload your <code>.xlsx</code> workbook containing <strong>GJ</strong> (General Journal) or <strong>AJ</strong> (Adjusting Journal) sheets.
+                    </p>
+                </div>
+                <div class="col-12 col-md-4 text-md-end">
+                    <a asp-action="DownloadJournalTemplate" class="btn btn-outline-success btn-sm rounded-3">
+                        <i class="bi bi-download me-1"></i> Download Template (.xlsx)
+                    </a>
+                </div>
+            </div>
+
+            <hr class="my-3 text-border" />
+
+            <form asp-action="PreviewJournal" method="post" enctype="multipart/form-data" class="row g-3 align-items-center">
+                <div class="col-12 col-md-9">
+                    <input class="form-control form-control-lg rounded-3" type="file" name="excelFile" accept=".xlsx" required />
+                </div>
+                <div class="col-12 col-md-3">
+                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-semibold rounded-3 shadow-sm">
+                        <i class="bi bi-search me-2"></i> Preview Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- STEP 2: PREVIEW & VALIDATION SECTION (Only displayed if data was parsed) -->
+    @if (Model != null && Model.IsSuccess)
+    {
+        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+            <div class="card-header bg-transparent border-bottom p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-1"><i class="bi bi-eye me-2 text-info"></i> 2. Review Parsed Journal Entries</h5>
+                    <small class="text-secondary">Found <strong>@Model.TotalTransactionsRead</strong> transactions with <strong>@Model.TotalLinesRead</strong> total line entries.</small>
+                </div>
+
+                <!-- FORM COMMIT / SAVE -->
+                <form asp-action="ConfirmImport" method="post">
+                    <!-- Session / TempData token will pass data, or submit form -->
+                    <button type="submit" class="btn btn-success btn-lg px-4 fw-semibold rounded-3 shadow-sm">
+                        <i class="bi bi-check2-all me-2"></i> Confirm & Save Entries
+                    </button>
+                </form>
+            </div>
+
+            <div class="card-body p-4">
+
+                <!-- Warnings Info if Any -->
+                @if (Model.Warnings.Count > 0)
+                {
+                    <div class="alert alert-warning rounded-3 mb-4">
+                        <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle me-1"></i> Parser Warnings (@Model.Warnings.Count)</h6>
+                        <ul class="small mb-0 ps-3">
+                            @foreach (var warn in Model.Warnings)
+                            {
+                                <li>@warn</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <!-- Transactions Loop -->
+                @foreach (var tx in Model.Transactions)
+                {
+                    decimal totalDebit = tx.Lines.Sum(l => l.Debit ?? 0m);
+                    decimal totalCredit = tx.Lines.Sum(l => l.Credit ?? 0m);
+                    bool isBalanced = totalDebit == totalCredit;
+
+                    <div class="card border mb-3 rounded-3 shadow-sm">
+                        <div class="card-header bg-body d-flex justify-content-between align-items-center py-2 px-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="badge bg-primary fs-6">@tx.JournalType Journal</span>
+                                <strong class="text-body-emphasis"><i class="bi bi-calendar-event me-1"></i> @tx.Date.ToString("MMMM dd, yyyy")</strong>
+                            </div>
+                            <div>
+                                @if (isBalanced)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle me-1"></i> Balanced
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                        <i class="bi bi-exclamation-circle me-1"></i> Unbalanced (Allowed)
+                                    </span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0 align-middle small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;" class="text-center">#</th>
+                                        <th style="width: 100px;" class="text-center">Ref</th>
+                                        <th>Account Name</th>
+                                        <th>Description</th>
+                                        <th style="width: 150px;" class="text-end">Debit ($)</th>
+                                        <th style="width: 150px;" class="text-end">Credit ($)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var line in tx.Lines)
+                                    {
+                                        <tr>
+                                            <td class="text-center text-secondary">@line.RowIndex</td>
+                                            <td class="text-center fw-semibold">@line.RefNumber</td>
+                                            <td>
+                                                @line.AccountName
+                                                @if (line.IsNewAccount)
+                                                {
+                                                    <span class="badge bg-info-subtle text-info border border-info-subtle ms-1" title="COA Account will be automatically created">New COA</span>
+                                                }
+                                            </td>
+                                            <td class="text-secondary">@line.Description</td>
+                                            <td class="text-end fw-semibold text-success">
+                                                @(line.Debit.HasValue ? line.Debit.Value.ToString("N2") : "-")
+                                            </td>
+                                            <td class="text-end fw-semibold text-danger">
+                                                @(line.Credit.HasValue ? line.Credit.Value.ToString("N2") : "-")
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-group-divider fw-bold">
+                                    <tr>
+                                        <td colspan="4" class="text-end">Total Transaction Amount:</td>
+                                        <td class="text-end text-success">@totalDebit.ToString("N2")</td>
+                                        <td class="text-end text-danger">@totalCredit.ToString("N2")</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
