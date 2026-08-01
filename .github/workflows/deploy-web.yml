@@ -10,45 +10,56 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # Wajib untuk membuat Tag & Release di GitHub
+      contents: write
 
     steps:
-    # 1. Checkout repository (fetch-depth: 0 wajib agar riwayat commit terbaca untuk pemversian)
+    # 1. Checkout repository lengkap dengan riwayat commit
     - name: Checkout Code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    # 2. Kalkulasi Versi Otomatis Berdasarkan Commit Log
-    - name: Bump Version and Push Tag
-      id: tag_version
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        default_bump: patch
+    # 2. Hitung Versi 3 Tingkat Otomatis dari Volume Commit
+    - name: Generate 3-Tier Version Number
+      id: get_version
+      run: |
+        # Ambil total jumlah commit
+        COMMITS=$(git rev-list --count HEAD)
+        
+        # Kalkulasi Rumus 3 Tingkat
+        MAJOR=$(( COMMITS / 1000 + 1 ))
+        MINOR=$(( (COMMITS / 100) % 10 ))
+        PATCH=$(( COMMITS % 100 ))
+        
+        VERSION_NUMBER="$MAJOR.$MINOR.$PATCH"
+        TAG_NAME="v$VERSION_NUMBER"
+        
+        echo "NEW_VERSION=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+        echo "NEW_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
+        echo "Total Commit: $COMMITS -> Versi Otomatis: $TAG_NAME"
 
     # 3. Setup .NET SDK
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.x' # Sesuaikan dengan versi target .NET aplikasi Anda
+        dotnet-version: '10.0.x' # Sesuaikan dengan versi .NET Anda
 
-    # 4. Publish MVC App (Sambil inject versi ke DLL Assembly)
+    # 4. Publish MVC App (Inject versi 3 tingkat ke DLL)
     - name: Publish MVC Web App
       run: >
         dotnet publish
         -c Release
         -o ./publish
-        -p:Version=${{ steps.tag_version.outputs.new_version }}
-        -p:AssemblyVersion=${{ steps.tag_version.outputs.new_version }}
-        -p:FileVersion=${{ steps.tag_version.outputs.new_version }}
+        -p:Version=${{ steps.get_version.outputs.NEW_VERSION }}
+        -p:AssemblyVersion=${{ steps.get_version.outputs.NEW_VERSION }}
+        -p:FileVersion=${{ steps.get_version.outputs.NEW_VERSION }}
 
-    # 5. Buat GitHub Release Otomatis (Lengkap dengan Changelog)
+    # 5. Buat Tag & GitHub Release Otomatis
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        name: Release ${{ steps.tag_version.outputs.new_tag }}
-        body: ${{ steps.tag_version.outputs.changelog }}
+        tag_name: ${{ steps.get_version.outputs.NEW_TAG }}
+        name: Release ${{ steps.get_version.outputs.NEW_TAG }}
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
