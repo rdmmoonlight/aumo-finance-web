@@ -10,16 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # Izin membuat Tag & Release di GitHub
+      contents: write # Wajib untuk membuat Tag & Release di GitHub
 
     steps:
-    # 1. Checkout repository (Wajib fetch-depth: 0 untuk riwayat commit)
+    # 1. Checkout repository (fetch-depth: 0 wajib agar riwayat commit terbaca untuk pemversian)
     - name: Checkout Code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    # 2. Kalkulasi Versi Otomatis Berdasarkan Commit
+    # 2. Kalkulasi Versi Otomatis Berdasarkan Commit Log
     - name: Bump Version and Push Tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
@@ -27,27 +27,13 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         default_bump: patch
 
-    # 3. Setup .NET SDK (Sesuaikan versi .NET MVC Anda, misal 8.0/9.0)
+    # 3. Setup .NET SDK
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '10.0.x'
+        dotnet-version: '10.0.x' # Sesuaikan dengan versi target .NET aplikasi Anda
 
-    # 4. Inject Connection String ke appsettings.json / appsettings.Production.json
-    - name: Inject Production Config
-      shell: pwsh
-      env:
-        NEON_CONNECTION_STRING: ${{ secrets.NEON_CONNECTION_STRING }}
-      run: |
-        $file = "appsettings.json"
-        if (Test-Path $file) {
-          $content = Get-Content $file -Raw
-          $content = $content.Replace("__NEON_CONNECTION_STRING__", $env:NEON_CONNECTION_STRING)
-          Set-Content -Path $file -Value $content -NoNewline
-          Write-Host "Connection string berhasil di-inject ke appsettings."
-        }
-
-    # 5. Build & Publish App MVC (Inject Versi ke Assembly DLL)
+    # 4. Publish MVC App (Sambil inject versi ke DLL Assembly)
     - name: Publish MVC Web App
       run: >
         dotnet publish
@@ -57,15 +43,12 @@ jobs:
         -p:AssemblyVersion=${{ steps.tag_version.outputs.new_version }}
         -p:FileVersion=${{ steps.tag_version.outputs.new_version }}
 
-    # 6. Buat GitHub Release Otomatis (Lengkap dengan Changelog)
+    # 5. Buat GitHub Release Otomatis (Lengkap dengan Changelog)
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        name: Web MVC Release ${{ steps.tag_version.outputs.new_tag }}
+        name: Release ${{ steps.tag_version.outputs.new_tag }}
         body: ${{ steps.tag_version.outputs.changelog }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # 7. Step Deploy (Opsional: FTP, SSH VPS, Azure App Service, dll.)
-    # Silakan tambahkan step deployment server Anda di sini
