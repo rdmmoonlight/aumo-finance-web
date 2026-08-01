@@ -18,7 +18,7 @@
                 <h2 class="fw-bold text-body-emphasis mb-1">
                     <i class="bi bi-file-earmark-spreadsheet-fill me-2 text-success"></i> Import Journal Entries (.xlsx)
                 </h2>
-                <p class="text-secondary mb-0">Upload, preview, and review batch journal entries before saving to the database.</p>
+                <p class="text-secondary mb-0">Upload batch journal entries from Excel with instant client-side preview.</p>
             </div>
             <a asp-action="Index" class="btn btn-outline-secondary rounded-3">
                 <i class="bi bi-arrow-left me-1"></i> Back to Tools
@@ -48,7 +48,7 @@
             <div class="row align-items-center mb-3">
                 <div class="col-12 col-md-8">
                     <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i> 1. Select Excel File</h5>
-                    <p class="text-secondary small mb-0">Select an <code>.xlsx</code> file. The preview pop-up will appear instantly upon file selection.</p>
+                    <p class="text-secondary small mb-0">Choosing an <code>.xlsx</code> file will instantly pop up the preview dialog.</p>
                 </div>
                 <div class="col-12 col-md-4 text-md-end mt-2 mt-md-0">
                     <a asp-action="DownloadJournalTemplate" class="btn btn-outline-success btn-sm rounded-3">
@@ -77,7 +77,7 @@
         </div>
     </div>
 
-    <!-- PREVIEW RESULTS TABLE (IF PARSED BY SERVER) -->
+    <!-- PREVIEW RESULTS TABLE (PARSED BY SERVER) -->
     @if (Model != null && Model.IsSuccess)
     {
         <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
@@ -121,7 +121,13 @@
                                         <tr>
                                             <td class="text-center text-secondary">@line.RowIndex</td>
                                             <td class="text-center fw-semibold">@line.RefNumber</td>
-                                            <td>@line.AccountName</td>
+                                            <td>
+                                                @line.AccountName
+                                                @if (line.IsNewAccount)
+                                                {
+                                                    <span class="badge bg-info-subtle text-info border border-info-subtle ms-1">New COA</span>
+                                                }
+                                            </td>
                                             <td class="text-secondary">@line.Description</td>
                                             <td class="text-end text-success">@(line.Debit.HasValue ? line.Debit.Value.ToString("N2") : "-")</td>
                                             <td class="text-end text-danger">@(line.Credit.HasValue ? line.Credit.Value.ToString("N2") : "-")</td>
@@ -138,20 +144,33 @@
 </div>
 
 <!-- INSTANT POP-UP PREVIEW MODAL -->
-<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-labelledby="filePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-bottom px-4">
-                <h5 class="modal-title fw-bold"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i> Instant File Preview</h5>
+                <h5 class="modal-title fw-bold" id="filePreviewModalLabel">
+                    <i class="bi bi-file-earmark-check me-2 text-success"></i> File Selected
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4" id="modalPreviewBody">
-                <!-- Dynamic content loaded via JS -->
+            <div class="modal-body p-4 text-center" id="modalPreviewBody">
+                <div class="p-3 bg-light rounded-3 mb-3 text-start">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-file-earmark-spreadsheet fs-2 text-success me-3"></i>
+                        <div>
+                            <h6 class="fw-bold mb-0" id="modalFileName">filename.xlsx</h6>
+                            <small class="text-muted" id="modalFileSize">0 KB</small>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-secondary small mb-0">
+                    File is ready to be parsed. Click <strong>"Process & Preview Entries"</strong> to view structured debit/credit entries before saving.
+                </p>
             </div>
             <div class="modal-footer border-top px-4">
                 <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary rounded-3 px-4 fw-semibold" onclick="document.getElementById('mainUploadForm').submit();">
-                    Proceed to Server Process <i class="bi bi-arrow-right ms-1"></i>
+                <button type="button" class="btn btn-primary rounded-3 px-4 fw-semibold" id="btnSubmitModal">
+                    Process & Preview Entries <i class="bi bi-arrow-right ms-1"></i>
                 </button>
             </div>
         </div>
@@ -159,47 +178,29 @@
 </div>
 
 @section Scripts {
-    <!-- Include SheetJS for Instant Client-Side XLSX Reading -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
-        document.getElementById('excelFileInput').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        // Use Global Event Listener to prevent missing bindings
+        document.addEventListener('change', function (e) {
+            if (e.target && e.target.id === 'excelFileInput') {
+                const input = e.target;
+                if (!input.files || input.files.length === 0) return;
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const file = input.files[0];
 
-                let htmlContent = '';
-                workbook.SheetNames.forEach(sheetName => {
-                    const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                // Populate file details into modal
+                document.getElementById('modalFileName').innerText = file.name;
+                document.getElementById('modalFileSize').innerText = (file.size / 1024).toFixed(2) + ' KB';
 
-                    if (json.length > 0) {
-                        htmlContent += `<h6 class="fw-bold mt-3 mb-2 text-primary">Sheet: ${sheetName}</h6>`;
-                        htmlContent += `<div class="table-responsive mb-4"><table class="table table-sm table-bordered small">`;
-                        
-                        json.forEach((row, idx) => {
-                            if (row.length === 0) return;
-                            const isHeader = idx < 4;
-                            htmlContent += `<tr class="${isHeader ? 'table-dark' : ''}">`;
-                            row.forEach(cell => {
-                                htmlContent += `<${isHeader ? 'th' : 'td'}>${cell ?? ''}</${isHeader ? 'th' : 'td'}>`;
-                            });
-                            htmlContent += `</tr>`;
-                        });
-                        htmlContent += `</table></div>`;
-                    }
-                });
-
-                document.getElementById('modalPreviewBody').innerHTML = htmlContent || '<p class="text-muted">No readable data found in this file.</p>';
-                
                 // Show Bootstrap Modal
-                const modal = new bootstrap.Modal(document.getElementById('filePreviewModal'));
+                const modalEl = document.getElementById('filePreviewModal');
+                const modal = new bootstrap.Modal(modalEl);
                 modal.show();
-            };
-            reader.readAsArrayBuffer(file);
+            }
+        });
+
+        // Modal Action Button Submit
+        document.getElementById('btnSubmitModal').addEventListener('click', function () {
+            document.getElementById('mainUploadForm').submit();
         });
     </script>
 }
