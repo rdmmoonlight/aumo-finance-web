@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
-using YourProject.Models.DTOs;
+using AumoFinance.Models.DTOs;
 
-namespace YourProject.Services
+namespace AumoFinance.Services
 {
     public interface IJournalImportService
     {

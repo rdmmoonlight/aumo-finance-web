@@ -16,8 +16,8 @@ namespace AumoFinance.Models.DTOs
         public string AccountName { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int RefNumber { get; set; }
-        public decimal? Debit { get; set; }  // Null jika sel Excel kosong
-        public decimal? Credit { get; set; } // Null jika sel Excel kosong
+        public decimal? Debit { get; set; }
+        public decimal? Credit { get; set; }
     }
 
     public class JournalImportResultDto
