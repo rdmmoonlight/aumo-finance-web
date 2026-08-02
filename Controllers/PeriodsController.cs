@@ -22,12 +22,15 @@ namespace AumoFinance.Controllers
         }
 
         // GET: /Periods/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             var model = new OpenPeriodViewModel
             {
                 Month = DateTime.Today.Month,
-                Year = DateTime.Today.Year
+                Year = DateTime.Today.Year,
+                ExistingAccounts = await _context.ChartOfAccounts
+                    .OrderBy(a => a.ReferenceNumber)
+                    .ToListAsync()
             };
 
             return View(model);
@@ -40,6 +43,9 @@ namespace AumoFinance.Controllers
         {
             if (!ModelState.IsValid)
             {
+                model.ExistingAccounts = await _context.ChartOfAccounts
+                    .OrderBy(a => a.ReferenceNumber)
+                    .ToListAsync();
                 return View(model);
             }
 
@@ -65,6 +71,9 @@ namespace AumoFinance.Controllers
             if (existingCodes.Any())
             {
                 ModelState.AddModelError(string.Empty, "One or more account reference numbers are already in use in the Chart of Accounts.");
+                model.ExistingAccounts = await _context.ChartOfAccounts
+                    .OrderBy(a => a.ReferenceNumber)
+                    .ToListAsync();
                 return View(model);
             }
 

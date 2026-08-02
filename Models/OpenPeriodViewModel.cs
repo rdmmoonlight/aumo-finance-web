@@ -48,5 +48,10 @@ namespace AumoFinance.Models
         [Required]
         [Display(Name = "Retained Earnings Name")]
         public string RetainedEarningsAccountName { get; set; } = string.Empty;
+
+        // Referensi tampilan saja (bukan diisi lewat form): daftar akun COA
+        // yang sudah ada, supaya user tahu nomor ref mana saja yang sudah
+        // terpakai sebelum mengisi 3 kode akun baru di atas.
+        public List<ChartOfAccount> ExistingAccounts { get; set; } = new();
     }
 }
