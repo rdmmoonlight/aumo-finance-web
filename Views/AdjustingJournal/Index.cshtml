@@ -27,6 +27,14 @@
         </div>
     }
 
+    @if ((int)(ViewBag.HiddenClosedCount ?? 0) > 0)
+    {
+        <div class="alert alert-secondary shadow-sm py-2 small">
+            <i class="bi bi-lock-fill me-2"></i>
+            @ViewBag.HiddenClosedCount entr@(((int)ViewBag.HiddenClosedCount) == 1 ? "y" : "ies") from closed periods are hidden here. View them from the <a asp-controller="Periods" asp-action="Index" class="alert-link">Periods</a> page.
+        </div>
+    }
+
     <!-- Adjusting Journal Table -->
     <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
         <div class="card-body p-0">

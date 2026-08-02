@@ -86,9 +86,9 @@
                                     </td>
                                     <td class="text-center pe-4">
                                         <div class="btn-group shadow-sm">
-                                            <button class="btn btn-sm btn-outline-secondary" title="View Details">
+                                            <a asp-action="Details" asp-route-id="@period.Id" class="btn btn-sm btn-outline-secondary" title="View period data">
                                                 <i class="bi bi-eye"></i>
-                                            </button>
+                                            </a>
                                             @if (!period.IsClosed)
                                             {
                                                 <form asp-action="ClosePeriod" asp-route-id="@period.Id" method="post" class="d-inline">

@@ -1,52 +1,36 @@
 @model List<AumoFinance.Models.JournalEntry>
 @{
-    ViewData["Title"] = "General Journal";
+    var period = (AumoFinance.Models.Period)ViewBag.Period;
+    ViewData["Title"] = $"Period Details - {period.PeriodName}";
 }
 
 <div class="container-fluid py-4 px-4">
-    <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-body-emphasis mb-1">
-                <i class="bi bi-journal-bookmark me-2 text-warning"></i> General Journal
+                <i class="bi bi-eye me-2 text-primary"></i> @period.PeriodName
+                @if (period.IsClosed)
+                {
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-2 align-middle"><i class="bi bi-lock-fill me-1"></i>Closed</span>
+                }
+                else
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle ms-2 align-middle">Open</span>
+                }
             </h2>
-            <p class="text-secondary mb-0">Chronological record of financial transactions for Aumo Finance.</p>
+            <p class="text-secondary mb-0">
+                Read-only view of all transactions dated @period.StartDate.ToString("dd MMM yyyy") &ndash; @period.EndDate.ToString("dd MMM yyyy").
+                @if (period.IsClosed)
+                {
+                    <span>This period is locked — data here is hidden from General/Adjusting Journal and cannot be edited.</span>
+                }
+            </p>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-controller="JournalEntry" asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
-                <i class="bi bi-plus-lg me-1"></i> Add Entry
-            </a>
-            <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm" id="btnEditEntry" onclick="toggleEditMode()" @(Model.Any() ? "" : "disabled")>
-                <i class="bi bi-pencil me-1"></i> Edit
-            </button>
-        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary fw-semibold shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Periods
+        </a>
     </div>
 
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show shadow-sm py-2" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show shadow-sm py-2" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if ((int)(ViewBag.HiddenClosedCount ?? 0) > 0)
-    {
-        <div class="alert alert-secondary shadow-sm py-2 small">
-            <i class="bi bi-lock-fill me-2"></i>
-            @ViewBag.HiddenClosedCount entr@(((int)ViewBag.HiddenClosedCount) == 1 ? "y" : "ies") from closed periods are hidden here. View them from the <a asp-controller="Periods" asp-action="Index" class="alert-link">Periods</a> page.
-        </div>
-    }
-
-    <!-- General Journal Table -->
     <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -54,9 +38,9 @@
                     <thead class="table-light">
                         <tr>
                             <th class="ps-4 text-center" style="width: 5%;">Tgl</th>
-                            <th style="width: 27%;">Account</th>
+                            <th style="width: 10%;">Ref.</th>
+                            <th style="width: 22%;">Account</th>
                             <th style="width: 27%;">Description</th>
-                            <th class="text-center" style="width: 8%;">Ref.</th>
                             <th class="text-end" style="width: 16%;">Debit</th>
                             <th class="text-end pe-4" style="width: 16%;">Credit</th>
                         </tr>
@@ -90,12 +74,11 @@
                                             {
                                                 <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold small px-2 py-1">@entry.EntryDate.Day</span>
                                             }
+                                        </td>
+                                        <td class="align-top">
                                             @if (isFirstRow)
                                             {
-                                                <a asp-controller="JournalEntry" asp-action="Edit" asp-route-id="@entry.Id"
-                                                   class="edit-pencil-icon d-none text-primary ms-1" title="Edit entri ini">
-                                                    <i class="bi bi-pencil-fill"></i>
-                                                </a>
+                                                <code>@entry.ReferenceNumber</code>
                                             }
                                         </td>
                                         <td class="align-top @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
@@ -103,9 +86,6 @@
                                         </td>
                                         <td class="text-secondary small align-top">
                                             @line.LineDescription
-                                        </td>
-                                        <td class="text-center align-top">
-                                            <code>@line.Account?.ReferenceNumber</code>
                                         </td>
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
                                             @(line.Debit > 0 ? line.Debit.ToString("N0") : null)
@@ -122,7 +102,7 @@
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-secondary">
                                     <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                    No journal entries recorded yet in this period.
+                                    No journal entries recorded in this period.
                                 </td>
                             </tr>
                         }
@@ -132,15 +112,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        function toggleEditMode() {
-            var btn = document.getElementById('btnEditEntry');
-            btn.classList.toggle('active');
-            document.querySelectorAll('.edit-pencil-icon').forEach(function (el) {
-                el.classList.toggle('d-none');
-            });
-        }
-    </script>
-}

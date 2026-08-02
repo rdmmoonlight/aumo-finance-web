@@ -21,6 +21,33 @@ namespace AumoFinance.Controllers
             return View(periods);
         }
 
+        // GET: /Periods/Details/{id}
+        // Satu-satunya jalan untuk membaca kembali transaksi milik periode
+        // yang sudah ditutup. Menampilkan seluruh jurnal (General + Adjusting)
+        // bertanggal di rentang periode ini, terlepas dari status IsClosed.
+        public async Task<IActionResult> Details(int id)
+        {
+            var period = await _context.Periods.FindAsync(id);
+            if (period == null)
+            {
+                TempData["ErrorMessage"] = "Period not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var entries = await _context.JournalEntries
+                .Include(j => j.Lines)
+                    .ThenInclude(l => l.Account)
+                .Where(j => j.EntryDate >= period.StartDate && j.EntryDate <= period.EndDate)
+                .OrderBy(j => j.EntryDate)
+                .ThenBy(j => j.Id)
+                .ToListAsync();
+
+            ViewData["Title"] = $"Period Details - {period.PeriodName}";
+            ViewBag.Period = period;
+
+            return View(entries);
+        }
+
         // GET: /Periods/Create
         public async Task<IActionResult> Create()
         {
