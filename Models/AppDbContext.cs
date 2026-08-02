@@ -80,6 +80,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
         {
             entity.HasIndex(x => x.Category);
             entity.HasIndex(x => x.ReferenceNumber);
+            entity.HasIndex(x => x.UserId);
         });
 
         // Guardian Session

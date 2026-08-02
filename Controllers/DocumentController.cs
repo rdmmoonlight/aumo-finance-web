@@ -22,12 +22,15 @@ public class DocumentController : Controller
     }
 
     // GET: /Document/
+    // Dibatasi ke dokumen milik user yang sedang login — full per-user
+    // isolation, sama seperti Chart of Accounts / Periods / Journal Entries.
     public IActionResult Index(string searchString, string category)
     {
         var userId = this.CurrentUserId();
 
         var query = _context.EconomicDocuments
                             .Include(d => d.JournalEntry) // Include relasi SSOT untuk tampilan
+                            .Where(d => d.UserId == userId)
                             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchString))
@@ -43,8 +46,8 @@ public class DocumentController : Controller
 
         var documentList = query.OrderByDescending(d => d.UploadDate).ToList();
 
-        // --- Statistical Computations ---
-        var allDocs = _context.EconomicDocuments.ToList();
+        // --- Statistical Computations (milik user ini saja) ---
+        var allDocs = _context.EconomicDocuments.Where(d => d.UserId == userId).ToList();
         var totalBytes = allDocs.Sum(d => d.FileSize);
         
         var topCategory = allDocs.GroupBy(d => d.Category)
@@ -95,6 +98,21 @@ public class DocumentController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(DocumentUploadViewModel model)
     {
+        var userId = this.CurrentUserId();
+
+        // Kalau dokumen ditautkan ke Journal Entry, pastikan entry itu
+        // benar-benar milik user ini — tidak boleh menautkan ke jurnal
+        // milik user lain.
+        if (model.JournalEntryId.HasValue)
+        {
+            var ownsEntry = await _context.JournalEntries
+                .AnyAsync(j => j.Id == model.JournalEntryId.Value && j.UserId == userId);
+            if (!ownsEntry)
+            {
+                ModelState.AddModelError(string.Empty, "The selected journal entry is invalid.");
+            }
+        }
+
         if (ModelState.IsValid)
         {
             if (model.UploadedFile != null && model.UploadedFile.Length > 0)
@@ -115,6 +133,7 @@ public class DocumentController : Controller
 
                 var newDoc = new EconomicDocument
                 {
+                    UserId = userId,
                     Title = model.Title,
                     Category = model.Category,
                     ReferenceNumber = model.ReferenceNumber,
@@ -139,7 +158,7 @@ public class DocumentController : Controller
 
         // Jika gagal, muat ulang dropdown journal entries
         ViewBag.JournalEntries = _context.JournalEntries
-            .Where(j => j.UserId == this.CurrentUserId())
+            .Where(j => j.UserId == userId)
             .OrderByDescending(j => j.Id)
             .Take(100)
             .ToList();
@@ -150,7 +169,8 @@ public class DocumentController : Controller
     // GET: /Document/Download/5
     public async Task<IActionResult> Download(int id)
     {
-        var document = await _context.EconomicDocuments.FindAsync(id);
+        var userId = this.CurrentUserId();
+        var document = await _context.EconomicDocuments.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
         if (document == null) return NotFound();
 
         var path = document.FilePath;
