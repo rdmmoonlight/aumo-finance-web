@@ -168,14 +168,12 @@
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
-    // Tampilkan periode yang sedang di-VIEW (dipilih lewat ikon mata di
-    // halaman Periods), bukan sekadar periode terbuka terakhir. Selama
-    // belum ada yang dipilih, seluruh halaman yang bergantung padanya
-    // (Dashboard, General/Adjusting Journal, laporan) dianggap kosong.
-    var selectedPeriodId = SelectedPeriodHelper.GetSelectedPeriodId(Context);
-    var activePeriodObj = selectedPeriodId != null
-        ? _context.Periods.FirstOrDefault(p => p.Id == selectedPeriodId)
-        : null;
+    // Tampilkan periode yang sedang di-VIEW (IsSelected = true di database),
+    // bukan sekadar periode terbuka terakhir. Ini global — sama untuk semua
+    // orang yang mengakses aplikasi. Selama belum ada yang dipilih, seluruh
+    // halaman yang bergantung padanya (Dashboard, General/Adjusting Journal,
+    // laporan) dianggap kosong.
+    var activePeriodObj = _context.Periods.FirstOrDefault(p => p.IsSelected);
 
     var activePeriodName = activePeriodObj?.PeriodName;
     var hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);

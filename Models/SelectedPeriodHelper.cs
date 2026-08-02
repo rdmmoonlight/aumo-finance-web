@@ -1,36 +1,45 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace AumoFinance.Models
 {
-    // Menyimpan "periode yang sedang di-view" (dipilih lewat ikon mata di
-    // halaman Periods) ke Session. Selama tidak ada periode yang dipilih,
-    // seluruh halaman yang bergantung pada ini (General Journal, Adjusting
-    // Journal, Dashboard, dst.) dianggap tidak punya data untuk ditampilkan.
+    // Periode yang sedang "di-view" (dipilih lewat ikon mata di halaman
+    // Periods) disimpan permanen di kolom Periods.IsSelected — bukan di
+    // session — supaya statusnya benar-benar global: siapa pun yang
+    // membuka aplikasi melihat periode yang sama, sampai ada yang
+    // menggantinya. Seluruh aplikasi (Dashboard, General/Adjusting
+    // Journal, laporan) bergantung pada periode ini.
     public static class SelectedPeriodHelper
     {
-        private const string SessionKey = "SelectedPeriodId";
-
-        public static void SetSelectedPeriod(HttpContext context, int periodId)
+        public static async Task<Period?> GetSelectedPeriodAsync(AppDbContext db)
         {
-            context.Session.SetInt32(SessionKey, periodId);
+            return await db.Periods.FirstOrDefaultAsync(p => p.IsSelected);
         }
 
-        public static void ClearSelectedPeriod(HttpContext context)
+        public static async Task SelectPeriodAsync(AppDbContext db, int periodId)
         {
-            context.Session.Remove(SessionKey);
+            var currentlySelected = await db.Periods.Where(p => p.IsSelected).ToListAsync();
+            foreach (var p in currentlySelected)
+            {
+                p.IsSelected = false;
+            }
+            await db.SaveChangesAsync();
+
+            var target = await db.Periods.FindAsync(periodId);
+            if (target != null)
+            {
+                target.IsSelected = true;
+                await db.SaveChangesAsync();
+            }
         }
 
-        public static int? GetSelectedPeriodId(HttpContext context)
+        public static async Task ClearSelectionAsync(AppDbContext db)
         {
-            return context.Session.GetInt32(SessionKey);
-        }
-
-        public static async Task<Period?> GetSelectedPeriodAsync(HttpContext context, AppDbContext db)
-        {
-            var id = GetSelectedPeriodId(context);
-            if (id == null) return null;
-            return await db.Periods.FindAsync(id.Value);
+            var currentlySelected = await db.Periods.Where(p => p.IsSelected).ToListAsync();
+            foreach (var p in currentlySelected)
+            {
+                p.IsSelected = false;
+            }
+            await db.SaveChangesAsync();
         }
     }
 }

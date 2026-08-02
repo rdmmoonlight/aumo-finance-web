@@ -20,7 +20,7 @@ namespace AumoFinance.Controllers
             
             ViewData["CurrentPeriodType"] = isAnnual ? "annual" : "monthly";
 
-            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(HttpContext, _db);
+            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db);
 
             if (selectedPeriod == null)
             {

@@ -66,18 +66,6 @@ builder.Services.AddScoped<IJournalImportService, JournalImportService>();
 builder.Services.AddMemoryCache();
 
 // =====================================
-// Session (menyimpan periode yang sedang dipilih/di-view)
-// =====================================
-
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromHours(12);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
-
-// =====================================
 // Forwarded Headers (Railway / Render Proxy)
 // Updated for .NET 10 (Fix Warning ASPDEPR005)
 // =====================================
@@ -154,8 +142,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
-
-app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();

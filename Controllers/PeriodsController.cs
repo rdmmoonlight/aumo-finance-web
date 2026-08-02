@@ -18,6 +18,9 @@ namespace AumoFinance.Controllers
             var periods = await _context.Periods
                                         .OrderByDescending(p => p.StartDate)
                                         .ToListAsync();
+
+            ViewBag.SelectedPeriodId = (await SelectedPeriodHelper.GetSelectedPeriodAsync(_context))?.Id;
+
             return View(periods);
         }
 
@@ -25,6 +28,8 @@ namespace AumoFinance.Controllers
         // Dipicu oleh ikon mata di halaman Periods. Menjadikan periode ini
         // sebagai periode yang di-view di seluruh aplikasi (Dashboard,
         // General Journal, Adjusting Journal, dll mengikuti pilihan ini).
+        // Disimpan permanen di database, jadi berlaku untuk semua orang
+        // yang mengakses aplikasi — bukan hanya browser ini.
         public async Task<IActionResult> SelectPeriod(int id)
         {
             var period = await _context.Periods.FindAsync(id);
@@ -34,15 +39,15 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            SelectedPeriodHelper.SetSelectedPeriod(HttpContext, period.Id);
+            await SelectedPeriodHelper.SelectPeriodAsync(_context, period.Id);
             TempData["SuccessMessage"] = $"Now viewing {period.PeriodName}" + (period.IsClosed ? " (Closed)." : ".");
             return RedirectToAction(nameof(Index));
         }
 
         // GET: /Periods/ClearSelection
-        public IActionResult ClearSelection()
+        public async Task<IActionResult> ClearSelection()
         {
-            SelectedPeriodHelper.ClearSelectedPeriod(HttpContext);
+            await SelectedPeriodHelper.ClearSelectionAsync(_context);
             TempData["SuccessMessage"] = "No period selected. Reports and journals are hidden until you view a period.";
             return RedirectToAction(nameof(Index));
         }

@@ -1,8 +1,7 @@
 @model IEnumerable<AumoFinance.Models.Period>
-@using AumoFinance.Models
 @{
     ViewData["Title"] = "Accounting Periods";
-    var selectedId = SelectedPeriodHelper.GetSelectedPeriodId(Context);
+    int? selectedId = ViewBag.SelectedPeriodId;
 }
 
 <div class="container-fluid py-4 px-4">

@@ -21,7 +21,7 @@ namespace AumoFinance.Controllers
         {
             ViewData["Title"] = "Adjusting Journal";
 
-            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(HttpContext, _db);
+            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db);
             ViewBag.SelectedPeriod = selectedPeriod;
 
             if (selectedPeriod == null)
