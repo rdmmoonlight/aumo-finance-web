@@ -48,7 +48,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
         builder.Entity<ChartOfAccount>(entity =>
         {
-            entity.HasIndex(x => x.ReferenceNumber)
+            // Nomor referensi hanya unik DALAM satu user — bukan global lagi,
+            // karena setiap user punya Chart of Accounts sendiri.
+            entity.HasIndex(x => new { x.UserId, x.ReferenceNumber })
                 .IsUnique();
         });
 
@@ -58,6 +60,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .WithOne(x => x.JournalEntry)
                 .HasForeignKey(x => x.JournalEntryId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Nomor referensi (GJ-xxxxxx / AJE-xxxxxx) hanya unik DALAM satu
+            // user — setiap user punya penomoran sendiri, mulai dari 1.
+            entity.HasIndex(x => new { x.UserId, x.ReferenceNumber })
+                .IsUnique();
         });
 
         builder.Entity<JournalEntryLine>(entity =>

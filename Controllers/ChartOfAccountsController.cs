@@ -15,16 +15,23 @@ namespace AumoFinance.Controllers
             _context = context;
         }
 
-        // GET: Menampilkan tabel COA dan Modal
+        // GET: Menampilkan tabel COA dan Modal — dibatasi ke akun milik
+        // user yang sedang login (full per-user isolation).
         public async Task<IActionResult> Index()
         {
-            // 1. Tarik master data COA dan urutkan
+            var userId = this.CurrentUserId();
+
+            // 1. Tarik master data COA milik user ini dan urutkan
             var accounts = await _context.ChartOfAccounts
+                                         .Where(a => a.UserId == userId)
                                          .OrderBy(a => a.ReferenceNumber)
                                          .ToListAsync();
 
+            var accountIds = accounts.Select(a => a.Id).ToList();
+
             // 2. Kalkulasi total Debit & Kredit dari JournalEntryLines untuk setiap akun
             var accountBalances = await _context.JournalEntryLines
+                                                .Where(j => accountIds.Contains(j.AccountId))
                                                 .GroupBy(j => j.AccountId)
                                                 .Select(g => new 
                                                 {
@@ -65,6 +72,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ChartOfAccount model)
         {
+            var userId = this.CurrentUserId();
+
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = GetFirstModelError() ?? "Data akun tidak valid.";
@@ -78,8 +87,8 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // 2. Validasi Akurasi: Pastikan tidak ada duplikasi nomor akun
-            bool isCodeTaken = await _context.ChartOfAccounts.AnyAsync(a => a.ReferenceNumber == model.ReferenceNumber);
+            // 2. Validasi Akurasi: Pastikan tidak ada duplikasi nomor akun DALAM akun milik user ini
+            bool isCodeTaken = await _context.ChartOfAccounts.AnyAsync(a => a.UserId == userId && a.ReferenceNumber == model.ReferenceNumber);
             if (isCodeTaken)
             {
                 TempData["ErrorMessage"] = $"Account code {model.ReferenceNumber} is already in use!";
@@ -87,6 +96,7 @@ namespace AumoFinance.Controllers
             }
 
             // Set nilai bawaan untuk akun baru
+            model.UserId = userId;
             model.IsActive = true;
             model.Balance = 0;
 
@@ -110,7 +120,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ChartOfAccount model)
         {
-            var account = await _context.ChartOfAccounts.FindAsync(model.Id);
+            var userId = this.CurrentUserId();
+            var account = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.Id && a.UserId == userId);
             if (account == null)
             {
                 TempData["ErrorMessage"] = "Account not found.";
@@ -129,9 +140,9 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Duplikasi nomor akun boleh sama dengan dirinya sendiri, tidak dengan akun lain
+            // Duplikasi nomor akun boleh sama dengan dirinya sendiri, tidak dengan akun lain milik user ini
             bool isCodeTaken = await _context.ChartOfAccounts
-                .AnyAsync(a => a.ReferenceNumber == model.ReferenceNumber && a.Id != model.Id);
+                .AnyAsync(a => a.UserId == userId && a.ReferenceNumber == model.ReferenceNumber && a.Id != model.Id);
             if (isCodeTaken)
             {
                 TempData["ErrorMessage"] = $"Account code {model.ReferenceNumber} is already in use!";
@@ -162,7 +173,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var account = await _context.ChartOfAccounts.FindAsync(id);
+            var userId = this.CurrentUserId();
+            var account = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (account == null)
             {
                 TempData["ErrorMessage"] = "Account not found.";

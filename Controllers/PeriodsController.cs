@@ -15,11 +15,14 @@ namespace AumoFinance.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var userId = this.CurrentUserId();
+
             var periods = await _context.Periods
+                                        .Where(p => p.UserId == userId)
                                         .OrderByDescending(p => p.StartDate)
                                         .ToListAsync();
 
-            ViewBag.SelectedPeriodId = (await SelectedPeriodHelper.GetSelectedPeriodAsync(_context))?.Id;
+            ViewBag.SelectedPeriodId = (await SelectedPeriodHelper.GetSelectedPeriodAsync(_context, userId))?.Id;
 
             return View(periods);
         }
@@ -27,19 +30,19 @@ namespace AumoFinance.Controllers
         // GET: /Periods/SelectPeriod/{id}
         // Dipicu oleh ikon mata di halaman Periods. Menjadikan periode ini
         // sebagai periode yang di-view di seluruh aplikasi (Dashboard,
-        // General Journal, Adjusting Journal, dll mengikuti pilihan ini).
-        // Disimpan permanen di database, jadi berlaku untuk semua orang
-        // yang mengakses aplikasi — bukan hanya browser ini.
+        // General Journal, Adjusting Journal, dll mengikuti pilihan ini),
+        // dibatasi ke periode milik user yang sedang login.
         public async Task<IActionResult> SelectPeriod(int id)
         {
-            var period = await _context.Periods.FindAsync(id);
+            var userId = this.CurrentUserId();
+            var period = await _context.Periods.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
             if (period == null)
             {
                 TempData["ErrorMessage"] = "Period not found.";
                 return RedirectToAction(nameof(Index));
             }
 
-            await SelectedPeriodHelper.SelectPeriodAsync(_context, period.Id);
+            await SelectedPeriodHelper.SelectPeriodAsync(_context, userId, period.Id);
             TempData["SuccessMessage"] = $"Now viewing {period.PeriodName}" + (period.IsClosed ? " (Closed)." : ".");
             return RedirectToAction(nameof(Index));
         }
@@ -47,7 +50,8 @@ namespace AumoFinance.Controllers
         // GET: /Periods/ClearSelection
         public async Task<IActionResult> ClearSelection()
         {
-            await SelectedPeriodHelper.ClearSelectionAsync(_context);
+            var userId = this.CurrentUserId();
+            await SelectedPeriodHelper.ClearSelectionAsync(_context, userId);
             TempData["SuccessMessage"] = "No period selected. Reports and journals are hidden until you view a period.";
             return RedirectToAction(nameof(Index));
         }
@@ -55,13 +59,14 @@ namespace AumoFinance.Controllers
         // GET: /Periods/Create
         public async Task<IActionResult> Create()
         {
+            var userId = this.CurrentUserId();
             var model = new OpenPeriodViewModel
             {
                 Month = DateTime.Today.Month,
                 Year = DateTime.Today.Year
             };
 
-            await PopulateReferenceDataAsync(model);
+            await PopulateReferenceDataAsync(model, userId);
             model.SetupMode = model.HasExistingPermanentAccounts
                 ? OpenPeriodViewModel.ModeLoadExisting
                 : OpenPeriodViewModel.ModeCreateNew;
@@ -69,10 +74,10 @@ namespace AumoFinance.Controllers
             return View(model);
         }
 
-        private async Task PopulateReferenceDataAsync(OpenPeriodViewModel model)
+        private async Task PopulateReferenceDataAsync(OpenPeriodViewModel model, Guid userId)
         {
             var accounts = await _context.ChartOfAccounts
-                .Where(a => a.IsActive)
+                .Where(a => a.IsActive && a.UserId == userId)
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
 
@@ -87,6 +92,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(OpenPeriodViewModel model)
         {
+            var userId = this.CurrentUserId();
+
             if (model.Month < 1 || model.Month > 12)
             {
                 ModelState.AddModelError(nameof(model.Month), "Please select a valid month.");
@@ -107,7 +114,7 @@ namespace AumoFinance.Controllers
                 endDate = startDate.AddMonths(1).AddDays(-1);
                 periodName = startDate.ToString("MMMM yyyy");
 
-                var periodExists = await _context.Periods.AnyAsync(p => p.StartDate == startDate);
+                var periodExists = await _context.Periods.AnyAsync(p => p.UserId == userId && p.StartDate == startDate);
                 if (periodExists)
                 {
                     ModelState.AddModelError(string.Empty, $"Period {periodName} already exists.");
@@ -139,7 +146,7 @@ namespace AumoFinance.Controllers
 
             if (!ModelState.IsValid)
             {
-                await PopulateReferenceDataAsync(model);
+                await PopulateReferenceDataAsync(model, userId);
                 return View(model);
             }
 
@@ -148,15 +155,17 @@ namespace AumoFinance.Controllers
             {
                 if (isLoadExisting)
                 {
-                    var cashAccount = await _context.ChartOfAccounts.FindAsync(model.CashAccountId);
-                    var bankAccount = await _context.ChartOfAccounts.FindAsync(model.BankAccountId);
-                    var retainedAccount = await _context.ChartOfAccounts.FindAsync(model.RetainedEarningsAccountId);
+                    // Pastikan akun yang dipilih benar-benar milik user ini —
+                    // tidak boleh memakai akun milik user lain.
+                    var cashAccount = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.CashAccountId && a.UserId == userId);
+                    var bankAccount = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.BankAccountId && a.UserId == userId);
+                    var retainedAccount = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.RetainedEarningsAccountId && a.UserId == userId);
 
                     if (cashAccount == null || bankAccount == null || retainedAccount == null)
                     {
                         await transaction.RollbackAsync();
                         ModelState.AddModelError(string.Empty, "One or more selected accounts could not be found.");
-                        await PopulateReferenceDataAsync(model);
+                        await PopulateReferenceDataAsync(model, userId);
                         return View(model);
                     }
 
@@ -165,6 +174,7 @@ namespace AumoFinance.Controllers
                     // permanen otomatis lanjut dari periode sebelumnya.
                     var newPeriod = new Period
                     {
+                        UserId = userId,
                         PeriodName = periodName,
                         StartDate = startDate,
                         EndDate = endDate,
@@ -180,24 +190,25 @@ namespace AumoFinance.Controllers
                 else
                 {
                     var existingCodes = await _context.ChartOfAccounts
-                        .Where(a => a.ReferenceNumber.ToString() == model.CashAccountCode
+                        .Where(a => a.UserId == userId
+                                 && (a.ReferenceNumber.ToString() == model.CashAccountCode
                                  || a.ReferenceNumber.ToString() == model.BankAccountCode
-                                 || a.ReferenceNumber.ToString() == model.RetainedEarningsAccountCode)
+                                 || a.ReferenceNumber.ToString() == model.RetainedEarningsAccountCode))
                         .Select(a => a.ReferenceNumber)
                         .ToListAsync();
 
                     if (existingCodes.Any())
                     {
                         await transaction.RollbackAsync();
-                        ModelState.AddModelError(string.Empty, "One or more account reference numbers are already in use in the Chart of Accounts.");
-                        await PopulateReferenceDataAsync(model);
+                        ModelState.AddModelError(string.Empty, "One or more account reference numbers are already in use in your Chart of Accounts.");
+                        await PopulateReferenceDataAsync(model, userId);
                         return View(model);
                     }
 
                     // 1. Buat 3 Akun Baru di COA
-                    var cashAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.CashAccountCode!), AccountName = model.CashAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
-                    var bankAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.BankAccountCode!), AccountName = model.BankAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
-                    var retainedAccount = new ChartOfAccount { ReferenceNumber = int.Parse(model.RetainedEarningsAccountCode!), AccountName = model.RetainedEarningsAccountName!, Type = "Equity", Role = "RetainedEarnings", IsActive = true };
+                    var cashAccount = new ChartOfAccount { UserId = userId, ReferenceNumber = int.Parse(model.CashAccountCode!), AccountName = model.CashAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
+                    var bankAccount = new ChartOfAccount { UserId = userId, ReferenceNumber = int.Parse(model.BankAccountCode!), AccountName = model.BankAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
+                    var retainedAccount = new ChartOfAccount { UserId = userId, ReferenceNumber = int.Parse(model.RetainedEarningsAccountCode!), AccountName = model.RetainedEarningsAccountName!, Type = "Equity", Role = "RetainedEarnings", IsActive = true };
 
                     _context.ChartOfAccounts.AddRange(cashAccount, bankAccount, retainedAccount);
                     await _context.SaveChangesAsync();
@@ -205,6 +216,7 @@ namespace AumoFinance.Controllers
                     // 2. Buat Periode Baru
                     var newPeriod = new Period
                     {
+                        UserId = userId,
                         PeriodName = periodName,
                         StartDate = startDate,
                         EndDate = endDate,
@@ -219,6 +231,8 @@ namespace AumoFinance.Controllers
                     var totalOpeningBalance = cashBalance + bankBalance;
                     var journalEntry = new JournalEntry
                     {
+                        UserId = userId,
+                        ReferenceNumber = $"GJ-OPEN-{startDate:yyyyMM}",
                         EntryDate = startDate,
                         JournalType = "General"
                     };
@@ -259,7 +273,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ClosePeriod(int id)
         {
-            var period = await _context.Periods.FindAsync(id);
+            var userId = this.CurrentUserId();
+            var period = await _context.Periods.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
             if (period == null)
             {
                 TempData["ErrorMessage"] = "Period not found.";
@@ -276,7 +291,7 @@ namespace AumoFinance.Controllers
             // awal wajib sudah ditutup lebih dulu, supaya integritas historis
             // ledger terjaga.
             var hasEarlierOpenPeriod = await _context.Periods
-                .AnyAsync(p => p.Id != period.Id && p.StartDate < period.StartDate && !p.IsClosed);
+                .AnyAsync(p => p.UserId == userId && p.Id != period.Id && p.StartDate < period.StartDate && !p.IsClosed);
 
             if (hasEarlierOpenPeriod)
             {

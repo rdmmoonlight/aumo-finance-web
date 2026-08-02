@@ -70,8 +70,38 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(ImportJournal));
             }
 
+            var userId = this.CurrentUserId();
             int accountsCreated = 0;
             int transactionsImported = 0;
+
+            // Seed nomor referensi dari yang terakhir milik user ini per
+            // prefix (GJ/AJE), supaya tetap urut sekalipun banyak entri
+            // diimpor sekaligus dalam satu batch.
+            var seqCounters = new Dictionary<string, int>();
+            async Task<int> NextSeqAsync(string prefix)
+            {
+                if (!seqCounters.TryGetValue(prefix, out var seq))
+                {
+                    var last = await _context.JournalEntries
+                        .Where(e => e.UserId == userId && e.ReferenceNumber.StartsWith(prefix + "-"))
+                        .OrderByDescending(e => e.Id)
+                        .Select(e => e.ReferenceNumber)
+                        .FirstOrDefaultAsync();
+
+                    seq = 0;
+                    if (last != null)
+                    {
+                        var parts = last.Split('-');
+                        if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+                        {
+                            seq = lastSeq;
+                        }
+                    }
+                }
+                seq += 1;
+                seqCounters[prefix] = seq;
+                return seq;
+            }
 
             try
             {
@@ -82,7 +112,7 @@ namespace AumoFinance.Controllers
                     foreach (var lineDto in txDto.Lines)
                     {
                         var account = await _context.ChartOfAccounts
-                            .FirstOrDefaultAsync(a => a.ReferenceNumber == lineDto.RefNumber);
+                            .FirstOrDefaultAsync(a => a.ReferenceNumber == lineDto.RefNumber && a.UserId == userId);
 
                         if (account == null)
                         {
@@ -90,6 +120,7 @@ namespace AumoFinance.Controllers
 
                             account = new ChartOfAccount
                             {
+                                UserId = userId,
                                 ReferenceNumber = lineDto.RefNumber,
                                 AccountName = lineDto.AccountName,
                                 Type = accountType ?? "Other",
@@ -111,8 +142,13 @@ namespace AumoFinance.Controllers
                         });
                     }
 
+                    var prefix = txDto.JournalType == "Adjusting" ? "AJE" : "GJ";
+                    var seq = await NextSeqAsync(prefix);
+
                     var entry = new JournalEntry
                     {
+                        UserId = userId,
+                        ReferenceNumber = $"{prefix}-{seq:D6}",
                         JournalType = txDto.JournalType,
                         EntryDate = txDto.Date,
                         Lines = entryLines,
@@ -148,6 +184,7 @@ namespace AumoFinance.Controllers
                 using var workbook = new XLWorkbook(stream);
 
                 var existingRefNumbers = await _context.ChartOfAccounts
+                    .Where(a => a.UserId == this.CurrentUserId())
                     .Select(a => a.ReferenceNumber)
                     .ToListAsync();
 

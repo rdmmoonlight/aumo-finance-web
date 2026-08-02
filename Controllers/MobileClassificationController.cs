@@ -72,8 +72,8 @@ namespace AumoFinance.Controllers
                 Type = entry.Type ?? string.Empty,
                 Amount = entry.Amount ?? 0,
                 Note = entry.Note,
-                CashAccounts = await GetCashAccountsAsync(),
-                IncomeOrExpenseAccounts = await GetEligibleAccountsAsync(isIncome)
+                CashAccounts = await GetCashAccountsAsync(this.CurrentUserId()),
+                IncomeOrExpenseAccounts = await GetEligibleAccountsAsync(this.CurrentUserId(), isIncome)
             };
 
             return View(vm);
@@ -96,9 +96,10 @@ namespace AumoFinance.Controllers
             }
 
             var isIncome = entry.Type == "Income";
+            var userId = this.CurrentUserId();
 
-            var cashAccount = (await GetCashAccountsAsync()).FirstOrDefault(a => a.Id == model.CashAccountId);
-            var classifiedAccount = (await GetEligibleAccountsAsync(isIncome)).FirstOrDefault(a => a.Id == model.ClassifiedAccountId);
+            var cashAccount = (await GetCashAccountsAsync(userId)).FirstOrDefault(a => a.Id == model.CashAccountId);
+            var classifiedAccount = (await GetEligibleAccountsAsync(userId, isIncome)).FirstOrDefault(a => a.Id == model.ClassifiedAccountId);
 
             if (cashAccount == null || classifiedAccount == null)
             {
@@ -107,10 +108,11 @@ namespace AumoFinance.Controllers
             }
 
             var amount = entry.Amount ?? 0;
-            var referenceNumber = await GenerateReferenceNumberAsync("General");
+            var referenceNumber = await GenerateReferenceNumberAsync(userId, "General");
 
             var journalEntry = new JournalEntry
             {
+                UserId = userId,
                 ReferenceNumber = referenceNumber,
                 EntryDate = entry.EntryDate,
                 JournalType = "General",
@@ -202,10 +204,19 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(ClassifyManual), new { id });
             }
 
-            var referenceNumber = await GenerateReferenceNumberAsync("General");
+            var userId = this.CurrentUserId();
+            var ownAccountIds = (await _context.ChartOfAccounts.Where(a => a.UserId == userId).Select(a => a.Id).ToListAsync()).ToHashSet();
+            if (entry.Lines.Any(l => !ownAccountIds.Contains(l.AccountId)))
+            {
+                TempData["ErrorMessage"] = "One or more accounts in this entry are invalid.";
+                return RedirectToAction(nameof(ClassifyManual), new { id });
+            }
+
+            var referenceNumber = await GenerateReferenceNumberAsync(userId, "General");
 
             var journalEntry = new JournalEntry
             {
+                UserId = userId,
                 ReferenceNumber = referenceNumber,
                 EntryDate = entry.EntryDate,
                 JournalType = "General",
@@ -261,35 +272,35 @@ namespace AumoFinance.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private Task<List<ChartOfAccount>> GetCashAccountsAsync()
+        private Task<List<ChartOfAccount>> GetCashAccountsAsync(Guid userId)
         {
             return _context.ChartOfAccounts
-                .Where(a => a.IsActive && a.Role == "CashAndEquivalents")
+                .Where(a => a.IsActive && a.UserId == userId && a.Role == "CashAndEquivalents")
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
         }
 
-        private Task<List<ChartOfAccount>> GetEligibleAccountsAsync(bool isIncome)
+        private Task<List<ChartOfAccount>> GetEligibleAccountsAsync(Guid userId, bool isIncome)
         {
             var types = isIncome
                 ? new[] { "OperatingIncome", "OtherIncome" }
                 : new[] { "OperatingExpenses", "OtherExpenses" };
 
             return _context.ChartOfAccounts
-                .Where(a => a.IsActive && types.Contains(a.Type))
+                .Where(a => a.IsActive && a.UserId == userId && types.Contains(a.Type))
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
         }
 
         // Sama persis dengan JournalEntryController.GenerateReferenceNumberAsync,
         // supaya penomoran referensi konsisten antara input via web dan via
-        // mobile yang sudah diverifikasi.
-        private async Task<string> GenerateReferenceNumberAsync(string journalType)
+        // mobile yang sudah diverifikasi — dibatasi per user.
+        private async Task<string> GenerateReferenceNumberAsync(Guid userId, string journalType)
         {
             var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
 
             var lastNumber = await _context.JournalEntries
-                .Where(e => e.ReferenceNumber.StartsWith(prefix + "-"))
+                .Where(e => e.UserId == userId && e.ReferenceNumber.StartsWith(prefix + "-"))
                 .OrderByDescending(e => e.Id)
                 .Select(e => e.ReferenceNumber)
                 .FirstOrDefaultAsync();

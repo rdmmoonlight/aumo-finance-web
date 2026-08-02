@@ -18,7 +18,8 @@ namespace AumoFinance.Controllers
         {
             ViewData["Title"] = "General Journal";
 
-            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db);
+            var userId = this.CurrentUserId();
+            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
             ViewBag.SelectedPeriod = selectedPeriod;
 
             if (selectedPeriod == null)
@@ -28,12 +29,14 @@ namespace AumoFinance.Controllers
 
             // Diambil langsung dari data yang diinput lewat Journal Entry,
             // termasuk relasi ke Chart of Account, sehingga nomor referensi
-            // dan nama akun selalu sinkron dengan sumbernya. Hanya entri
-            // bertanggal di dalam periode yang sedang di-view yang ditampilkan.
+            // dan nama akun selalu sinkron dengan sumbernya. Dibatasi ke
+            // milik user ini sendiri, dan hanya entri bertanggal di dalam
+            // periode yang sedang di-view.
             var entries = await _db.JournalEntries
                 .Include(j => j.Lines)
                     .ThenInclude(l => l.Account)
-                .Where(j => j.EntryDate >= selectedPeriod.StartDate && j.EntryDate <= selectedPeriod.EndDate)
+                .Where(j => j.UserId == userId
+                         && j.EntryDate >= selectedPeriod.StartDate && j.EntryDate <= selectedPeriod.EndDate)
                 .OrderBy(j => j.EntryDate)
                 .ThenBy(j => j.Id)
                 .ToListAsync();

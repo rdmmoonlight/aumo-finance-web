@@ -24,6 +24,8 @@ public class DocumentController : Controller
     // GET: /Document/
     public IActionResult Index(string searchString, string category)
     {
+        var userId = this.CurrentUserId();
+
         var query = _context.EconomicDocuments
                             .Include(d => d.JournalEntry) // Include relasi SSOT untuk tampilan
                             .AsQueryable();
@@ -66,9 +68,9 @@ public class DocumentController : Controller
             // System & Accounting Metrics
             AppDeploymentDate = deploymentDate,
             AppAgeDays = ageInDays > 0 ? ageInDays : 1,
-            TotalJournalEntries = _context.JournalEntries.Count(),
-            TotalChartOfAccounts = _context.ChartOfAccounts.Count(),
-            TotalActivePeriods = _context.Periods.Count(),
+            TotalJournalEntries = _context.JournalEntries.Count(j => j.UserId == userId),
+            TotalChartOfAccounts = _context.ChartOfAccounts.Count(a => a.UserId == userId),
+            TotalActivePeriods = _context.Periods.Count(p => p.UserId == userId),
             TotalSystemUsers = _context.Users.Count()
         };
 
@@ -80,6 +82,7 @@ public class DocumentController : Controller
     {
         // Mengirim daftar Journal Entry agar bisa dipilih untuk menjaga integritas SSOT
         ViewBag.JournalEntries = _context.JournalEntries
+            .Where(j => j.UserId == this.CurrentUserId())
             .OrderByDescending(j => j.Id)
             .Take(100) // Batasi 100 jurnal terakhir agar dropdown tetap ringan
             .ToList();
@@ -136,6 +139,7 @@ public class DocumentController : Controller
 
         // Jika gagal, muat ulang dropdown journal entries
         ViewBag.JournalEntries = _context.JournalEntries
+            .Where(j => j.UserId == this.CurrentUserId())
             .OrderByDescending(j => j.Id)
             .Take(100)
             .ToList();

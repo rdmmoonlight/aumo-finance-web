@@ -13,6 +13,18 @@ namespace AumoFinance.Controllers
             _db = db;
         }
 
+        // Semua laporan di controller ini dibatasi ke:
+        // 1. Data milik user yang sedang login (Chart of Accounts, Journal
+        //    Entries terisolasi penuh per user).
+        // 2. Periode yang sedang di-view (dipilih lewat ikon mata di halaman
+        //    Periods). Tanpa periode terpilih, laporan kosong.
+        private async Task<(Guid UserId, Period? Period)> GetReportContextAsync()
+        {
+            var userId = this.CurrentUserId();
+            var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
+            return (userId, period);
+        }
+
         // ==========================================================
         // GENERAL LEDGER
         // ==========================================================
@@ -21,7 +33,15 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> GeneralLedger()
         {
             ViewData["Title"] = "General Ledger";
-            var ledgers = await BuildLedgersAsync(AccountClassification.IsPermanent);
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new List<LedgerAccountViewModel>());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var ledgers = await BuildLedgersAsync(userId, period, AccountClassification.IsPermanent);
             return View(ledgers);
         }
 
@@ -30,7 +50,15 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> GeneralLedgerTemporary()
         {
             ViewData["Title"] = "General Ledger (Temporary Accounts)";
-            var ledgers = await BuildLedgersAsync(AccountClassification.IsTemporary);
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new List<LedgerAccountViewModel>());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var ledgers = await BuildLedgersAsync(userId, period, AccountClassification.IsTemporary);
             return View(ledgers);
         }
 
@@ -42,7 +70,15 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> TrialBalance()
         {
             ViewData["Title"] = "Trial Balance";
-            var rows = await BuildTrialBalanceRowsAsync(includeAdjusting: false);
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new TrialBalanceViewModel { Title = "Trial Balance" });
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: false);
             return View(new TrialBalanceViewModel { Title = "Trial Balance", Rows = rows });
         }
 
@@ -50,14 +86,28 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> AdjustedTrialBalance()
         {
             ViewData["Title"] = "Adjusted Trial Balance";
-            var rows = await BuildTrialBalanceRowsAsync(includeAdjusting: true);
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new TrialBalanceViewModel { Title = "Adjusted Trial Balance" });
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
             return View(new TrialBalanceViewModel { Title = "Adjusted Trial Balance", Rows = rows });
         }
 
-        private async Task<List<TrialBalanceRow>> BuildTrialBalanceRowsAsync(bool includeAdjusting)
+        // Membangun baris Neraca Saldo untuk SATU user, dibatasi ke periode
+        // yang sedang di-view:
+        // - Akun PERMANEN (Assets/Liabilities/Equity): kumulatif sampai akhir
+        //   periode ini — saldo terbawa dari periode-periode sebelumnya.
+        // - Akun NOMINAL (Income/Expense): hanya transaksi DALAM rentang
+        //   tanggal periode ini — terisolasi, tidak terbawa ke periode lain.
+        private async Task<List<TrialBalanceRow>> BuildTrialBalanceRowsAsync(Guid userId, Period period, bool includeAdjusting)
         {
             var accounts = await _db.ChartOfAccounts
-                .Where(a => a.IsActive)
+                .Where(a => a.IsActive && a.UserId == userId)
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
 
@@ -65,7 +115,7 @@ namespace AumoFinance.Controllers
 
             var linesQuery = _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
-                .Where(l => accountIds.Contains(l.AccountId));
+                .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId);
 
             var lines = includeAdjusting
                 ? await linesQuery.Where(l => l.JournalEntry!.JournalType == "General" || l.JournalEntry!.JournalType == "Adjusting").ToListAsync()
@@ -74,8 +124,12 @@ namespace AumoFinance.Controllers
             var rows = new List<TrialBalanceRow>();
             foreach (var account in accounts)
             {
+                var isPermanent = AccountClassification.IsPermanent(account.Type);
+                var accountLines = isPermanent
+                    ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate).ToList()
+                    : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
+
                 var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
-                var accountLines = lines.Where(l => l.AccountId == account.Id).ToList();
                 var netBalance = normalDebit
                     ? accountLines.Sum(l => l.Debit - l.Credit)
                     : accountLines.Sum(l => l.Credit - l.Debit);
@@ -104,11 +158,18 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> Worksheet()
         {
             ViewData["Title"] = "Worksheet";
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new WorksheetViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
 
-            var unadjusted = await BuildTrialBalanceRowsAsync(includeAdjusting: false);
-            var adjusted = await BuildTrialBalanceRowsAsync(includeAdjusting: true);
+            var unadjusted = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: false);
+            var adjusted = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
 
-            var accounts = await _db.ChartOfAccounts.Where(a => a.IsActive).OrderBy(a => a.ReferenceNumber).ToListAsync();
+            var accounts = await _db.ChartOfAccounts.Where(a => a.IsActive && a.UserId == userId).OrderBy(a => a.ReferenceNumber).ToListAsync();
 
             var vm = new WorksheetViewModel();
             var allRefs = unadjusted.Select(r => r.AccountId)
@@ -171,14 +232,22 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> IncomeStatement()
         {
             ViewData["Title"] = "Income Statement";
-            var rows = await BuildTrialBalanceRowsAsync(includeAdjusting: true);
-            var vm = BuildIncomeStatement(rows);
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new IncomeStatementViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var vm = BuildIncomeStatement(rows, period);
             return View(vm);
         }
 
-        private IncomeStatementViewModel BuildIncomeStatement(List<TrialBalanceRow> rows)
+        private IncomeStatementViewModel BuildIncomeStatement(List<TrialBalanceRow> rows, Period period)
         {
-            var vm = new IncomeStatementViewModel { AsOfDate = DateTime.UtcNow };
+            var vm = new IncomeStatementViewModel { AsOfDate = period.EndDate };
 
             IncomeStatementLine ToLine(TrialBalanceRow r) => new()
             {
@@ -201,14 +270,22 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> RetainedEarnings()
         {
             ViewData["Title"] = "Retained Earnings Statement";
-            var vm = await BuildRetainedEarningsAsync();
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new RetainedEarningsViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var vm = await BuildRetainedEarningsAsync(userId, period);
             return View(vm);
         }
 
-        private async Task<RetainedEarningsViewModel> BuildRetainedEarningsAsync()
+        private async Task<RetainedEarningsViewModel> BuildRetainedEarningsAsync(Guid userId, Period period)
         {
-            var rows = await BuildTrialBalanceRowsAsync(includeAdjusting: true);
-            var incomeStatement = BuildIncomeStatement(rows);
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var incomeStatement = BuildIncomeStatement(rows, period);
             var reAccount = rows.FirstOrDefault(r => r.Role == "RetainedEarnings");
 
             return new RetainedEarningsViewModel
@@ -226,8 +303,16 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> StatementOfFinancialPosition()
         {
             ViewData["Title"] = "Statement of Financial Position";
-            var vm = await BuildSofpAsync(isPostClosing: false);
-            
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View("StatementOfFinancialPosition", new StatementOfFinancialPositionViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var vm = await BuildSofpAsync(userId, period, isPostClosing: false);
+
             // Ditegaskan untuk me-render View "StatementOfFinancialPosition.cshtml"
             return View("StatementOfFinancialPosition", vm);
         }
@@ -238,16 +323,24 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> PostClosingTrialBalance()
         {
             ViewData["Title"] = "Post-Closing Trial Balance";
-            var vm = await BuildSofpAsync(isPostClosing: true);
-            
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View("PostClosingTrialBalance", new StatementOfFinancialPositionViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var vm = await BuildSofpAsync(userId, period, isPostClosing: true);
+
             // PERBAIKAN UTAMA: Menggunakan file view spesifik PostClosingTrialBalance.cshtml
             return View("PostClosingTrialBalance", vm);
         }
 
-        private async Task<StatementOfFinancialPositionViewModel> BuildSofpAsync(bool isPostClosing)
+        private async Task<StatementOfFinancialPositionViewModel> BuildSofpAsync(Guid userId, Period period, bool isPostClosing)
         {
-            var rows = await BuildTrialBalanceRowsAsync(includeAdjusting: true);
-            var re = await BuildRetainedEarningsAsync();
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var re = await BuildRetainedEarningsAsync(userId, period);
 
             FinancialPositionLine ToLine(TrialBalanceRow r) => new()
             {
@@ -258,7 +351,7 @@ namespace AumoFinance.Controllers
 
             var vm = new StatementOfFinancialPositionViewModel
             {
-                AsOfDate = DateTime.UtcNow,
+                AsOfDate = period.EndDate,
                 IsPostClosing = isPostClosing,
                 Assets = rows.Where(r => r.Type == "Assets").Select(ToLine).ToList(),
                 Liabilities = rows.Where(r => r.Type == "Liabilities").Select(ToLine).ToList(),
@@ -275,9 +368,16 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> ClosingJournal()
         {
             ViewData["Title"] = "Closing Journal";
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new ClosingJournalViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
 
-            var rows = await BuildTrialBalanceRowsAsync(includeAdjusting: true);
-            var incomeStatement = BuildIncomeStatement(rows);
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var incomeStatement = BuildIncomeStatement(rows, period);
             var reAccountName = rows.FirstOrDefault(r => r.Role == "RetainedEarnings")?.AccountName ?? "Retained Earnings";
 
             var vm = new ClosingJournalViewModel
@@ -321,9 +421,16 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> CashFlowStatement()
         {
             ViewData["Title"] = "Cash Flow Statement";
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new CashFlowStatementViewModel { BeginningCash = 0 });
+            }
+            ViewBag.SelectedPeriod = period;
 
             var cashAccountIds = await _db.ChartOfAccounts
-                .Where(a => a.IsActive && a.Role == "CashAndEquivalents")
+                .Where(a => a.IsActive && a.UserId == userId && a.Role == "CashAndEquivalents")
                 .Select(a => a.Id)
                 .ToListAsync();
 
@@ -334,8 +441,12 @@ namespace AumoFinance.Controllers
                 return View(vm);
             }
 
+            // Arus kas hanya untuk transaksi DALAM periode yang sedang di-view.
             var entryIds = await _db.JournalEntryLines
-                .Where(l => cashAccountIds.Contains(l.AccountId))
+                .Include(l => l.JournalEntry)
+                .Where(l => cashAccountIds.Contains(l.AccountId)
+                         && l.JournalEntry!.UserId == userId
+                         && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate)
                 .Select(l => l.JournalEntryId)
                 .Distinct()
                 .ToListAsync();
@@ -404,11 +515,13 @@ namespace AumoFinance.Controllers
             return View(vm);
         }
 
-        // Helper private untuk me-load data Ledger
-        private async Task<List<LedgerAccountViewModel>> BuildLedgersAsync(Func<string, bool> typeFilter)
+        // Helper private untuk me-load data Ledger, dibatasi ke user +
+        // periode yang sedang di-view (permanen = kumulatif s.d. akhir
+        // periode, nominal = hanya dalam rentang periode).
+        private async Task<List<LedgerAccountViewModel>> BuildLedgersAsync(Guid userId, Period period, Func<string, bool> typeFilter)
         {
             var accounts = (await _db.ChartOfAccounts
-                    .Where(a => a.IsActive)
+                    .Where(a => a.IsActive && a.UserId == userId)
                     .OrderBy(a => a.ReferenceNumber)
                     .ToListAsync())
                 .Where(a => typeFilter(a.Type))
@@ -418,7 +531,7 @@ namespace AumoFinance.Controllers
 
             var lines = await _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
-                .Where(l => accountIds.Contains(l.AccountId))
+                .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId)
                 .OrderBy(l => l.JournalEntry!.EntryDate)
                 .ThenBy(l => l.JournalEntry!.Id)
                 .ThenBy(l => l.LineOrder)
@@ -428,11 +541,16 @@ namespace AumoFinance.Controllers
 
             foreach (var account in accounts)
             {
+                var isPermanent = AccountClassification.IsPermanent(account.Type);
                 var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
                 decimal running = 0;
 
+                var accountLines = isPermanent
+                    ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate)
+                    : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate);
+
                 var ledgerLines = new List<LedgerLineViewModel>();
-                foreach (var line in lines.Where(l => l.AccountId == account.Id))
+                foreach (var line in accountLines)
                 {
                     running += normalDebit ? (line.Debit - line.Credit) : (line.Credit - line.Debit);
                     ledgerLines.Add(new LedgerLineViewModel
