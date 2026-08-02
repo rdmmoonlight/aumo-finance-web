@@ -36,18 +36,19 @@ namespace AumoFinance.Controllers
             DateTime periodStart;
             DateTime periodEnd;
 
-            // 1. Tentukan Rentang Berdasarkan Switch (Monthly / Annual), selalu
-            // relatif ke periode yang sedang di-view.
+            // 1. Tentukan Rentang Berdasarkan Switch (Monthly / Annual)
+            // Pastikan DateTimeKind di-set ke UTC untuk PostgreSQL (Npgsql)
             if (isAnnual)
             {
-                periodStart = new DateTime(selectedPeriod.StartDate.Year, 1, 1);
-                periodEnd = new DateTime(selectedPeriod.StartDate.Year, 12, 31, 23, 59, 59);
-                model.ActivePeriodName = $"Year {selectedPeriod.StartDate.Year}";
+                var year = selectedPeriod.StartDate.Year;
+                periodStart = DateTime.SpecifyKind(new DateTime(year, 1, 1, 0, 0, 0), DateTimeKind.Utc);
+                periodEnd = DateTime.SpecifyKind(new DateTime(year, 12, 31, 23, 59, 59), DateTimeKind.Utc);
+                model.ActivePeriodName = $"Year {year}";
             }
             else
             {
-                periodStart = selectedPeriod.StartDate;
-                periodEnd = selectedPeriod.EndDate;
+                periodStart = DateTime.SpecifyKind(selectedPeriod.StartDate, DateTimeKind.Utc);
+                periodEnd = DateTime.SpecifyKind(selectedPeriod.EndDate, DateTimeKind.Utc);
                 model.ActivePeriodName = selectedPeriod.PeriodName;
             }
 
@@ -192,7 +193,7 @@ namespace AumoFinance.Controllers
                 });
             }
 
-            // 9. Jurnal Terakhir (dibatasi ke periode yang sedang di-view)
+            // 9. Jurnal Terakhir (Aman karena periodStart & periodEnd sudah UTC)
             model.RecentJournals = await _db.JournalEntries
                 .Where(j => j.EntryDate >= periodStart && j.EntryDate <= periodEnd)
                 .OrderByDescending(j => j.EntryDate)
@@ -206,7 +207,7 @@ namespace AumoFinance.Controllers
                 })
                 .ToListAsync();
 
-            // 10. Predictive Metrics (Burn Rate, Cash Runway, Health Score)
+            // 10. Predictive Metrics
             model.MonthlyBurnRate = isAnnual ? (model.OperatingExpenses / 12m) : model.OperatingExpenses;
 
             if (model.MonthlyBurnRate > 0)
