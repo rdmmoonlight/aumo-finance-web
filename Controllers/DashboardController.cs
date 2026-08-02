@@ -20,36 +20,36 @@ namespace AumoFinance.Controllers
             
             ViewData["CurrentPeriodType"] = isAnnual ? "annual" : "monthly";
 
-            var now = DateTime.UtcNow;
+            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db);
+
+            if (selectedPeriod == null)
+            {
+                // Belum ada periode yang di-view — Dashboard tidak menampilkan
+                // angka apa pun sampai user memilih periode di halaman Periods.
+                model.HasSelectedPeriod = false;
+                return View(model);
+            }
+
+            model.HasSelectedPeriod = true;
+            model.IsSelectedPeriodClosed = selectedPeriod.IsClosed;
+
             DateTime periodStart;
             DateTime periodEnd;
 
-            // 1. Tentukan Periode Berdasarkan Switch (Monthly / Annual)
+            // 1. Tentukan Rentang Berdasarkan Switch (Monthly / Annual)
+            // Pastikan DateTimeKind di-set ke UTC untuk PostgreSQL (Npgsql)
             if (isAnnual)
             {
-                periodStart = new DateTime(now.Year, 1, 1);
-                periodEnd = new DateTime(now.Year, 12, 31, 23, 59, 59);
-                model.ActivePeriodName = $"Year {now.Year}";
+                var year = selectedPeriod.StartDate.Year;
+                periodStart = DateTime.SpecifyKind(new DateTime(year, 1, 1, 0, 0, 0), DateTimeKind.Utc);
+                periodEnd = DateTime.SpecifyKind(new DateTime(year, 12, 31, 23, 59, 59), DateTimeKind.Utc);
+                model.ActivePeriodName = $"Year {year}";
             }
             else
             {
-                var activePeriod = await _db.Periods
-                    .Where(p => !p.IsClosed)
-                    .OrderByDescending(p => p.StartDate)
-                    .FirstOrDefaultAsync();
-
-                if (activePeriod != null)
-                {
-                    model.ActivePeriodName = activePeriod.PeriodName;
-                    periodStart = activePeriod.StartDate;
-                    periodEnd = activePeriod.EndDate;
-                }
-                else
-                {
-                    periodStart = new DateTime(now.Year, now.Month, 1);
-                    periodEnd = new DateTime(now.Year, now.Month, DateTime.DaysInMonth(now.Year, now.Month), 23, 59, 59);
-                    model.ActivePeriodName = now.ToString("MMMM yyyy");
-                }
+                periodStart = DateTime.SpecifyKind(selectedPeriod.StartDate, DateTimeKind.Utc);
+                periodEnd = DateTime.SpecifyKind(selectedPeriod.EndDate, DateTimeKind.Utc);
+                model.ActivePeriodName = selectedPeriod.PeriodName;
             }
 
             model.ActivePeriodStart = periodStart;
@@ -64,7 +64,7 @@ namespace AumoFinance.Controllers
             var lines = await _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
                 .Include(l => l.Account)
-                .Where(l => l.JournalEntry != null)
+                .Where(l => l.JournalEntry != null && l.JournalEntry.EntryDate <= periodEnd)
                 .ToListAsync();
 
             // 3. Hitung Net Balance Akun Kumulatif
@@ -193,8 +193,9 @@ namespace AumoFinance.Controllers
                 });
             }
 
-            // 9. Jurnal Terakhir
+            // 9. Jurnal Terakhir (Aman karena periodStart & periodEnd sudah UTC)
             model.RecentJournals = await _db.JournalEntries
+                .Where(j => j.EntryDate >= periodStart && j.EntryDate <= periodEnd)
                 .OrderByDescending(j => j.EntryDate)
                 .ThenByDescending(j => j.Id)
                 .Take(8)
@@ -206,7 +207,7 @@ namespace AumoFinance.Controllers
                 })
                 .ToListAsync();
 
-            // 10. Predictive Metrics (Burn Rate, Cash Runway, Health Score)
+            // 10. Predictive Metrics
             model.MonthlyBurnRate = isAnnual ? (model.OperatingExpenses / 12m) : model.OperatingExpenses;
 
             if (model.MonthlyBurnRate > 0)

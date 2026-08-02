@@ -6,10 +6,10 @@
 <div class="container-fluid py-4 px-4">
     <div class="mb-4">
         <h2 class="fw-bold text-body-emphasis mb-1">
-            <i class="bi bi-calendar-plus text-primary me-2"></i> Open New Period & Init COA
+            <i class="bi bi-calendar-plus text-primary me-2"></i> Open New Period
         </h2>
         <p class="text-secondary mb-0">
-            Initialize a new accounting cycle. This process will register your core accounts (Cash, Bank, Equity) into the Chart of Accounts and automatically post the opening balances.
+            Register a new accounting cycle. Carry forward the permanent accounts already in use, or register them for the first time if this is a brand-new setup.
         </p>
     </div>
 
@@ -20,15 +20,18 @@
         </div>
     }
 
-    <div class="row">
-        <div class="col-12 col-xl-9">
+    <div class="row g-4">
+        <!-- ============================================= -->
+        <!-- FORM                                            -->
+        <!-- ============================================= -->
+        <div class="col-12 col-xl-8">
             <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
                 <div class="card-body p-4">
-                    <form asp-action="Create" method="post">
-                        
+                    <form asp-action="Create" method="post" id="openPeriodForm">
+
                         <!-- 1. Period Setup -->
                         <h5 class="fw-bold mb-3 border-bottom pb-2 text-primary">1. Period Setup</h5>
-                        <div class="row g-3 mb-5">
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label asp-for="Month" class="form-label fw-semibold small">Month</label>
                                 <select asp-for="Month" class="form-select">
@@ -44,66 +47,144 @@
                             </div>
                         </div>
 
-                        <!-- 2. Cash Account -->
-                        <h5 class="fw-bold mb-3 border-bottom pb-2 text-success">2. Cash Account Initialization (Debit)</h5>
+                        <!-- 2. Permanent Account Setup: mode choice -->
+                        <h5 class="fw-bold mb-3 border-bottom pb-2 text-primary">2. Permanent Accounts (Cash, Bank, Retained Earnings)</h5>
+
                         <div class="row g-3 mb-4">
-                            <div class="col-md-3">
-                                <label asp-for="CashAccountCode" class="form-label fw-semibold small">Reference</label>
-                                <input asp-for="CashAccountCode" class="form-control" placeholder="e.g., 101" />
-                                <span asp-validation-for="CashAccountCode" class="text-danger small"></span>
+                            <div class="col-md-6">
+                                <label class="card border rounded-3 p-3 h-100 mb-0 d-flex gap-2 setup-mode-option @(!Model.HasExistingPermanentAccounts ? "disabled opacity-50" : "")">
+                                    <input class="form-check-input mt-1" type="radio" name="SetupMode" value="LoadExisting"
+                                           checked="@(Model.SetupMode == "LoadExisting")"
+                                           disabled="@(!Model.HasExistingPermanentAccounts)" id="modeLoadExisting" />
+                                    <span>
+                                        <span class="fw-semibold d-block">
+                                            Load from previous period
+                                            @if (Model.HasExistingPermanentAccounts)
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">Recommended</span>
+                                            }
+                                        </span>
+                                        <span class="text-secondary small">
+                                            Reuse the existing Cash, Bank, and Retained Earnings accounts. Balances carry forward automatically — no new journal entry needed.
+                                        </span>
+                                        @if (!Model.HasExistingPermanentAccounts)
+                                        {
+                                            <span class="text-danger small d-block mt-1"><i class="bi bi-info-circle me-1"></i>No permanent accounts registered yet.</span>
+                                        }
+                                    </span>
+                                </label>
                             </div>
-                            <div class="col-md-5">
-                                <label asp-for="CashAccountName" class="form-label fw-semibold small">Account Name</label>
-                                <input asp-for="CashAccountName" class="form-control" placeholder="e.g., Cash" />
-                                <span asp-validation-for="CashAccountName" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="CashBalance" class="form-label fw-semibold small">Opening Balance</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input asp-for="CashBalance" class="form-control" type="number" step="0.01" min="0" />
-                                </div>
-                                <span asp-validation-for="CashBalance" class="text-danger small"></span>
+                            <div class="col-md-6">
+                                <label class="card border rounded-3 p-3 h-100 mb-0 d-flex gap-2 setup-mode-option">
+                                    <input class="form-check-input mt-1" type="radio" name="SetupMode" value="CreateNew"
+                                           checked="@(Model.SetupMode == "CreateNew")" id="modeCreateNew" />
+                                    <span>
+                                        <span class="fw-semibold d-block">Register new permanent accounts</span>
+                                        <span class="text-secondary small">
+                                            For a brand-new setup with no accounting history yet. Creates Cash, Bank, and Retained Earnings in the Chart of Accounts and posts the opening balances.
+                                        </span>
+                                    </span>
+                                </label>
                             </div>
                         </div>
 
-                        <!-- 3. Bank Account -->
-                        <h5 class="fw-bold mb-3 border-bottom pb-2 text-success">3. Bank Account Initialization (Debit)</h5>
-                        <div class="row g-3 mb-5">
-                            <div class="col-md-3">
-                                <label asp-for="BankAccountCode" class="form-label fw-semibold small">Reference</label>
-                                <input asp-for="BankAccountCode" class="form-control" placeholder="e.g., 102" />
-                                <span asp-validation-for="BankAccountCode" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-5">
-                                <label asp-for="BankAccountName" class="form-label fw-semibold small">Account Name</label>
-                                <input asp-for="BankAccountName" class="form-control" placeholder="e.g., Bank Central" />
-                                <span asp-validation-for="BankAccountName" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-4">
-                                <label asp-for="BankBalance" class="form-label fw-semibold small">Opening Balance</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input asp-for="BankBalance" class="form-control" type="number" step="0.01" min="0" />
+                        <!-- 2a. LOAD EXISTING panel -->
+                        <div id="panelLoadExisting" class="border rounded-3 p-3 mb-4 bg-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Cash Account</label>
+                                    <select name="CashAccountId" class="form-select" id="selCashAccountId">
+                                        <option value="">Select account...</option>
+                                        @foreach (var acc in Model.AvailableCashAndBankAccounts)
+                                        {
+                                            <option value="@acc.Id" selected="@(Model.CashAccountId == acc.Id)">@acc.ReferenceNumber - @acc.AccountName</option>
+                                        }
+                                    </select>
                                 </div>
-                                <span asp-validation-for="BankBalance" class="text-danger small"></span>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold small">Bank Account</label>
+                                    <select name="BankAccountId" class="form-select" id="selBankAccountId">
+                                        <option value="">Select account...</option>
+                                        @foreach (var acc in Model.AvailableCashAndBankAccounts)
+                                        {
+                                            <option value="@acc.Id" selected="@(Model.BankAccountId == acc.Id)">@acc.ReferenceNumber - @acc.AccountName</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold small">Retained Earnings Account</label>
+                                    <select name="RetainedEarningsAccountId" class="form-select" id="selRetainedEarningsAccountId">
+                                        <option value="">Select account...</option>
+                                        @foreach (var acc in Model.AvailableRetainedEarningsAccounts)
+                                        {
+                                            <option value="@acc.Id" selected="@(Model.RetainedEarningsAccountId == acc.Id)">@acc.ReferenceNumber - @acc.AccountName</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-text text-secondary mb-0">
+                                        <i class="bi bi-info-circle"></i> No new Chart of Accounts entries or opening journal will be created. This period simply reuses the ledger already in place.
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- 4. Equity / Retained Earnings -->
-                        <h5 class="fw-bold mb-3 border-bottom pb-2 text-warning">4. Equity Equivalence (Credit)</h5>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-3">
-                                <label asp-for="RetainedEarningsAccountCode" class="form-label fw-semibold small">Reference</label>
-                                <input asp-for="RetainedEarningsAccountCode" class="form-control" placeholder="e.g., 301" />
-                                <span asp-validation-for="RetainedEarningsAccountCode" class="text-danger small"></span>
+                        <!-- 2b. CREATE NEW panel -->
+                        <div id="panelCreateNew" class="border rounded-3 p-3 mb-4 bg-body">
+                            <h6 class="fw-bold mb-3 text-success">Cash Account (Debit)</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold small">Reference</label>
+                                    <input name="CashAccountCode" value="@Model.CashAccountCode" class="form-control" placeholder="e.g., 101" autocomplete="off" />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold small">Account Name</label>
+                                    <input name="CashAccountName" value="@Model.CashAccountName" class="form-control" placeholder="e.g., Cash" autocomplete="off" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Opening Balance</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" inputmode="numeric" name="CashBalance" id="CashBalance"
+                                               value="@((Model.CashBalance ?? 0) == 0 ? "" : Model.CashBalance!.Value.ToString("N0"))"
+                                               class="form-control text-end currency-input" placeholder="0" autocomplete="off" />
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-9">
-                                <label asp-for="RetainedEarningsAccountName" class="form-label fw-semibold small">Retained Earnings / Capital Account Name</label>
-                                <input asp-for="RetainedEarningsAccountName" class="form-control" placeholder="e.g., Retained Earnings" />
-                                <span asp-validation-for="RetainedEarningsAccountName" class="text-danger small"></span>
-                                <div class="form-text text-secondary mt-2">
-                                    <i class="bi bi-info-circle"></i> The system will automatically credit this account with the sum of the Cash and Bank balances.
+
+                            <h6 class="fw-bold mb-3 text-success">Bank Account (Debit)</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold small">Reference</label>
+                                    <input name="BankAccountCode" value="@Model.BankAccountCode" class="form-control" placeholder="e.g., 102" autocomplete="off" />
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label fw-semibold small">Account Name</label>
+                                    <input name="BankAccountName" value="@Model.BankAccountName" class="form-control" placeholder="e.g., Bank Central" autocomplete="off" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Opening Balance</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="text" inputmode="numeric" name="BankBalance" id="BankBalance"
+                                               value="@((Model.BankBalance ?? 0) == 0 ? "" : Model.BankBalance!.Value.ToString("N0"))"
+                                               class="form-control text-end currency-input" placeholder="0" autocomplete="off" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold mb-3 text-warning">Retained Earnings / Capital (Credit)</h6>
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold small">Reference</label>
+                                    <input name="RetainedEarningsAccountCode" value="@Model.RetainedEarningsAccountCode" class="form-control" placeholder="e.g., 301" autocomplete="off" />
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="form-label fw-semibold small">Account Name</label>
+                                    <input name="RetainedEarningsAccountName" value="@Model.RetainedEarningsAccountName" class="form-control" placeholder="e.g., Retained Earnings" autocomplete="off" />
+                                    <div class="form-text text-secondary mt-2">
+                                        <i class="bi bi-info-circle"></i> This account will be credited automatically with the sum of the Cash and Bank balances (<strong>Rp <span id="creditPreview">0</span></strong>).
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -111,7 +192,7 @@
                         <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
                             <a asp-action="Index" class="btn btn-outline-secondary px-4">Cancel</a>
                             <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
-                                <i class="bi bi-check2-circle me-1"></i> Initialize & Open Period
+                                <i class="bi bi-check2-circle me-1"></i> Open Period
                             </button>
                         </div>
 
@@ -119,5 +200,123 @@
                 </div>
             </div>
         </div>
+
+        <!-- ============================================= -->
+        <!-- SIDEBAR: Existing Chart of Accounts Reference   -->
+        <!-- ============================================= -->
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary h-100">
+                <div class="card-header bg-transparent border-bottom py-3 px-4">
+                    <h6 class="fw-bold mb-0 text-body-emphasis">
+                        <i class="bi bi-card-list me-2 text-secondary"></i> Existing Chart of Accounts
+                    </h6>
+                    <small class="text-secondary">Reference numbers already in use.</small>
+                </div>
+                <div class="card-body p-0" style="max-height: 640px; overflow-y: auto;">
+                    @if (Model.ExistingAccounts != null && Model.ExistingAccounts.Any())
+                    {
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="ps-3" style="width: 70px;">Ref</th>
+                                    <th>Account Name</th>
+                                    <th class="text-end pe-3">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var acc in Model.ExistingAccounts)
+                                {
+                                    <tr>
+                                        <td class="ps-3 fw-semibold">@acc.ReferenceNumber</td>
+                                        <td>@acc.AccountName</td>
+                                        <td class="text-end pe-3">
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle small">@acc.Type</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="text-center text-secondary py-5 px-3">
+                            <i class="bi bi-inbox mb-2 d-block" style="font-size: 2rem;"></i>
+                            <small>No accounts registered yet. The three accounts created below will be the first entries in your Chart of Accounts.</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<style>
+    .setup-mode-option { cursor: pointer; }
+    .setup-mode-option.disabled { cursor: not-allowed; }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("openPeriodForm");
+        const modeLoadExisting = document.getElementById("modeLoadExisting");
+        const modeCreateNew = document.getElementById("modeCreateNew");
+        const panelLoadExisting = document.getElementById("panelLoadExisting");
+        const panelCreateNew = document.getElementById("panelCreateNew");
+        const creditPreviewEl = document.getElementById("creditPreview");
+
+        function togglePanels() {
+            const usingExisting = modeLoadExisting.checked;
+
+            panelLoadExisting.style.display = usingExisting ? "" : "none";
+            panelCreateNew.style.display = usingExisting ? "none" : "";
+
+            panelLoadExisting.querySelectorAll("select").forEach(el => el.disabled = !usingExisting);
+            panelCreateNew.querySelectorAll("input").forEach(el => el.disabled = usingExisting);
+        }
+
+        modeLoadExisting.addEventListener("change", togglePanels);
+        modeCreateNew.addEventListener("change", togglePanels);
+        togglePanels();
+
+        // --- Thousands-separator formatting (Create New panel) ---
+        function formatNumber(value) {
+            if (!value) return "";
+            let cleanValue = value.replace(/\D/g, "");
+            if (!cleanValue) return "";
+            return parseInt(cleanValue, 10).toLocaleString("id-ID");
+        }
+
+        function parseRawNumber(value) {
+            if (!value) return 0;
+            return parseInt(value.replace(/\./g, ""), 10) || 0;
+        }
+
+        function updateCreditPreview() {
+            const cash = parseRawNumber(document.getElementById("CashBalance").value);
+            const bank = parseRawNumber(document.getElementById("BankBalance").value);
+            creditPreviewEl.textContent = (cash + bank).toLocaleString("id-ID");
+        }
+
+        form.addEventListener("input", function (e) {
+            if (e.target.classList.contains("currency-input")) {
+                const cursorPosition = e.target.selectionStart;
+                const originalLength = e.target.value.length;
+
+                e.target.value = formatNumber(e.target.value);
+
+                const newLength = e.target.value.length;
+                e.target.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
+
+                updateCreditPreview();
+            }
+        });
+
+        document.querySelectorAll(".currency-input").forEach(input => {
+            if (input.value) {
+                input.value = formatNumber(input.value);
+            }
+        });
+
+        updateCreditPreview();
+    });
+</script>

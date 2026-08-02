@@ -1,6 +1,7 @@
 @model IEnumerable<AumoFinance.Models.Period>
 @{
     ViewData["Title"] = "Accounting Periods";
+    int? selectedId = ViewBag.SelectedPeriodId;
 }
 
 <div class="container-fluid py-4 px-4">
@@ -10,10 +11,18 @@
             <h2 class="fw-bold text-body-emphasis mb-1">
                 <i class="bi bi-calendar3 me-2 text-primary"></i> Accounting Periods
             </h2>
-            <p class="text-secondary mb-0">Manage your financial reporting cycles and accounting periods.</p>
+            <p class="text-secondary mb-0">
+                Manage your financial reporting cycles.
+                Click <i class="bi bi-eye"></i> to view a period — the whole app (Dashboard, journals, reports) will follow it.
+            </p>
         </div>
-        <div>
-            <!-- Tombol untuk membuka periode baru -->
+        <div class="d-flex gap-2">
+            @if (selectedId != null)
+            {
+                <a asp-action="ClearSelection" class="btn btn-outline-secondary fw-semibold shadow-sm">
+                    <i class="bi bi-eye-slash me-1"></i> Stop Viewing
+                </a>
+            }
             <a asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Open New Period
             </a>
@@ -60,9 +69,14 @@
                         {
                             foreach (var period in Model)
                             {
-                                <tr>
+                                var isSelected = selectedId == period.Id;
+                                <tr class="@(isSelected ? "table-primary" : "")">
                                     <td class="ps-4 fw-bold text-body">
                                         @period.PeriodName
+                                        @if (isSelected)
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2 small"><i class="bi bi-eye-fill me-1"></i>Viewing</span>
+                                        }
                                     </td>
                                     <td>
                                         <span class="text-secondary">@period.StartDate.ToString("dd MMM yyyy")</span>
@@ -85,16 +99,19 @@
                                         }
                                     </td>
                                     <td class="text-center pe-4">
-                                        <!-- Placeholder Action Buttons -->
                                         <div class="btn-group shadow-sm">
-                                            <button class="btn btn-sm btn-outline-secondary" title="View Details">
+                                            <a asp-action="SelectPeriod" asp-route-id="@period.Id" class="btn btn-sm @(isSelected ? "btn-primary" : "btn-outline-secondary")" title="View this period">
                                                 <i class="bi bi-eye"></i>
-                                            </button>
+                                            </a>
                                             @if (!period.IsClosed)
                                             {
-                                                <button class="btn btn-sm btn-outline-warning" title="Close Period">
-                                                    <i class="bi bi-lock"></i>
-                                                </button>
+                                                <form asp-action="ClosePeriod" asp-route-id="@period.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Close Period"
+                                                            onclick="return confirm('Are you sure you want to close @period.PeriodName? No further edits will be allowed.')">
+                                                        <i class="bi bi-lock"></i>
+                                                    </button>
+                                                </form>
                                             }
                                         </div>
                                     </td>

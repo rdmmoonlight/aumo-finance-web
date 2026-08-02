@@ -22,11 +22,34 @@
         </div>
     </div>
 
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm py-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show shadow-sm py-2" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @{
+        var selectedPeriod = ViewBag.SelectedPeriod as AumoFinance.Models.Period;
+    }
+    @if (selectedPeriod != null)
+    {
+        <div class="alert alert-secondary shadow-sm py-2 small d-flex align-items-center gap-2">
+            <i class="bi bi-eye-fill"></i>
+            Showing <strong>@selectedPeriod.PeriodName</strong>
+            @if (selectedPeriod.IsClosed)
+            {
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-lock-fill me-1"></i>Closed</span>
+            }
         </div>
     }
 
@@ -105,8 +128,16 @@
                         {
                             <tr>
                                 <td colspan="6" class="text-center py-5 text-secondary">
-                                    <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                    No journal entries recorded yet in this period.
+                                    @if (selectedPeriod == null)
+                                    {
+                                        <i class="bi bi-eye-slash mb-3 d-block" style="font-size: 2.5rem;"></i>
+                                        <span>No period selected. Go to <a asp-controller="Periods" asp-action="Index">Periods</a> and click <i class="bi bi-eye"></i> to view one.</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
+                                        <span>No journal entries recorded in @selectedPeriod.PeriodName.</span>
+                                    }
                                 </td>
                             </tr>
                         }

@@ -56,6 +56,12 @@ namespace AumoFinance.Controllers
                 ModelState.AddModelError(string.Empty, "One or more selected accounts are invalid or inactive.");
             }
 
+            var closedPeriodsForCreate = await _db.Periods.Where(p => p.IsClosed).ToListAsync();
+            if (PeriodLock.IsDateLocked(model.EntryDate, closedPeriodsForCreate))
+            {
+                ModelState.AddModelError(string.Empty, "This date falls within a closed period. Choose a date in an open period.");
+            }
+
             if (!ModelState.IsValid)
             {
                 model.AvailableAccounts = await ActiveAccountsAsync();
@@ -95,6 +101,13 @@ namespace AumoFinance.Controllers
             if (entry == null)
             {
                 return NotFound();
+            }
+
+            var closedPeriodsForGet = await _db.Periods.Where(p => p.IsClosed).ToListAsync();
+            if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriodsForGet))
+            {
+                TempData["ErrorMessage"] = $"Journal entry {entry.ReferenceNumber} belongs to a closed period and cannot be edited. View it from the Periods page instead.";
+                return RedirectToAction("Index", "GeneralJournal");
             }
 
             ViewData["Title"] = $"Edit Journal Entry {entry.ReferenceNumber}";
@@ -156,6 +169,13 @@ namespace AumoFinance.Controllers
             if (model.Lines.Any(l => !validAccountIds.Contains(l.AccountId)))
             {
                 ModelState.AddModelError(string.Empty, "One or more selected accounts are invalid or inactive.");
+            }
+
+            var closedPeriodsForEdit = await _db.Periods.Where(p => p.IsClosed).ToListAsync();
+            if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriodsForEdit) || PeriodLock.IsDateLocked(model.EntryDate, closedPeriodsForEdit))
+            {
+                TempData["ErrorMessage"] = $"Journal entry {entry.ReferenceNumber} falls within a closed period and cannot be modified.";
+                return RedirectToAction("Index", "GeneralJournal");
             }
 
             if (!ModelState.IsValid)
