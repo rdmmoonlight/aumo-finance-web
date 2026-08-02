@@ -8,7 +8,7 @@
             <h2 class="fw-bold text-body-emphasis mb-1">
                 <i class="bi bi-tools me-2 text-warning"></i> Tools & Utilities
             </h2>
-            <p class="text-secondary mb-0">System operations, batch data processing, and period-end maintenance.</p>
+            <p class="text-secondary mb-0">System operations and batch data processing.</p>
         </div>
     </div>
 
@@ -80,35 +80,9 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- 2. END OF PERIOD / MONTH-END CLOSE         -->
+        <!-- 2. SYSTEM MAINTENANCE & UTILITIES          -->
         <!-- ========================================== -->
-        <div class="col-12 col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
-                <div class="card-body p-4 d-flex flex-column">
-                    <div class="mb-3">
-                        <i class="bi bi-calendar-check text-warning" style="font-size: 2.5rem;"></i>
-                    </div>
-                    <h5 class="fw-bold">Month-End Close</h5>
-                    <p class="text-secondary small">
-                        Lock transactions for the selected accounting period and calculate Retained Earnings to ensure historical ledger integrity.
-                    </p>
-                    
-                    <form asp-action="MonthEndClose" method="post" class="mt-auto">
-                        <div class="mb-3">
-                            <input type="month" class="form-control form-control-sm rounded-3" name="period" required />
-                        </div>
-                        <button type="submit" class="btn btn-outline-warning w-100 btn-sm fw-semibold rounded-3" onclick="return confirm('Are you sure you want to close this period? No further edits will be allowed.')">
-                            <i class="bi bi-lock me-1"></i> Execute Closing
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- 3. SYSTEM MAINTENANCE & UTILITIES          -->
-        <!-- ========================================== -->
-        <div class="col-12 col-md-6 col-lg-3">
+        <div class="col-12 col-lg-6">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="mb-3">

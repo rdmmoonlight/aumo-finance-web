@@ -85,16 +85,19 @@
                                         }
                                     </td>
                                     <td class="text-center pe-4">
-                                        <!-- Placeholder Action Buttons -->
                                         <div class="btn-group shadow-sm">
                                             <button class="btn btn-sm btn-outline-secondary" title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             @if (!period.IsClosed)
                                             {
-                                                <button class="btn btn-sm btn-outline-warning" title="Close Period">
-                                                    <i class="bi bi-lock"></i>
-                                                </button>
+                                                <form asp-action="ClosePeriod" asp-route-id="@period.Id" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Close Period"
+                                                            onclick="return confirm('Are you sure you want to close @period.PeriodName? No further edits will be allowed.')">
+                                                        <i class="bi bi-lock"></i>
+                                                    </button>
+                                                </form>
                                             }
                                         </div>
                                     </td>

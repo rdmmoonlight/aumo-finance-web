@@ -122,5 +122,47 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
         }
+
+        // POST: /Periods/ClosePeriod/{id}
+        // Fungsi close period satu-satunya di aplikasi ini. Menutup periode
+        // mengunci periode tersebut dari perubahan lebih lanjut. Retained
+        // Earnings dan Laporan Posisi Keuangan tetap dihitung langsung dari
+        // saldo akun nominal (lihat ReportsController), bukan lewat jurnal
+        // penutup yang disimpan ke database.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ClosePeriod(int id)
+        {
+            var period = await _context.Periods.FindAsync(id);
+            if (period == null)
+            {
+                TempData["ErrorMessage"] = "Period not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (period.IsClosed)
+            {
+                TempData["ErrorMessage"] = $"Period {period.PeriodName} is already closed.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Periode harus ditutup berurutan: periode dengan StartDate lebih
+            // awal wajib sudah ditutup lebih dulu, supaya integritas historis
+            // ledger terjaga.
+            var hasEarlierOpenPeriod = await _context.Periods
+                .AnyAsync(p => p.Id != period.Id && p.StartDate < period.StartDate && !p.IsClosed);
+
+            if (hasEarlierOpenPeriod)
+            {
+                TempData["ErrorMessage"] = $"Cannot close {period.PeriodName}: an earlier period is still open. Close earlier periods first.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            period.IsClosed = true;
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Period {period.PeriodName} has been closed. Transactions in this period are now locked.";
+            return RedirectToAction(nameof(Index));
+        }
     }
 }
