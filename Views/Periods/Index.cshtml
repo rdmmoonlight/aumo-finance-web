@@ -1,6 +1,8 @@
 @model IEnumerable<AumoFinance.Models.Period>
+@using AumoFinance.Models
 @{
     ViewData["Title"] = "Accounting Periods";
+    var selectedId = SelectedPeriodHelper.GetSelectedPeriodId(Context);
 }
 
 <div class="container-fluid py-4 px-4">
@@ -10,10 +12,18 @@
             <h2 class="fw-bold text-body-emphasis mb-1">
                 <i class="bi bi-calendar3 me-2 text-primary"></i> Accounting Periods
             </h2>
-            <p class="text-secondary mb-0">Manage your financial reporting cycles and accounting periods.</p>
+            <p class="text-secondary mb-0">
+                Manage your financial reporting cycles.
+                Click <i class="bi bi-eye"></i> to view a period — the whole app (Dashboard, journals, reports) will follow it.
+            </p>
         </div>
-        <div>
-            <!-- Tombol untuk membuka periode baru -->
+        <div class="d-flex gap-2">
+            @if (selectedId != null)
+            {
+                <a asp-action="ClearSelection" class="btn btn-outline-secondary fw-semibold shadow-sm">
+                    <i class="bi bi-eye-slash me-1"></i> Stop Viewing
+                </a>
+            }
             <a asp-action="Create" class="btn btn-primary fw-semibold shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Open New Period
             </a>
@@ -60,9 +70,14 @@
                         {
                             foreach (var period in Model)
                             {
-                                <tr>
+                                var isSelected = selectedId == period.Id;
+                                <tr class="@(isSelected ? "table-primary" : "")">
                                     <td class="ps-4 fw-bold text-body">
                                         @period.PeriodName
+                                        @if (isSelected)
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2 small"><i class="bi bi-eye-fill me-1"></i>Viewing</span>
+                                        }
                                     </td>
                                     <td>
                                         <span class="text-secondary">@period.StartDate.ToString("dd MMM yyyy")</span>
@@ -86,7 +101,7 @@
                                     </td>
                                     <td class="text-center pe-4">
                                         <div class="btn-group shadow-sm">
-                                            <a asp-action="Details" asp-route-id="@period.Id" class="btn btn-sm btn-outline-secondary" title="View period data">
+                                            <a asp-action="SelectPeriod" asp-route-id="@period.Id" class="btn btn-sm @(isSelected ? "btn-primary" : "btn-outline-secondary")" title="View this period">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             @if (!period.IsClosed)

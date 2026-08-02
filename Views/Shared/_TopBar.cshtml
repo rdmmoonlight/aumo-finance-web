@@ -168,16 +168,20 @@
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
-    // Check database directly for the active (unclosed) period
-    var activePeriodObj = _context.Periods
-        .Where(p => !p.IsClosed)
-        .OrderByDescending(p => p.StartDate)
-        .FirstOrDefault();
+    // Tampilkan periode yang sedang di-VIEW (dipilih lewat ikon mata di
+    // halaman Periods), bukan sekadar periode terbuka terakhir. Selama
+    // belum ada yang dipilih, seluruh halaman yang bergantung padanya
+    // (Dashboard, General/Adjusting Journal, laporan) dianggap kosong.
+    var selectedPeriodId = SelectedPeriodHelper.GetSelectedPeriodId(Context);
+    var activePeriodObj = selectedPeriodId != null
+        ? _context.Periods.FirstOrDefault(p => p.Id == selectedPeriodId)
+        : null;
 
     var activePeriodName = activePeriodObj?.PeriodName;
     var hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);
-    var periodText = hasActivePeriod ? activePeriodName : "No Active Period";
-    var iconClass = hasActivePeriod ? "bi-calendar2-check text-success" : "bi-calendar-x text-warning";
+    var isViewingClosed = activePeriodObj?.IsClosed ?? false;
+    var periodText = hasActivePeriod ? activePeriodName : "No Period Selected";
+    var iconClass = !hasActivePeriod ? "bi-calendar-x text-warning" : (isViewingClosed ? "bi-lock-fill text-secondary" : "bi-calendar2-check text-success");
 
     <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm text-nowrap" style="min-height: 28px; font-size: 0.75rem;">
         
@@ -185,8 +189,12 @@
         <div class="dropdown">
             <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi @iconClass"></i>
-                <span class="text-secondary">Active Period:</span> 
+                <span class="text-secondary">Viewing:</span> 
                 <span class="text-body fw-bold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
+                @if (isViewingClosed)
+                {
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Closed</span>
+                }
             </button>
             
             <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.75rem; min-width: 180px;">
@@ -202,6 +210,14 @@
                         <i class="bi bi-list-ul"></i> View All Periods
                     </a>
                 </li>
+                @if (hasActivePeriod)
+                {
+                    <li>
+                        <a class="dropdown-item py-1 text-danger d-flex align-items-center gap-2" asp-controller="Periods" asp-action="ClearSelection">
+                            <i class="bi bi-eye-slash"></i> Stop Viewing
+                        </a>
+                    </li>
+                }
             </ul>
         </div>
 

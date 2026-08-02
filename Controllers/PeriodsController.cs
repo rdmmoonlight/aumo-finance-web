@@ -21,11 +21,11 @@ namespace AumoFinance.Controllers
             return View(periods);
         }
 
-        // GET: /Periods/Details/{id}
-        // Satu-satunya jalan untuk membaca kembali transaksi milik periode
-        // yang sudah ditutup. Menampilkan seluruh jurnal (General + Adjusting)
-        // bertanggal di rentang periode ini, terlepas dari status IsClosed.
-        public async Task<IActionResult> Details(int id)
+        // GET: /Periods/SelectPeriod/{id}
+        // Dipicu oleh ikon mata di halaman Periods. Menjadikan periode ini
+        // sebagai periode yang di-view di seluruh aplikasi (Dashboard,
+        // General Journal, Adjusting Journal, dll mengikuti pilihan ini).
+        public async Task<IActionResult> SelectPeriod(int id)
         {
             var period = await _context.Periods.FindAsync(id);
             if (period == null)
@@ -34,18 +34,17 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var entries = await _context.JournalEntries
-                .Include(j => j.Lines)
-                    .ThenInclude(l => l.Account)
-                .Where(j => j.EntryDate >= period.StartDate && j.EntryDate <= period.EndDate)
-                .OrderBy(j => j.EntryDate)
-                .ThenBy(j => j.Id)
-                .ToListAsync();
+            SelectedPeriodHelper.SetSelectedPeriod(HttpContext, period.Id);
+            TempData["SuccessMessage"] = $"Now viewing {period.PeriodName}" + (period.IsClosed ? " (Closed)." : ".");
+            return RedirectToAction(nameof(Index));
+        }
 
-            ViewData["Title"] = $"Period Details - {period.PeriodName}";
-            ViewBag.Period = period;
-
-            return View(entries);
+        // GET: /Periods/ClearSelection
+        public IActionResult ClearSelection()
+        {
+            SelectedPeriodHelper.ClearSelectedPeriod(HttpContext);
+            TempData["SuccessMessage"] = "No period selected. Reports and journals are hidden until you view a period.";
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: /Periods/Create

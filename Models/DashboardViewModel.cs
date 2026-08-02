@@ -40,6 +40,12 @@ namespace AumoFinance.Models
         public string ActivePeriodName { get; set; } = "No Active Period";
         public DateTime? ActivePeriodStart { get; set; }
         public DateTime? ActivePeriodEnd { get; set; }
+
+        // True hanya jika ada periode yang sedang di-view (dipilih lewat
+        // ikon mata di halaman Periods). Kalau false, Dashboard tidak
+        // menampilkan angka apa pun — hanya prompt untuk memilih periode.
+        public bool HasSelectedPeriod { get; set; }
+        public bool IsSelectedPeriodClosed { get; set; }
     }
 
     public class JournalEntryDto
