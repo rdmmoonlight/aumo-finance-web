@@ -103,8 +103,9 @@
 
         /* ========================================== */
         /* RESPONSIVE MOBILE TWEAKS (< 768px)         */
+        /* Gunakan @@media agar Razor tidak error      */
         /* ========================================== */
-        @media (max-width: 767.98px) {
+        @@media (max-width: 767.98px) {
             #mainContent {
                 padding: 0.75rem 0.5rem !important;
             }
@@ -184,7 +185,7 @@
     <script src="~/js/quran-banner.js" asp-append-version="true"></script>
     <script src="~/js/guardian.js" asp-append-version="true"></script>
 
-    <!-- TAMBAHAN BLAZOR: Engine Server-Side Blazor -->
+    <!-- Engine Server-Side Blazor -->
     <script src="_framework/blazor.server.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
