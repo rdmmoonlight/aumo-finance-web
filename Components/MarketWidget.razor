@@ -2,57 +2,95 @@
 @inject NavigationManager NavManager
 @inject IHttpClientFactory HttpClientFactory
 
-<div class="market-widget-bar p-3 rounded-4 bg-body border shadow-sm mx-auto" style="max-width: 600px;">
+<div class="market-widget-card card border-0 shadow-sm rounded-4 bg-body bg-opacity-75 backdrop-blur p-3 mx-auto mb-4" style="max-width: 680px;">
     @if (isLoading)
     {
-        <div class="d-flex justify-content-center align-items-center py-1 gap-2 text-secondary">
+        <!-- State: Loading -->
+        <div class="d-flex justify-content-center align-items-center py-2 gap-2 text-secondary">
             <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-            <span class="small">Memuat data pasar...</span>
+            <span class="small fw-medium">Memuat indikator pasar...</span>
         </div>
     }
     else if (marketData != null && marketData.Success)
     {
-        <div class="row align-items-center g-2 text-center text-md-start">
+        <!-- State: Success -->
+        <div class="row align-items-center g-3 text-center text-md-start">
+            
             <!-- USD / IDR -->
             <div class="col-12 col-md-4 border-end-md">
-                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
-                    <span class="text-secondary small fw-medium">USD/IDR</span>
-                    <strong class="fs-6">Rp @marketData.Usd?.Price.ToString("N0", new System.Globalization.CultureInfo("id-ID"))</strong>
-                    <span class="badge @(marketData.Usd?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") small">
-                        <i class="bi @(marketData.Usd?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
-                        @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2")%
-                    </span>
+                <div class="d-flex flex-column align-items-center align-items-md-start">
+                    <span class="text-uppercase text-secondary style-label mb-1">USD / IDR</span>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <span class="fw-bold fs-6 text-body-emphasis">
+                            Rp @marketData.Usd?.Price.ToString("N0", new System.Globalization.CultureInfo("id-ID"))
+                        </span>
+                        <span class="badge rounded-pill @(marketData.Usd?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
+                            <i class="bi @(marketData.Usd?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
+                            @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2")%
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <!-- IHSG -->
-            <div class="col-12 col-md-5 border-end-md">
-                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
-                    <span class="text-secondary small fw-medium">IHSG</span>
-                    <strong class="fs-6">@marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))</strong>
-                    <span class="badge @(marketData.Ihsg?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") small">
-                        <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
-                        @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2")%
-                    </span>
+            <!-- IHSG (^JKSE) -->
+            <div class="col-12 col-md-4 border-end-md">
+                <div class="d-flex flex-column align-items-center align-items-md-start">
+                    <span class="text-uppercase text-secondary style-label mb-1">IHSG</span>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <span class="fw-bold fs-6 text-body-emphasis">
+                            @marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
+                        </span>
+                        <span class="badge rounded-pill @(marketData.Ihsg?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
+                            <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
+                            @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2")%
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <!-- BI-Rate -->
-            <div class="col-12 col-md-3">
-                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
-                    <span class="text-secondary small fw-medium">BI-Rate</span>
-                    <strong class="fs-6 text-primary">@marketData.BiRate</strong>
+            <!-- BI-RATE -->
+            <div class="col-12 col-md-4">
+                <div class="d-flex flex-column align-items-center align-items-md-start">
+                    <span class="text-uppercase text-secondary style-label mb-1">BI-Rate</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold fs-6 text-primary">
+                            @marketData.BiRate
+                        </span>
+                        <span class="badge rounded-pill bg-primary-subtle text-primary style-badge">
+                            Acuan
+                        </span>
+                    </div>
                 </div>
             </div>
+
         </div>
     }
     else
     {
-        <div class="text-center text-muted small">
-            <i class="bi bi-exclamation-circle me-1"></i> Data pasar tidak dapat dimuat.
+        <!-- State: Error / Fallback -->
+        <div class="d-flex align-items-center justify-content-center text-muted small py-1 gap-2">
+            <i class="bi bi-exclamation-circle text-warning"></i>
+            <span>Indikator pasar sementara tidak tersedia.</span>
         </div>
     }
 </div>
+
+<style>
+    .style-label {
+        font-size: 0.725rem;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+    .style-badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.55em;
+    }
+    @@media (min-width: 768px) {
+        .border-end-md {
+            border-right: 1px solid var(--bs-border-color-translucent);
+        }
+    }
+</style>
 
 @code {
     private MarketDataResponse? marketData;
@@ -69,12 +107,14 @@
         {
             isLoading = true;
             var client = HttpClientFactory.CreateClient();
-            
-            // Menggunakan BaseUri agar request selalu menunjuk ke domain server riil
             var baseUrl = NavManager.BaseUri.TrimEnd('/');
             var requestUrl = $"{baseUrl}/Market/GetMarketData";
 
-            marketData = await client.GetFromJsonAsync<MarketDataResponse>(requestUrl);
+            var response = await client.GetAsync(requestUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                marketData = await response.Content.ReadFromJsonAsync<MarketDataResponse>();
+            }
         }
         catch (Exception ex)
         {
