@@ -59,7 +59,7 @@ namespace AumoFinance.Controllers
                 if (r.Type == "Assets" || (r.ReferenceNumber >= 100 && r.ReferenceNumber <= 199))
                 {
                     // Cek jika akun termasuk Aset Tetap / Akumulasi Depresiasi (Ref >= 150 atau ada kata "Depreciation"/"Equipment"/"Vehicle"/"Building")
-                    bool isFixedAsset = r.ReferenceNumber >= 150 || 
+                    bool isFixedAsset = r.ReferenceNumber >= 150 ||
                                        r.AccountName.Contains("Equipment", StringComparison.OrdinalIgnoreCase) ||
                                        r.AccountName.Contains("Depreciation", StringComparison.OrdinalIgnoreCase) ||
                                        r.AccountName.Contains("Asset", StringComparison.OrdinalIgnoreCase);
@@ -87,7 +87,7 @@ namespace AumoFinance.Controllers
                 // --------------------------------------------------
                 else if (r.Type == "Liabilities" || (r.ReferenceNumber >= 200 && r.ReferenceNumber <= 299))
                 {
-                    bool isLongTermDebt = r.ReferenceNumber >= 250 || 
+                    bool isLongTermDebt = r.ReferenceNumber >= 250 ||
                                           r.AccountName.Contains("Bank Loan", StringComparison.OrdinalIgnoreCase) ||
                                           r.AccountName.Contains("Long Term", StringComparison.OrdinalIgnoreCase);
 
