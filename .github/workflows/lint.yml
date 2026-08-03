@@ -4,9 +4,9 @@ on:
   push:
     branches: [ main ]
 
-# Cukup izin read karena CI tidak akan melakukan commit lagi
+# Diubah ke write agar runner diizinkan melakukan commit/push perbaikan format
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lint-and-analyze:
@@ -15,6 +15,8 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.ref_name }}
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -24,10 +26,16 @@ jobs:
     - name: Restore Dependencies
       run: dotnet restore
 
-    # 1. Cek kerapian kode. Parameter --verify-no-changes akan membuat step ini GAGAL jika ada kode yang tidak rapi
-    - name: Verify Code Format
-      run: dotnet format --verify-no-changes
+    # 1. Otomatis rapikan spasi, tab, dan format kode
+    - name: Auto-Format Code
+      run: dotnet format
 
-    # 2. Build & Check Code Quality (Strict Warning as Errors)
+    # 2. Commit & push otomatis jika ada file yang dikoreksi
+    - name: Commit Formatted Changes
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "style: auto-correct code formatting via dotnet format"
+
+    # 3. Build & Check Code Quality (Strict Warning as Errors)
     - name: Build & Run Roslyn Analyzers
       run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
