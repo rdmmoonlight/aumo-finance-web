@@ -3,8 +3,6 @@ name: C# Code Quality & Formatting Check
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 # Cukup izin read karena CI tidak akan melakukan commit lagi
 permissions:
