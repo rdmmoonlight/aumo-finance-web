@@ -1,0 +1,29 @@
+name: C# Code Quality & Formatting Check
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/dotnet/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        
+    - name: Restore Dependencies
+      run: dotnet restore
+
+    # 1. Cek Code Formatting (Mirip Prettier / ESLint Style)
+    - name: Check Formatting (dotnet format)
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+    # 2. Cek Code Quality & Static Analysis (Mirip ESLint Rules)
+    - name: Build & Run Roslyn Analyzers
+      run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
