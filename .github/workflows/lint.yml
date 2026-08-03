@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write # Diperlukan agar GitHub Actions bisa commit balik ke repo
+  contents: write # Mengizinkan auto-commit jika ada format kode yang perlu diperbaiki
 
 jobs:
   lint-and-analyze:
@@ -21,16 +21,15 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-        include-prerelease: true
 
     - name: Restore Dependencies
       run: dotnet restore
 
-    # 1. Rapikan kode secara otomatis
+    # 1. Rapikan kode secara otomatis jika ada yang berantakan
     - name: Format Code
       run: dotnet format
 
-    # 2. Commit & Push otomatis jika ada file yang dirapikan oleh dotnet format
+    # 2. Commit & Push otomatis jika dotnet format mengubah file
     - name: Commit & Push Changes
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
