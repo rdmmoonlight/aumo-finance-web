@@ -1,117 +1,226 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
 
 namespace AumoFinance.Controllers
 {
     public partial class ReportsController : Controller
     {
-        private readonly AppDbContext _db;
-
-        public ReportsController(AppDbContext db)
-        {
-            _db = db;
-        }
-
-        private async Task<(Guid UserId, Period? Period)> GetReportContextAsync()
-        {
-            var userId = this.CurrentUserId();
-            var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
-            return (userId, period);
-        }
-
         // ==========================================================
-        // GENERAL LEDGER
+        // INCOME STATEMENT
         // ==========================================================
 
-        public async Task<IActionResult> GeneralLedger()
+        public async Task<IActionResult> IncomeStatement()
         {
-            ViewData["Title"] = "General Ledger";
+            ViewData["Title"] = "Income Statement";
             var (userId, period) = await GetReportContextAsync();
             if (period == null)
             {
                 ViewBag.NoPeriodSelected = true;
-                return View(new List<LedgerAccountViewModel>());
+                return View(new IncomeStatementViewModel());
             }
             ViewBag.SelectedPeriod = period;
 
-            var ledgers = await BuildLedgersAsync(userId, period, AccountClassification.IsPermanent);
-            return View(ledgers);
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var vm = BuildIncomeStatement(rows, period);
+            return View(vm);
         }
 
-        public async Task<IActionResult> GeneralLedgerTemporary()
+        private IncomeStatementViewModel BuildIncomeStatement(List<TrialBalanceRow> rows, Period period)
         {
-            ViewData["Title"] = "General Ledger (Temporary Accounts)";
+            var vm = new IncomeStatementViewModel { AsOfDate = period.EndDate };
+
+            IncomeStatementLine ToLine(TrialBalanceRow r) => new()
+            {
+                ReferenceNumber = r.ReferenceNumber,
+                AccountName = r.AccountName,
+                Amount = r.NetBalance
+            };
+
+            vm.Revenues = rows.Where(r => r.Type == "OperatingIncome").Select(ToLine).ToList();
+            vm.OperatingExpenses = rows.Where(r => r.Type == "OperatingExpenses").Select(ToLine).ToList();
+            vm.OtherIncome = rows.Where(r => r.Type == "OtherIncome").Select(ToLine).ToList();
+            vm.OtherExpenses = rows.Where(r => r.Type == "OtherExpenses").Select(ToLine).ToList();
+
+            return vm;
+        }
+
+        // ==========================================================
+        // RETAINED EARNINGS STATEMENT
+        // ==========================================================
+
+        public async Task<IActionResult> RetainedEarnings()
+        {
+            ViewData["Title"] = "Retained Earnings Statement";
             var (userId, period) = await GetReportContextAsync();
             if (period == null)
             {
                 ViewBag.NoPeriodSelected = true;
-                return View(new List<LedgerAccountViewModel>());
+                return View(new RetainedEarningsViewModel());
             }
             ViewBag.SelectedPeriod = period;
 
-            var ledgers = await BuildLedgersAsync(userId, period, AccountClassification.IsTemporary);
-            return View(ledgers);
+            var vm = await BuildRetainedEarningsAsync(userId, period);
+            return View(vm);
         }
 
-        private async Task<List<LedgerAccountViewModel>> BuildLedgersAsync(Guid userId, Period period, Func<string, bool> typeFilter)
+        private async Task<RetainedEarningsViewModel> BuildRetainedEarningsAsync(Guid userId, Period period)
         {
-            var accounts = (await _db.ChartOfAccounts
-                    .Where(a => a.IsActive && a.UserId == userId)
-                    .OrderBy(a => a.ReferenceNumber)
-                    .ToListAsync())
-                .Where(a => typeFilter(a.Type))
-                .ToList();
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var incomeStatement = BuildIncomeStatement(rows, period);
+            var reAccount = rows.FirstOrDefault(r => r.Role == "RetainedEarnings");
 
-            var accountIds = accounts.Select(a => a.Id).ToList();
-
-            var lines = await _db.JournalEntryLines
-                .Include(l => l.JournalEntry)
-                .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId)
-                .OrderBy(l => l.JournalEntry!.EntryDate)
-                .ThenBy(l => l.JournalEntry!.Id)
-                .ThenBy(l => l.LineOrder)
-                .ToListAsync();
-
-            var result = new List<LedgerAccountViewModel>();
-
-            foreach (var account in accounts)
+            return new RetainedEarningsViewModel
             {
-                var isPermanent = AccountClassification.IsPermanent(account.Type);
-                var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
-                decimal running = 0;
+                AccountName = reAccount?.AccountName ?? "Retained Earnings",
+                StartDate = period.StartDate,
+                EndDate = period.EndDate,
+                BeginningBalance = reAccount?.NetBalance ?? 0,
+                NetIncome = incomeStatement.NetIncome,
+                Dividends = 0
+            };
+        }
 
-                var accountLines = isPermanent
-                    ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate)
-                    : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate);
+        // ==========================================================
+        // STATEMENT OF FINANCIAL POSITION (SOFP) & POST-CLOSING
+        // ==========================================================
 
-                var ledgerLines = new List<LedgerLineViewModel>();
-                foreach (var line in accountLines)
+        public async Task<IActionResult> StatementOfFinancialPosition()
+        {
+            ViewData["Title"] = "Statement of Financial Position";
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View("StatementOfFinancialPosition", new StatementOfFinancialPositionViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var vm = await BuildSofpAsync(userId, period, isPostClosing: false);
+            return View("StatementOfFinancialPosition", vm);
+        }
+
+        public async Task<IActionResult> PostClosingTrialBalance()
+        {
+            ViewData["Title"] = "Post-Closing Trial Balance";
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View("PostClosingTrialBalance", new StatementOfFinancialPositionViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var vm = await BuildSofpAsync(userId, period, isPostClosing: true);
+            return View("PostClosingTrialBalance", vm);
+        }
+
+        private async Task<StatementOfFinancialPositionViewModel> BuildSofpAsync(Guid userId, Period period, bool isPostClosing)
+        {
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var re = await BuildRetainedEarningsAsync(userId, period);
+
+            FinancialPositionLine ToLine(TrialBalanceRow r) => new()
+            {
+                ReferenceNumber = r.ReferenceNumber,
+                AccountName = r.AccountName,
+                Amount = r.NetBalance
+            };
+
+            var vm = new StatementOfFinancialPositionViewModel
+            {
+                AsOfDate = period.EndDate,
+                IsPostClosing = isPostClosing,
+                Assets = rows.Where(r => r.Type == "Assets").Select(ToLine).ToList(),
+                Liabilities = rows.Where(r => r.Type == "Liabilities").Select(ToLine).ToList(),
+                EquityExcludingRetainedEarnings = rows.Where(r => r.Type == "Equity" && r.Role != "RetainedEarnings").Select(ToLine).ToList(),
+                RetainedEarningsEnding = re.EndingBalance
+            };
+
+            return vm;
+        }
+
+        // ==========================================================
+        // CLOSING JOURNAL
+        // ==========================================================
+
+        public async Task<IActionResult> ClosingJournal()
+        {
+            ViewData["Title"] = "Closing Journal";
+            var (userId, period) = await GetReportContextAsync();
+            if (period == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+                return View(new ClosingJournalViewModel());
+            }
+            ViewBag.SelectedPeriod = period;
+
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var incomeStatement = BuildIncomeStatement(rows, period);
+            var reAccountName = rows.FirstOrDefault(r => r.Role == "RetainedEarnings")?.AccountName ?? "Retained Earnings";
+            string incomeSummaryName = "Income Summary";
+
+            var vm = new ClosingJournalViewModel
+            {
+                NetIncome = incomeStatement.NetIncome,
+                RetainedEarningsAccountName = reAccountName
+            };
+
+            var incomeRows = rows.Where(r => r.Type == "OperatingIncome" || r.Type == "OtherIncome").Where(r => r.NetBalance != 0).ToList();
+            var expenseRows = rows.Where(r => r.Type == "OperatingExpenses" || r.Type == "OtherExpenses").Where(r => r.NetBalance != 0).ToList();
+
+            // ------------------------------------------------------
+            // BLOK 1: Closing Revenues to Income Summary
+            // ------------------------------------------------------
+            if (incomeRows.Any())
+            {
+                var group1 = new ClosingJournalEntryGroup { Description = "Closing Revenue Accounts to Income Summary" };
+                foreach (var r in incomeRows)
                 {
-                    running += normalDebit ? (line.Debit - line.Credit) : (line.Credit - line.Debit);
-                    ledgerLines.Add(new LedgerLineViewModel
-                    {
-                        EntryDate = line.JournalEntry!.EntryDate,
-                        Description = line.LineDescription,
-                        Debit = line.Debit,
-                        Credit = line.Credit,
-                        RunningBalance = running
-                    });
+                    group1.Lines.Add(new ClosingJournalLine { ReferenceNumber = r.ReferenceNumber, AccountName = r.AccountName, Debit = r.NetBalance, Credit = 0 });
+                }
+                group1.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = 0, Credit = incomeRows.Sum(r => r.NetBalance) });
+                vm.Groups.Add(group1);
+            }
+
+            // ------------------------------------------------------
+            // BLOK 2: Closing Expenses to Income Summary
+            // ------------------------------------------------------
+            if (expenseRows.Any())
+            {
+                var group2 = new ClosingJournalEntryGroup { Description = "Closing Expense Accounts to Income Summary" };
+                group2.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = expenseRows.Sum(r => r.NetBalance), Credit = 0 });
+                foreach (var r in expenseRows)
+                {
+                    group2.Lines.Add(new ClosingJournalLine { ReferenceNumber = r.ReferenceNumber, AccountName = r.AccountName, Debit = 0, Credit = r.NetBalance });
+                }
+                vm.Groups.Add(group2);
+            }
+
+            // ------------------------------------------------------
+            // BLOK 3: Closing Income Summary to Retained Earnings
+            // ------------------------------------------------------
+            if (incomeStatement.NetIncome != 0)
+            {
+                var group3 = new ClosingJournalEntryGroup { Description = "Closing Income Summary to Retained Earnings" };
+
+                if (incomeStatement.NetIncome > 0)
+                {
+                    // Net Income > 0: Debit Income Summary, Credit Retained Earnings
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = incomeStatement.NetIncome, Credit = 0 });
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = 0, Credit = incomeStatement.NetIncome });
+                }
+                else
+                {
+                    // Net Loss < 0: Debit Retained Earnings, Credit Income Summary
+                    var netLoss = Math.Abs(incomeStatement.NetIncome);
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = netLoss, Credit = 0 });
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = 0, Credit = netLoss });
                 }
 
-                result.Add(new LedgerAccountViewModel
-                {
-                    AccountId = account.Id,
-                    ReferenceNumber = account.ReferenceNumber,
-                    AccountName = account.AccountName,
-                    Type = account.Type,
-                    NormalBalanceIsDebit = normalDebit,
-                    Lines = ledgerLines,
-                    EndingBalance = running
-                });
+                vm.Groups.Add(group3);
             }
 
-            return result;
+            return View(vm);
         }
     }
 }
