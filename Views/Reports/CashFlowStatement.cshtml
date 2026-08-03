@@ -4,11 +4,6 @@
 }
 
 <div class="container-fluid py-2">
-    @if (ViewBag.DebugRows != null)
-    {
-        <pre class="text-white bg-dark p-3 small">DEBUG ROWS:
-@System.Text.Json.JsonSerializer.Serialize(ViewBag.DebugRows, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })</pre>
-    }
     @if (ViewBag.NoPeriodSelected == true)
     {
         <div class="text-center py-5 my-4">
