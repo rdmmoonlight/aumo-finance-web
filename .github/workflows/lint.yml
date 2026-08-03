@@ -6,8 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+# Cukup izin read karena CI tidak akan melakukan commit lagi
 permissions:
-  contents: write # Mengizinkan auto-commit jika ada format kode yang perlu diperbaiki
+  contents: read
 
 jobs:
   lint-and-analyze:
@@ -25,16 +26,10 @@ jobs:
     - name: Restore Dependencies
       run: dotnet restore
 
-    # 1. Rapikan kode secara otomatis jika ada yang berantakan
-    - name: Format Code
-      run: dotnet format
+    # 1. Cek kerapian kode. Parameter --verify-no-changes akan membuat step ini GAGAL jika ada kode yang tidak rapi
+    - name: Verify Code Format
+      run: dotnet format --verify-no-changes
 
-    # 2. Commit & Push otomatis jika dotnet format mengubah file
-    - name: Commit & Push Changes
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: "style: auto-format code via dotnet format [skip ci]"
-
-    # 3. Build & Check Code Quality
+    # 2. Build & Check Code Quality (Strict Warning as Errors)
     - name: Build & Run Roslyn Analyzers
       run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
