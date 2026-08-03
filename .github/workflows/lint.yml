@@ -1,8 +1,10 @@
 name: C# Code Quality & Formatting Check
 
 on:
+  push:
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
   lint-and-analyze:
@@ -16,14 +18,14 @@ jobs:
       uses: actions/dotnet/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-        
+
     - name: Restore Dependencies
       run: dotnet restore
 
-    # 1. Cek Code Formatting (Mirip Prettier / ESLint Style)
+    # 1. Cek Code Formatting
     - name: Check Formatting (dotnet format)
       run: dotnet format --verify-no-changes --verbosity diagnostic
 
-    # 2. Cek Code Quality & Static Analysis (Mirip ESLint Rules)
+    # 2. Build & Check Code Quality
     - name: Build & Run Roslyn Analyzers
       run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
