@@ -30,12 +30,11 @@ namespace AumoFinance.Controllers
 
             var accountIds = accounts.Select(a => a.Id).ToList();
 
-            // 2. Ambil informasi Periode yang sedang ditampilkan / aktif milik User
-            // Menggunakan _context.Periods sesuai DbSet di AppDbContext
+            // 2. Ambil informasi Periode yang sedang DI-VIEW/DITAMPILKAN (IsSelected = true) milik User
             var currentPeriod = await _context.Periods
-                                              .FirstOrDefaultAsync(p => p.UserId == userId && p.IsActive);
+                                              .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
 
-            // Jika tidak ada periode yang dipilih / aktif
+            // Jika tidak ada periode yang sedang dipilih/ditampilkan
             if (currentPeriod == null)
             {
                 ViewBag.NoPeriodSelected = true;
@@ -50,7 +49,7 @@ namespace AumoFinance.Controllers
             }
 
             ViewBag.NoPeriodSelected = false;
-            ViewBag.PeriodName = currentPeriod.Name;
+            ViewBag.PeriodName = currentPeriod.PeriodName;
 
             // 3. Kalkulasi total Debit & Kredit HANYA untuk transaksi yang berada dalam rentang tanggal periode yang ditampilkan
             var accountBalances = await _context.JournalEntryLines
