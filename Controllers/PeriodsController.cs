@@ -90,7 +90,7 @@ namespace AumoFinance.Controllers
             if (model.HasExistingPermanentAccounts)
             {
                 model.CashAccountId ??= model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
-                model.BankAccountId ??= model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id 
+                model.BankAccountId ??= model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id
                                        ?? model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
                 model.RetainedEarningsAccountId ??= model.AvailableRetainedEarningsAccounts.FirstOrDefault()?.Id;
 
