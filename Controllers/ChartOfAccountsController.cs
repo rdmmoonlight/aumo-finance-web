@@ -31,7 +31,8 @@ namespace AumoFinance.Controllers
             var accountIds = accounts.Select(a => a.Id).ToList();
 
             // 2. Ambil informasi Periode yang sedang ditampilkan / aktif milik User
-            var currentPeriod = await _context.AccountingPeriods
+            // Menggunakan _context.Periods sesuai DbSet di AppDbContext
+            var currentPeriod = await _context.Periods
                                               .FirstOrDefaultAsync(p => p.UserId == userId && p.IsActive);
 
             // Jika tidak ada periode yang dipilih / aktif
@@ -54,8 +55,8 @@ namespace AumoFinance.Controllers
             // 3. Kalkulasi total Debit & Kredit HANYA untuk transaksi yang berada dalam rentang tanggal periode yang ditampilkan
             var accountBalances = await _context.JournalEntryLines
                                                 .Where(j => accountIds.Contains(j.AccountId) &&
-                                                            j.JournalEntry.TransactionDate >= currentPeriod.StartDate &&
-                                                            j.JournalEntry.TransactionDate <= currentPeriod.EndDate)
+                                                            j.JournalEntry.EntryDate >= currentPeriod.StartDate &&
+                                                            j.JournalEntry.EntryDate <= currentPeriod.EndDate)
                                                 .GroupBy(j => j.AccountId)
                                                 .Select(g => new
                                                 {
