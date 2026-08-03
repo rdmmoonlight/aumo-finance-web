@@ -46,7 +46,7 @@ namespace AumoFinance.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error saat mengambil data pasar.");
-                
+
                 // Return fallback JSON jika terjadi kegagalan fatal
                 return Json(new
                 {
