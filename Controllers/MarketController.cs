@@ -19,7 +19,7 @@ namespace AumoFinance.Controllers
         public async Task<IActionResult> GetMarketData()
         {
             var client = _httpClientFactory.CreateClient();
-            
+
             // Set User-Agent standar browser agar tidak di-block oleh Yahoo Finance
             client.DefaultRequestHeaders.Clear();
             client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -68,22 +68,22 @@ namespace AumoFinance.Controllers
     }
 
     // DTO Helper dengan Naming Policy bawaan System.Text.Json
-    public class YahooResponse 
-    { 
+    public class YahooResponse
+    {
         [JsonPropertyName("chart")]
-        public ChartData? Chart { get; set; } 
+        public ChartData? Chart { get; set; }
     }
 
-    public class ChartData 
-    { 
+    public class ChartData
+    {
         [JsonPropertyName("result")]
-        public List<ChartResult>? Result { get; set; } 
+        public List<ChartResult>? Result { get; set; }
     }
 
-    public class ChartResult 
-    { 
+    public class ChartResult
+    {
         [JsonPropertyName("meta")]
-        public ChartMeta? Meta { get; set; } 
+        public ChartMeta? Meta { get; set; }
     }
 
     public class ChartMeta
