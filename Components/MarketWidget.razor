@@ -2,26 +2,26 @@
 @inject NavigationManager NavManager
 @inject IHttpClientFactory HttpClientFactory
 
-<div class="market-widget-card card border-0 shadow-sm rounded-4 bg-body bg-opacity-75 backdrop-blur p-3 mx-auto mb-4" style="max-width: 680px;">
+<div class="market-widget-card card border-0 shadow-sm rounded-4 bg-body bg-opacity-75 backdrop-blur px-3 py-2 mx-auto mb-4" style="max-width: 620px;">
     @if (isLoading)
     {
         <!-- State: Loading -->
-        <div class="d-flex justify-content-center align-items-center py-2 gap-2 text-secondary">
+        <div class="d-flex justify-content-center align-items-center py-1 gap-2 text-secondary">
             <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-            <span class="small fw-medium">Loading market indicators...</span>
+            <span class="small fw-medium style-loading-text">Loading market indicators...</span>
         </div>
     }
     else if (marketData != null && marketData.Success)
     {
-        <!-- State: Success -->
-        <div class="row align-items-center g-3 text-center text-md-start">
+        <!-- State: Success (Centered Layout) -->
+        <div class="row align-items-center g-2 text-center justify-content-center">
             
             <!-- USD / IDR -->
             <div class="col-12 col-md-4 border-end-md">
-                <div class="d-flex flex-column align-items-center align-items-md-start">
+                <div class="d-flex flex-column align-items-center justify-content-center py-1">
                     <span class="text-uppercase text-secondary style-label mb-1">USD / IDR</span>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <span class="fw-bold fs-6 text-body-emphasis">
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                        <span class="fw-bold style-value text-body-emphasis">
                             Rp @marketData.Usd?.Price.ToString("N0", new System.Globalization.CultureInfo("id-ID"))
                         </span>
                         <span class="badge rounded-pill @(marketData.Usd?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
@@ -32,12 +32,12 @@
                 </div>
             </div>
 
-            <!-- IHSG (^JKSE / IDX COMPOSITE) -->
+            <!-- IHSG (IDX COMPOSITE) -->
             <div class="col-12 col-md-4 border-end-md">
-                <div class="d-flex flex-column align-items-center align-items-md-start">
+                <div class="d-flex flex-column align-items-center justify-content-center py-1">
                     <span class="text-uppercase text-secondary style-label mb-1">IDX Composite</span>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <span class="fw-bold fs-6 text-body-emphasis">
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                        <span class="fw-bold style-value text-body-emphasis">
                             @marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
                         </span>
                         <span class="badge rounded-pill @(marketData.Ihsg?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
@@ -50,10 +50,10 @@
 
             <!-- BI-RATE -->
             <div class="col-12 col-md-4">
-                <div class="d-flex flex-column align-items-center align-items-md-start">
+                <div class="d-flex flex-column align-items-center justify-content-center py-1">
                     <span class="text-uppercase text-secondary style-label mb-1">BI-Rate</span>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fw-bold fs-6 text-primary">
+                    <div class="d-flex align-items-center justify-content-center gap-2">
+                        <span class="fw-bold style-value text-primary">
                             @marketData.BiRate
                         </span>
                     </div>
@@ -67,20 +67,26 @@
         <!-- State: Error / Fallback -->
         <div class="d-flex align-items-center justify-content-center text-muted small py-1 gap-2">
             <i class="bi bi-exclamation-circle text-warning"></i>
-            <span>Market indicators are temporarily unavailable.</span>
+            <span class="style-loading-text">Market indicators are temporarily unavailable.</span>
         </div>
     }
 </div>
 
 <style>
     .style-label {
-        font-size: 0.725rem;
-        letter-spacing: 0.05em;
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
         font-weight: 600;
     }
+    .style-value {
+        font-size: 0.95rem;
+    }
     .style-badge {
-        font-size: 0.7rem;
-        padding: 0.25em 0.55em;
+        font-size: 0.675rem;
+        padding: 0.2em 0.5em;
+    }
+    .style-loading-text {
+        font-size: 0.8rem;
     }
     @@media (min-width: 768px) {
         .border-end-md {
