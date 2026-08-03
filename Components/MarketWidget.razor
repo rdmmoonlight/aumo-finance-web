@@ -1,0 +1,108 @@
+@inject IHttpClientFactory HttpClientFactory
+
+<div class="d-inline-flex flex-wrap align-items-center justify-content-center gap-2 gap-sm-3 py-2 px-3 rounded-pill bg-body border shadow-sm" style="font-size: 0.85rem;">
+    
+    <!-- USD Indicator -->
+    <div class="d-flex align-items-center gap-2" title="USD to IDR Rate">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">USD</span>
+        <span class="fw-semibold text-body">
+            @if (isLoading)
+            {
+                <span class="text-secondary">Loading...</span>
+            }
+            else if (marketData?.Usd != null)
+            {
+                @($"Rp {Math.Round(marketData.Usd.Price):N0}")
+                <span class="@(marketData.Usd.IsUp ? "text-success" : "text-danger") ms-1" style="font-size: 0.75rem;">
+                    <i class="bi @(marketData.Usd.IsUp ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
+                    @($"{Math.Abs(marketData.Usd.Percent):F2}%")
+                </span>
+            }
+            else
+            {
+                <span>-</span>
+            }
+        </span>
+    </div>
+
+    <span class="text-secondary opacity-25 d-none d-sm-inline">|</span>
+
+    <!-- IHSG Indicator -->
+    <div class="d-flex align-items-center gap-2" title="IHSG Index">
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">IHSG</span>
+        <span class="fw-semibold text-body">
+            @if (isLoading)
+            {
+                <span class="text-secondary">Loading...</span>
+            }
+            else if (marketData?.Ihsg != null)
+            {
+                @($"{marketData.Ihsg.Price:N2}")
+                <span class="@(marketData.Ihsg.IsUp ? "text-success" : "text-danger") ms-1" style="font-size: 0.75rem;">
+                    <i class="bi @(marketData.Ihsg.IsUp ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
+                    @($"{Math.Abs(marketData.Ihsg.Percent):F2}%")
+                </span>
+            }
+            else
+            {
+                <span>-</span>
+            }
+        </span>
+    </div>
+
+    <span class="text-secondary opacity-25 d-none d-sm-inline">|</span>
+
+    <!-- BI-Rate Indicator -->
+    <div class="d-flex align-items-center gap-2" title="Bank Indonesia Policy Rate">
+        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">BI-RATE</span>
+        <span class="fw-semibold text-body">
+            @if (isLoading)
+            {
+                <span class="text-secondary">Loading...</span>
+            }
+            else
+            {
+                @(marketData?.BiRate ?? "-")
+            }
+        </span>
+    </div>
+
+</div>
+
+@code {
+    private bool isLoading = true;
+    private MarketDataResponse? marketData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+            // Memanggil endpoint backend internal Anda yang sudah ada
+            marketData = await client.GetFromJsonAsync<MarketDataResponse>("/Market/GetMarketData");
+        }
+        catch
+        {
+            marketData = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class MarketDataResponse
+    {
+        public bool Success { get; set; }
+        public MarketItem? Usd { get; set; }
+        public MarketItem? Ihsg { get; set; }
+        public string? BiRate { get; set; }
+    }
+
+    public class MarketItem
+    {
+        public double Price { get; set; }
+        public bool IsUp { get; set; }
+        public double Percent { get; set; }
+    }
+}

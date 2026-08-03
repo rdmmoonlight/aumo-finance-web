@@ -1,9 +1,9 @@
+@using AumoFinance.Components
 @{
     ViewData["Title"] = "Home";
 }
 
-<div class="container py-5">
-    <!-- Hero Section Container -->
+<div class="container py-5 mt-4">
     <div class="row justify-content-center">
         <div class="col-lg-10 col-xl-8 text-center">
             
@@ -15,45 +15,23 @@
                         <i class="bi bi-shield-lock-fill display-4 lh-1"></i>
                     </div>
 
-                    <!-- Market Indicators Ticker -->
+                    <!-- Blazor Market Widget Component -->
                     <div class="d-block mb-4">
-                        <div class="d-inline-flex flex-wrap align-items-center justify-content-center gap-2 gap-sm-3 py-2 px-3 rounded-pill bg-body border shadow-sm" style="font-size: 0.85rem;">
-                            <!-- USD Rate Indicator -->
-                            <div class="d-flex align-items-center gap-2" title="USD to IDR Rate">
-                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">USD</span>
-                                <span id="usdRate" class="fw-semibold text-body">Loading...</span>
-                            </div>
-
-                            <span class="text-secondary opacity-25 d-none d-sm-inline">|</span>
-
-                            <!-- IHSG Index Indicator -->
-                            <div class="d-flex align-items-center gap-2" title="IHSG Index">
-                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">IHSG</span>
-                                <span id="ihsgIndex" class="fw-semibold text-body">Loading...</span>
-                            </div>
-
-                            <span class="text-secondary opacity-25 d-none d-sm-inline">|</span>
-
-                            <!-- BI-Rate Indicator -->
-                            <div class="d-flex align-items-center gap-2" title="Bank Indonesia Policy Rate">
-                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">BI-RATE</span>
-                                <span id="biRate" class="fw-semibold text-body">Loading...</span>
-                            </div>
-                        </div>
+                        <component type="typeof(MarketWidget)" render-mode="ServerPrerendered" />
                     </div>
 
-                    <!-- Title & Subtitle -->
+                    <!-- Title & Description -->
                     <h1 class="fw-bold text-body-emphasis mb-3 tracking-tight">
-                        ^^
+                        Financial & Accounting System
                     </h1>
-                    <p class="lead text-secondary mb-4 mx-auto style-description" style="max-width: 600px; font-size: 1.05rem;">
-                        An integrated accounting information system. Manage the complete accounting cycle—from general journals to the trial balance—with precision, discipline, and high accuracy.
+                    <p class="lead text-secondary mb-4 mx-auto style-description" style="max-width: 620px; font-size: 1.05rem;">
+                        An integrated financial and accounting information system. Manage your full accounting cycle—from general journal entries to trial balance—with precision, discipline, and absolute accuracy.
                     </p>
 
-                    <!-- Quick Navigation CTA -->
+                    <!-- Quick Navigation Actions -->
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <a href="/Dashboard" class="btn btn-primary px-4 py-2 rounded-pill fw-medium">
-                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                            <i class="bi bi-speedometer2 me-1"></i> Go to Dashboard
                         </a>
                         <a href="/Journal" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-medium">
                             <i class="bi bi-journal-text me-1"></i> General Journal
@@ -66,67 +44,3 @@
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        /**
-         * Internal Server Fetcher (CORS Free & Always Working)
-         */
-        async function fetchMarketData() {
-            const usdEl = document.getElementById('usdRate');
-            const ihsgEl = document.getElementById('ihsgIndex');
-            const biRateEl = document.getElementById('biRate');
-
-            try {
-                const res = await fetch('/Market/GetMarketData');
-                const data = await res.json();
-
-                if (data.success) {
-                    // Render USD
-                    if (usdEl && data.usd) {
-                        const price = Math.round(data.usd.price);
-                        const colorClass = data.usd.isUp ? 'text-success' : 'text-danger';
-                        const iconClass = data.usd.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
-                        const percent = Math.abs(data.usd.percent).toFixed(2);
-
-                        usdEl.innerHTML = `
-                            Rp ${price.toLocaleString('id-ID')} 
-                            <span class="${colorClass} ms-1" style="font-size: 0.75rem;">
-                                <i class="bi ${iconClass}"></i>${percent}%
-                            </span>`;
-                    }
-
-                    // Render IHSG
-                    if (ihsgEl && data.ihsg) {
-                        const price = data.ihsg.price;
-                        const colorClass = data.ihsg.isUp ? 'text-success' : 'text-danger';
-                        const iconClass = data.ihsg.isUp ? 'bi-caret-up-fill' : 'bi-caret-down-fill';
-                        const percent = Math.abs(data.ihsg.percent).toFixed(2);
-                        const formattedPrice = price.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-                        ihsgEl.innerHTML = `
-                            ${formattedPrice} 
-                            <span class="${colorClass} ms-1" style="font-size: 0.75rem;">
-                                <i class="bi ${iconClass}"></i>${percent}%
-                            </span>`;
-                    }
-
-                    // Render BI-Rate
-                    if (biRateEl && data.biRate) {
-                        biRateEl.innerText = data.biRate;
-                    }
-                } else {
-                    if (usdEl) usdEl.innerText = '-';
-                    if (ihsgEl) ihsgEl.innerText = '-';
-                    if (biRateEl) biRateEl.innerText = '-';
-                }
-            } catch (err) {
-                if (usdEl) usdEl.innerText = '-';
-                if (ihsgEl) ihsgEl.innerText = '-';
-                if (biRateEl) biRateEl.innerText = '-';
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', fetchMarketData);
-    </script>
-}
