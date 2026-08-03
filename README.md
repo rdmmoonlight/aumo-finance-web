@@ -22,9 +22,12 @@ To maintain the highest level of financial integrity, economic rationality, and 
 
 ## 🛠️ Tech Stack
 
-* **Framework:** .NET 10 / ASP.NET Core MVC
+* **Framework:** .NET 10 / ASP.NET Core (Blazor Web App & MVC Hybrid)
 * **Database:** PostgreSQL (Hosted on Neon)
-* **ORM:** Entity Framework Core
+* **ORM:** Entity Framework Core (EF Core 10)
 * **Authentication:** ASP.NET Core Identity
 * **Deployment:** Railway
-* **Frontend:** Bootstrap 5, HTML5, CSS3, Bootstrap Icons
+* **Frontend & UI:** 
+  * Blazor Interactive Components (`.razor`)
+  * MudBlazor / Radzen Components
+  * Bootstrap 5 & Bootstrap Icons
