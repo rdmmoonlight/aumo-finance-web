@@ -50,7 +50,7 @@ namespace AumoFinance.Controllers
                 .Include(l => l.JournalEntry)
                 .Where(l => cashAccountIds.Contains(l.AccountId)
                          && l.JournalEntry!.UserId == userId
-                         && l.JournalEntry!.EntryDate >= period.StartDate 
+                         && l.JournalEntry!.EntryDate >= period.StartDate
                          && l.JournalEntry!.EntryDate <= period.EndDate)
                 .Select(l => l.JournalEntryId)
                 .Distinct()
@@ -108,9 +108,9 @@ namespace AumoFinance.Controllers
 
                     // Klasifikasi Arus Kas Berdasarkan Standar Akuntansi (IAS 7)
                     // Operating: Pendapatan, Beban, Aset Lancar / Utang Lancar
-                    if (type == "OperatingIncome" || type == "OperatingExpenses" || 
-                        type == "OtherIncome" || type == "OtherExpenses" || 
-                        role == "CurrentAsset" || role == "CurrentLiability" || 
+                    if (type == "OperatingIncome" || type == "OperatingExpenses" ||
+                        type == "OtherIncome" || type == "OtherExpenses" ||
+                        role == "CurrentAsset" || role == "CurrentLiability" ||
                         role == "AccountsReceivable" || role == "AccountsPayable")
                     {
                         AddAmount(operating, name, allocatedCash);
