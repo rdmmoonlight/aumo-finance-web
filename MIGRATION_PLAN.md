@@ -24,7 +24,7 @@ yang sudah ada: `Components/MarketWidget.razor` ditanam ke View lewat
   - Adjusting Journal
   - Journal Entry (Create/Edit)
 
-- [ ] **Fase 4 — Laporan Keuangan**
+- [x] **Fase 4 — Laporan Keuangan**
   - Trial Balance, Adjusted Trial Balance, Post-Closing Trial Balance
   - Cash Flow Statement
   - Income Statement, Statement of Financial Position
