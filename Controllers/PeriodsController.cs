@@ -85,6 +85,49 @@ namespace AumoFinance.Controllers
             model.AvailableCashAndBankAccounts = accounts.Where(a => a.Role == "CashAndEquivalents").ToList();
             model.AvailableRetainedEarningsAccounts = accounts.Where(a => a.Role == "RetainedEarnings").ToList();
             model.HasExistingPermanentAccounts = model.AvailableCashAndBankAccounts.Any() && model.AvailableRetainedEarningsAccounts.Any();
+
+            // Auto-select akun default jika belum ada pilihan di model
+            if (model.HasExistingPermanentAccounts)
+            {
+                if (model.CashAccountId == null)
+                {
+                    model.CashAccountId = model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
+                }
+
+                if (model.BankAccountId == null)
+                {
+                    // Ambil opsi akun bank berbeda jika memungkinkan
+                    model.BankAccountId = model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id 
+                                        ?? model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
+                }
+
+                if (model.RetainedEarningsAccountId == null)
+                {
+                    model.RetainedEarningsAccountId = model.AvailableRetainedEarningsAccounts.FirstOrDefault()?.Id;
+                }
+
+                // Isi nilai awal properti model dari akun yang terpilih
+                var selectedCash = model.AvailableCashAndBankAccounts.FirstOrDefault(a => a.Id == model.CashAccountId);
+                if (selectedCash != null && string.IsNullOrEmpty(model.CashAccountCode))
+                {
+                    model.CashAccountCode = selectedCash.ReferenceNumber.ToString();
+                    model.CashAccountName = selectedCash.AccountName;
+                }
+
+                var selectedBank = model.AvailableCashAndBankAccounts.FirstOrDefault(a => a.Id == model.BankAccountId);
+                if (selectedBank != null && string.IsNullOrEmpty(model.BankAccountCode))
+                {
+                    model.BankAccountCode = selectedBank.ReferenceNumber.ToString();
+                    model.BankAccountName = selectedBank.AccountName;
+                }
+
+                var selectedRetained = model.AvailableRetainedEarningsAccounts.FirstOrDefault(a => a.Id == model.RetainedEarningsAccountId);
+                if (selectedRetained != null && string.IsNullOrEmpty(model.RetainedEarningsAccountCode))
+                {
+                    model.RetainedEarningsAccountCode = selectedRetained.ReferenceNumber.ToString();
+                    model.RetainedEarningsAccountName = selectedRetained.AccountName;
+                }
+            }
         }
 
         // POST: /Periods/Create
