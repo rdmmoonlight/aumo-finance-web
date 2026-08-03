@@ -21,17 +21,6 @@ namespace AumoFinance.Controllers
             var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
             var incomeStatement = BuildIncomeStatement(rows, period);
 
-            // === DEBUG SEMENTARA — hapus blok ini setelah penyebab ketemu ===
-            ViewBag.DebugRows = rows.Select(r => new
-            {
-                r.ReferenceNumber,
-                r.AccountName,
-                r.Type,
-                r.Role,
-                r.NetBalance
-            }).ToList();
-            // === END DEBUG ===
-
             var cashRows = rows.Where(r => r.Role == "CashAndEquivalents").ToList();
             decimal endingCash = cashRows.Sum(r => r.NetBalance);
 
@@ -49,7 +38,6 @@ namespace AumoFinance.Controllers
 
             foreach (var r in rows)
             {
-                // BARIS INI PENYEBAB UTAMA — cek dulu ini
                 if (r.NetBalance == 0 || r.Role == "CashAndEquivalents" || r.Role == "RetainedEarnings")
                     continue;
 
