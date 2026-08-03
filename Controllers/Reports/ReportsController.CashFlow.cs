@@ -47,7 +47,7 @@ namespace AumoFinance.Controllers
                 .Include(l => l.JournalEntry)
                 .Where(l => cashAccountIds.Contains(l.AccountId)
                          && l.JournalEntry!.UserId == userId
-                         && l.JournalEntry!.EntryDate >= period.StartDate 
+                         && l.JournalEntry!.EntryDate >= period.StartDate
                          && l.JournalEntry!.EntryDate <= period.EndDate)
                 .Select(l => l.JournalEntryId)
                 .Distinct()
@@ -89,9 +89,9 @@ namespace AumoFinance.Controllers
                     var description = contra.Account?.AccountName ?? "Uncategorized";
 
                     // Klasifikasi berdasarkan standar akuntansi IAS 7
-                    if (type == "OperatingIncome" || type == "OperatingExpenses" || 
-                        type == "OtherIncome" || type == "OtherExpenses" || 
-                        role == "CurrentAsset" || role == "CurrentLiability" || 
+                    if (type == "OperatingIncome" || type == "OperatingExpenses" ||
+                        type == "OtherIncome" || type == "OtherExpenses" ||
+                        role == "CurrentAsset" || role == "CurrentLiability" ||
                         role == "AccountsReceivable" || role == "AccountsPayable")
                     {
                         Add(operating, description, portion);
