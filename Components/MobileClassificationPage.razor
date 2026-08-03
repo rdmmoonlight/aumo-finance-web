@@ -1,0 +1,638 @@
+@using System.Globalization
+@using AumoFinance.Models
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@{
+    var cultureId = new CultureInfo("id-ID");
+}
+
+<div class="container-fluid py-4 px-4">
+    @if (ViewMode == "List")
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-phone me-2 text-warning"></i> Mobile Verification
+                </h2>
+                <p class="text-secondary mb-0">
+                    Input dari Android tersimpan terpisah di tabel mobile. Verifikasi di sini
+                    untuk menggabungkannya ke pembukuan utama (JournalEntries).
+                </p>
+            </div>
+        </div>
+
+        @if (errorMessage != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+                <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+            </div>
+        }
+        @if (successMessage != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i> @successMessage
+                <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+            </div>
+        }
+
+        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>Mode</th>
+                                <th>Type</th>
+                                <th class="text-end">Amount</th>
+                                <th>Note</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!pendingList.Any())
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center text-secondary py-4">
+                                        Tidak ada input mobile yang menunggu verifikasi.
+                                    </td>
+                                </tr>
+                            }
+                            @foreach (var item in pendingList)
+                            {
+                                <tr>
+                                    <td class="ps-4">@item.EntryDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (item.Mode == "Manual")
+                                        {
+                                            <span class="badge text-bg-info">Manual (@item.LineCount baris)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">Simple</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.Mode == "Simple")
+                                        {
+                                            @if (item.Type == "Income")
+                                            {
+                                                <span class="badge text-bg-success">Income</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-danger">Expense</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">@item.Amount.ToString("C0", cultureId)</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Note) ? "-" : item.Note)</td>
+                                    <td><span class="badge text-bg-warning">Pending</span></td>
+                                    <td class="text-end pe-4">
+                                        @if (item.Mode == "Manual")
+                                        {
+                                            <a href="/MobileClassification/ClassifyManual/@item.Id" class="btn btn-sm btn-warning fw-semibold">
+                                                <i class="bi bi-check2-square me-1"></i> Review
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <a href="/MobileClassification/Classify/@item.Id" class="btn btn-sm btn-warning fw-semibold">
+                                                <i class="bi bi-tags me-1"></i> Classify
+                                            </a>
+                                        }
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RejectFromListAsync(item.Id)">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else if (ViewMode == "Simple")
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-tags me-2 text-warning"></i> Klasifikasi Transaksi
+                </h2>
+                <p class="text-secondary mb-0">Pilih akun kas dan akun @(simpleModel.Type == "Income" ? "pendapatan" : "beban") yang sesuai. Jurnal baru dibuat di tabel utama setelah disimpan.</p>
+            </div>
+            <a href="/MobileClassification" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Kembali
+            </a>
+        </div>
+
+        @if (notFound)
+        {
+            <div class="alert alert-danger shadow-sm">Transaksi tidak ditemukan atau sudah diproses.</div>
+        }
+        else
+        {
+            @if (errorMessage != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+                    <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                </div>
+            }
+
+            <div class="row g-4">
+                <div class="col-12 col-lg-5">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                        <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
+                            <h5 class="fw-bold">Ringkasan Input Mobile</h5>
+                        </div>
+                        <div class="card-body px-4">
+                            <dl class="row mb-0">
+                                <dt class="col-5 text-secondary">Tanggal</dt>
+                                <dd class="col-7">@simpleModel.EntryDate.ToString("dd/MM/yyyy")</dd>
+
+                                <dt class="col-5 text-secondary">Jenis</dt>
+                                <dd class="col-7">
+                                    @if (simpleModel.Type == "Income")
+                                    {
+                                        <span class="badge text-bg-success">Pemasukan</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-danger">Pengeluaran</span>
+                                    }
+                                </dd>
+
+                                <dt class="col-5 text-secondary">Nominal</dt>
+                                <dd class="col-7 fw-bold">@simpleModel.Amount.ToString("C0", cultureId)</dd>
+
+                                <dt class="col-5 text-secondary">Catatan Android</dt>
+                                <dd class="col-7">@(string.IsNullOrWhiteSpace(simpleModel.Note) ? "-" : simpleModel.Note)</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-7">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                        <div class="card-header bg-transparent border-bottom-0 pt-4 pb-0 px-4">
+                            <h5 class="fw-bold">Verifikasi &amp; Gabungkan</h5>
+                        </div>
+                        <div class="card-body px-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Akun Kas / Bank</label>
+                                <select class="form-select" @bind="simpleModel.CashAccountId">
+                                    <option value="0">-- Pilih Akun Kas --</option>
+                                    @foreach (var acc in simpleModel.CashAccounts)
+                                    {
+                                        <option value="@acc.Id">@acc.DisplayLabel</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    Akun @(simpleModel.Type == "Income" ? "Pendapatan" : "Beban")
+                                </label>
+                                <select class="form-select" @bind="simpleModel.ClassifiedAccountId">
+                                    <option value="0">-- Pilih Akun --</option>
+                                    @foreach (var acc in simpleModel.IncomeOrExpenseAccounts)
+                                    {
+                                        <option value="@acc.Id">@acc.DisplayLabel</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-warning fw-semibold" @onclick="HandleClassifySimple">
+                                    <i class="bi bi-check-lg me-1"></i> Verifikasi &amp; Posting
+                                </button>
+
+                                <button type="button" class="btn btn-outline-danger" @onclick="() => RejectAndReturnAsync(EntryId!.Value)">
+                                    <i class="bi bi-x-lg me-1"></i> Tolak
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else if (ViewMode == "Manual")
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-check2-square me-2 text-warning"></i> Review Jurnal Mobile
+                </h2>
+                <p class="text-secondary mb-0">Akun tiap baris sudah dipilih dari aplikasi Android. Setujui untuk memposting ke JournalEntries.</p>
+            </div>
+            <a href="/MobileClassification" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Kembali
+            </a>
+        </div>
+
+        @if (notFound)
+        {
+            <div class="alert alert-danger shadow-sm">Jurnal tidak ditemukan atau sudah diproses.</div>
+        }
+        else
+        {
+            @if (errorMessage != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+                    <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+                </div>
+            }
+
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+                <div class="card-body px-4">
+                    <dl class="row mb-0">
+                        <dt class="col-2 text-secondary">Tanggal</dt>
+                        <dd class="col-10">@manualModel.EntryDate.ToString("dd/MM/yyyy")</dd>
+
+                        <dt class="col-2 text-secondary">Catatan</dt>
+                        <dd class="col-10">@(string.IsNullOrWhiteSpace(manualModel.Note) ? "-" : manualModel.Note)</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Akun</th>
+                                    <th>Deskripsi</th>
+                                    <th class="text-end">Debit</th>
+                                    <th class="text-end pe-4">Kredit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var line in manualModel.Lines)
+                                {
+                                    <tr>
+                                        <td class="ps-4">@line.AccountName</td>
+                                        <td>@(string.IsNullOrWhiteSpace(line.LineDescription) ? "-" : line.LineDescription)</td>
+                                        <td class="text-end">@(line.Debit == 0 ? "-" : line.Debit.ToString("C0", cultureId))</td>
+                                        <td class="text-end pe-4">@(line.Credit == 0 ? "-" : line.Credit.ToString("C0", cultureId))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td class="ps-4" colspan="2">Total</td>
+                                    <td class="text-end">@manualModel.TotalDebit.ToString("C0", cultureId)</td>
+                                    <td class="text-end pe-4">@manualModel.TotalCredit.ToString("C0", cultureId)</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex justify-content-between">
+                <button type="button" class="btn btn-warning fw-semibold" @onclick="HandleApproveManual">
+                    <i class="bi bi-check-lg me-1"></i> Setujui &amp; Posting
+                </button>
+
+                <button type="button" class="btn btn-outline-danger" @onclick="() => RejectAndReturnAsync(EntryId!.Value)">
+                    <i class="bi bi-x-lg me-1"></i> Tolak
+                </button>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+    [Parameter] public string ViewMode { get; set; } = "List";
+    [Parameter] public int? EntryId { get; set; }
+
+    private List<MobilePendingListItemViewModel> pendingList = new();
+    private MobileClassifySimpleViewModel simpleModel = new();
+    private MobileClassifyManualViewModel manualModel = new();
+    private bool notFound;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        switch (ViewMode)
+        {
+            case "Simple":
+                await LoadSimpleAsync();
+                break;
+            case "Manual":
+                await LoadManualAsync();
+                break;
+            default:
+                await LoadListAsync();
+                break;
+        }
+    }
+
+    private async Task LoadListAsync()
+    {
+        var entries = await DbContext.MobileJournalEntries
+            .Where(m => m.Status == "Pending")
+            .OrderByDescending(m => m.SubmittedAt)
+            .ToListAsync();
+
+        var lineCounts = await DbContext.MobileJournalEntryLines
+            .Where(l => entries.Select(e => e.Id).Contains(l.MobileJournalEntryId))
+            .GroupBy(l => l.MobileJournalEntryId)
+            .Select(g => new { MobileJournalEntryId = g.Key, Count = g.Count(), Total = g.Sum(x => x.Debit) })
+            .ToListAsync();
+
+        pendingList = entries.Select(e =>
+        {
+            var lc = lineCounts.FirstOrDefault(x => x.MobileJournalEntryId == e.Id);
+            return new MobilePendingListItemViewModel
+            {
+                Id = e.Id,
+                EntryDate = e.EntryDate,
+                Mode = e.Mode,
+                Type = e.Type,
+                Amount = e.Mode == "Manual" ? (lc?.Total ?? 0) : (e.Amount ?? 0),
+                Note = e.Note,
+                Status = e.Status,
+                SubmittedAt = e.SubmittedAt,
+                LineCount = lc?.Count ?? 0
+            };
+        }).ToList();
+    }
+
+    private async Task RejectFromListAsync(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Tolak transaksi mobile ini?");
+        if (!confirmed) return;
+
+        var entry = await DbContext.MobileJournalEntries.FirstOrDefaultAsync(m => m.Id == id && m.Status == "Pending");
+        if (entry == null)
+        {
+            errorMessage = "Transaksi tidak ditemukan atau sudah diproses.";
+            return;
+        }
+
+        entry.Status = "Rejected";
+        entry.RejectedAt = DateTime.UtcNow;
+        await DbContext.SaveChangesAsync();
+
+        successMessage = "Transaksi mobile ditolak.";
+        await LoadListAsync();
+    }
+
+    private async Task LoadSimpleAsync()
+    {
+        var entry = await DbContext.MobileJournalEntries
+            .FirstOrDefaultAsync(m => m.Id == EntryId!.Value && m.Status == "Pending" && m.Mode == "Simple");
+
+        if (entry == null)
+        {
+            notFound = true;
+            return;
+        }
+
+        var isIncome = entry.Type == "Income";
+
+        simpleModel = new MobileClassifySimpleViewModel
+        {
+            MobileJournalEntryId = entry.Id,
+            EntryDate = entry.EntryDate,
+            Type = entry.Type ?? string.Empty,
+            Amount = entry.Amount ?? 0,
+            Note = entry.Note,
+            CashAccounts = await GetCashAccountsAsync(),
+            IncomeOrExpenseAccounts = await GetEligibleAccountsAsync(isIncome)
+        };
+    }
+
+    private async Task HandleClassifySimple()
+    {
+        errorMessage = null;
+
+        var entry = await DbContext.MobileJournalEntries
+            .FirstOrDefaultAsync(m => m.Id == EntryId!.Value && m.Status == "Pending" && m.Mode == "Simple");
+
+        if (entry == null)
+        {
+            notFound = true;
+            return;
+        }
+
+        var isIncome = entry.Type == "Income";
+
+        var cashAccount = (await GetCashAccountsAsync()).FirstOrDefault(a => a.Id == simpleModel.CashAccountId);
+        var classifiedAccount = (await GetEligibleAccountsAsync(isIncome)).FirstOrDefault(a => a.Id == simpleModel.ClassifiedAccountId);
+
+        if (cashAccount == null || classifiedAccount == null)
+        {
+            errorMessage = "Akun kas atau akun klasifikasi tidak valid.";
+            return;
+        }
+
+        var amount = entry.Amount ?? 0;
+        var referenceNumber = await GenerateReferenceNumberAsync("General");
+
+        var journalEntry = new JournalEntry
+        {
+            UserId = UserId,
+            ReferenceNumber = referenceNumber,
+            EntryDate = entry.EntryDate,
+            JournalType = "General",
+            CreatedAt = DateTime.UtcNow,
+            Source = "Mobile",
+            NeedsClassification = false,
+            MobileNote = entry.Note,
+            Lines = isIncome
+                ? new List<JournalEntryLine>
+                {
+                    new() { AccountId = cashAccount.Id, Debit = amount, Credit = 0, LineOrder = 0, LineDescription = entry.Note },
+                    new() { AccountId = classifiedAccount.Id, Debit = 0, Credit = amount, LineOrder = 1, LineDescription = entry.Note }
+                }
+                : new List<JournalEntryLine>
+                {
+                    new() { AccountId = classifiedAccount.Id, Debit = amount, Credit = 0, LineOrder = 0, LineDescription = entry.Note },
+                    new() { AccountId = cashAccount.Id, Debit = 0, Credit = amount, LineOrder = 1, LineDescription = entry.Note }
+                }
+        };
+
+        DbContext.JournalEntries.Add(journalEntry);
+
+        entry.Status = "Verified";
+        entry.VerifiedAt = DateTime.UtcNow;
+        entry.VerifiedJournalEntry = journalEntry;
+
+        await DbContext.SaveChangesAsync();
+        Nav.NavigateTo("/MobileClassification");
+    }
+
+    private async Task LoadManualAsync()
+    {
+        var entry = await DbContext.MobileJournalEntries
+            .Include(m => m.Lines)
+                .ThenInclude(l => l.Account)
+            .FirstOrDefaultAsync(m => m.Id == EntryId!.Value && m.Status == "Pending" && m.Mode == "Manual");
+
+        if (entry == null)
+        {
+            notFound = true;
+            return;
+        }
+
+        manualModel = new MobileClassifyManualViewModel
+        {
+            MobileJournalEntryId = entry.Id,
+            EntryDate = entry.EntryDate,
+            Note = entry.Note,
+            Lines = entry.Lines
+                .OrderBy(l => l.LineOrder)
+                .Select(l => new MobileClassifyManualLineViewModel
+                {
+                    AccountId = l.AccountId,
+                    AccountName = l.Account?.AccountName ?? "-",
+                    LineDescription = l.LineDescription,
+                    Debit = l.Debit,
+                    Credit = l.Credit
+                }).ToList()
+        };
+    }
+
+    private async Task HandleApproveManual()
+    {
+        errorMessage = null;
+
+        var entry = await DbContext.MobileJournalEntries
+            .Include(m => m.Lines)
+            .FirstOrDefaultAsync(m => m.Id == EntryId!.Value && m.Status == "Pending" && m.Mode == "Manual");
+
+        if (entry == null)
+        {
+            notFound = true;
+            return;
+        }
+
+        var totalDebit = entry.Lines.Sum(l => l.Debit);
+        var totalCredit = entry.Lines.Sum(l => l.Credit);
+        if (totalDebit != totalCredit || totalDebit == 0)
+        {
+            errorMessage = "Jurnal tidak seimbang, tidak bisa diverifikasi.";
+            return;
+        }
+
+        var ownAccountIds = (await DbContext.ChartOfAccounts.Where(a => a.UserId == UserId).Select(a => a.Id).ToListAsync()).ToHashSet();
+        if (entry.Lines.Any(l => !ownAccountIds.Contains(l.AccountId)))
+        {
+            errorMessage = "One or more accounts in this entry are invalid.";
+            return;
+        }
+
+        var referenceNumber = await GenerateReferenceNumberAsync("General");
+
+        var journalEntry = new JournalEntry
+        {
+            UserId = UserId,
+            ReferenceNumber = referenceNumber,
+            EntryDate = entry.EntryDate,
+            JournalType = "General",
+            CreatedAt = DateTime.UtcNow,
+            Source = "Mobile",
+            NeedsClassification = false,
+            MobileNote = entry.Note,
+            Lines = entry.Lines
+                .OrderBy(l => l.LineOrder)
+                .Select(l => new JournalEntryLine
+                {
+                    AccountId = l.AccountId,
+                    Debit = l.Debit,
+                    Credit = l.Credit,
+                    LineOrder = l.LineOrder,
+                    LineDescription = l.LineDescription
+                }).ToList()
+        };
+
+        DbContext.JournalEntries.Add(journalEntry);
+
+        entry.Status = "Verified";
+        entry.VerifiedAt = DateTime.UtcNow;
+        entry.VerifiedJournalEntry = journalEntry;
+
+        await DbContext.SaveChangesAsync();
+        Nav.NavigateTo("/MobileClassification");
+    }
+
+    private async Task RejectAndReturnAsync(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Tolak transaksi ini? Tidak akan masuk ke pembukuan utama.");
+        if (!confirmed) return;
+
+        var entry = await DbContext.MobileJournalEntries.FirstOrDefaultAsync(m => m.Id == id && m.Status == "Pending");
+        if (entry == null)
+        {
+            notFound = true;
+            return;
+        }
+
+        entry.Status = "Rejected";
+        entry.RejectedAt = DateTime.UtcNow;
+        await DbContext.SaveChangesAsync();
+
+        Nav.NavigateTo("/MobileClassification");
+    }
+
+    private Task<List<ChartOfAccount>> GetCashAccountsAsync()
+    {
+        return DbContext.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == UserId && a.Role == "CashAndEquivalents")
+            .OrderBy(a => a.ReferenceNumber)
+            .ToListAsync();
+    }
+
+    private Task<List<ChartOfAccount>> GetEligibleAccountsAsync(bool isIncome)
+    {
+        var types = isIncome
+            ? new[] { "OperatingIncome", "OtherIncome" }
+            : new[] { "OperatingExpenses", "OtherExpenses" };
+
+        return DbContext.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == UserId && types.Contains(a.Type))
+            .OrderBy(a => a.ReferenceNumber)
+            .ToListAsync();
+    }
+
+    private async Task<string> GenerateReferenceNumberAsync(string journalType)
+    {
+        var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
+
+        var lastNumber = await DbContext.JournalEntries
+            .Where(e => e.UserId == UserId && e.ReferenceNumber.StartsWith(prefix + "-"))
+            .OrderByDescending(e => e.Id)
+            .Select(e => e.ReferenceNumber)
+            .FirstOrDefaultAsync();
+
+        var nextSeq = 1;
+        if (lastNumber != null)
+        {
+            var parts = lastNumber.Split('-');
+            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+            {
+                nextSeq = lastSeq + 1;
+            }
+        }
+
+        return $"{prefix}-{nextSeq:D6}";
+    }
+}
