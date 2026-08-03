@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace AumoFinance.Controllers
 {
@@ -18,15 +20,46 @@ namespace AumoFinance.Controllers
         // GET: Menampilkan tabel COA dan Modal
         public async Task<IActionResult> Index()
         {
-            // 1. Tarik master data COA dan urutkan
+            var userId = this.CurrentUserId();
+
+            // 1. Tarik master data COA milik user ini dan urutkan
             var accounts = await _context.ChartOfAccounts
+                                         .Where(a => a.UserId == userId)
                                          .OrderBy(a => a.ReferenceNumber)
                                          .ToListAsync();
 
-            // 2. Kalkulasi total Debit & Kredit dari JournalEntryLines untuk setiap akun
+            var accountIds = accounts.Select(a => a.Id).ToList();
+
+            // 2. Ambil informasi Periode yang sedang DI-VIEW/DITAMPILKAN (IsSelected = true) milik User
+            var currentPeriod = await _context.Periods
+                                              .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+
+            // Jika tidak ada periode yang sedang dipilih/ditampilkan
+            if (currentPeriod == null)
+            {
+                ViewBag.NoPeriodSelected = true;
+
+                // Set semua saldo akun ke 0 karena tidak ada konteks periode
+                foreach (var account in accounts)
+                {
+                    account.Balance = 0;
+                }
+
+                return View(accounts);
+            }
+
+            ViewBag.NoPeriodSelected = false;
+            ViewBag.PeriodName = currentPeriod.PeriodName;
+
+            // 3. Kalkulasi total Debit & Kredit HANYA untuk transaksi yang berada dalam rentang tanggal periode yang ditampilkan
+            // Perbaikan CS8602: Menambahkan check `j.JournalEntry != null` sebelum mengakses `EntryDate`
             var accountBalances = await _context.JournalEntryLines
+                                                .Where(j => accountIds.Contains(j.AccountId) &&
+                                                            j.JournalEntry != null &&
+                                                            j.JournalEntry.EntryDate >= currentPeriod.StartDate &&
+                                                            j.JournalEntry.EntryDate <= currentPeriod.EndDate)
                                                 .GroupBy(j => j.AccountId)
-                                                .Select(g => new 
+                                                .Select(g => new
                                                 {
                                                     AccountId = g.Key,
                                                     TotalDebit = g.Sum(j => j.Debit),
@@ -34,7 +67,7 @@ namespace AumoFinance.Controllers
                                                 })
                                                 .ToDictionaryAsync(x => x.AccountId);
 
-            // 3. Terapkan logika Normal Balance ke masing-masing akun
+            // 4. Terapkan logika Normal Balance ke masing-masing akun berdasarkan transaksi di periode tersebut
             foreach (var account in accounts)
             {
                 if (accountBalances.TryGetValue(account.Id, out var balance))
@@ -45,15 +78,15 @@ namespace AumoFinance.Controllers
                         account.Balance = balance.TotalDebit - balance.TotalCredit;
                     }
                     // Kelompok Akun bersaldo normal KREDIT
-                    else 
+                    else
                     {
                         account.Balance = balance.TotalCredit - balance.TotalDebit;
                     }
                 }
                 else
                 {
-                    // Jika belum ada transaksi jurnal, saldo 0
-                    account.Balance = 0; 
+                    // Jika belum ada transaksi jurnal pada periode ini, saldo 0
+                    account.Balance = 0;
                 }
             }
 
@@ -65,6 +98,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ChartOfAccount model)
         {
+            var userId = this.CurrentUserId();
+
             if (!ModelState.IsValid)
             {
                 TempData["ErrorMessage"] = GetFirstModelError() ?? "Data akun tidak valid.";
@@ -78,8 +113,8 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // 2. Validasi Akurasi: Pastikan tidak ada duplikasi nomor akun
-            bool isCodeTaken = await _context.ChartOfAccounts.AnyAsync(a => a.ReferenceNumber == model.ReferenceNumber);
+            // 2. Validasi Akurasi: Pastikan tidak ada duplikasi nomor akun DALAM akun milik user ini
+            bool isCodeTaken = await _context.ChartOfAccounts.AnyAsync(a => a.UserId == userId && a.ReferenceNumber == model.ReferenceNumber);
             if (isCodeTaken)
             {
                 TempData["ErrorMessage"] = $"Account code {model.ReferenceNumber} is already in use!";
@@ -87,6 +122,7 @@ namespace AumoFinance.Controllers
             }
 
             // Set nilai bawaan untuk akun baru
+            model.UserId = userId;
             model.IsActive = true;
             model.Balance = 0;
 
@@ -110,7 +146,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ChartOfAccount model)
         {
-            var account = await _context.ChartOfAccounts.FindAsync(model.Id);
+            var userId = this.CurrentUserId();
+            var account = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.Id && a.UserId == userId);
             if (account == null)
             {
                 TempData["ErrorMessage"] = "Account not found.";
@@ -129,9 +166,9 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Duplikasi nomor akun boleh sama dengan dirinya sendiri, tidak dengan akun lain
+            // Duplikasi nomor akun boleh sama dengan dirinya sendiri, tidak dengan akun lain milik user ini
             bool isCodeTaken = await _context.ChartOfAccounts
-                .AnyAsync(a => a.ReferenceNumber == model.ReferenceNumber && a.Id != model.Id);
+                .AnyAsync(a => a.UserId == userId && a.ReferenceNumber == model.ReferenceNumber && a.Id != model.Id);
             if (isCodeTaken)
             {
                 TempData["ErrorMessage"] = $"Account code {model.ReferenceNumber} is already in use!";
@@ -162,15 +199,15 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            var account = await _context.ChartOfAccounts.FindAsync(id);
+            var userId = this.CurrentUserId();
+            var account = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (account == null)
             {
                 TempData["ErrorMessage"] = "Account not found.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Akun yang sudah dipakai di Journal Entry tidak boleh dihapus
-            // (menjaga integritas General Ledger). Nonaktifkan saja.
+            // Akun yang sudah dipakai di Journal Entry tidak boleh dihapus (menjaga integritas General Ledger)
             bool hasJournalLines = await _context.JournalEntryLines.AnyAsync(l => l.AccountId == id);
             if (hasJournalLines)
             {

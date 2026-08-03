@@ -1,9 +1,23 @@
 @model List<AumoFinance.Models.LedgerAccountViewModel>
 @{
     ViewData["Title"] = "General Ledger (Temporary Accounts)";
+    var netTotal = Model.Sum(l => l.NormalBalanceIsDebit ? -l.EndingBalance : l.EndingBalance);
 }
 
 <div class="container-fluid">
+    @if (ViewBag.NoPeriodSelected == true)
+    {
+        <div class="text-center py-5 my-4">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
+            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
+            <a asp-controller="Periods" asp-action="Index" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
+        </div>
+    }
+    else
+    {
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-calculator me-2 text-success"></i> General Ledger (Temporary Accounts)</h2>
@@ -19,10 +33,6 @@
     @if (!Model.Any())
     {
         <div class="alert alert-secondary bg-dark text-muted border-secondary">No temporary accounts found in the Chart of Accounts.</div>
-    }
-
-    @{
-        var netTotal = Model.Sum(l => l.NormalBalanceIsDebit ? -l.EndingBalance : l.EndingBalance);
     }
 
     <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
@@ -80,5 +90,6 @@
                 </div>
             </div>
         </div>
+    }
     }
 </div>

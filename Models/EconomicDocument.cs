@@ -9,6 +9,9 @@ public class EconomicDocument
     [Key]
     public int Id { get; set; }
 
+    // Pemilik dokumen ini — setiap user punya arsip dokumennya sendiri.
+    public Guid UserId { get; set; }
+
     [Required]
     [StringLength(200)]
     public string Title { get; set; } = string.Empty;

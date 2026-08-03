@@ -6,6 +6,9 @@ namespace AumoFinance.Models
     {
         public int Id { get; set; }
 
+        // Pemilik jurnal ini — setiap user punya buku besar sendiri.
+        public Guid UserId { get; set; }
+
         [Required]
         [StringLength(30)]
         public string ReferenceNumber { get; set; } = string.Empty;

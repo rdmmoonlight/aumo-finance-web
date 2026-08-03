@@ -3,7 +3,7 @@ using AumoFinance.Services;
 using AumoFinance.Services.Security;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection; // Namespace untuk Data Protection
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -14,16 +14,14 @@ var builder = WebApplication.CreateBuilder(args);
 // =====================================
 // Database - Neon PostgreSQL
 // =====================================
-
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
 // =====================================
-// Data Protection (Fix Warning & Session Logout di Cloud/Railway)
+// Data Protection
 // =====================================
-
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>()
     .SetApplicationName("AumoFinanceApp");
@@ -31,11 +29,9 @@ builder.Services.AddDataProtection()
 // =====================================
 // ASP.NET Core Identity
 // =====================================
-
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
-
     options.Password.RequiredLength = 6;
     options.Password.RequireDigit = false;
     options.Password.RequireNonAlphanumeric = false;
@@ -57,7 +53,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 // =====================================
 // Services
 // =====================================
-
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
@@ -66,10 +61,14 @@ builder.Services.AddScoped<IJournalImportService, JournalImportService>();
 builder.Services.AddMemoryCache();
 
 // =====================================
-// Forwarded Headers (Railway / Render Proxy)
-// Updated for .NET 10 (Fix Warning ASPDEPR005)
+// BLAZOR SERVICES (TAMBAHAN BARU)
 // =====================================
+builder.Services.AddServerSideBlazor(); // <--- 1. Registrasi Blazor Server
+builder.Services.AddHttpClient();       // <--- 2. Tambahkan HttpClient untuk komponen
 
+// =====================================
+// Forwarded Headers (Railway / Render Proxy)
+// =====================================
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders =
@@ -83,7 +82,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // =====================================
 // MVC + Global Authorization + Controllers API
 // =====================================
-
 builder.Services.AddControllers();
 
 builder.Services.AddControllersWithViews(options =>
@@ -98,7 +96,6 @@ builder.Services.AddControllersWithViews(options =>
 // =====================================
 // Google Login (Optional)
 // =====================================
-
 var googleClientId =
     builder.Configuration["Authentication:Google:ClientId"]
     ?? builder.Configuration["Google:ClientId"];
@@ -125,17 +122,13 @@ if (!string.IsNullOrWhiteSpace(googleClientId) &&
 var app = builder.Build();
 
 // =====================================
-// HTTP Pipeline (DEBUG ENABLED FOR RAILWAY)
+// HTTP Pipeline
 // =====================================
-
 app.UseForwardedHeaders();
-
-// Diaktifkan sementara untuk menampilkan layar error detail di browser
 app.UseDeveloperExceptionPage();
 
 if (!app.Environment.IsDevelopment())
 {
-    // app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
     app.UseHttpsRedirection();
 }
@@ -149,8 +142,10 @@ app.UseAuthorization();
 // =====================================
 // Routes Mapping
 // =====================================
+app.MapControllers();
 
-app.MapControllers(); // Matches [Route("api/ai")] and [Route("api/mobile")]
+// BLAZOR SIGNALR HUB (TAMBAHAN BARU)
+app.MapBlazorHub(); // <--- 3. Pipa komunikasi real-time Blazor via SignalR
 
 app.MapControllerRoute(
     name: "default",

@@ -17,10 +17,11 @@ namespace AumoFinance.Controllers
         {
             var model = new DashboardViewModel();
             var isAnnual = period.Equals("annual", StringComparison.OrdinalIgnoreCase);
-            
+
             ViewData["CurrentPeriodType"] = isAnnual ? "annual" : "monthly";
 
-            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db);
+            var userId = this.CurrentUserId();
+            var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
 
             if (selectedPeriod == null)
             {
@@ -55,16 +56,16 @@ namespace AumoFinance.Controllers
             model.ActivePeriodStart = periodStart;
             model.ActivePeriodEnd = periodEnd;
 
-            // 2. Ambil Akun & Jurnal Lines
+            // 2. Ambil Akun & Jurnal Lines MILIK USER INI
             var accounts = await _db.ChartOfAccounts
-                .Where(a => a.IsActive)
+                .Where(a => a.IsActive && a.UserId == userId)
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
 
             var lines = await _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
                 .Include(l => l.Account)
-                .Where(l => l.JournalEntry != null && l.JournalEntry.EntryDate <= periodEnd)
+                .Where(l => l.JournalEntry != null && l.JournalEntry.UserId == userId && l.JournalEntry.EntryDate <= periodEnd)
                 .ToListAsync();
 
             // 3. Hitung Net Balance Akun Kumulatif
@@ -193,9 +194,9 @@ namespace AumoFinance.Controllers
                 });
             }
 
-            // 9. Jurnal Terakhir (Aman karena periodStart & periodEnd sudah UTC)
+            // 9. Jurnal Terakhir (dibatasi ke periode + user ini; aman karena periodStart & periodEnd sudah UTC)
             model.RecentJournals = await _db.JournalEntries
-                .Where(j => j.EntryDate >= periodStart && j.EntryDate <= periodEnd)
+                .Where(j => j.UserId == userId && j.EntryDate >= periodStart && j.EntryDate <= periodEnd)
                 .OrderByDescending(j => j.EntryDate)
                 .ThenByDescending(j => j.Id)
                 .Take(8)
@@ -243,7 +244,7 @@ namespace AumoFinance.Controllers
         private static bool IsNormalBalanceDebitSafe(string? type)
         {
             if (string.IsNullOrWhiteSpace(type)) return true;
-            
+
             try
             {
                 return AccountClassification.NormalBalanceIsDebit(type);

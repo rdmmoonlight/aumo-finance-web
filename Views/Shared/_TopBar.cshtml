@@ -1,5 +1,6 @@
 @* Views/Shared/_TopBar.cshtml *@
 @using AumoFinance.Models
+@using System.Security.Claims
 @inject AppDbContext _context
 
 <!-- ========================================== -->
@@ -108,7 +109,14 @@
 <!-- ========================================== -->
 @if (User.Identity != null && User.Identity.IsAuthenticated)
 {
-    var activePeriodObj = _context.Periods.FirstOrDefault(p => p.IsSelected);
+    // Tampilkan periode yang sedang di-VIEW (IsSelected = true di database)
+    // MILIK USER YANG SEDANG LOGIN — Chart of Accounts, Periods, dan Journal
+    // Entries kini terisolasi penuh per user. Selama belum ada yang dipilih,
+    // seluruh halaman yang bergantung padanya (Dashboard, General/Adjusting
+    // Journal, laporan) dianggap kosong.
+    var currentUserIdStr = Context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+    Guid.TryParse(currentUserIdStr, out var currentUserId);
+    var activePeriodObj = _context.Periods.FirstOrDefault(p => p.UserId == currentUserId && p.IsSelected);
 
     var activePeriodName = activePeriodObj?.PeriodName;
     var hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);

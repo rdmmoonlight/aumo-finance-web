@@ -10,6 +10,10 @@ namespace AumoFinance.Models
         [Required(ErrorMessage = "Reference number is required.")]
         public int ReferenceNumber { get; set; }
 
+        // Pemilik akun ini — setiap user punya Chart of Accounts sendiri,
+        // benar-benar terpisah dari user lain.
+        public Guid UserId { get; set; }
+
         [Required(ErrorMessage = "Account name is required.")]
         [StringLength(100)]
         public string AccountName { get; set; } = string.Empty;

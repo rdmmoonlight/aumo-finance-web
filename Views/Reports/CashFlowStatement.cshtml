@@ -3,79 +3,156 @@
     ViewData["Title"] = "Cash Flow Statement";
 }
 
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1"><i class="bi bi-cash-coin me-2 text-success"></i> Cash Flow Statement</h2>
-            <p class="text-muted mb-0">Direct method (IAS 7), prepared from all transactions in Cash &amp; Cash Equivalents accounts.</p>
+<div class="container-fluid py-2">
+    @if (ViewBag.DebugRows != null)
+    {
+        <pre class="text-white bg-dark p-3 small">DEBUG ROWS:
+@System.Text.Json.JsonSerializer.Serialize(ViewBag.DebugRows, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })</pre>
+    }
+    @if (ViewBag.NoPeriodSelected == true)
+    {
+        <div class="text-center py-5 my-4">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
+            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
+            <a asp-controller="Periods" asp-action="Index" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
         </div>
-    </div>
-
-    <div class="card bg-dark border-secondary text-white shadow-sm">
-        <div class="card-body">
-            <table class="table table-dark table-borderless align-middle mb-0">
-                <tbody>
-                    <tr><td colspan="2" class="fw-bold text-warning text-uppercase small">Operating Activities</td></tr>
-                    @if (!Model.OperatingActivities.Any())
-                    {
-                        <tr><td class="ps-4 text-muted">No transactions recorded.</td><td></td></tr>
-                    }
-                    @foreach (var l in Model.OperatingActivities)
-                    {
-                        <tr><td class="ps-4">@l.Description</td><td class="text-end @(l.Amount >= 0 ? "text-success" : "text-danger")">@l.Amount.ToString("N2")</td></tr>
-                    }
-                    <tr class="border-top border-secondary fw-semibold">
-                        <td class="ps-4">Net Cash Provided by (Used in) Operating Activities</td>
-                        <td class="text-end @(Model.NetOperating >= 0 ? "text-success" : "text-danger")">@Model.NetOperating.ToString("N2")</td>
-                    </tr>
-
-                    <tr><td colspan="2" class="pt-3 fw-bold text-warning text-uppercase small">Investing Activities</td></tr>
-                    @if (!Model.InvestingActivities.Any())
-                    {
-                        <tr><td class="ps-4 text-muted">No transactions recorded.</td><td></td></tr>
-                    }
-                    @foreach (var l in Model.InvestingActivities)
-                    {
-                        <tr><td class="ps-4">@l.Description</td><td class="text-end @(l.Amount >= 0 ? "text-success" : "text-danger")">@l.Amount.ToString("N2")</td></tr>
-                    }
-                    <tr class="border-top border-secondary fw-semibold">
-                        <td class="ps-4">Net Cash Provided by (Used in) Investing Activities</td>
-                        <td class="text-end @(Model.NetInvesting >= 0 ? "text-success" : "text-danger")">@Model.NetInvesting.ToString("N2")</td>
-                    </tr>
-
-                    <tr><td colspan="2" class="pt-3 fw-bold text-warning text-uppercase small">Financing Activities</td></tr>
-                    @if (!Model.FinancingActivities.Any())
-                    {
-                        <tr><td class="ps-4 text-muted">No transactions recorded.</td><td></td></tr>
-                    }
-                    @foreach (var l in Model.FinancingActivities)
-                    {
-                        <tr><td class="ps-4">@l.Description</td><td class="text-end @(l.Amount >= 0 ? "text-success" : "text-danger")">@l.Amount.ToString("N2")</td></tr>
-                    }
-                    <tr class="border-top border-secondary fw-semibold">
-                        <td class="ps-4">Net Cash Provided by (Used in) Financing Activities</td>
-                        <td class="text-end @(Model.NetFinancing >= 0 ? "text-success" : "text-danger")">@Model.NetFinancing.ToString("N2")</td>
-                    </tr>
-
-                    <tr class="border-top border-secondary" style="border-top-width: 3px !important;">
-                        <td class="fw-bold fs-5 pt-2">Net Increase (Decrease) in Cash and Cash Equivalents</td>
-                        <td class="text-end fw-bold fs-5 pt-2 @(Model.NetChangeInCash >= 0 ? "text-success" : "text-danger")">@Model.NetChangeInCash.ToString("N2")</td>
-                    </tr>
-                    <tr>
-                        <td>Cash and Cash Equivalents, Beginning of Period</td>
-                        <td class="text-end">@Model.BeginningCash.ToString("N2")</td>
-                    </tr>
-                    <tr class="fw-bold">
-                        <td>Cash and Cash Equivalents, End of Period</td>
-                        <td class="text-end">@Model.EndingCash.ToString("N2")</td>
-                    </tr>
-                </tbody>
-            </table>
+    }
+    else
+    {
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-cash-coin me-2 text-success"></i> Cash Flow Statement</h2>
+                <p class="text-muted mb-0">Indirect method (IAS 7), derived from Adjusted Trial Balance &amp; Income Statement.</p>
+            </div>
+            <div>
+                <a asp-controller="Reports" asp-action="IncomeStatement" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Income Statement
+                </a>
+            </div>
         </div>
-    </div>
 
-    <div class="alert alert-info bg-opacity-10 mt-3 mb-0 py-2 small">
-        <i class="bi bi-info-circle-fill me-1"></i>
-        Investing and Operating activity classifications are determined by the opposing account type (Non-cash Assets &rarr; Investing; Nominal &amp; Liabilities accounts &rarr; Operating; Equity &rarr; Financing). Adjust via Account Roles in the Chart of Accounts if necessary.
-    </div>
+        <!-- Cash Flow Table Card -->
+        <div class="card bg-dark border-secondary text-white shadow-sm">
+            <div class="card-body p-4">
+                <table class="table table-dark table-borderless align-middle mb-0">
+                    <tbody>
+                        <!-- OPERATING ACTIVITIES -->
+                        <tr>
+                            <td colspan="2" class="fw-bold text-warning text-uppercase small pb-2">
+                                Cash Flows from Operating Activities
+                            </td>
+                        </tr>
+                        @if (!Model.OperatingActivities.Any())
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted fst-italic">No operating activities.</td>
+                                <td class="text-end text-muted">-</td>
+                            </tr>
+                        }
+                        @foreach (var l in Model.OperatingActivities)
+                        {
+                            <tr>
+                                <td class="ps-4">@l.Description</td>
+                                <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount):N2})" : l.Amount.ToString("N2"))
+                                </td>
+                            </tr>
+                        }
+                        <tr class="border-top border-secondary fw-semibold">
+                            <td class="ps-4 pt-2">Net Cash Provided by (Used in) Operating Activities</td>
+                            <td class="text-end pt-2 @(Model.NetOperating < 0 ? "text-danger" : "text-success")">
+                                @(Model.NetOperating < 0 ? $"({Math.Abs(Model.NetOperating):N2})" : Model.NetOperating.ToString("N2"))
+                            </td>
+                        </tr>
+
+                        <!-- INVESTING ACTIVITIES -->
+                        <tr>
+                            <td colspan="2" class="pt-4 fw-bold text-warning text-uppercase small pb-2">
+                                Cash Flows from Investing Activities
+                            </td>
+                        </tr>
+                        @if (!Model.InvestingActivities.Any())
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted fst-italic">No investing activities.</td>
+                                <td class="text-end text-muted">-</td>
+                            </tr>
+                        }
+                        @foreach (var l in Model.InvestingActivities)
+                        {
+                            <tr>
+                                <td class="ps-4">@l.Description</td>
+                                <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount):N2})" : l.Amount.ToString("N2"))
+                                </td>
+                            </tr>
+                        }
+                        <tr class="border-top border-secondary fw-semibold">
+                            <td class="ps-4 pt-2">Net Cash Provided by (Used in) Investing Activities</td>
+                            <td class="text-end pt-2 @(Model.NetInvesting < 0 ? "text-danger" : "text-success")">
+                                @(Model.NetInvesting < 0 ? $"({Math.Abs(Model.NetInvesting):N2})" : Model.NetInvesting.ToString("N2"))
+                            </td>
+                        </tr>
+
+                        <!-- FINANCING ACTIVITIES -->
+                        <tr>
+                            <td colspan="2" class="pt-4 fw-bold text-warning text-uppercase small pb-2">
+                                Cash Flows from Financing Activities
+                            </td>
+                        </tr>
+                        @if (!Model.FinancingActivities.Any())
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted fst-italic">No financing activities.</td>
+                                <td class="text-end text-muted">-</td>
+                            </tr>
+                        }
+                        @foreach (var l in Model.FinancingActivities)
+                        {
+                            <tr>
+                                <td class="ps-4">@l.Description</td>
+                                <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount):N2})" : l.Amount.ToString("N2"))
+                                </td>
+                            </tr>
+                        }
+                        <tr class="border-top border-secondary fw-semibold">
+                            <td class="ps-4 pt-2">Net Cash Provided by (Used in) Financing Activities</td>
+                            <td class="text-end pt-2 @(Model.NetFinancing < 0 ? "text-danger" : "text-success")">
+                                @(Model.NetFinancing < 0 ? $"({Math.Abs(Model.NetFinancing):N2})" : Model.NetFinancing.ToString("N2"))
+                            </td>
+                        </tr>
+
+                        <!-- SUMMARY SECTION -->
+                        <tr class="border-top border-secondary" style="border-top-width: 3px !important;">
+                            <td class="fw-bold fs-5 pt-3">Net Increase (Decrease) in Cash and Cash Equivalents</td>
+                            <td class="text-end fw-bold fs-5 pt-3 @(Model.NetChangeInCash < 0 ? "text-danger" : "text-success")">
+                                @(Model.NetChangeInCash < 0 ? $"({Math.Abs(Model.NetChangeInCash):N2})" : Model.NetChangeInCash.ToString("N2"))
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3 text-white-50">Cash and Cash Equivalents, Beginning of Period</td>
+                            <td class="text-end text-white-50">@Model.BeginningCash.ToString("N2")</td>
+                        </tr>
+                        <tr class="fw-bold border-top border-secondary">
+                            <td class="ps-3 pt-2 text-info">Cash and Cash Equivalents, End of Period</td>
+                            <td class="text-end pt-2 text-info">@Model.EndingCash.ToString("N2")</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Note Footnote -->
+        <div class="alert alert-info bg-opacity-10 text-white border-info mt-3 mb-0 py-2 small d-flex align-items-center shadow-sm">
+            <i class="bi bi-info-circle-fill text-info me-2 fs-6"></i>
+            <span>
+                Prepared using the Indirect Method in accordance with IAS 7 / US GAAP.
+            </span>
+        </div>
+    }
 </div>

@@ -70,7 +70,7 @@ public partial class AuthController : Controller
 
         // 2. Find User by Email
         var user = await _userManager.FindByEmailAsync(model.Email);
-        
+
         // Anti-User Enumeration Practice:
         // If the user is not found, display a generic success message to prevent user enumeration
         if (user == null)

@@ -21,7 +21,7 @@ namespace AumoFinance.Controllers
             var model = new JournalEntryCreateViewModel
             {
                 EntryDate = DateTime.Today,
-                AvailableAccounts = await ActiveAccountsAsync()
+                AvailableAccounts = await ActiveAccountsAsync(this.CurrentUserId())
             };
 
             return View(model);
@@ -31,6 +31,8 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(JournalEntryCreateViewModel model)
         {
+            var userId = this.CurrentUserId();
+
             // Buang baris kosong (akun belum dipilih dan debit/kredit nol)
             model.Lines = model.Lines
                 .Where(l => l.AccountId != 0 && ((l.Debit ?? 0) != 0 || (l.Credit ?? 0) != 0))
@@ -49,14 +51,16 @@ namespace AumoFinance.Controllers
                 ModelState.AddModelError(string.Empty, "Total debit must equal total credit before posting.");
             }
 
-            var validAccountIds = (await _db.ChartOfAccounts.Where(a => a.IsActive).Select(a => a.Id).ToListAsync())
+            // Akun harus milik user ini sendiri — tidak boleh memakai akun
+            // milik user lain sekalipun Id-nya ditebak.
+            var validAccountIds = (await _db.ChartOfAccounts.Where(a => a.IsActive && a.UserId == userId).Select(a => a.Id).ToListAsync())
                 .ToHashSet();
             if (model.Lines.Any(l => !validAccountIds.Contains(l.AccountId)))
             {
                 ModelState.AddModelError(string.Empty, "One or more selected accounts are invalid or inactive.");
             }
 
-            var closedPeriodsForCreate = await _db.Periods.Where(p => p.IsClosed).ToListAsync();
+            var closedPeriodsForCreate = await _db.Periods.Where(p => p.UserId == userId && p.IsClosed).ToListAsync();
             if (PeriodLock.IsDateLocked(model.EntryDate, closedPeriodsForCreate))
             {
                 ModelState.AddModelError(string.Empty, "This date falls within a closed period. Choose a date in an open period.");
@@ -64,13 +68,14 @@ namespace AumoFinance.Controllers
 
             if (!ModelState.IsValid)
             {
-                model.AvailableAccounts = await ActiveAccountsAsync();
+                model.AvailableAccounts = await ActiveAccountsAsync(userId);
                 return View(model);
             }
 
             var entry = new JournalEntry
             {
-                ReferenceNumber = await GenerateReferenceNumberAsync(model.JournalType),
+                UserId = userId,
+                ReferenceNumber = await GenerateReferenceNumberAsync(userId, model.JournalType),
                 JournalType = model.JournalType,
                 EntryDate = DateTime.SpecifyKind(model.EntryDate, DateTimeKind.Utc),
                 Lines = model.Lines.Select((l, index) => new JournalEntryLine
@@ -94,16 +99,17 @@ namespace AumoFinance.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
+            var userId = this.CurrentUserId();
             var entry = await _db.JournalEntries
                 .Include(j => j.Lines)
-                .FirstOrDefaultAsync(j => j.Id == id);
+                .FirstOrDefaultAsync(j => j.Id == id && j.UserId == userId);
 
             if (entry == null)
             {
                 return NotFound();
             }
 
-            var closedPeriodsForGet = await _db.Periods.Where(p => p.IsClosed).ToListAsync();
+            var closedPeriodsForGet = await _db.Periods.Where(p => p.UserId == userId && p.IsClosed).ToListAsync();
             if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriodsForGet))
             {
                 TempData["ErrorMessage"] = $"Journal entry {entry.ReferenceNumber} belongs to a closed period and cannot be edited. View it from the Periods page instead.";
@@ -127,7 +133,7 @@ namespace AumoFinance.Controllers
                         Debit = l.Debit == 0 ? null : l.Debit,
                         Credit = l.Credit == 0 ? null : l.Credit
                     }).ToList(),
-                AvailableAccounts = await ActiveAccountsAsync()
+                AvailableAccounts = await ActiveAccountsAsync(userId)
             };
 
             return View(model);
@@ -137,9 +143,10 @@ namespace AumoFinance.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(JournalEntryEditViewModel model)
         {
+            var userId = this.CurrentUserId();
             var entry = await _db.JournalEntries
                 .Include(j => j.Lines)
-                .FirstOrDefaultAsync(j => j.Id == model.Id);
+                .FirstOrDefaultAsync(j => j.Id == model.Id && j.UserId == userId);
 
             if (entry == null)
             {
@@ -164,14 +171,14 @@ namespace AumoFinance.Controllers
                 ModelState.AddModelError(string.Empty, "Total debit must equal total credit before posting.");
             }
 
-            var validAccountIds = (await _db.ChartOfAccounts.Where(a => a.IsActive).Select(a => a.Id).ToListAsync())
+            var validAccountIds = (await _db.ChartOfAccounts.Where(a => a.IsActive && a.UserId == userId).Select(a => a.Id).ToListAsync())
                 .ToHashSet();
             if (model.Lines.Any(l => !validAccountIds.Contains(l.AccountId)))
             {
                 ModelState.AddModelError(string.Empty, "One or more selected accounts are invalid or inactive.");
             }
 
-            var closedPeriodsForEdit = await _db.Periods.Where(p => p.IsClosed).ToListAsync();
+            var closedPeriodsForEdit = await _db.Periods.Where(p => p.UserId == userId && p.IsClosed).ToListAsync();
             if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriodsForEdit) || PeriodLock.IsDateLocked(model.EntryDate, closedPeriodsForEdit))
             {
                 TempData["ErrorMessage"] = $"Journal entry {entry.ReferenceNumber} falls within a closed period and cannot be modified.";
@@ -181,7 +188,7 @@ namespace AumoFinance.Controllers
             if (!ModelState.IsValid)
             {
                 model.ReferenceNumber = entry.ReferenceNumber;
-                model.AvailableAccounts = await ActiveAccountsAsync();
+                model.AvailableAccounts = await ActiveAccountsAsync(userId);
                 return View(model);
             }
 
@@ -209,13 +216,14 @@ namespace AumoFinance.Controllers
             return RedirectToAction("Index", "GeneralJournal");
         }
 
-        // Membuat nomor referensi otomatis per jenis jurnal, mis. GJ-000001 / AJE-000001
-        private async Task<string> GenerateReferenceNumberAsync(string journalType)
+        // Membuat nomor referensi otomatis per jenis jurnal, mis. GJ-000001 /
+        // AJE-000001 — penomoran terpisah per user.
+        private async Task<string> GenerateReferenceNumberAsync(Guid userId, string journalType)
         {
             var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
 
             var lastNumber = await _db.JournalEntries
-                .Where(e => e.ReferenceNumber.StartsWith(prefix + "-"))
+                .Where(e => e.UserId == userId && e.ReferenceNumber.StartsWith(prefix + "-"))
                 .OrderByDescending(e => e.Id)
                 .Select(e => e.ReferenceNumber)
                 .FirstOrDefaultAsync();
@@ -242,10 +250,14 @@ namespace AumoFinance.Controllers
                 return Json(Array.Empty<string>());
             }
 
+            var userId = this.CurrentUserId();
             var keyword = q.Trim();
 
             var results = await _db.JournalEntryLines
-                .Where(l => l.LineDescription != null && l.LineDescription != "" && EF.Functions.ILike(l.LineDescription, $"%{keyword}%"))
+                .Include(l => l.JournalEntry)
+                .Where(l => l.JournalEntry!.UserId == userId
+                         && l.LineDescription != null && l.LineDescription != ""
+                         && EF.Functions.ILike(l.LineDescription, $"%{keyword}%"))
                 .GroupBy(l => l.LineDescription)
                 .OrderByDescending(g => g.Count())
                 .ThenByDescending(g => g.Max(l => l.Id))
@@ -256,10 +268,10 @@ namespace AumoFinance.Controllers
             return Json(results);
         }
 
-        private async Task<List<ChartOfAccount>> ActiveAccountsAsync()
+        private async Task<List<ChartOfAccount>> ActiveAccountsAsync(Guid userId)
         {
             return await _db.ChartOfAccounts
-                .Where(a => a.IsActive)
+                .Where(a => a.IsActive && a.UserId == userId)
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
         }

@@ -8,6 +8,9 @@ namespace AumoFinance.Models
         [Key]
         public int Id { get; set; }
 
+        // Pemilik periode ini — setiap user punya siklus periodenya sendiri.
+        public Guid UserId { get; set; }
+
         [Required]
         [StringLength(100)]
         public string PeriodName { get; set; } = string.Empty;
@@ -20,11 +23,11 @@ namespace AumoFinance.Models
 
         public bool IsClosed { get; set; }
 
-        // Menandakan periode ini sedang di-VIEW (dipilih lewat ikon mata di
-        // halaman Periods). Hanya boleh ada maksimum satu baris TRUE di
-        // seluruh tabel — dijaga oleh unique partial index di database.
-        // Seluruh aplikasi (Dashboard, General/Adjusting Journal, dst.)
-        // mengikuti periode mana yang sedang IsSelected = true.
+        // Menandakan periode ini sedang di-VIEW oleh user pemiliknya (dipilih
+        // lewat ikon mata di halaman Periods). Maksimum satu baris TRUE per
+        // UserId — dijaga oleh unique partial index (UserId) di database.
+        // Seluruh aplikasi (Dashboard, General/Adjusting Journal, laporan)
+        // mengikuti periode mana yang sedang IsSelected = true milik user itu.
         public bool IsSelected { get; set; }
     }
 }

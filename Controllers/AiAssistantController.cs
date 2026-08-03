@@ -58,22 +58,27 @@ namespace AumoFinance.Controllers
             return Ok(new { reply });
         }
 
-        // Menyusun ringkasan data keuangan sebagai konteks untuk AI
+        // Menyusun ringkasan data keuangan sebagai konteks untuk AI — dibatasi
+        // ke data milik user yang sedang login, dan ke periode yang sedang
+        // di-view (konsisten dengan Dashboard/Reports).
         private async Task<string> BuildFinancialContextAsync()
         {
-            var activePeriod = await _db.Periods
-                .Where(p => !p.IsClosed)
-                .OrderByDescending(p => p.StartDate)
-                .FirstOrDefaultAsync();
+            var userId = this.CurrentUserId();
+            var activePeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
+
+            if (activePeriod == null)
+            {
+                return "No period is currently selected. Ask the user to pick a period on the Periods page first.";
+            }
 
             var accounts = await _db.ChartOfAccounts
-                .Where(a => a.IsActive)
+                .Where(a => a.IsActive && a.UserId == userId)
                 .ToListAsync();
 
             var lines = await _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
                 .Include(l => l.Account)
-                .Where(l => l.JournalEntry != null)
+                .Where(l => l.JournalEntry != null && l.JournalEntry.UserId == userId && l.JournalEntry.EntryDate <= activePeriod.EndDate)
                 .ToListAsync();
 
             if (accounts.Count == 0 || lines.Count == 0)

@@ -1,0 +1,143 @@
+@using System.Net.Http.Json
+@inject NavigationManager NavManager
+@inject IHttpClientFactory HttpClientFactory
+
+<div class="market-widget-card card border-0 shadow-sm rounded-4 bg-body bg-opacity-75 backdrop-blur p-3 mx-auto mb-4" style="max-width: 680px;">
+    @if (isLoading)
+    {
+        <!-- State: Loading -->
+        <div class="d-flex justify-content-center align-items-center py-2 gap-2 text-secondary">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <span class="small fw-medium">Loading market indicators...</span>
+        </div>
+    }
+    else if (marketData != null && marketData.Success)
+    {
+        <!-- State: Success -->
+        <div class="row align-items-center g-3 text-center text-md-start">
+            
+            <!-- USD / IDR -->
+            <div class="col-12 col-md-4 border-end-md">
+                <div class="d-flex flex-column align-items-center align-items-md-start">
+                    <span class="text-uppercase text-secondary style-label mb-1">USD / IDR</span>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <span class="fw-bold fs-6 text-body-emphasis">
+                            Rp @marketData.Usd?.Price.ToString("N0", new System.Globalization.CultureInfo("id-ID"))
+                        </span>
+                        <span class="badge rounded-pill @(marketData.Usd?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
+                            <i class="bi @(marketData.Usd?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
+                            @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2")%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IHSG (^JKSE / IDX COMPOSITE) -->
+            <div class="col-12 col-md-4 border-end-md">
+                <div class="d-flex flex-column align-items-center align-items-md-start">
+                    <span class="text-uppercase text-secondary style-label mb-1">IDX Composite</span>
+                    <div class="d-flex align-items-baseline gap-2">
+                        <span class="fw-bold fs-6 text-body-emphasis">
+                            @marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
+                        </span>
+                        <span class="badge rounded-pill @(marketData.Ihsg?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
+                            <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
+                            @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2")%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BI-RATE -->
+            <div class="col-12 col-md-4">
+                <div class="d-flex flex-column align-items-center align-items-md-start">
+                    <span class="text-uppercase text-secondary style-label mb-1">BI-Rate</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold fs-6 text-primary">
+                            @marketData.BiRate
+                        </span>
+                        <span class="badge rounded-pill bg-primary-subtle text-primary style-badge">
+                            Benchmark
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <!-- State: Error / Fallback -->
+        <div class="d-flex align-items-center justify-content-center text-muted small py-1 gap-2">
+            <i class="bi bi-exclamation-circle text-warning"></i>
+            <span>Market indicators are temporarily unavailable.</span>
+        </div>
+    }
+</div>
+
+<style>
+    .style-label {
+        font-size: 0.725rem;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+    .style-badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.55em;
+    }
+    @@media (min-width: 768px) {
+        .border-end-md {
+            border-right: 1px solid var(--bs-border-color-translucent);
+        }
+    }
+</style>
+
+@code {
+    private MarketDataResponse? marketData;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            isLoading = true;
+            var client = HttpClientFactory.CreateClient();
+            var baseUrl = NavManager.BaseUri.TrimEnd('/');
+            var requestUrl = $"{baseUrl}/Market/GetMarketData";
+
+            var response = await client.GetAsync(requestUrl);
+            if (response.IsSuccessStatusCode)
+            {
+                marketData = await response.Content.ReadFromJsonAsync<MarketDataResponse>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MarketWidget Error] {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class MarketDataResponse
+    {
+        public bool Success { get; set; }
+        public MarketDetail? Usd { get; set; }
+        public MarketDetail? Ihsg { get; set; }
+        public string? BiRate { get; set; }
+    }
+
+    public class MarketDetail
+    {
+        public double Price { get; set; }
+        public double Percent { get; set; }
+        public bool IsUp { get; set; }
+    }
+}
