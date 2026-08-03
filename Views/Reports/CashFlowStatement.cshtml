@@ -21,7 +21,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h2 class="mb-1"><i class="bi bi-cash-coin me-2 text-success"></i> Cash Flow Statement</h2>
-                <p class="text-muted mb-0">Direct method (IAS 7), prepared from all transactions in Cash &amp; Cash Equivalents accounts.</p>
+                <p class="text-muted mb-0">Indirect method (IAS 7), derived from Adjusted Trial Balance &amp; Income Statement.</p>
             </div>
             <div>
                 <a asp-controller="Reports" asp-action="IncomeStatement" class="btn btn-outline-secondary">
@@ -44,7 +44,7 @@
                         @if (!Model.OperatingActivities.Any())
                         {
                             <tr>
-                                <td class="ps-4 text-muted fst-italic">No operating transactions recorded.</td>
+                                <td class="ps-4 text-muted fst-italic">No operating activities.</td>
                                 <td class="text-end text-muted">-</td>
                             </tr>
                         }
@@ -73,7 +73,7 @@
                         @if (!Model.InvestingActivities.Any())
                         {
                             <tr>
-                                <td class="ps-4 text-muted fst-italic">No investing transactions recorded.</td>
+                                <td class="ps-4 text-muted fst-italic">No investing activities.</td>
                                 <td class="text-end text-muted">-</td>
                             </tr>
                         }
@@ -102,7 +102,7 @@
                         @if (!Model.FinancingActivities.Any())
                         {
                             <tr>
-                                <td class="ps-4 text-muted fst-italic">No financing transactions recorded.</td>
+                                <td class="ps-4 text-muted fst-italic">No financing activities.</td>
                                 <td class="text-end text-muted">-</td>
                             </tr>
                         }
@@ -146,7 +146,7 @@
         <div class="alert alert-info bg-opacity-10 text-white border-info mt-3 mb-0 py-2 small d-flex align-items-center shadow-sm">
             <i class="bi bi-info-circle-fill text-info me-2 fs-6"></i>
             <span>
-                Operating, Investing, and Financing activities are classified based on contra-accounts from cash journal transactions in accordance with IAS 7.
+                Prepared using the Indirect Method in accordance with IAS 7 / US GAAP.
             </span>
         </div>
     }
