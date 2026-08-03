@@ -52,8 +52,10 @@ namespace AumoFinance.Controllers
             ViewBag.PeriodName = currentPeriod.PeriodName;
 
             // 3. Kalkulasi total Debit & Kredit HANYA untuk transaksi yang berada dalam rentang tanggal periode yang ditampilkan
+            // Perbaikan CS8602: Menambahkan check `j.JournalEntry != null` sebelum mengakses `EntryDate`
             var accountBalances = await _context.JournalEntryLines
                                                 .Where(j => accountIds.Contains(j.AccountId) &&
+                                                            j.JournalEntry != null &&
                                                             j.JournalEntry.EntryDate >= currentPeriod.StartDate &&
                                                             j.JournalEntry.EntryDate <= currentPeriod.EndDate)
                                                 .GroupBy(j => j.AccountId)
