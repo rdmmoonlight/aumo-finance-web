@@ -8,7 +8,7 @@
         <!-- State: Loading -->
         <div class="d-flex justify-content-center align-items-center py-2 gap-2 text-secondary">
             <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-            <span class="small fw-medium">Memuat indikator pasar...</span>
+            <span class="small fw-medium">Loading market indicators...</span>
         </div>
     }
     else if (marketData != null && marketData.Success)
@@ -32,10 +32,10 @@
                 </div>
             </div>
 
-            <!-- IHSG (^JKSE) -->
+            <!-- IHSG (^JKSE / IDX COMPOSITE) -->
             <div class="col-12 col-md-4 border-end-md">
                 <div class="d-flex flex-column align-items-center align-items-md-start">
-                    <span class="text-uppercase text-secondary style-label mb-1">IHSG</span>
+                    <span class="text-uppercase text-secondary style-label mb-1">IDX Composite</span>
                     <div class="d-flex align-items-baseline gap-2">
                         <span class="fw-bold fs-6 text-body-emphasis">
                             @marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
@@ -57,7 +57,7 @@
                             @marketData.BiRate
                         </span>
                         <span class="badge rounded-pill bg-primary-subtle text-primary style-badge">
-                            Acuan
+                            Benchmark
                         </span>
                     </div>
                 </div>
@@ -70,7 +70,7 @@
         <!-- State: Error / Fallback -->
         <div class="d-flex align-items-center justify-content-center text-muted small py-1 gap-2">
             <i class="bi bi-exclamation-circle text-warning"></i>
-            <span>Indikator pasar sementara tidak tersedia.</span>
+            <span>Market indicators are temporarily unavailable.</span>
         </div>
     }
 </div>
