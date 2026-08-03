@@ -16,7 +16,7 @@ yang sudah ada: `Components/MarketWidget.razor` ditanam ke View lewat
   - Chart of Accounts
   - Periods
 
-- [ ] **Fase 2 — Dashboard**
+- [x] **Fase 2 — Dashboard**
   - KPI Cards, Charts Section, Recent Data Tables
 
 - [ ] **Fase 3 — Transaksi**
