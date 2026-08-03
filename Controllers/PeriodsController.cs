@@ -86,27 +86,14 @@ namespace AumoFinance.Controllers
             model.AvailableRetainedEarningsAccounts = accounts.Where(a => a.Role == "RetainedEarnings").ToList();
             model.HasExistingPermanentAccounts = model.AvailableCashAndBankAccounts.Any() && model.AvailableRetainedEarningsAccounts.Any();
 
-            // Auto-select akun default jika belum ada pilihan di model
+            // Auto-select opsi default
             if (model.HasExistingPermanentAccounts)
             {
-                if (model.CashAccountId == null)
-                {
-                    model.CashAccountId = model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
-                }
+                model.CashAccountId ??= model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
+                model.BankAccountId ??= model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id 
+                                       ?? model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
+                model.RetainedEarningsAccountId ??= model.AvailableRetainedEarningsAccounts.FirstOrDefault()?.Id;
 
-                if (model.BankAccountId == null)
-                {
-                    // Ambil opsi akun bank berbeda jika memungkinkan
-                    model.BankAccountId = model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id
-                                        ?? model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
-                }
-
-                if (model.RetainedEarningsAccountId == null)
-                {
-                    model.RetainedEarningsAccountId = model.AvailableRetainedEarningsAccounts.FirstOrDefault()?.Id;
-                }
-
-                // Isi nilai awal properti model dari akun yang terpilih
                 var selectedCash = model.AvailableCashAndBankAccounts.FirstOrDefault(a => a.Id == model.CashAccountId);
                 if (selectedCash != null && string.IsNullOrEmpty(model.CashAccountCode))
                 {

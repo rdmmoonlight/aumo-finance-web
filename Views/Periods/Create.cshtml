@@ -65,7 +65,7 @@
                                             }
                                         </span>
                                         <span class="text-secondary small">
-                                            Reuse the existing Cash, Bank, and Retained Earnings accounts. Balances carry forward automatically — no new journal entry needed.
+                                            Reuse existing accounts. Balances carry forward automatically from closed ledger.
                                         </span>
                                         @if (!Model.HasExistingPermanentAccounts)
                                         {
@@ -81,7 +81,7 @@
                                     <span>
                                         <span class="fw-semibold d-block">Register new permanent accounts</span>
                                         <span class="text-secondary small">
-                                            For a brand-new setup with no accounting history yet. Creates Cash, Bank, and Retained Earnings in the Chart of Accounts and posts the opening balances.
+                                            For a brand-new setup with no accounting history yet.
                                         </span>
                                     </span>
                                 </label>
@@ -138,7 +138,7 @@
                                 </div>
                                 <div class="col-12">
                                     <div class="form-text text-secondary mb-0">
-                                        <i class="bi bi-info-circle"></i> No new Chart of Accounts entries or opening journal will be created. This period simply reuses the ledger already in place.
+                                        <i class="bi bi-lock-fill text-success me-1"></i> Balances are locked from previous period closure and will automatically carry forward to this new cycle.
                                     </div>
                                 </div>
                             </div>
@@ -225,7 +225,7 @@
                     <h6 class="fw-bold mb-0 text-body-emphasis">
                         <i class="bi bi-shield-lock me-2 text-primary"></i> Existing Permanent Accounts
                     </h6>
-                    <small class="text-secondary">Balance Sheet accounts (Assets, Liabilities, Equity) in use.</small>
+                    <small class="text-secondary">Balance Sheet accounts (Assets, Liabilities, Equity) carrying forward.</small>
                 </div>
                 <div class="card-body p-0" style="max-height: 640px; overflow-y: auto;">
                     @if (Model.PermanentAccounts != null && Model.PermanentAccounts.Any())
@@ -235,7 +235,8 @@
                                 <tr>
                                     <th class="ps-3" style="width: 70px;">Ref</th>
                                     <th>Account Name</th>
-                                    <th class="text-end pe-3">Type</th>
+                                    <th>Type</th>
+                                    <th class="text-end pe-3">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -244,8 +245,13 @@
                                     <tr>
                                         <td class="ps-3 fw-semibold">@acc.ReferenceNumber</td>
                                         <td>@acc.AccountName</td>
-                                        <td class="text-end pe-3">
+                                        <td>
                                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">@acc.Type</span>
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle small">
+                                                <i class="bi bi-lock-fill me-1"></i>Carried
+                                            </span>
                                         </td>
                                     </tr>
                                 }
@@ -256,7 +262,7 @@
                     {
                         <div class="text-center text-secondary py-5 px-3">
                             <i class="bi bi-inbox mb-2 d-block" style="font-size: 2rem;"></i>
-                            <small>No permanent accounts registered yet. The accounts created below will be the first entries in your Chart of Accounts.</small>
+                            <small>No permanent accounts registered yet.</small>
                         </div>
                     }
                 </div>
@@ -279,12 +285,10 @@
         const panelCreateNew = document.getElementById("panelCreateNew");
         const creditPreviewEl = document.getElementById("creditPreview");
 
-        // Element Dropdown Load Existing
         const selCash = document.getElementById("selCashAccountId");
         const selBank = document.getElementById("selBankAccountId");
         const selRetained = document.getElementById("selRetainedEarningsAccountId");
 
-        // Element Input Create New
         const inputCashCode = document.getElementById("CashAccountCode");
         const inputCashName = document.getElementById("CashAccountName");
         const inputBankCode = document.getElementById("BankAccountCode");
@@ -292,7 +296,6 @@
         const inputRetainedCode = document.getElementById("RetainedEarningsAccountCode");
         const inputRetainedName = document.getElementById("RetainedEarningsAccountName");
 
-        // Fungsi Auto-fill dari Dropdown ke Input
         function syncFieldsFromDropdowns() {
             if (!modeLoadExisting.checked) return;
 
@@ -329,7 +332,6 @@
             }
         }
 
-        // Listener perubahan mode & dropdown
         modeLoadExisting.addEventListener("change", togglePanels);
         modeCreateNew.addEventListener("change", togglePanels);
 
@@ -337,7 +339,6 @@
         selBank.addEventListener("change", syncFieldsFromDropdowns);
         selRetained.addEventListener("change", syncFieldsFromDropdowns);
 
-        // Format Angka & Preview
         function formatNumber(value) {
             if (!value) return "";
             let cleanValue = value.replace(/\D/g, "");
