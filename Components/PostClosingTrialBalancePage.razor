@@ -1,0 +1,136 @@
+@using AumoFinance.Models
+@inject AppDbContext DbContext
+
+<div class="container-fluid py-2">
+    @if (noPeriodSelected)
+    {
+        <div class="text-center py-5 my-4">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
+            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
+            <a href="/Periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-shield-check me-2 text-info"></i> Post-Closing Trial Balance</h2>
+                <p class="text-muted mb-0">Displays permanent accounts (Assets, Liabilities, Equity) after closing entries as of <strong>@vm.AsOfDate.ToString("MMMM dd, yyyy")</strong> — all nominal accounts have zero balances.</p>
+            </div>
+            <div>
+                <a href="/Reports/CashFlowStatement" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Cash Flow Statement
+                </a>
+            </div>
+        </div>
+
+        <!-- Trial Balance Table Layout -->
+        <div class="card bg-dark border-secondary text-white shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead class="table-active border-bottom border-secondary">
+                            <tr>
+                                <th class="text-center" style="width: 10%;">Ref.</th>
+                                <th style="width: 45%;">Account Name</th>
+                                <th style="width: 15%;">Type</th>
+                                <th class="text-end" style="width: 15%;">Debit</th>
+                                <th class="text-end" style="width: 15%;">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @* 1. ASSETS (Normal Balance = Debit) *@
+                            @foreach (var asset in vm.Assets)
+                            {
+                                <tr>
+                                    <td class="text-center"><code>@asset.ReferenceNumber</code></td>
+                                    <td>@asset.AccountName</td>
+                                    <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Assets</span></td>
+                                    <td class="text-end text-success">@asset.Amount.ToString("N2")</td>
+                                    <td class="text-end text-danger">-</td>
+                                </tr>
+                            }
+
+                            @* 2. LIABILITIES (Normal Balance = Credit) *@
+                            @foreach (var liab in vm.Liabilities)
+                            {
+                                <tr>
+                                    <td class="text-center"><code>@liab.ReferenceNumber</code></td>
+                                    <td>@liab.AccountName</td>
+                                    <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Liabilities</span></td>
+                                    <td class="text-end text-success">-</td>
+                                    <td class="text-end text-danger">@liab.Amount.ToString("N2")</td>
+                                </tr>
+                            }
+
+                            @* 3. EQUITY EXCLUDING RETAINED EARNINGS (Normal Balance = Credit) *@
+                            @foreach (var eq in vm.EquityExcludingRetainedEarnings)
+                            {
+                                <tr>
+                                    <td class="text-center"><code>@eq.ReferenceNumber</code></td>
+                                    <td>@eq.AccountName</td>
+                                    <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Equity</span></td>
+                                    <td class="text-end text-success">-</td>
+                                    <td class="text-end text-danger">@eq.Amount.ToString("N2")</td>
+                                </tr>
+                            }
+
+                            @* 4. RETAINED EARNINGS (Ending) *@
+                            <tr>
+                                <td class="text-center"><code>-</code></td>
+                                <td>Retained earnings, @vm.AsOfDate.ToString("MMMM d")</td>
+                                <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Equity</span></td>
+                                <td class="text-end text-success">@(vm.RetainedEarningsEnding < 0 ? Math.Abs(vm.RetainedEarningsEnding).ToString("N2") : "-")</td>
+                                <td class="text-end text-danger">@(vm.RetainedEarningsEnding >= 0 ? vm.RetainedEarningsEnding.ToString("N2") : "-")</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top border-secondary fw-bold">
+                                <td colspan="3" class="text-end pe-3">Total</td>
+                                <td class="text-end text-success">@vm.TotalAssets.ToString("N2")</td>
+                                <td class="text-end text-danger">@vm.TotalLiabilitiesAndEquity.ToString("N2")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Status Alert -->
+        <div class="alert @(vm.IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 text-white border-@(vm.IsBalanced ? "success" : "danger") mt-3 mb-0 py-2 small d-flex align-items-center shadow-sm">
+            @if (vm.IsBalanced)
+            {
+                <i class="bi bi-check-circle-fill text-success me-2 fs-6"></i>
+                <span>Total Debit = Total Credit. Post-closing trial balance is in balance; books are ready for the next period.</span>
+            }
+            else
+            {
+                <i class="bi bi-exclamation-triangle-fill text-danger me-2 fs-6"></i>
+                <span>Post-closing trial balance is out of balance. Please check your closing journal entries.</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+
+    private StatementOfFinancialPositionViewModel vm = new();
+    private bool noPeriodSelected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
+        if (period == null)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        vm = await StatementOfFinancialPositionPage.BuildSofpAsync(DbContext, UserId, period, isPostClosing: true);
+    }
+}

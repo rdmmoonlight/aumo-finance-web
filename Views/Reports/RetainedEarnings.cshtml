@@ -1,61 +1,7 @@
-@model AumoFinance.Models.RetainedEarningsViewModel
+@using System.Security.Claims
 @{
     ViewData["Title"] = "Retained Earnings Statement";
+    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }
 
-<div class="container-fluid">
-    @if (ViewBag.NoPeriodSelected == true)
-    {
-        <div class="text-center py-5 my-4">
-            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
-            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
-            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
-            <a asp-controller="Periods" asp-action="Index" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
-                <i class="bi bi-calendar3 me-1"></i> Go to Periods
-            </a>
-        </div>
-    }
-    else
-    {
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1"><i class="bi bi-piggy-bank me-2 text-success"></i> Retained Earnings Statement</h2>
-            <p class="text-muted mb-0">Bridges the Income Statement and the Equity section on the Balance Sheet (US GAAP / ASC 210).</p>
-        </div>
-        <div>
-            <a asp-controller="Reports" asp-action="StatementOfFinancialPosition" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-right-circle me-1"></i> Balance Sheet
-            </a>
-        </div>
-    </div>
-
-    <div class="card bg-dark border-secondary text-white shadow-sm" style="max-width: 560px;">
-        <div class="card-body">
-            <h5 class="mb-3">@Model.AccountName</h5>
-            <table class="table table-dark table-borderless align-middle mb-0">
-                <tbody>
-                    <tr>
-                        <td>Retained earnings, @Model.StartDate.ToString("MMMM d")</td>
-                        <td class="text-end">@Model.BeginningBalance.ToString("N2")</td>
-                    </tr>
-                    <tr>
-                        <td class="ps-3">Add: Net Income for the Period</td>
-                        <td class="text-end @(Model.NetIncome >= 0 ? "text-success" : "text-danger")">@Model.NetIncome.ToString("N2")</td>
-                    </tr>
-                    @if (Model.Dividends != 0)
-                    {
-                        <tr>
-                            <td class="ps-3">Less: Dividends / Withdrawals</td>
-                            <td class="text-end text-danger">(@Model.Dividends.ToString("N2"))</td>
-                        </tr>
-                    }
-                    <tr class="border-top border-secondary fw-bold fs-5" style="border-top-width: 3px !important;">
-                        <td class="pt-2">Retained earnings, @Model.EndDate.ToString("MMMM d")</td>
-                        <td class="text-end pt-2 text-success">@Model.EndingBalance.ToString("N2")</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    }
-</div>
+<component type="typeof(AumoFinance.Components.RetainedEarningsPage)" render-mode="ServerPrerendered" param-UserId="@userId" />

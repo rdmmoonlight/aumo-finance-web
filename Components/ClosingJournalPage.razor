@@ -1,0 +1,157 @@
+@using AumoFinance.Models
+@inject AppDbContext DbContext
+
+<div class="container-fluid">
+    @if (noPeriodSelected)
+    {
+        <div class="text-center py-5 my-4">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
+            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
+            <a href="/Periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-lock-fill me-2 text-warning"></i> Closing Journal </h2>
+                <p class="text-muted mb-0">Closing entries are calculated automatically based on current nominal account balances — not yet posted to the General Journal.</p>
+            </div>
+            <div>
+                <a href="/Reports/PostClosingTrialBalance" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Post-Closing Trial Balance
+                </a>
+            </div>
+        </div>
+
+        @if (!vm.Groups.Any())
+        {
+            <div class="alert alert-secondary bg-dark text-muted border-secondary">There are no nominal accounts with balances to close.</div>
+        }
+
+        @foreach (var group in vm.Groups)
+        {
+            <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
+                <div class="card-header bg-transparent border-secondary fw-semibold">@group.Description</div>
+                <div class="card-body p-0">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead class="table-active border-bottom border-secondary">
+                            <tr>
+                                <th class="text-center">Ref.</th>
+                                <th>Account</th>
+                                <th class="text-end">Debit</th>
+                                <th class="text-end">Credit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var line in group.Lines)
+                            {
+                                <tr>
+                                    <td class="text-center"><code>@(line.ReferenceNumber > 0 ? line.ReferenceNumber.ToString() : "-")</code></td>
+                                    <td class="@(line.Credit > 0 ? "ps-4" : "fw-semibold")">@line.AccountName</td>
+                                    <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N2") : "-")</td>
+                                    <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N2") : "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top border-secondary fw-bold">
+                                <td colspan="2" class="text-end">Total</td>
+                                <td class="text-end text-success">@group.TotalDebit.ToString("N2")</td>
+                                <td class="text-end text-danger">@group.TotalCredit.ToString("N2")</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (vm.Groups.Any())
+        {
+            <div class="alert alert-info bg-opacity-10 mb-0 py-2 small">
+                <i class="bi bi-info-circle-fill me-1"></i>
+                After closing entries are posted, all nominal accounts will have a zero balance and Net Income of <strong>@vm.NetIncome.ToString("N2")</strong> will transfer to <strong>@vm.RetainedEarningsAccountName</strong>.
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+
+    private ClosingJournalViewModel vm = new();
+    private bool noPeriodSelected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
+        if (period == null)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        var rows = await TrialBalancePage.BuildTrialBalanceRowsAsync(DbContext, UserId, period, includeAdjusting: true);
+        var incomeStatement = IncomeStatementPage.BuildIncomeStatement(rows, period);
+        var reAccountName = rows.FirstOrDefault(r => r.Role == "RetainedEarnings")?.AccountName ?? "Retained Earnings";
+        const string incomeSummaryName = "Income Summary";
+
+        var newVm = new ClosingJournalViewModel
+        {
+            NetIncome = incomeStatement.NetIncome,
+            RetainedEarningsAccountName = reAccountName
+        };
+
+        var incomeRows = rows.Where(r => r.Type == "OperatingIncome" || r.Type == "OtherIncome").Where(r => r.NetBalance != 0).ToList();
+        var expenseRows = rows.Where(r => r.Type == "OperatingExpenses" || r.Type == "OtherExpenses").Where(r => r.NetBalance != 0).ToList();
+
+        // BLOK 1: Closing Revenues to Income Summary
+        if (incomeRows.Any())
+        {
+            var group1 = new ClosingJournalEntryGroup { Description = "Closing Revenue Accounts to Income Summary" };
+            foreach (var r in incomeRows)
+            {
+                group1.Lines.Add(new ClosingJournalLine { ReferenceNumber = r.ReferenceNumber, AccountName = r.AccountName, Debit = r.NetBalance, Credit = 0 });
+            }
+            group1.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = 0, Credit = incomeRows.Sum(r => r.NetBalance) });
+            newVm.Groups.Add(group1);
+        }
+
+        // BLOK 2: Closing Expenses to Income Summary
+        if (expenseRows.Any())
+        {
+            var group2 = new ClosingJournalEntryGroup { Description = "Closing Expense Accounts to Income Summary" };
+            group2.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = expenseRows.Sum(r => r.NetBalance), Credit = 0 });
+            foreach (var r in expenseRows)
+            {
+                group2.Lines.Add(new ClosingJournalLine { ReferenceNumber = r.ReferenceNumber, AccountName = r.AccountName, Debit = 0, Credit = r.NetBalance });
+            }
+            newVm.Groups.Add(group2);
+        }
+
+        // BLOK 3: Closing Income Summary to Retained Earnings
+        if (incomeStatement.NetIncome != 0)
+        {
+            var group3 = new ClosingJournalEntryGroup { Description = "Closing Income Summary to Retained Earnings" };
+
+            if (incomeStatement.NetIncome > 0)
+            {
+                group3.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = incomeStatement.NetIncome, Credit = 0 });
+                group3.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = 0, Credit = incomeStatement.NetIncome });
+            }
+            else
+            {
+                var netLoss = Math.Abs(incomeStatement.NetIncome);
+                group3.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = netLoss, Credit = 0 });
+                group3.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = 0, Credit = netLoss });
+            }
+
+            newVm.Groups.Add(group3);
+        }
+
+        vm = newVm;
+    }
+}
