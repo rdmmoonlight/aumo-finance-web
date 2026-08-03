@@ -22,21 +22,53 @@ public class DocumentController : Controller
     }
 
     // GET: /Document/
-    // Dibatasi ke dokumen milik user yang sedang login — full per-user
-    // isolation, sama seperti Chart of Accounts / Periods / Journal Entries.
-    public IActionResult Index(string searchString, string category)
+    public async Task<IActionResult> Index(string searchString, string category)
     {
         var userId = this.CurrentUserId();
 
+        // --- PERIOD GATE ---
+        // 1. Ambil periode yang sedang di-view/dipilih oleh user (IsSelected = true)
+        var currentPeriod = await _context.Periods
+                                          .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+
+        if (currentPeriod == null)
+        {
+            ViewBag.NoPeriodSelected = true;
+
+            var emptyViewModel = new DocumentIndexViewModel
+            {
+                Documents = new List<EconomicDocument>(),
+                TotalDocuments = 0,
+                TotalStorageMB = 0,
+                AddedLast7Days = 0,
+                MostFrequentCategory = "-",
+                AverageFileSizeKB = 0,
+                AppDeploymentDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                AppAgeDays = 1,
+                TotalJournalEntries = 0,
+                TotalChartOfAccounts = 0,
+                TotalActivePeriods = await _context.Periods.CountAsync(p => p.UserId == userId),
+                TotalSystemUsers = await _context.Users.CountAsync()
+            };
+
+            return View(emptyViewModel);
+        }
+
+        ViewBag.NoPeriodSelected = false;
+        ViewBag.PeriodName = currentPeriod.PeriodName;
+
+        // 2. Query Dokumen yang terikat dengan rentang tanggal Periode Terpilih
         var query = _context.EconomicDocuments
-                            .Include(d => d.JournalEntry) // Include relasi SSOT untuk tampilan
-                            .Where(d => d.UserId == userId)
+                            .Include(d => d.JournalEntry)
+                            .Where(d => d.UserId == userId &&
+                                        d.UploadDate >= currentPeriod.StartDate &&
+                                        d.UploadDate <= currentPeriod.EndDate)
                             .AsQueryable();
 
         if (!string.IsNullOrEmpty(searchString))
         {
             query = query.Where(d => d.Title.Contains(searchString) ||
-                                   (d.ReferenceNumber != null && d.ReferenceNumber.Contains(searchString)));
+                                       (d.ReferenceNumber != null && d.ReferenceNumber.Contains(searchString)));
         }
 
         if (!string.IsNullOrEmpty(category))
@@ -44,51 +76,69 @@ public class DocumentController : Controller
             query = query.Where(d => d.Category == category);
         }
 
-        var documentList = query.OrderByDescending(d => d.UploadDate).ToList();
+        var documentList = await query.OrderByDescending(d => d.UploadDate).ToListAsync();
 
-        // --- Statistical Computations (milik user ini saja) ---
-        var allDocs = _context.EconomicDocuments.Where(d => d.UserId == userId).ToList();
-        var totalBytes = allDocs.Sum(d => d.FileSize);
+        // --- Statistical Computations (Khusus Dokumen di Periode Terpilih) ---
+        var allDocsInPeriod = await _context.EconomicDocuments
+                                            .Where(d => d.UserId == userId &&
+                                                        d.UploadDate >= currentPeriod.StartDate &&
+                                                        d.UploadDate <= currentPeriod.EndDate)
+                                            .ToListAsync();
 
-        var topCategory = allDocs.GroupBy(d => d.Category)
-                                 .OrderByDescending(g => g.Count())
-                                 .Select(g => g.Key)
-                                 .FirstOrDefault() ?? "-";
+        var totalBytes = allDocsInPeriod.Sum(d => d.FileSize);
 
-        // Deployment date baseline (1 Januari 2026)
+        var topCategory = allDocsInPeriod.GroupBy(d => d.Category)
+                                         .OrderByDescending(g => g.Count())
+                                         .Select(g => g.Key)
+                                         .FirstOrDefault() ?? "-";
+
         var deploymentDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var ageInDays = (int)(DateTime.UtcNow - deploymentDate).TotalDays;
 
         var viewModel = new DocumentIndexViewModel
         {
             Documents = documentList,
-            TotalDocuments = allDocs.Count,
+            TotalDocuments = allDocsInPeriod.Count,
             TotalStorageMB = Math.Round((double)totalBytes / (1024 * 1024), 2),
-            AddedLast7Days = allDocs.Count(d => d.UploadDate >= DateTime.UtcNow.AddDays(-7)),
+            AddedLast7Days = allDocsInPeriod.Count(d => d.UploadDate >= DateTime.UtcNow.AddDays(-7)),
             MostFrequentCategory = topCategory,
-            AverageFileSizeKB = allDocs.Any() ? Math.Round((double)totalBytes / allDocs.Count / 1024, 2) : 0,
+            AverageFileSizeKB = allDocsInPeriod.Any() ? Math.Round((double)totalBytes / allDocsInPeriod.Count / 1024, 2) : 0,
 
             // System & Accounting Metrics
             AppDeploymentDate = deploymentDate,
             AppAgeDays = ageInDays > 0 ? ageInDays : 1,
-            TotalJournalEntries = _context.JournalEntries.Count(j => j.UserId == userId),
-            TotalChartOfAccounts = _context.ChartOfAccounts.Count(a => a.UserId == userId),
-            TotalActivePeriods = _context.Periods.Count(p => p.UserId == userId),
-            TotalSystemUsers = _context.Users.Count()
+            TotalJournalEntries = await _context.JournalEntries.CountAsync(j => j.UserId == userId && j.EntryDate >= currentPeriod.StartDate && j.EntryDate <= currentPeriod.EndDate),
+            TotalChartOfAccounts = await _context.ChartOfAccounts.CountAsync(a => a.UserId == userId),
+            TotalActivePeriods = await _context.Periods.CountAsync(p => p.UserId == userId),
+            TotalSystemUsers = await _context.Users.CountAsync()
         };
 
         return View(viewModel);
     }
 
     // GET: /Document/Create
-    public IActionResult Create()
+    public async Task<IActionResult> Create()
     {
-        // Mengirim daftar Journal Entry agar bisa dipilih untuk menjaga integritas SSOT
-        ViewBag.JournalEntries = _context.JournalEntries
-            .Where(j => j.UserId == this.CurrentUserId())
+        var userId = this.CurrentUserId();
+
+        // Gate: Cek apakah ada periode yang sedang di-select
+        var currentPeriod = await _context.Periods
+                                          .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+
+        if (currentPeriod == null)
+        {
+            TempData["ErrorMessage"] = "Please select an active accounting period before uploading documents.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Tampilkan hanya Journal Entry yang sesuai dengan Periode Terpilih
+        ViewBag.JournalEntries = await _context.JournalEntries
+            .Where(j => j.UserId == userId &&
+                        j.EntryDate >= currentPeriod.StartDate &&
+                        j.EntryDate <= currentPeriod.EndDate)
             .OrderByDescending(j => j.Id)
-            .Take(100) // Batasi 100 jurnal terakhir agar dropdown tetap ringan
-            .ToList();
+            .Take(100)
+            .ToListAsync();
 
         return View();
     }
@@ -100,9 +150,16 @@ public class DocumentController : Controller
     {
         var userId = this.CurrentUserId();
 
-        // Kalau dokumen ditautkan ke Journal Entry, pastikan entry itu
-        // benar-benar milik user ini — tidak boleh menautkan ke jurnal
-        // milik user lain.
+        // Gate: Pastikan periode aktif terkonfirmasi saat submit
+        var currentPeriod = await _context.Periods
+                                          .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+
+        if (currentPeriod == null)
+        {
+            TempData["ErrorMessage"] = "No active period selected.";
+            return RedirectToAction(nameof(Index));
+        }
+
         if (model.JournalEntryId.HasValue)
         {
             var ownsEntry = await _context.JournalEntries
@@ -137,7 +194,7 @@ public class DocumentController : Controller
                     Title = model.Title,
                     Category = model.Category,
                     ReferenceNumber = model.ReferenceNumber,
-                    JournalEntryId = model.JournalEntryId, // Integrasi SSOT Terjaga
+                    JournalEntryId = model.JournalEntryId,
                     Description = model.Description,
                     FileName = model.UploadedFile.FileName,
                     FilePath = filePath,
@@ -156,12 +213,14 @@ public class DocumentController : Controller
             ModelState.AddModelError("UploadedFile", "Please select a valid file.");
         }
 
-        // Jika gagal, muat ulang dropdown journal entries
-        ViewBag.JournalEntries = _context.JournalEntries
-            .Where(j => j.UserId == userId)
+        // Jika gagal, muat ulang dropdown journal entries khusus periode terpilih
+        ViewBag.JournalEntries = await _context.JournalEntries
+            .Where(j => j.UserId == userId &&
+                        j.EntryDate >= currentPeriod.StartDate &&
+                        j.EntryDate <= currentPeriod.EndDate)
             .OrderByDescending(j => j.Id)
             .Take(100)
-            .ToList();
+            .ToListAsync();
 
         return View(model);
     }
