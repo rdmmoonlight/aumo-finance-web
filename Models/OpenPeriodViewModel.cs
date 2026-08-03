@@ -62,8 +62,8 @@ namespace AumoFinance.Models
         [Display(Name = "Retained Earnings Name")]
         public string? RetainedEarningsAccountName { get; set; }
 
-        // Referensi tampilan saja (bukan diisi lewat form):
-        public List<ChartOfAccount> ExistingAccounts { get; set; } = new();
+        // Referensi tampilan khusus akun permanen (bukan diisi lewat form):
+        public List<ChartOfAccount> PermanentAccounts { get; set; } = new();
         public List<ChartOfAccount> AvailableCashAndBankAccounts { get; set; } = new();
         public List<ChartOfAccount> AvailableRetainedEarningsAccounts { get; set; } = new();
         public bool HasExistingPermanentAccounts { get; set; }
