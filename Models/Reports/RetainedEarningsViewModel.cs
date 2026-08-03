@@ -5,6 +5,8 @@ namespace AumoFinance.Models
     public class RetainedEarningsViewModel
     {
         public string AccountName { get; set; } = "Retained Earnings";
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
         public decimal BeginningBalance { get; set; }
         public decimal NetIncome { get; set; }
         public decimal Dividends { get; set; }
