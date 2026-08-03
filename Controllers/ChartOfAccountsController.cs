@@ -33,7 +33,7 @@ namespace AumoFinance.Controllers
             var accountBalances = await _context.JournalEntryLines
                                                 .Where(j => accountIds.Contains(j.AccountId))
                                                 .GroupBy(j => j.AccountId)
-                                                .Select(g => new 
+                                                .Select(g => new
                                                 {
                                                     AccountId = g.Key,
                                                     TotalDebit = g.Sum(j => j.Debit),
@@ -52,7 +52,7 @@ namespace AumoFinance.Controllers
                         account.Balance = balance.TotalDebit - balance.TotalCredit;
                     }
                     // Kelompok Akun bersaldo normal KREDIT
-                    else 
+                    else
                     {
                         account.Balance = balance.TotalCredit - balance.TotalDebit;
                     }
@@ -60,7 +60,7 @@ namespace AumoFinance.Controllers
                 else
                 {
                     // Jika belum ada transaksi jurnal, saldo 0
-                    account.Balance = 0; 
+                    account.Balance = 0;
                 }
             }
 

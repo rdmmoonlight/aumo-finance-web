@@ -17,7 +17,7 @@ namespace AumoFinance.Controllers
         {
             var model = new DashboardViewModel();
             var isAnnual = period.Equals("annual", StringComparison.OrdinalIgnoreCase);
-            
+
             ViewData["CurrentPeriodType"] = isAnnual ? "annual" : "monthly";
 
             var userId = this.CurrentUserId();
@@ -244,7 +244,7 @@ namespace AumoFinance.Controllers
         private static bool IsNormalBalanceDebitSafe(string? type)
         {
             if (string.IsNullOrWhiteSpace(type)) return true;
-            
+
             try
             {
                 return AccountClassification.NormalBalanceIsDebit(type);

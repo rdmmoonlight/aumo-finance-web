@@ -35,7 +35,7 @@ public class DocumentController : Controller
 
         if (!string.IsNullOrEmpty(searchString))
         {
-            query = query.Where(d => d.Title.Contains(searchString) || 
+            query = query.Where(d => d.Title.Contains(searchString) ||
                                    (d.ReferenceNumber != null && d.ReferenceNumber.Contains(searchString)));
         }
 
@@ -49,7 +49,7 @@ public class DocumentController : Controller
         // --- Statistical Computations (milik user ini saja) ---
         var allDocs = _context.EconomicDocuments.Where(d => d.UserId == userId).ToList();
         var totalBytes = allDocs.Sum(d => d.FileSize);
-        
+
         var topCategory = allDocs.GroupBy(d => d.Category)
                                  .OrderByDescending(g => g.Count())
                                  .Select(g => g.Key)

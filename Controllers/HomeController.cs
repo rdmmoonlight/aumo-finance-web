@@ -15,7 +15,7 @@ namespace AumoFinance.Controllers
         {
             return View();
         }
-        
+
         // ... action lain seperti Welcome, dll.
     }
 }

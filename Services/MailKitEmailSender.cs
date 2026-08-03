@@ -21,7 +21,7 @@ namespace AumoFinance.Services
             var senderEmail = _configuration["Smtp:User"];
             var pass = _configuration["Smtp:Pass"];
             var host = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
-            
+
             // Default ke port 587 jika tidak diisi
             if (!int.TryParse(_configuration["Smtp:Port"], out int port))
             {
@@ -48,8 +48,8 @@ namespace AumoFinance.Services
                 client.Timeout = 8000; // 8 detik max
 
                 // Pilih opsi enkripsi sesuai port
-                var socketOptions = port == 465 
-                    ? SecureSocketOptions.SslOnConnect 
+                var socketOptions = port == 465
+                    ? SecureSocketOptions.SslOnConnect
                     : SecureSocketOptions.StartTls;
 
                 await client.ConnectAsync(host, port, socketOptions, ct);

@@ -38,7 +38,7 @@ namespace AumoFinance.Controllers
 
             // Kirim pesan sukses ke View
             TempData["SuccessMessage"] = "Pengaturan berhasil disimpan ke sistem.";
-            
+
             return RedirectToAction("Index");
         }
     }
