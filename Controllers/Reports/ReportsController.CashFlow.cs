@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
 
 namespace AumoFinance.Controllers
@@ -7,7 +6,7 @@ namespace AumoFinance.Controllers
     public partial class ReportsController
     {
         // ==========================================================
-        // CASH FLOW STATEMENT (Direct Method - IAS 7)
+        // CASH FLOW STATEMENT (Indirect Method - From Trial Balance)
         // ==========================================================
 
         public async Task<IActionResult> CashFlowStatement()
@@ -21,121 +20,80 @@ namespace AumoFinance.Controllers
             }
             ViewBag.SelectedPeriod = period;
 
-            // Ambil semua akun yang berperan sebagai Kas dan Setara Kas
-            var cashAccounts = await _db.ChartOfAccounts
-                .Where(a => a.IsActive && a.UserId == userId && a.Role == "CashAndEquivalents")
-                .ToListAsync();
+            // 1. Ambil data Trial Balance periode berjalan (termasuk Laba Rugi)
+            var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
+            var incomeStatement = BuildIncomeStatement(rows, period);
 
-            var cashAccountIds = cashAccounts.Select(a => a.Id).ToList();
+            // 2. Ambil Kas Awal & Kas Akhir dari baris Trial Balance yang ber-role CashAndEquivalents
+            var cashRows = rows.Where(r => r.Role == "CashAndEquivalents").ToList();
+            
+            // Di Trial Balance, saldo kas akhir adalah NetBalance dari akun Kas
+            decimal endingCash = cashRows.Sum(r => r.NetBalance);
 
-            var vm = new CashFlowStatementViewModel();
-
-            if (!cashAccountIds.Any())
+            var vm = new CashFlowStatementViewModel
             {
-                return View(vm);
-            }
-
-            // 1. HITUNG SALDO AWAL KAS (Akumulasi mutasi kas sebelum Tanggal Mulai Periode)
-            var priorLines = await _db.JournalEntryLines
-                .Include(l => l.JournalEntry)
-                .Where(l => cashAccountIds.Contains(l.AccountId)
-                         && l.JournalEntry!.UserId == userId
-                         && l.JournalEntry!.EntryDate < period.StartDate)
-                .ToListAsync();
-
-            vm.BeginningCash = priorLines.Sum(l => l.Debit - l.Credit);
-
-            // 2. AMBIL SEMUA JURNAL DI PERIODE BERJALAN YANG MELIBATKAN AKUN KAS
-            var validEntryIds = await _db.JournalEntryLines
-                .Include(l => l.JournalEntry)
-                .Where(l => cashAccountIds.Contains(l.AccountId)
-                         && l.JournalEntry!.UserId == userId
-                         && l.JournalEntry!.EntryDate >= period.StartDate
-                         && l.JournalEntry!.EntryDate <= period.EndDate)
-                .Select(l => l.JournalEntryId)
-                .Distinct()
-                .ToListAsync();
-
-            var entries = await _db.JournalEntries
-                .Include(j => j.Lines)
-                    .ThenInclude(l => l.Account)
-                .Where(j => validEntryIds.Contains(j.Id))
-                .ToListAsync();
-
-            var operating = new Dictionary<string, decimal>();
-            var investing = new Dictionary<string, decimal>();
-            var financing = new Dictionary<string, decimal>();
-
-            void AddAmount(Dictionary<string, decimal> bucket, string key, decimal val)
-            {
-                if (val == 0) return;
-                bucket[key] = bucket.GetValueOrDefault(key) + val;
-            }
-
-            foreach (var entry in entries)
-            {
-                // Hitung total bersih kas pada transaksi ini (Debit menambah kas, Kredit mengurangi kas)
-                var cashDelta = entry.Lines
-                    .Where(l => cashAccountIds.Contains(l.AccountId))
-                    .Sum(l => l.Debit - l.Credit);
-
-                if (cashDelta == 0) continue;
-
-                // Ambil akun lawan (contra accounts) selain kas di transaksi ini
-                var contraLines = entry.Lines
-                    .Where(l => !cashAccountIds.Contains(l.AccountId))
-                    .ToList();
-
-                if (!contraLines.Any()) continue;
-
-                // Total absolut nilai akun lawan untuk proporsi jika ada multi-akun
-                var totalContraAmount = contraLines.Sum(l => l.Debit + l.Credit);
-                if (totalContraAmount == 0) continue;
-
-                foreach (var line in contraLines)
+                // Net Operating diawali dari Net Income Laporan Laba Rugi
+                OperatingActivities = new List<CashFlowLine>
                 {
-                    // Nilai mutasi akun lawan dalam jurnal ini
-                    var lineMagnitude = line.Debit + line.Credit;
-                    if (lineMagnitude == 0) continue;
+                    new CashFlowLine
+                    {
+                        Description = "Net Income",
+                        Amount = incomeStatement.NetIncome
+                    }
+                }
+            };
 
-                    // Alokasi proporsi kas jika jurnal majemuk
-                    var proportion = lineMagnitude / totalContraAmount;
-                    var allocatedCash = cashDelta * proportion;
+            // 3. Olah setiap baris Trial Balance untuk penyesuaian Arus Kas
+            foreach (var r in rows)
+            {
+                if (r.NetBalance == 0) continue;
 
-                    var type = line.Account?.Type ?? "";
-                    var role = line.Account?.Role ?? "";
-                    var name = line.Account?.AccountName ?? "Other Transactions";
+                var role = r.Role ?? "";
+                var type = r.Type ?? "";
 
-                    // Klasifikasi Arus Kas Berdasarkan Standar Akuntansi (IAS 7)
-                    // Operating: Pendapatan, Beban, Aset Lancar / Utang Lancar
-                    if (type == "OperatingIncome" || type == "OperatingExpenses" ||
-                        type == "OtherIncome" || type == "OtherExpenses" ||
-                        role == "CurrentAsset" || role == "CurrentLiability" ||
-                        role == "AccountsReceivable" || role == "AccountsPayable")
+                // ASET LANCAR NON-KAS (Piutang, Perlengkapan, Sewa Dibayar Dimuka, dll)
+                // Kenaikan Aset (-) mengikat kas, Penurunan Aset (+) membebaskan kas
+                if (role == "AccountsReceivable" || role == "CurrentAsset")
+                {
+                    vm.OperatingActivities.Add(new CashFlowLine
                     {
-                        AddAmount(operating, name, allocatedCash);
-                    }
-                    // Investing: Pembelian/Penjualan Aset Tetap / Investasi Jangka Panjang
-                    else if (type == "Assets" || role == "NonCurrentAsset" || role == "FixedAsset" || role == "Investment")
+                        Description = $"Adjustment for {r.AccountName}",
+                        Amount = -r.NetBalance
+                    });
+                }
+                // UTANG LANCAR (Utang Usaha, Beban Akrual, dll)
+                // Kenaikan Utang (+) menambah kas/pembayaran tertunda, Penurunan Utang (-) memakai kas
+                else if (role == "AccountsPayable" || role == "CurrentLiability")
+                {
+                    vm.OperatingActivities.Add(new CashFlowLine
                     {
-                        AddAmount(investing, name, allocatedCash);
-                    }
-                    // Financing: Ekuitas, Prive/Modal Pemilik, Utang Bank Jangka Panjang
-                    else if (type == "Equity" || type == "Liabilities" || role == "NonCurrentLiability" || role == "LongTermDebt")
+                        Description = $"Adjustment for {r.AccountName}",
+                        Amount = r.NetBalance
+                    });
+                }
+                // AKTIVITAS INVESTASI (Aset Tetap, Aset Tak Wujud, Investasi)
+                else if (type == "Assets" && role != "CashAndEquivalents" && role != "CurrentAsset" && role != "AccountsReceivable")
+                {
+                    vm.InvestingActivities.Add(new CashFlowLine
                     {
-                        AddAmount(financing, name, allocatedCash);
-                    }
-                    else
+                        Description = $"Capital expenditure / Sale of {r.AccountName}",
+                        Amount = -r.NetBalance
+                    });
+                }
+                // AKTIVITAS PENDANAAN (Modal Pemilik, Prive, Utang Jangka Panjang)
+                else if ((type == "Equity" && role != "RetainedEarnings") || role == "LongTermDebt" || role == "NonCurrentLiability")
+                {
+                    vm.FinancingActivities.Add(new CashFlowLine
                     {
-                        // Default fallback ke Operating jika tipe akun tidak dikenali
-                        AddAmount(operating, name, allocatedCash);
-                    }
+                        Description = $"Equity / Financing from {r.AccountName}",
+                        Amount = r.NetBalance
+                    });
                 }
             }
 
-            vm.OperatingActivities = operating.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList();
-            vm.InvestingActivities = investing.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList();
-            vm.FinancingActivities = financing.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList();
+            // 4. Hitung Saldo Awal Kas secara matematik: Ending Cash - Total Perubahan Kas Periode Ini
+            // Rumus: Beginning Cash = Ending Cash - NetChangeInCash
+            vm.BeginningCash = endingCash - vm.NetChangeInCash;
 
             return View(vm);
         }
