@@ -19,7 +19,7 @@ yang sudah ada: `Components/MarketWidget.razor` ditanam ke View lewat
 - [x] **Fase 2 — Dashboard**
   - KPI Cards, Charts Section, Recent Data Tables
 
-- [ ] **Fase 3 — Transaksi**
+- [x] **Fase 3 — Transaksi**
   - General Journal
   - Adjusting Journal
   - Journal Entry (Create/Edit)
