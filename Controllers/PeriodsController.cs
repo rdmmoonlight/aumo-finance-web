@@ -97,7 +97,7 @@ namespace AumoFinance.Controllers
                 if (model.BankAccountId == null)
                 {
                     // Ambil opsi akun bank berbeda jika memungkinkan
-                    model.BankAccountId = model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id 
+                    model.BankAccountId = model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id
                                         ?? model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
                 }
 
