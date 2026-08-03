@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write # Diperlukan agar GitHub Actions bisa commit balik ke repo
+
 jobs:
   lint-and-analyze:
     runs-on: ubuntu-latest
@@ -18,15 +21,21 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-        include-prerelease: true # Diperlukan jika .NET 10 masih status Preview
+        include-prerelease: true
 
     - name: Restore Dependencies
       run: dotnet restore
 
-    # 1. Cek Code Formatting
-    - name: Check Formatting (dotnet format)
-      run: dotnet format --verify-no-changes --verbosity diagnostic
+    # 1. Rapikan kode secara otomatis
+    - name: Format Code
+      run: dotnet format
 
-    # 2. Build & Check Code Quality
+    # 2. Commit & Push otomatis jika ada file yang dirapikan oleh dotnet format
+    - name: Commit & Push Changes
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "style: auto-format code via dotnet format [skip ci]"
+
+    # 3. Build & Check Code Quality
     - name: Build & Run Roslyn Analyzers
       run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
