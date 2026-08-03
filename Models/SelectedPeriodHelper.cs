@@ -47,12 +47,12 @@ namespace AumoFinance.Models
 
         public static async Task ClearSelectionAsync(AppDbContext db, Guid userId)
         {
-        var currentlySelected = await db.Periods.Where(p => p.UserId == userId && p.IsSelected).ToListAsync();
-        foreach (var p in currentlySelected)
-        {
-            p.IsSelected = false;
-        }
-        await db.SaveChangesAsync();
+            var currentlySelected = await db.Periods.Where(p => p.UserId == userId && p.IsSelected).ToListAsync();
+            foreach (var p in currentlySelected)
+            {
+                p.IsSelected = false;
+            }
+            await db.SaveChangesAsync();
         }
     }
 }
