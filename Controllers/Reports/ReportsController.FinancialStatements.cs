@@ -72,6 +72,8 @@ namespace AumoFinance.Controllers
             return new RetainedEarningsViewModel
             {
                 AccountName = reAccount?.AccountName ?? "Retained Earnings",
+                StartDate = period.StartDate,
+                EndDate = period.EndDate,
                 BeginningBalance = reAccount?.NetBalance ?? 0,
                 NetIncome = incomeStatement.NetIncome,
                 Dividends = 0
@@ -155,6 +157,7 @@ namespace AumoFinance.Controllers
             var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
             var incomeStatement = BuildIncomeStatement(rows, period);
             var reAccountName = rows.FirstOrDefault(r => r.Role == "RetainedEarnings")?.AccountName ?? "Retained Earnings";
+            string incomeSummaryName = "Income Summary";
 
             var vm = new ClosingJournalViewModel
             {
@@ -163,27 +166,52 @@ namespace AumoFinance.Controllers
             };
 
             var incomeRows = rows.Where(r => r.Type == "OperatingIncome" || r.Type == "OtherIncome").Where(r => r.NetBalance != 0).ToList();
+            var expenseRows = rows.Where(r => r.Type == "OperatingExpenses" || r.Type == "OtherExpenses").Where(r => r.NetBalance != 0).ToList();
+
+            // BLOK 1: Closing Revenues to Income Summary
             if (incomeRows.Any())
             {
-                var group1 = new ClosingJournalEntryGroup { Description = "Closing Revenue & Other Income to Retained Earnings" };
+                var group1 = new ClosingJournalEntryGroup { Description = "Closing Revenue Accounts to Income Summary" };
                 foreach (var r in incomeRows)
                 {
                     group1.Lines.Add(new ClosingJournalLine { ReferenceNumber = r.ReferenceNumber, AccountName = r.AccountName, Debit = r.NetBalance, Credit = 0 });
                 }
-                group1.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = 0, Credit = incomeRows.Sum(r => r.NetBalance) });
+                group1.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = 0, Credit = incomeRows.Sum(r => r.NetBalance) });
                 vm.Groups.Add(group1);
             }
 
-            var expenseRows = rows.Where(r => r.Type == "OperatingExpenses" || r.Type == "OtherExpenses").Where(r => r.NetBalance != 0).ToList();
+            // BLOK 2: Closing Expenses to Income Summary
             if (expenseRows.Any())
             {
-                var group2 = new ClosingJournalEntryGroup { Description = "Closing Expenses to Retained Earnings" };
-                group2.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = expenseRows.Sum(r => r.NetBalance), Credit = 0 });
+                var group2 = new ClosingJournalEntryGroup { Description = "Closing Expense Accounts to Income Summary" };
+                group2.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = expenseRows.Sum(r => r.NetBalance), Credit = 0 });
                 foreach (var r in expenseRows)
                 {
                     group2.Lines.Add(new ClosingJournalLine { ReferenceNumber = r.ReferenceNumber, AccountName = r.AccountName, Debit = 0, Credit = r.NetBalance });
                 }
                 vm.Groups.Add(group2);
+            }
+
+            // BLOK 3: Closing Income Summary to Retained Earnings
+            if (incomeStatement.NetIncome != 0)
+            {
+                var group3 = new ClosingJournalEntryGroup { Description = "Closing Income Summary to Retained Earnings" };
+
+                if (incomeStatement.NetIncome > 0)
+                {
+                    // Laba Bersih: Debit Income Summary, Kredit Retained Earnings
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = incomeStatement.NetIncome, Credit = 0 });
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = 0, Credit = incomeStatement.NetIncome });
+                }
+                else
+                {
+                    // Rugi Bersih: Debit Retained Earnings, Kredit Income Summary
+                    var netLoss = Math.Abs(incomeStatement.NetIncome);
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = reAccountName, Debit = netLoss, Credit = 0 });
+                    group3.Lines.Add(new ClosingJournalLine { AccountName = incomeSummaryName, Debit = 0, Credit = netLoss });
+                }
+
+                vm.Groups.Add(group3);
             }
 
             return View(vm);
