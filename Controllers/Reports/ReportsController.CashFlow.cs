@@ -21,33 +21,36 @@ namespace AumoFinance.Controllers
             }
             ViewBag.SelectedPeriod = period;
 
+            // Ambil semua akun yang berperan sebagai Kas dan Setara Kas
             var cashAccounts = await _db.ChartOfAccounts
                 .Where(a => a.IsActive && a.UserId == userId && a.Role == "CashAndEquivalents")
                 .ToListAsync();
 
             var cashAccountIds = cashAccounts.Select(a => a.Id).ToList();
 
+            var vm = new CashFlowStatementViewModel();
+
             if (!cashAccountIds.Any())
             {
-                return View(new CashFlowStatementViewModel());
+                return View(vm);
             }
 
-            // 1. Hitung Saldo Awal Kas (sebelum StartDate periode)
-            var priorCashLines = await _db.JournalEntryLines
+            // 1. HITUNG SALDO AWAL KAS (Akumulasi mutasi kas sebelum Tanggal Mulai Periode)
+            var priorLines = await _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
                 .Where(l => cashAccountIds.Contains(l.AccountId)
                          && l.JournalEntry!.UserId == userId
                          && l.JournalEntry!.EntryDate < period.StartDate)
                 .ToListAsync();
 
-            decimal beginningCash = priorCashLines.Sum(l => l.Debit - l.Credit);
+            vm.BeginningCash = priorLines.Sum(l => l.Debit - l.Credit);
 
-            // 2. Ambil transaksi kas periode berjalan (StartDate s.d. EndDate)
-            var entryIds = await _db.JournalEntryLines
+            // 2. AMBIL SEMUA JURNAL DI PERIODE BERJALAN YANG MELIBATKAN AKUN KAS
+            var validEntryIds = await _db.JournalEntryLines
                 .Include(l => l.JournalEntry)
                 .Where(l => cashAccountIds.Contains(l.AccountId)
                          && l.JournalEntry!.UserId == userId
-                         && l.JournalEntry!.EntryDate >= period.StartDate
+                         && l.JournalEntry!.EntryDate >= period.StartDate 
                          && l.JournalEntry!.EntryDate <= period.EndDate)
                 .Select(l => l.JournalEntryId)
                 .Distinct()
@@ -56,68 +59,83 @@ namespace AumoFinance.Controllers
             var entries = await _db.JournalEntries
                 .Include(j => j.Lines)
                     .ThenInclude(l => l.Account)
-                .Where(j => entryIds.Contains(j.Id))
+                .Where(j => validEntryIds.Contains(j.Id))
                 .ToListAsync();
 
             var operating = new Dictionary<string, decimal>();
             var investing = new Dictionary<string, decimal>();
             var financing = new Dictionary<string, decimal>();
 
-            void Add(Dictionary<string, decimal> bucket, string description, decimal amount)
+            void AddAmount(Dictionary<string, decimal> bucket, string key, decimal val)
             {
-                bucket[description] = bucket.GetValueOrDefault(description) + amount;
+                if (val == 0) return;
+                bucket[key] = bucket.GetValueOrDefault(key) + val;
             }
 
             foreach (var entry in entries)
             {
-                var cashLines = entry.Lines.Where(l => cashAccountIds.Contains(l.AccountId)).ToList();
-                var cashNet = cashLines.Sum(l => l.Debit - l.Credit);
-                if (cashNet == 0) continue;
+                // Hitung total bersih kas pada transaksi ini (Debit menambah kas, Kredit mengurangi kas)
+                var cashDelta = entry.Lines
+                    .Where(l => cashAccountIds.Contains(l.AccountId))
+                    .Sum(l => l.Debit - l.Credit);
 
-                var contraLines = entry.Lines.Where(l => !cashAccountIds.Contains(l.AccountId)).ToList();
-                var contraTotal = contraLines.Sum(l => Math.Abs(l.Debit - l.Credit));
-                if (contraTotal == 0) continue;
+                if (cashDelta == 0) continue;
 
-                foreach (var contra in contraLines)
+                // Ambil akun lawan (contra accounts) selain kas di transaksi ini
+                var contraLines = entry.Lines
+                    .Where(l => !cashAccountIds.Contains(l.AccountId))
+                    .ToList();
+
+                if (!contraLines.Any()) continue;
+
+                // Total absolut nilai akun lawan untuk proporsi jika ada multi-akun
+                var totalContraAmount = contraLines.Sum(l => l.Debit + l.Credit);
+                if (totalContraAmount == 0) continue;
+
+                foreach (var line in contraLines)
                 {
-                    var contraAmount = Math.Abs(contra.Debit - contra.Credit);
-                    if (contraAmount == 0) continue;
+                    // Nilai mutasi akun lawan dalam jurnal ini
+                    var lineMagnitude = line.Debit + line.Credit;
+                    if (lineMagnitude == 0) continue;
 
-                    var portion = cashNet * (contraAmount / contraTotal);
-                    var type = contra.Account?.Type ?? "";
-                    var role = contra.Account?.Role ?? "";
-                    var description = contra.Account?.AccountName ?? "Uncategorized";
+                    // Alokasi proporsi kas jika jurnal majemuk
+                    var proportion = lineMagnitude / totalContraAmount;
+                    var allocatedCash = cashDelta * proportion;
 
-                    // Klasifikasi berdasarkan standar akuntansi IAS 7
-                    if (type == "OperatingIncome" || type == "OperatingExpenses" ||
-                        type == "OtherIncome" || type == "OtherExpenses" ||
-                        role == "CurrentAsset" || role == "CurrentLiability" ||
+                    var type = line.Account?.Type ?? "";
+                    var role = line.Account?.Role ?? "";
+                    var name = line.Account?.AccountName ?? "Other Transactions";
+
+                    // Klasifikasi Arus Kas Berdasarkan Standar Akuntansi (IAS 7)
+                    // Operating: Pendapatan, Beban, Aset Lancar / Utang Lancar
+                    if (type == "OperatingIncome" || type == "OperatingExpenses" || 
+                        type == "OtherIncome" || type == "OtherExpenses" || 
+                        role == "CurrentAsset" || role == "CurrentLiability" || 
                         role == "AccountsReceivable" || role == "AccountsPayable")
                     {
-                        Add(operating, description, portion);
+                        AddAmount(operating, name, allocatedCash);
                     }
+                    // Investing: Pembelian/Penjualan Aset Tetap / Investasi Jangka Panjang
                     else if (type == "Assets" || role == "NonCurrentAsset" || role == "FixedAsset" || role == "Investment")
                     {
-                        Add(investing, description, portion);
+                        AddAmount(investing, name, allocatedCash);
                     }
+                    // Financing: Ekuitas, Prive/Modal Pemilik, Utang Bank Jangka Panjang
                     else if (type == "Equity" || type == "Liabilities" || role == "NonCurrentLiability" || role == "LongTermDebt")
                     {
-                        Add(financing, description, portion);
+                        AddAmount(financing, name, allocatedCash);
                     }
                     else
                     {
-                        Add(operating, description, portion);
+                        // Default fallback ke Operating jika tipe akun tidak dikenali
+                        AddAmount(operating, name, allocatedCash);
                     }
                 }
             }
 
-            var vm = new CashFlowStatementViewModel
-            {
-                BeginningCash = beginningCash,
-                OperatingActivities = operating.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList(),
-                InvestingActivities = investing.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList(),
-                FinancingActivities = financing.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList()
-            };
+            vm.OperatingActivities = operating.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList();
+            vm.InvestingActivities = investing.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList();
+            vm.FinancingActivities = financing.Select(kv => new CashFlowLine { Description = kv.Key, Amount = kv.Value }).OrderByDescending(l => l.Amount).ToList();
 
             return View(vm);
         }
