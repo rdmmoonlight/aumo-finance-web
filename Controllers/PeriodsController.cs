@@ -28,10 +28,6 @@ namespace AumoFinance.Controllers
         }
 
         // GET: /Periods/SelectPeriod/{id}
-        // Dipicu oleh ikon mata di halaman Periods. Menjadikan periode ini
-        // sebagai periode yang di-view di seluruh aplikasi (Dashboard,
-        // General Journal, Adjusting Journal, dll mengikuti pilihan ini),
-        // dibatasi ke periode milik user yang sedang login.
         public async Task<IActionResult> SelectPeriod(int id)
         {
             var userId = this.CurrentUserId();
@@ -81,7 +77,11 @@ namespace AumoFinance.Controllers
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync();
 
-            model.ExistingAccounts = accounts;
+            // Khusus mengambil akun permanen / riil (Assets, Liabilities, Equity)
+            model.PermanentAccounts = accounts
+                .Where(a => a.Type == "Assets" || a.Type == "Liabilities" || a.Type == "Equity")
+                .ToList();
+
             model.AvailableCashAndBankAccounts = accounts.Where(a => a.Role == "CashAndEquivalents").ToList();
             model.AvailableRetainedEarningsAccounts = accounts.Where(a => a.Role == "RetainedEarnings").ToList();
             model.HasExistingPermanentAccounts = model.AvailableCashAndBankAccounts.Any() && model.AvailableRetainedEarningsAccounts.Any();
@@ -109,7 +109,6 @@ namespace AumoFinance.Controllers
 
             if (ModelState.IsValid)
             {
-                // Gunakan DateTimeKind.Utc agar diterima secara mutlak oleh PostgreSQL
                 startDate = new DateTime(model.Year, model.Month, 1, 0, 0, 0, DateTimeKind.Utc);
                 endDate = startDate.AddMonths(1).AddDays(-1);
                 periodName = startDate.ToString("MMMM yyyy");
@@ -155,8 +154,6 @@ namespace AumoFinance.Controllers
             {
                 if (isLoadExisting)
                 {
-                    // Pastikan akun yang dipilih benar-benar milik user ini —
-                    // tidak boleh memakai akun milik user lain.
                     var cashAccount = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.CashAccountId && a.UserId == userId);
                     var bankAccount = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.BankAccountId && a.UserId == userId);
                     var retainedAccount = await _context.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.RetainedEarningsAccountId && a.UserId == userId);
@@ -169,9 +166,6 @@ namespace AumoFinance.Controllers
                         return View(model);
                     }
 
-                    // Tidak perlu membuat akun baru ataupun jurnal saldo awal:
-                    // ledger tidak di-reset per periode, jadi saldo akun
-                    // permanen otomatis lanjut dari periode sebelumnya.
                     var newPeriod = new Period
                     {
                         UserId = userId,
@@ -205,7 +199,6 @@ namespace AumoFinance.Controllers
                         return View(model);
                     }
 
-                    // 1. Buat 3 Akun Baru di COA
                     var cashAccount = new ChartOfAccount { UserId = userId, ReferenceNumber = int.Parse(model.CashAccountCode!), AccountName = model.CashAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
                     var bankAccount = new ChartOfAccount { UserId = userId, ReferenceNumber = int.Parse(model.BankAccountCode!), AccountName = model.BankAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
                     var retainedAccount = new ChartOfAccount { UserId = userId, ReferenceNumber = int.Parse(model.RetainedEarningsAccountCode!), AccountName = model.RetainedEarningsAccountName!, Type = "Equity", Role = "RetainedEarnings", IsActive = true };
@@ -213,7 +206,6 @@ namespace AumoFinance.Controllers
                     _context.ChartOfAccounts.AddRange(cashAccount, bankAccount, retainedAccount);
                     await _context.SaveChangesAsync();
 
-                    // 2. Buat Periode Baru
                     var newPeriod = new Period
                     {
                         UserId = userId,
@@ -225,7 +217,6 @@ namespace AumoFinance.Controllers
                     _context.Periods.Add(newPeriod);
                     await _context.SaveChangesAsync();
 
-                    // 3. Jurnal Saldo Awal
                     var cashBalance = model.CashBalance ?? 0;
                     var bankBalance = model.BankBalance ?? 0;
                     var totalOpeningBalance = cashBalance + bankBalance;
@@ -239,7 +230,6 @@ namespace AumoFinance.Controllers
                     _context.JournalEntries.Add(journalEntry);
                     await _context.SaveChangesAsync();
 
-                    // 4. Masukkan Baris Jurnal
                     var lines = new List<JournalEntryLine>
                     {
                         new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = cashAccount.Id, Debit = cashBalance, Credit = 0 },
@@ -264,11 +254,6 @@ namespace AumoFinance.Controllers
         }
 
         // POST: /Periods/ClosePeriod/{id}
-        // Fungsi close period satu-satunya di aplikasi ini. Menutup periode
-        // mengunci periode tersebut dari perubahan lebih lanjut. Retained
-        // Earnings dan Laporan Posisi Keuangan tetap dihitung langsung dari
-        // saldo akun nominal (lihat ReportsController), bukan lewat jurnal
-        // penutup yang disimpan ke database.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ClosePeriod(int id)
@@ -287,9 +272,6 @@ namespace AumoFinance.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Periode harus ditutup berurutan: periode dengan StartDate lebih
-            // awal wajib sudah ditutup lebih dulu, supaya integritas historis
-            // ledger terjaga.
             var hasEarlierOpenPeriod = await _context.Periods
                 .AnyAsync(p => p.UserId == userId && p.Id != period.Id && p.StartDate < period.StartDate && !p.IsClosed);
 
