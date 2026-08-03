@@ -6,7 +6,7 @@ namespace AumoFinance.Controllers
     public partial class ReportsController
     {
         // ==========================================================
-        // CASH FLOW STATEMENT (Indirect Method - From Trial Balance)
+        // CASH FLOW STATEMENT (Indirect Method - IAS 7)
         // ==========================================================
 
         public async Task<IActionResult> CashFlowStatement()
@@ -20,59 +20,70 @@ namespace AumoFinance.Controllers
             }
             ViewBag.SelectedPeriod = period;
 
-            // 1. Ambil data Trial Balance periode berjalan (termasuk Laba Rugi)
+            // 1. Ambil data Trial Balance periode berjalan
             var rows = await BuildTrialBalanceRowsAsync(userId, period, includeAdjusting: true);
             var incomeStatement = BuildIncomeStatement(rows, period);
 
-            // 2. Ambil Kas Awal & Kas Akhir dari baris Trial Balance yang ber-role CashAndEquivalents
-            var cashRows = rows.Where(r => r.Role == "CashAndEquivalents").ToList();
-            
-            // Di Trial Balance, saldo kas akhir adalah NetBalance dari akun Kas
+            // 2. Ambil Kas Akhir dari akun ber-role CashAndEquivalents
+            var cashRows = rows.Where(r => r.Role == "CashAndEquivalents" || r.Role == "Cash").ToList();
             decimal endingCash = cashRows.Sum(r => r.NetBalance);
 
             var vm = new CashFlowStatementViewModel
             {
-                // Net Operating diawali dari Net Income Laporan Laba Rugi
+                // Baris pertama Operating diawali dari Laba Bersih (Net Income)
                 OperatingActivities = new List<CashFlowLine>
                 {
                     new CashFlowLine
                     {
-                        Description = "Net Income",
+                        Description = "Net Income per Income Statement",
                         Amount = incomeStatement.NetIncome
                     }
                 }
             };
 
-            // 3. Olah setiap baris Trial Balance untuk penyesuaian Arus Kas
+            // 3. Olah setiap baris Trial Balance
             foreach (var r in rows)
             {
-                if (r.NetBalance == 0) continue;
+                // Abaikan akun jika saldonya 0 atau merupakan akun Kas itu sendiri
+                if (r.NetBalance == 0 || r.Role == "CashAndEquivalents" || r.Role == "Cash") 
+                    continue;
+
+                // Abaikan akun nominal (Pendapatan & Beban) karena nilainya SUDAH diwakili oleh Net Income
+                if (r.Type == "OperatingIncome" || r.Type == "OperatingExpenses" || 
+                    r.Type == "OtherIncome" || r.Type == "OtherExpenses" || 
+                    r.Type == "Revenue" || r.Type == "Expense")
+                {
+                    continue;
+                }
 
                 var role = r.Role ?? "";
                 var type = r.Type ?? "";
 
-                // ASET LANCAR NON-KAS (Piutang, Perlengkapan, Sewa Dibayar Dimuka, dll)
-                // Kenaikan Aset (-) mengikat kas, Penurunan Aset (+) membebaskan kas
-                if (role == "AccountsReceivable" || role == "CurrentAsset")
+                // A. OPERATING ACTIVITIES (Penyesuaian Modal Kerja / Working Capital)
+                // Aset Lancar Non-Kas: Piutang, Perlengkapan, Sewa Dibayar Dimuka, PPN Masukan, dll.
+                if (role == "AccountsReceivable" || role == "CurrentAsset" || role == "Inventory" || 
+                    type == "CurrentAsset" || (type == "Assets" && role != "FixedAsset" && role != "NonCurrentAsset" && role != "Investment"))
                 {
                     vm.OperatingActivities.Add(new CashFlowLine
                     {
-                        Description = $"Adjustment for {r.AccountName}",
-                        Amount = -r.NetBalance
+                        Description = $"Change in {r.AccountName}",
+                        Amount = -r.NetBalance // Kenaikan aset mengikat kas (-)
                     });
                 }
-                // UTANG LANCAR (Utang Usaha, Beban Akrual, dll)
-                // Kenaikan Utang (+) menambah kas/pembayaran tertunda, Penurunan Utang (-) memakai kas
-                else if (role == "AccountsPayable" || role == "CurrentLiability")
+                // Utang Lancar: Utang Usaha, Utang Gaji, Utang Pajak, PPN Keluaran, dll.
+                else if (role == "AccountsPayable" || role == "CurrentLiability" || 
+                         type == "CurrentLiability" || (type == "Liabilities" && role != "LongTermDebt" && role != "NonCurrentLiability"))
                 {
                     vm.OperatingActivities.Add(new CashFlowLine
                     {
-                        Description = $"Adjustment for {r.AccountName}",
-                        Amount = r.NetBalance
+                        Description = $"Change in {r.AccountName}",
+                        Amount = r.NetBalance // Kenaikan utang membebaskan kas (+)
                     });
                 }
-                // AKTIVITAS INVESTASI (Aset Tetap, Aset Tak Wujud, Investasi)
-                else if (type == "Assets" && role != "CashAndEquivalents" && role != "CurrentAsset" && role != "AccountsReceivable")
+                // B. INVESTING ACTIVITIES
+                // Aset Tetap, Akumulasi Penyusutan, Aset Tak Wujud, Investasi Jangka Panjang
+                else if (role == "FixedAsset" || role == "NonCurrentAsset" || role == "Investment" || 
+                         type == "FixedAsset" || type == "NonCurrentAsset")
                 {
                     vm.InvestingActivities.Add(new CashFlowLine
                     {
@@ -80,19 +91,23 @@ namespace AumoFinance.Controllers
                         Amount = -r.NetBalance
                     });
                 }
-                // AKTIVITAS PENDANAAN (Modal Pemilik, Prive, Utang Jangka Panjang)
-                else if ((type == "Equity" && role != "RetainedEarnings") || role == "LongTermDebt" || role == "NonCurrentLiability")
+                // C. FINANCING ACTIVITIES
+                // Modal Pemilik, Prive/Withdrawal, Utang Bank Jangka Panjang, Kewajiban Tidak Lancar
+                else if (type == "Equity" || role == "Equity" || 
+                         role == "LongTermDebt" || role == "NonCurrentLiability" || type == "NonCurrentLiability")
                 {
+                    // Abaikan Retained Earnings karena sudah dihitung via Net Income
+                    if (role == "RetainedEarnings") continue;
+
                     vm.FinancingActivities.Add(new CashFlowLine
                     {
-                        Description = $"Equity / Financing from {r.AccountName}",
+                        Description = $"Change in {r.AccountName}",
                         Amount = r.NetBalance
                     });
                 }
             }
 
-            // 4. Hitung Saldo Awal Kas secara matematik: Ending Cash - Total Perubahan Kas Periode Ini
-            // Rumus: Beginning Cash = Ending Cash - NetChangeInCash
+            // 4. Hitung Kas Awal secara otomatis: Ending Cash - Total Mutasi Kas
             vm.BeginningCash = endingCash - vm.NetChangeInCash;
 
             return View(vm);
