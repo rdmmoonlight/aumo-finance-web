@@ -1,89 +1,84 @@
+@using System.Net.Http.Json
+@inject NavigationManager NavManager
 @inject IHttpClientFactory HttpClientFactory
 
-<div class="d-inline-flex flex-wrap align-items-center justify-content-center gap-2 gap-sm-3 py-2 px-3 rounded-pill bg-body border shadow-sm" style="font-size: 0.85rem;">
-    
-    <!-- USD Indicator -->
-    <div class="d-flex align-items-center gap-2" title="USD to IDR Rate">
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">USD</span>
-        <span class="fw-semibold text-body">
-            @if (isLoading)
-            {
-                <span class="text-secondary">Loading...</span>
-            }
-            else if (marketData?.Usd != null)
-            {
-                @($"Rp {Math.Round(marketData.Usd.Price):N0}")
-                <span class="@(marketData.Usd.IsUp ? "text-success" : "text-danger") ms-1" style="font-size: 0.75rem;">
-                    <i class="bi @(marketData.Usd.IsUp ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
-                    @($"{Math.Abs(marketData.Usd.Percent):F2}%")
-                </span>
-            }
-            else
-            {
-                <span>-</span>
-            }
-        </span>
-    </div>
+<div class="market-widget-bar p-3 rounded-4 bg-body border shadow-sm mx-auto" style="max-width: 600px;">
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center align-items-center py-1 gap-2 text-secondary">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <span class="small">Memuat data pasar...</span>
+        </div>
+    }
+    else if (marketData != null && marketData.Success)
+    {
+        <div class="row align-items-center g-2 text-center text-md-start">
+            <!-- USD / IDR -->
+            <div class="col-12 col-md-4 border-end-md">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
+                    <span class="text-secondary small fw-medium">USD/IDR</span>
+                    <strong class="fs-6">Rp @marketData.Usd?.Price.ToString("N0", new System.Globalization.CultureInfo("id-ID"))</strong>
+                    <span class="badge @(marketData.Usd?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") small">
+                        <i class="bi @(marketData.Usd?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
+                        @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2")%
+                    </span>
+                </div>
+            </div>
 
-    <span class="text-secondary opacity-25 d-none d-sm-inline">|</span>
+            <!-- IHSG -->
+            <div class="col-12 col-md-5 border-end-md">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
+                    <span class="text-secondary small fw-medium">IHSG</span>
+                    <strong class="fs-6">@marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))</strong>
+                    <span class="badge @(marketData.Ihsg?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") small">
+                        <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
+                        @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2")%
+                    </span>
+                </div>
+            </div>
 
-    <!-- IHSG Indicator -->
-    <div class="d-flex align-items-center gap-2" title="IHSG Index">
-        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">IHSG</span>
-        <span class="fw-semibold text-body">
-            @if (isLoading)
-            {
-                <span class="text-secondary">Loading...</span>
-            }
-            else if (marketData?.Ihsg != null)
-            {
-                @($"{marketData.Ihsg.Price:N2}")
-                <span class="@(marketData.Ihsg.IsUp ? "text-success" : "text-danger") ms-1" style="font-size: 0.75rem;">
-                    <i class="bi @(marketData.Ihsg.IsUp ? "bi-caret-up-fill" : "bi-caret-down-fill")"></i>
-                    @($"{Math.Abs(marketData.Ihsg.Percent):F2}%")
-                </span>
-            }
-            else
-            {
-                <span>-</span>
-            }
-        </span>
-    </div>
-
-    <span class="text-secondary opacity-25 d-none d-sm-inline">|</span>
-
-    <!-- BI-Rate Indicator -->
-    <div class="d-flex align-items-center gap-2" title="Bank Indonesia Policy Rate">
-        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill">BI-RATE</span>
-        <span class="fw-semibold text-body">
-            @if (isLoading)
-            {
-                <span class="text-secondary">Loading...</span>
-            }
-            else
-            {
-                @(marketData?.BiRate ?? "-")
-            }
-        </span>
-    </div>
-
+            <!-- BI-Rate -->
+            <div class="col-12 col-md-3">
+                <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2">
+                    <span class="text-secondary small fw-medium">BI-Rate</span>
+                    <strong class="fs-6 text-primary">@marketData.BiRate</strong>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center text-muted small">
+            <i class="bi bi-exclamation-circle me-1"></i> Data pasar tidak dapat dimuat.
+        </div>
+    }
 </div>
 
 @code {
-    private bool isLoading = true;
     private MarketDataResponse? marketData;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
         try
         {
+            isLoading = true;
             var client = HttpClientFactory.CreateClient();
-            // Memanggil endpoint backend internal Anda yang sudah ada
-            marketData = await client.GetFromJsonAsync<MarketDataResponse>("/Market/GetMarketData");
+            
+            // Menggunakan BaseUri agar request selalu menunjuk ke domain server riil
+            var baseUrl = NavManager.BaseUri.TrimEnd('/');
+            var requestUrl = $"{baseUrl}/Market/GetMarketData";
+
+            marketData = await client.GetFromJsonAsync<MarketDataResponse>(requestUrl);
         }
-        catch
+        catch (Exception ex)
         {
-            marketData = null;
+            Console.WriteLine($"[MarketWidget Error] {ex.Message}");
         }
         finally
         {
@@ -94,15 +89,15 @@
     public class MarketDataResponse
     {
         public bool Success { get; set; }
-        public MarketItem? Usd { get; set; }
-        public MarketItem? Ihsg { get; set; }
+        public MarketDetail? Usd { get; set; }
+        public MarketDetail? Ihsg { get; set; }
         public string? BiRate { get; set; }
     }
 
-    public class MarketItem
+    public class MarketDetail
     {
         public double Price { get; set; }
-        public bool IsUp { get; set; }
         public double Percent { get; set; }
+        public bool IsUp { get; set; }
     }
 }
