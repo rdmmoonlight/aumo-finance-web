@@ -27,6 +27,12 @@ public class EconomicDocument
     [ForeignKey(nameof(JournalEntryId))]
     public JournalEntry? JournalEntry { get; set; }
 
+    // Lokasi folder dokumen ini. Null berarti dokumen berada di root.
+    public Guid? FolderId { get; set; }
+
+    [ForeignKey(nameof(FolderId))]
+    public Folder? Folder { get; set; }
+
     [Required, StringLength(255)]
     public string FileName { get; set; } = string.Empty;
 
@@ -65,6 +71,9 @@ public class DocumentUploadViewModel
     [Display(Name = "Link to Journal Entry (SSOT)")]
     public int? JournalEntryId { get; set; }
 
+    [Display(Name = "Folder")]
+    public Guid? FolderId { get; set; }
+
     public string? Description { get; set; }
 
     [Required]
@@ -75,6 +84,11 @@ public class DocumentUploadViewModel
 public class DocumentIndexViewModel
 {
     public IEnumerable<EconomicDocument> Documents { get; set; } = new List<EconomicDocument>();
+
+    public IEnumerable<Folder> Folders { get; set; } = new List<Folder>();
+    public Guid? CurrentFolderId { get; set; }
+    public Folder? CurrentFolder { get; set; }
+    public List<Folder> FolderBreadcrumbs { get; set; } = new();
 
     public int TotalDocuments { get; set; }
     public double TotalStorageMB { get; set; }
