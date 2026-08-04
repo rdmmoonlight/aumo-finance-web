@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AumoFinance.Models;
-using AumoFinance.Services; // Tambahkan namespace service Cloudinary kamu
+using AumoFinance.Services;
 
 namespace AumoFinance.Controllers;
 
@@ -20,15 +20,14 @@ public class DocumentController : Controller
         _cloudStorageService = cloudStorageService;
     }
 
-    // GET: /Document/
-    public async Task<IActionResult> Index(string searchString, string category)
+    // GET: /Document/?folderId=...&searchString=...&category=...
+    public async Task<IActionResult> Index(Guid? folderId, string searchString, string category)
     {
         var userId = this.CurrentUserId();
 
         // --- PERIOD GATE ---
-        // 1. Ambil periode yang sedang di-view/dipilih oleh user (IsSelected = true)
         var currentPeriod = await _context.Periods
-                                          .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
 
         if (currentPeriod == null)
         {
@@ -37,6 +36,9 @@ public class DocumentController : Controller
             var emptyViewModel = new DocumentIndexViewModel
             {
                 Documents = new List<EconomicDocument>(),
+                Folders = new List<Folder>(),
+                CurrentFolderId = folderId,
+                FolderBreadcrumbs = new List<Folder>(),
                 TotalDocuments = 0,
                 TotalStorageMB = 0,
                 AddedLast7Days = 0,
@@ -56,18 +58,56 @@ public class DocumentController : Controller
         ViewBag.NoPeriodSelected = false;
         ViewBag.PeriodName = currentPeriod.PeriodName;
 
-        // 2. Query Dokumen yang terikat dengan rentang tanggal Periode Terpilih
-        var query = _context.EconomicDocuments
-                            .Include(d => d.JournalEntry)
-                            .Where(d => d.UserId == userId &&
-                                        d.UploadDate >= currentPeriod.StartDate &&
-                                        d.UploadDate <= currentPeriod.EndDate)
-                            .AsQueryable();
+        // --- 1. AMBIL FOLDER AKTIF & BREADCRUMBS ---
+        Folder? currentFolder = null;
+        var breadcrumbs = new List<Folder>();
 
+        if (folderId.HasValue)
+        {
+            currentFolder = await _context.Folders
+                .FirstOrDefaultAsync(f => f.Id == folderId.Value && f.UserId == userId);
+
+            // Susun breadcrumb navigasi (dari folder saat ini hingga root)
+            var temp = currentFolder;
+            while (temp != null)
+            {
+                breadcrumbs.Insert(0, temp);
+                if (temp.ParentFolderId.HasValue)
+                {
+                    temp = await _context.Folders
+                        .FirstOrDefaultAsync(f => f.Id == temp.ParentFolderId.Value && f.UserId == userId);
+                }
+                else
+                {
+                    temp = null;
+                }
+            }
+        }
+
+        // --- 2. AMBIL SUB-FOLDER DI FOLDER AKTIF ---
+        var subFolders = await _context.Folders
+            .Where(f => f.UserId == userId && f.ParentFolderId == folderId)
+            .OrderBy(f => f.Name)
+            .ToListAsync();
+
+        // --- 3. QUERY DOKUMEN ---
+        var query = _context.EconomicDocuments
+            .Include(d => d.JournalEntry)
+            .Where(d => d.UserId == userId &&
+                        d.UploadDate >= currentPeriod.StartDate &&
+                        d.UploadDate <= currentPeriod.EndDate)
+            .AsQueryable();
+
+        // Jika user melakukan pencarian global, abaikan batasan folder
         if (!string.IsNullOrEmpty(searchString))
         {
             query = query.Where(d => d.Title.Contains(searchString) ||
-                                       (d.ReferenceNumber != null && d.ReferenceNumber.Contains(searchString)));
+                                    (d.ReferenceNumber != null && d.ReferenceNumber.Contains(searchString)));
+        }
+        else
+        {
+            // Filter dokumen sesuai folder yang sedang dibuka
+            query = query.Where(d => d.FolderId == folderId);
         }
 
         if (!string.IsNullOrEmpty(category))
@@ -77,19 +117,19 @@ public class DocumentController : Controller
 
         var documentList = await query.OrderByDescending(d => d.UploadDate).ToListAsync();
 
-        // --- Statistical Computations (Khusus Dokumen di Periode Terpilih) ---
+        // --- 4. STATISTICAL COMPUTATIONS (Di Periode Terpilih) ---
         var allDocsInPeriod = await _context.EconomicDocuments
-                                            .Where(d => d.UserId == userId &&
-                                                        d.UploadDate >= currentPeriod.StartDate &&
-                                                        d.UploadDate <= currentPeriod.EndDate)
-                                            .ToListAsync();
+            .Where(d => d.UserId == userId &&
+                        d.UploadDate >= currentPeriod.StartDate &&
+                        d.UploadDate <= currentPeriod.EndDate)
+            .ToListAsync();
 
         var totalBytes = allDocsInPeriod.Sum(d => d.FileSize);
 
         var topCategory = allDocsInPeriod.GroupBy(d => d.Category)
-                                         .OrderByDescending(g => g.Count())
-                                         .Select(g => g.Key)
-                                         .FirstOrDefault() ?? "-";
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault() ?? "-";
 
         var deploymentDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var ageInDays = (int)(DateTime.UtcNow - deploymentDate).TotalDays;
@@ -97,6 +137,11 @@ public class DocumentController : Controller
         var viewModel = new DocumentIndexViewModel
         {
             Documents = documentList,
+            Folders = subFolders,
+            CurrentFolderId = folderId,
+            CurrentFolder = currentFolder,
+            FolderBreadcrumbs = breadcrumbs,
+
             TotalDocuments = allDocsInPeriod.Count,
             TotalStorageMB = Math.Round((double)totalBytes / (1024 * 1024), 2),
             AddedLast7Days = allDocsInPeriod.Count(d => d.UploadDate >= DateTime.UtcNow.AddDays(-7)),
@@ -115,14 +160,63 @@ public class DocumentController : Controller
         return View(viewModel);
     }
 
-    // GET: /Document/Create
-    public async Task<IActionResult> Create()
+    // POST: /Document/CreateFolder
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateFolder(string name, Guid? parentFolderId)
     {
         var userId = this.CurrentUserId();
 
-        // Gate: Cek apakah ada periode yang sedang di-select
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TempData["ErrorMessage"] = "Folder name cannot be empty.";
+            return RedirectToAction(nameof(Index), new { folderId = parentFolderId });
+        }
+
+        var folder = new Folder
+        {
+            Id = Guid.NewGuid(),
+            Name = name.Trim(),
+            ParentFolderId = parentFolderId,
+            UserId = userId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Folders.Add(folder);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = $"Folder '{folder.Name}' created successfully.";
+        return RedirectToAction(nameof(Index), new { folderId = parentFolderId });
+    }
+
+    // POST: /Document/DeleteFolder/guid-id
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteFolder(Guid id)
+    {
+        var userId = this.CurrentUserId();
+        var folder = await _context.Folders
+            .FirstOrDefaultAsync(f => f.Id == id && f.UserId == userId);
+
+        if (folder == null) return NotFound();
+
+        var parentFolderId = folder.ParentFolderId;
+
+        // Hapus folder (ON DELETE CASCADE di DB / EF Core akan menangani sub-folder & dokumen)
+        _context.Folders.Remove(folder);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Folder and its contents deleted successfully.";
+        return RedirectToAction(nameof(Index), new { folderId = parentFolderId });
+    }
+
+    // GET: /Document/Create?folderId=...
+    public async Task<IActionResult> Create(Guid? folderId)
+    {
+        var userId = this.CurrentUserId();
+
         var currentPeriod = await _context.Periods
-                                          .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
 
         if (currentPeriod == null)
         {
@@ -130,7 +224,6 @@ public class DocumentController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Tampilkan hanya Journal Entry yang sesuai dengan Periode Terpilih
         ViewBag.JournalEntries = await _context.JournalEntries
             .Where(j => j.UserId == userId &&
                         j.EntryDate >= currentPeriod.StartDate &&
@@ -139,7 +232,12 @@ public class DocumentController : Controller
             .Take(100)
             .ToListAsync();
 
-        return View();
+        var model = new DocumentUploadViewModel
+        {
+            FolderId = folderId
+        };
+
+        return View(model);
     }
 
     // POST: /Document/Create
@@ -149,9 +247,8 @@ public class DocumentController : Controller
     {
         var userId = this.CurrentUserId();
 
-        // Gate: Pastikan periode aktif terkonfirmasi saat submit
         var currentPeriod = await _context.Periods
-                                          .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+            .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
 
         if (currentPeriod == null)
         {
@@ -175,10 +272,13 @@ public class DocumentController : Controller
             {
                 try
                 {
+                    // Tentukan folder penyimpanan Cloudinary berbasis UserId
+                    string targetCloudFolder = $"aumo_finance_docs/user_{userId}";
+
                     // 1. Upload ke Cloudinary via Service
                     var (publicId, fileUrl, fileSize) = await _cloudStorageService.UploadFileAsync(
                         model.UploadedFile,
-                        folderName: "aumo_finance_docs"
+                        folderName: targetCloudFolder
                     );
 
                     // 2. Simpan metadata ke Database
@@ -189,10 +289,11 @@ public class DocumentController : Controller
                         Category = model.Category,
                         ReferenceNumber = model.ReferenceNumber,
                         JournalEntryId = model.JournalEntryId,
+                        FolderId = model.FolderId, // Menyimpan lokasi folder Web
                         Description = model.Description,
                         FileName = model.UploadedFile.FileName,
-                        FilePath = fileUrl,               // Menyimpan URL Cloudinary
-                        CloudPublicId = publicId,         // Public ID unik di Cloudinary untuk delete/manage
+                        FilePath = fileUrl,
+                        CloudPublicId = publicId,
                         FileSize = fileSize,
                         ContentType = model.UploadedFile.ContentType,
                         UploadedBy = User.Identity?.Name ?? "System",
@@ -202,8 +303,8 @@ public class DocumentController : Controller
                     _context.EconomicDocuments.Add(newDoc);
                     await _context.SaveChangesAsync();
 
-                    TempData["SuccessMessage"] = "Document successfully uploaded to Cloud Storage and linked to SSOT.";
-                    return RedirectToAction(nameof(Index));
+                    TempData["SuccessMessage"] = "Document successfully uploaded to Cloud Storage and linked.";
+                    return RedirectToAction(nameof(Index), new { folderId = model.FolderId });
                 }
                 catch (Exception ex)
                 {
@@ -216,7 +317,6 @@ public class DocumentController : Controller
             }
         }
 
-        // Jika gagal, muat ulang dropdown journal entries khusus periode terpilih
         ViewBag.JournalEntries = await _context.JournalEntries
             .Where(j => j.UserId == userId &&
                         j.EntryDate >= currentPeriod.StartDate &&
@@ -237,7 +337,6 @@ public class DocumentController : Controller
         if (document == null || string.IsNullOrEmpty(document.FilePath))
             return NotFound();
 
-        // Karena FilePath menyimpan URL dari Cloudinary, langsung redirect pengguna ke CDN Cloudinary
         return Redirect(document.FilePath);
     }
 
@@ -251,6 +350,8 @@ public class DocumentController : Controller
 
         if (document == null) return NotFound();
 
+        var currentFolderId = document.FolderId;
+
         // 1. Hapus file dari Cloudinary jika Public ID tersedia
         if (!string.IsNullOrEmpty(document.CloudPublicId))
         {
@@ -262,6 +363,6 @@ public class DocumentController : Controller
         await _context.SaveChangesAsync();
 
         TempData["SuccessMessage"] = "Document deleted successfully from Cloud Storage.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Index), new { folderId = currentFolderId });
     }
 }
