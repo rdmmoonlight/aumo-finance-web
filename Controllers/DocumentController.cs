@@ -1,24 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using System.IO;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AumoFinance.Models;
 using AumoFinance.ViewModels;
+using AumoFinance.Services; // Tambahkan namespace service Cloudinary kamu
 
 namespace AumoFinance.Controllers;
 
 public class DocumentController : Controller
 {
     private readonly AppDbContext _context;
-    private readonly IWebHostEnvironment _env;
+    private readonly ICloudStorageService _cloudStorageService;
 
-    public DocumentController(AppDbContext context, IWebHostEnvironment env)
+    public DocumentController(AppDbContext context, ICloudStorageService cloudStorageService)
     {
         _context = context;
-        _env = env;
+        _cloudStorageService = cloudStorageService;
     }
 
     // GET: /Document/
@@ -174,43 +174,47 @@ public class DocumentController : Controller
         {
             if (model.UploadedFile != null && model.UploadedFile.Length > 0)
             {
-                var uploadFolder = Path.Combine(_env.ContentRootPath, "SecureDocuments");
-                if (!Directory.Exists(uploadFolder))
+                try
                 {
-                    Directory.CreateDirectory(uploadFolder);
+                    // 1. Upload ke Cloudinary via Service
+                    var (publicId, fileUrl, fileSize) = await _cloudStorageService.UploadFileAsync(
+                        model.UploadedFile, 
+                        folderName: "aumo_finance_docs"
+                    );
+
+                    // 2. Simpan metadata ke Database
+                    var newDoc = new EconomicDocument
+                    {
+                        UserId = userId,
+                        Title = model.Title,
+                        Category = model.Category,
+                        ReferenceNumber = model.ReferenceNumber,
+                        JournalEntryId = model.JournalEntryId,
+                        Description = model.Description,
+                        FileName = model.UploadedFile.FileName,
+                        FilePath = fileUrl,               // Menyimpan URL Cloudinary
+                        CloudPublicId = publicId,         // Public ID unik di Cloudinary untuk delete/manage
+                        FileSize = fileSize,
+                        ContentType = model.UploadedFile.ContentType,
+                        UploadedBy = User.Identity?.Name ?? "System",
+                        UploadDate = DateTime.UtcNow
+                    };
+
+                    _context.EconomicDocuments.Add(newDoc);
+                    await _context.SaveChangesAsync();
+
+                    TempData["SuccessMessage"] = "Document successfully uploaded to Cloud Storage and linked to SSOT.";
+                    return RedirectToAction(nameof(Index));
                 }
-
-                var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(model.UploadedFile.FileName)}";
-                var filePath = Path.Combine(uploadFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                catch (Exception ex)
                 {
-                    await model.UploadedFile.CopyToAsync(fileStream);
+                    ModelState.AddModelError(string.Empty, $"Cloud Upload Failed: {ex.Message}");
                 }
-
-                var newDoc = new EconomicDocument
-                {
-                    UserId = userId,
-                    Title = model.Title,
-                    Category = model.Category,
-                    ReferenceNumber = model.ReferenceNumber,
-                    JournalEntryId = model.JournalEntryId,
-                    Description = model.Description,
-                    FileName = model.UploadedFile.FileName,
-                    FilePath = filePath,
-                    FileSize = model.UploadedFile.Length,
-                    ContentType = model.UploadedFile.ContentType,
-                    UploadedBy = User.Identity?.Name ?? "System",
-                    UploadDate = DateTime.UtcNow
-                };
-
-                _context.EconomicDocuments.Add(newDoc);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Document uploaded and linked to SSOT successfully.";
-                return RedirectToAction(nameof(Index));
             }
-            ModelState.AddModelError("UploadedFile", "Please select a valid file.");
+            else
+            {
+                ModelState.AddModelError("UploadedFile", "Please select a valid file.");
+            }
         }
 
         // Jika gagal, muat ulang dropdown journal entries khusus periode terpilih
@@ -230,17 +234,35 @@ public class DocumentController : Controller
     {
         var userId = this.CurrentUserId();
         var document = await _context.EconomicDocuments.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
+        
+        if (document == null || string.IsNullOrEmpty(document.FilePath)) 
+            return NotFound();
+
+        // Karena FilePath menyimpan URL dari Cloudinary, langsung redirect pengguna ke CDN Cloudinary
+        return Redirect(document.FilePath);
+    }
+
+    // POST: /Document/Delete/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var userId = this.CurrentUserId();
+        var document = await _context.EconomicDocuments.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
+
         if (document == null) return NotFound();
 
-        var path = document.FilePath;
-        if (!System.IO.File.Exists(path)) return NotFound();
-
-        var memory = new MemoryStream();
-        using (var stream = new FileStream(path, FileMode.Open))
+        // 1. Hapus file dari Cloudinary jika Public ID tersedia
+        if (!string.IsNullOrEmpty(document.CloudPublicId))
         {
-            await stream.CopyToAsync(memory);
+            await _cloudStorageService.DeleteFileAsync(document.CloudPublicId);
         }
-        memory.Position = 0;
-        return File(memory, document.ContentType ?? "application/octet-stream", document.FileName);
+
+        // 2. Hapus record dari Database
+        _context.EconomicDocuments.Remove(document);
+        await _context.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Document deleted successfully from Cloud Storage.";
+        return RedirectToAction(nameof(Index));
     }
 }
