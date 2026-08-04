@@ -2,8 +2,9 @@
 
 @{
     ViewData["Title"] = "Economic Documents & Cloud Repository";
-    // Hitung persentase penggunaan storage (asumsi kuota cloud 15 GB)
-    double storageQuotaMB = 15360; // 15 GB
+    
+    // Kuota Cloudinary Free Tier = 25 GB (25.600 MB)
+    double storageQuotaMB = 25600; 
     double storagePercent = Math.Min(100, Math.Round((Model.TotalStorageMB / storageQuotaMB) * 100, 1));
 }
 
@@ -14,17 +15,30 @@
             <h2 class="h4 text-dark mb-1">
                 <i class="bi bi-cloud-arrow-up text-primary me-2"></i> Document Repository & Cloud Storage
             </h2>
-            <p class="text-muted small mb-0">System metrics, financial records, and cloud file explorer</p>
+            <p class="text-muted small mb-0">
+                System metrics, financial records, and Cloudinary explorer 
+                @if (ViewBag.PeriodName != null)
+                {
+                    <span class="badge bg-primary-subtle text-primary ms-2">Periode: @ViewBag.PeriodName</span>
+                }
+            </p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newFolderModal">
-                <i class="bi bi-folder-plus me-1"></i> New Folder
-            </button>
             <a asp-action="Create" class="btn btn-primary btn-sm shadow-sm">
-                <i class="bi bi-upload me-1"></i> Upload File
+                <i class="bi bi-upload me-1"></i> Upload Document
             </a>
         </div>
     </div>
+
+    @if (ViewBag.NoPeriodSelected == true)
+    {
+        <div class="alert alert-warning shadow-sm d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 me-2"></i>
+            <div>
+                <strong>Tidak Ada Periode Aktif!</strong> Silakan pilih periode akuntansi aktif terlebih dahulu untuk melihat dan mengelola dokumen.
+            </div>
+        </div>
+    }
 
     <!-- ROW 1: DOCUMENT & CLOUD METRICS -->
     <div class="row g-3 mb-3">
@@ -43,7 +57,7 @@
             </div>
         </div>
 
-        <!-- CLOUD STORAGE METER -->
+        <!-- CLOUD STORAGE METER (CLOUDINARY) -->
         <div class="col-xl-3 col-md-6">
             <div class="card border-0 shadow-sm bg-body rounded p-3 h-100">
                 <div class="d-flex align-items-center mb-2">
@@ -55,7 +69,7 @@
                             <span>Cloud Storage</span>
                             <span class="fw-bold text-dark">@storagePercent%</span>
                         </div>
-                        <div class="fw-bold fs-6 text-dark">@Model.TotalStorageMB MB / 15 GB</div>
+                        <div class="fw-bold fs-6 text-dark">@Model.TotalStorageMB MB / 25 GB</div>
                     </div>
                 </div>
                 <div class="progress" style="height: 6px;">
@@ -133,12 +147,12 @@
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
-            @TempData["SuccessMessage"]
+            <i class="bi bi-check-circle me-1"></i> @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <!-- TAB NAVIGATION: TABLE VS CLOUD EXPLORER -->
+    <!-- TAB NAVIGATION: EXPLORER VS TABLE -->
     <ul class="nav nav-tabs border-0 mb-3" id="docTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active fw-medium" id="explorer-tab" data-bs-toggle="tab" data-bs-target="#explorer-pane" type="button" role="tab">
@@ -162,23 +176,17 @@
                     <div class="card border-0 shadow-sm p-3">
                         <div class="list-group list-group-flush small">
                             <a href="#" class="list-group-item list-group-item-action border-0 active rounded mb-1">
-                                <i class="bi bi-cloud-fill me-2"></i> My Cloud Drive
+                                <i class="bi bi-cloud-fill me-2"></i> Cloudinary Drive
                             </a>
                             <a href="#" class="list-group-item list-group-item-action border-0 rounded mb-1">
-                                <i class="bi bi-folder-symlink me-2"></i> Shared with Me
-                            </a>
-                            <a href="#" class="list-group-item list-group-item-action border-0 rounded mb-1">
-                                <i class="bi bi-star me-2"></i> Starred
-                            </a>
-                            <a href="#" class="list-group-item list-group-item-action border-0 rounded mb-1">
-                                <i class="bi bi-trash me-2"></i> Trash
+                                <i class="bi bi-journal-bookmark me-2"></i> Linked SSOT Docs
                             </a>
                         </div>
                         <hr class="my-3 text-muted" />
                         <div class="px-2">
                             <span class="text-muted extra-small d-block mb-2">STORAGE PROVIDER</span>
                             <div class="d-flex align-items-center text-success small">
-                                <i class="bi bi-check-circle-fill me-2"></i> Cloud Sync Active
+                                <i class="bi bi-check-circle-fill me-2"></i> Cloudinary Sync Active
                             </div>
                         </div>
                     </div>
@@ -191,62 +199,20 @@
                         <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                             <nav aria-label="breadcrumb">
                                 <ol class="breadcrumb mb-0 small">
-                                    <li class="breadcrumb-item"><a href="#" class="text-decoration-none"><i class="bi bi-house-door"></i> Drive</a></li>
-                                    <li class="breadcrumb-item active" aria-current="page">Financial Documents</li>
+                                    <li class="breadcrumb-item"><a href="#" class="text-decoration-none"><i class="bi bi-cloud"></i> Cloud Storage</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">aumo_finance_docs</li>
                                 </ol>
                             </nav>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-secondary active"><i class="bi bi-grid-fill"></i></button>
-                                <button type="button" class="btn btn-outline-secondary"><i class="bi bi-list-task"></i></button>
-                            </div>
-                        </div>
-
-                        <!-- FOLDERS SECTION -->
-                        <h6 class="text-muted small fw-bold mb-2">FOLDERS</h6>
-                        <div class="row g-2 mb-4">
-                            <div class="col-md-4 col-sm-6">
-                                <div class="card border shadow-none rounded p-2 hover-shadow cursor-pointer">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-folder-fill fs-3 text-warning me-2"></i>
-                                        <div class="text-truncate">
-                                            <div class="fw-medium text-dark small">Invoices & Receipts</div>
-                                            <div class="text-muted extra-small">24 files</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-sm-6">
-                                <div class="card border shadow-none rounded p-2 hover-shadow cursor-pointer">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-folder-fill fs-3 text-warning me-2"></i>
-                                        <div class="text-truncate">
-                                            <div class="fw-medium text-dark small">Tax Returns 2026</div>
-                                            <div class="text-muted extra-small">12 files</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-sm-6">
-                                <div class="card border shadow-none rounded p-2 hover-shadow cursor-pointer">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-folder-fill fs-3 text-warning me-2"></i>
-                                        <div class="text-truncate">
-                                            <div class="fw-medium text-dark small">Legal Contracts</div>
-                                            <div class="text-muted extra-small">8 files</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <!-- FILES GRID SECTION -->
-                        <h6 class="text-muted small fw-bold mb-2">FILES</h6>
+                        <h6 class="text-muted small fw-bold mb-3">DOCUMENT REPOSITORY</h6>
                         <div class="row g-3">
                             @if (!Model.Documents.Any())
                             {
                                 <div class="col-12 text-center py-5 text-muted">
                                     <i class="bi bi-cloud-slash fs-1 d-block mb-2"></i>
-                                    No cloud files found in this repository.
+                                    Tidak ada dokumen ditemukan pada periode ini.
                                 </div>
                             }
                             else
@@ -266,27 +232,57 @@
                                                         {
                                                             <i class="bi bi-file-earmark-excel-fill fs-2 text-success me-2"></i>
                                                         }
+                                                        else if (item.FileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) || item.FileName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || item.FileName.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                                                        {
+                                                            <i class="bi bi-file-earmark-image-fill fs-2 text-warning me-2"></i>
+                                                        }
                                                         else
                                                         {
                                                             <i class="bi bi-file-earmark-text-fill fs-2 text-primary me-2"></i>
                                                         }
-                                                        <div class="text-truncate" style="max-width: 140px;">
+                                                        <div class="text-truncate" style="max-width: 130px;">
                                                             <span class="fw-medium text-dark small d-block text-truncate" title="@item.Title">@item.Title</span>
-                                                            <span class="text-muted extra-small">@item.Category</span>
+                                                            <span class="badge bg-secondary-subtle text-secondary border extra-small">@item.Category</span>
                                                         </div>
                                                     </div>
+
                                                     <div class="dropdown">
                                                         <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
                                                             <i class="bi bi-three-dots-vertical"></i>
                                                         </button>
-                                                        <ul class="dropdown-menu dropdown-menu-end small">
-                                                            <li><a class="dropdown-menu-item dropdown-item" asp-action="Download" asp-route-id="@item.Id"><i class="bi bi-download me-2"></i>Download</a></li>
-                                                            <li><a class="dropdown-menu-item dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share Link</a></li>
+                                                        <ul class="dropdown-menu dropdown-menu-end small shadow-sm">
+                                                            <li>
+                                                                <a class="dropdown-item" href="@item.FilePath" target="_blank">
+                                                                    <i class="bi bi-box-arrow-up-right me-2 text-primary"></i>Open File
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a class="dropdown-item" asp-action="Download" asp-route-id="@item.Id">
+                                                                    <i class="bi bi-download me-2 text-secondary"></i>Download
+                                                                </a>
+                                                            </li>
                                                             <li><hr class="dropdown-divider"></li>
-                                                            <li><a class="dropdown-menu-item dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                            <li>
+                                                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus dokumen ini dari cloud?');">
+                                                                    @Html.AntiForgeryToken()
+                                                                    <button type="submit" class="dropdown-item text-danger">
+                                                                        <i class="bi bi-trash me-2"></i>Delete
+                                                                    </button>
+                                                                </form>
+                                                            </li>
                                                         </ul>
                                                     </div>
                                                 </div>
+
+                                                @if (item.JournalEntryId.HasValue)
+                                                {
+                                                    <div class="mt-2">
+                                                        <span class="badge bg-info-subtle text-info border extra-small" title="Linked to Journal Entry">
+                                                            <i class="bi bi-link-45deg"></i> Journal #@item.JournalEntryId
+                                                        </span>
+                                                    </div>
+                                                }
+
                                                 <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top text-muted extra-small">
                                                     <span>@item.UploadDate.ToString("dd MMM yyyy")</span>
                                                     <span>@Math.Round((double)item.FileSize / 1024, 1) KB</span>
@@ -369,6 +365,9 @@
                                             <td>@item.UploadDate.ToString("dd MMM yyyy")</td>
                                             <td>@Math.Round((double)item.FileSize / 1024, 1) KB</td>
                                             <td class="text-end pe-4">
+                                                <a href="@item.FilePath" target="_blank" class="btn btn-sm btn-outline-primary me-1" title="Open File">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
                                                 <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary" title="Download">
                                                     <i class="bi bi-download"></i>
                                                 </a>
@@ -391,18 +390,11 @@
     .extra-small {
         font-size: 0.725rem;
     }
-    .hover-shadow:hover {
-        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075)!important;
-        background-color: var(--bs-tertiary-bg);
-    }
     .hover-card {
         transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     }
     .hover-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 .25rem .5rem rgba(0,0,0,.05)!important;
-    }
-    .cursor-pointer {
-        cursor: pointer;
+        box-shadow: 0 .25rem .5rem rgba(0,0,0,.08)!important;
     }
 </style>
