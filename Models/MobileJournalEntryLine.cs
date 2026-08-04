@@ -47,7 +47,7 @@ public partial class TopBarView : ContentView
         {
             if (SyncBadge == null) return;
 
-            var statusColor = isSuccess 
+            var statusColor = isSuccess
                 ? Color.FromArgb("#10B981")  // Emerald Green
                 : Color.FromArgb("#EF4444"); // Red
 
