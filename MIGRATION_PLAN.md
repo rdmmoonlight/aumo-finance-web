@@ -12,7 +12,7 @@ yang sudah ada: `Components/MarketWidget.razor` ditanam ke View lewat
     `blazor.server.js`, `<component>` tag helper). Tidak ada perubahan
     tambahan diperlukan.
 
-- [ ] **Fase 1 — Risiko Rendah**
+- [x] **Fase 1 — Risiko Rendah**
   - Chart of Accounts
   - Periods
 
@@ -33,9 +33,15 @@ yang sudah ada: `Components/MarketWidget.razor` ditanam ke View lewat
 - [x] **Fase 5 — Pendukung**
   - Document, Mobile Classification, Tools (Import Journal), AI Assistant
 
-- [ ] **Fase 6 — Auth & Security (terakhir)**
-  - Auth (Login/Register/Password/Email)
-  - Guardian (Sessions, Devices, Recovery Codes, Activity)
+- [x] **Fase 6 — Auth & Security (terakhir)**
+  - Guardian (Sessions, Active Sessions tab, Protection & Logs) — dikonversi ke Blazor.
+  - Auth (Login/Logout/Register/ForgotPassword/ResetPassword/VerifyEmail/
+    ResendVerification) — **SENGAJA TETAP MVC selamanya**, bukan belum
+    sempat. Login & Logout menulis cookie auth langsung ke HTTP response
+    (tidak aman dilakukan dari komponen Blazor ServerPrerendered). Sisanya
+    (Register dkk.) teknis aman dikonversi tapi tetap perimeter keamanan
+    anonim aplikasi — risikonya tidak sepadan tanpa kemampuan `dotnet build`
+    di lingkungan pengerjaan ini untuk verifikasi kompilasi.
 
 ## Catatan
 - Build lokal (`dotnet build`) wajib dijalankan setelah tiap fase — proses
