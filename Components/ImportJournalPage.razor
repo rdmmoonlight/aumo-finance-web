@@ -1,0 +1,441 @@
+@using AumoFinance.Models
+@using AumoFinance.Models.DTOs
+@using ClosedXML.Excel
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject IJSRuntime JS
+
+<div class="container-fluid py-4 px-4">
+    <!-- Header Navigation -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="/Tools" class="text-decoration-none">Tools &amp; Utilities</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Import Journal</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-file-earmark-spreadsheet-fill me-2 text-success"></i> Import Journal Entries (.xlsx)
+                </h2>
+                <p class="text-secondary mb-0">Upload batch journal entries from Excel with instant preview.</p>
+            </div>
+            <a href="/Tools" class="btn btn-outline-secondary rounded-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to Tools
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (successMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <!-- UPLOAD CARD -->
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center mb-3">
+                <div class="col-12 col-md-8">
+                    <h5 class="fw-bold mb-1"><i class="bi bi-cloud-arrow-up me-2 text-primary"></i> Select Excel File</h5>
+                    <p class="text-secondary small mb-0">Select an <code>.xlsx</code> file, then click <strong>"Preview"</strong> to inspect entries inside the pop-up modal.</p>
+                </div>
+                <div class="col-12 col-md-4 text-md-end mt-2 mt-md-0">
+                    <a href="/Tools/DownloadJournalTemplate" class="btn btn-outline-success btn-sm rounded-3">
+                        <i class="bi bi-download me-1"></i> Download Template (.xlsx)
+                    </a>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-9">
+                    <InputFile class="form-control form-control-lg rounded-3" OnChange="OnFileSelected" accept=".xlsx" />
+                </div>
+                <div class="col-12 col-md-3">
+                    <button type="button" class="btn btn-primary btn-lg w-100 fw-semibold rounded-3 shadow-sm"
+                            disabled="@(selectedFile == null || isBusy)" @onclick="HandlePreview">
+                        @if (isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-eye me-2"></i>
+                        }
+                        Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom px-4 py-3">
+                <div>
+                    <h5 class="modal-title fw-bold mb-0" id="previewModalLabel">
+                        <i class="bi bi-file-earmark-check me-2 text-success"></i> Journal Entries Preview
+                    </h5>
+                    <small class="text-secondary">
+                        @if (parseResult != null)
+                        {
+                            @($"Found {parseResult.TotalTransactionsRead} transactions with {parseResult.TotalLinesRead} row entries.")
+                        }
+                        else
+                        {
+                            @:Review entries below before importing.
+                        }
+                    </small>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                @if (parseResult != null)
+                {
+                    @if (parseResult.Warnings.Any())
+                    {
+                        <div class="alert alert-warning rounded-3 mb-4">
+                            <ul class="small mb-0 ps-3">
+                                @foreach (var w in parseResult.Warnings)
+                                {
+                                    <li>@w</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    @foreach (var tx in parseResult.Transactions)
+                    {
+                        <div class="card border mb-3 rounded-3 shadow-sm">
+                            <div class="card-header bg-body d-flex justify-content-between align-items-center py-2 px-3">
+                                <span class="badge bg-primary">@tx.JournalType Journal</span>
+                                <strong><i class="bi bi-calendar-event me-1"></i> @tx.Date.ToString("MMMM d, yyyy")</strong>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0 align-middle small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 50px;" class="text-center">#</th>
+                                            <th style="width: 100px;" class="text-center">Ref</th>
+                                            <th>Account Name</th>
+                                            <th>Description</th>
+                                            <th style="width: 150px;" class="text-end">Debit ($)</th>
+                                            <th style="width: 150px;" class="text-end">Credit ($)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var line in tx.Lines)
+                                        {
+                                            <tr>
+                                                <td class="text-center text-secondary">@line.RowIndex</td>
+                                                <td class="text-center fw-semibold">@line.RefNumber</td>
+                                                <td>
+                                                    @line.AccountName
+                                                    @if (line.IsNewAccount)
+                                                    {
+                                                        <span class="badge bg-info-subtle text-info border border-info-subtle ms-1">New COA</span>
+                                                    }
+                                                </td>
+                                                <td class="text-secondary">@line.Description</td>
+                                                <td class="text-end fw-semibold text-success">@(line.Debit?.ToString("N2") ?? "-")</td>
+                                                <td class="text-end fw-semibold text-danger">@(line.Credit?.ToString("N2") ?? "-")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="table-group-divider fw-bold">
+                                        <tr>
+                                            <td colspan="4" class="text-end">Total Amount:</td>
+                                            <td class="text-end text-success">@tx.Lines.Sum(l => l.Debit ?? 0).ToString("N2")</td>
+                                            <td class="text-end text-danger">@tx.Lines.Sum(l => l.Credit ?? 0).ToString("N2")</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="modal-footer border-top px-4 py-3">
+                <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success rounded-3 px-4 fw-semibold shadow-sm"
+                        disabled="@(parseResult == null || !parseResult.Transactions.Any() || isBusy)" @onclick="HandleConfirmImport">
+                    <i class="bi bi-check2-all me-1"></i> Import Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+
+    private const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
+
+    private IBrowserFile? selectedFile;
+    private JournalImportResultDto? parseResult;
+    private string? successMessage;
+    private string? errorMessage;
+    private bool isBusy;
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        parseResult = null;
+        errorMessage = null;
+    }
+
+    private async Task HandlePreview()
+    {
+        if (selectedFile == null) return;
+
+        errorMessage = null;
+        isBusy = true;
+        try
+        {
+            using var stream = new MemoryStream();
+            await using (var uploadStream = selectedFile.OpenReadStream(MaxFileSizeBytes))
+            {
+                await uploadStream.CopyToAsync(stream);
+            }
+            stream.Position = 0;
+
+            var result = await ParseJournalExcelAsync(stream);
+            if (!result.IsSuccess)
+            {
+                errorMessage = result.Message;
+                return;
+            }
+
+            parseResult = result;
+            await JS.InvokeVoidAsync("aumoModal.show", "previewModal");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred while parsing the file: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task<JournalImportResultDto> ParseJournalExcelAsync(Stream stream)
+    {
+        var result = new JournalImportResultDto();
+
+        try
+        {
+            using var workbook = new XLWorkbook(stream);
+
+            var existingRefNumbers = await DbContext.ChartOfAccounts
+                .Where(a => a.UserId == UserId)
+                .Select(a => a.ReferenceNumber)
+                .ToListAsync();
+
+            var sheetMap = new (string SheetName, string JournalType)[]
+            {
+                ("GJ", "General"),
+                ("AJ", "Adjusting")
+            };
+
+            foreach (var (sheetName, journalType) in sheetMap)
+            {
+                if (!workbook.Worksheets.TryGetWorksheet(sheetName, out var sheet))
+                    continue;
+
+                var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 1;
+                JournalTransactionImportDto? currentTx = null;
+
+                for (int r = 2; r <= lastRow; r++)
+                {
+                    var dateCell = sheet.Cell(r, 1);
+                    var accountCell = sheet.Cell(r, 2);
+                    var descCell = sheet.Cell(r, 3);
+                    var refCell = sheet.Cell(r, 4);
+                    var debitCell = sheet.Cell(r, 5);
+                    var creditCell = sheet.Cell(r, 6);
+
+                    if (dateCell.IsEmpty() && accountCell.IsEmpty() && refCell.IsEmpty())
+                        continue;
+
+                    if (!dateCell.IsEmpty())
+                    {
+                        if (dateCell.TryGetValue(out DateTime parsedDate))
+                        {
+                            currentTx = new JournalTransactionImportDto
+                            {
+                                Date = parsedDate.Date,
+                                JournalType = journalType
+                            };
+                            result.Transactions.Add(currentTx);
+                        }
+                        else
+                        {
+                            result.Warnings.Add($"{sheetName} Row {r}: Invalid date format.");
+                            continue;
+                        }
+                    }
+
+                    if (currentTx == null) continue;
+
+                    decimal? debitValue = null;
+                    if (!debitCell.IsEmpty() && debitCell.TryGetValue(out decimal dVal)) debitValue = dVal;
+
+                    decimal? creditValue = null;
+                    if (!creditCell.IsEmpty() && creditCell.TryGetValue(out decimal cVal)) creditValue = cVal;
+
+                    refCell.TryGetValue(out int refNum);
+
+                    currentTx.Lines.Add(new JournalLineImportDto
+                    {
+                        RowIndex = r,
+                        AccountName = accountCell.GetString().Trim(),
+                        Description = descCell.GetString().Trim(),
+                        RefNumber = refNum,
+                        Debit = debitValue,
+                        Credit = creditValue,
+                        IsNewAccount = !existingRefNumbers.Contains(refNum)
+                    });
+
+                    result.TotalLinesRead++;
+                }
+            }
+
+            result.TotalTransactionsRead = result.Transactions.Count;
+            result.IsSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            result.IsSuccess = false;
+            result.Message = $"Excel Parsing Error: {ex.Message}";
+        }
+
+        return result;
+    }
+
+    private async Task HandleConfirmImport()
+    {
+        if (parseResult == null || !parseResult.Transactions.Any())
+        {
+            errorMessage = "No valid transactions to import.";
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            int accountsCreated = 0;
+            int transactionsImported = 0;
+
+            var seqCounters = new Dictionary<string, int>();
+            async Task<int> NextSeqAsync(string prefix)
+            {
+                if (!seqCounters.TryGetValue(prefix, out var seq))
+                {
+                    var last = await DbContext.JournalEntries
+                        .Where(e => e.UserId == UserId && e.ReferenceNumber.StartsWith(prefix + "-"))
+                        .OrderByDescending(e => e.Id)
+                        .Select(e => e.ReferenceNumber)
+                        .FirstOrDefaultAsync();
+
+                    seq = 0;
+                    if (last != null)
+                    {
+                        var parts = last.Split('-');
+                        if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+                        {
+                            seq = lastSeq;
+                        }
+                    }
+                }
+                seq += 1;
+                seqCounters[prefix] = seq;
+                return seq;
+            }
+
+            foreach (var txDto in parseResult.Transactions)
+            {
+                var entryLines = new List<JournalEntryLine>();
+
+                foreach (var lineDto in txDto.Lines)
+                {
+                    var account = await DbContext.ChartOfAccounts
+                        .FirstOrDefaultAsync(a => a.ReferenceNumber == lineDto.RefNumber && a.UserId == UserId);
+
+                    if (account == null)
+                    {
+                        var accountType = AccountClassification.TypeFromReferenceNumber(lineDto.RefNumber);
+
+                        account = new ChartOfAccount
+                        {
+                            UserId = UserId,
+                            ReferenceNumber = lineDto.RefNumber,
+                            AccountName = lineDto.AccountName,
+                            Type = accountType ?? "Other",
+                            Role = "Default",
+                            IsActive = true,
+                        };
+
+                        DbContext.ChartOfAccounts.Add(account);
+                        accountsCreated++;
+                    }
+
+                    entryLines.Add(new JournalEntryLine
+                    {
+                        Account = account,
+                        LineDescription = lineDto.Description,
+                        Debit = lineDto.Debit ?? 0m,
+                        Credit = lineDto.Credit ?? 0m,
+                        LineOrder = entryLines.Count + 1
+                    });
+                }
+
+                var prefix = txDto.JournalType == "Adjusting" ? "AJE" : "GJ";
+                var seq = await NextSeqAsync(prefix);
+
+                var entry = new JournalEntry
+                {
+                    UserId = UserId,
+                    ReferenceNumber = $"{prefix}-{seq:D6}",
+                    JournalType = txDto.JournalType,
+                    EntryDate = txDto.Date,
+                    Lines = entryLines,
+                };
+
+                DbContext.JournalEntries.Add(entry);
+                transactionsImported++;
+            }
+
+            await DbContext.SaveChangesAsync();
+
+            successMessage = $"Successfully imported {transactionsImported} journal entries with {accountsCreated} new COA accounts created.";
+            await JS.InvokeVoidAsync("aumoModal.hide", "previewModal");
+            parseResult = null;
+            selectedFile = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to save entries: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}

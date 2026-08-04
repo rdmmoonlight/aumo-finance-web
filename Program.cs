@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
-// Database - Neon PostgreSQL
+// Database - Neon / Railway PostgreSQL
 // =====================================
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
@@ -57,17 +57,17 @@ builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IJournalImportService, JournalImportService>();
-
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
 
 // =====================================
-// BLAZOR SERVICES (TAMBAHAN BARU)
+// Blazor Services
 // =====================================
-builder.Services.AddServerSideBlazor(); // <--- 1. Registrasi Blazor Server
-builder.Services.AddHttpClient();       // <--- 2. Tambahkan HttpClient untuk komponen
+builder.Services.AddServerSideBlazor();
+builder.Services.AddHttpClient();
 
 // =====================================
-// Forwarded Headers (Railway / Render Proxy)
+// Forwarded Headers (Railway / Proxy)
 // =====================================
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -122,6 +122,25 @@ if (!string.IsNullOrWhiteSpace(googleClientId) &&
 var app = builder.Build();
 
 // =====================================
+// AUTOMATIC DATABASE MIGRATION (REVISI BARU)
+// =====================================
+// Menjalankan migrasi otomatis ke DB saat aplikasi booting di Railway/Production
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Gagal menjalankan otomatisasi migrasi database.");
+    }
+}
+
+// =====================================
 // HTTP Pipeline
 // =====================================
 app.UseForwardedHeaders();
@@ -143,9 +162,7 @@ app.UseAuthorization();
 // Routes Mapping
 // =====================================
 app.MapControllers();
-
-// BLAZOR SIGNALR HUB (TAMBAHAN BARU)
-app.MapBlazorHub(); // <--- 3. Pipa komunikasi real-time Blazor via SignalR
+app.MapBlazorHub();
 
 app.MapControllerRoute(
     name: "default",

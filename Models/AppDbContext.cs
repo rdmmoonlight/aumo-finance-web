@@ -29,6 +29,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
     // Economic Document Repository (BARU)
     public DbSet<EconomicDocument> EconomicDocuments => Set<EconomicDocument>();
 
+    // Struktur folder untuk Document Repository
+    public DbSet<Folder> Folders => Set<Folder>();
+
     // Guardian
     public DbSet<UserSession> UserSessions => Set<UserSession>();
 
@@ -81,6 +84,24 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
             entity.HasIndex(x => x.Category);
             entity.HasIndex(x => x.ReferenceNumber);
             entity.HasIndex(x => x.UserId);
+            entity.HasIndex(x => x.FolderId);
+
+            entity.HasOne(x => x.Folder)
+                .WithMany()
+                .HasForeignKey(x => x.FolderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Folder (struktur direktori Document Repository)
+        builder.Entity<Folder>(entity =>
+        {
+            entity.HasIndex(x => x.UserId);
+            entity.HasIndex(x => x.ParentFolderId);
+
+            entity.HasOne(x => x.ParentFolder)
+                .WithMany()
+                .HasForeignKey(x => x.ParentFolderId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Guardian Session

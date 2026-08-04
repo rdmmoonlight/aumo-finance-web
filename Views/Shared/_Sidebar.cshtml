@@ -1,12 +1,16 @@
 <div class="sidebar-wrapper d-flex">
     <nav id="sidebar-icons" class="sidebar-icons text-white d-flex flex-column align-items-center py-2">
 
+        <!-- BRAND / HOME ICON -->
         <a asp-controller="Home"
            asp-action="Index"
-           class="mb-3 mt-1 brand-container text-center text-warning text-decoration-none"
+           class="mt-1 brand-container text-center text-warning text-decoration-none"
            title="Aumo Finance Home">
-            <i class="bi bi-shield-lock-fill fs-5"></i>
+            <i class="bi bi-house-door-fill fs-5"></i>
         </a>
+
+        <!-- GARIS PEMBATAS DI BAWAH IKON HOME -->
+        <hr class="border-secondary opacity-50 my-2 w-75">
 
         <ul class="nav flex-column align-items-center w-100 flex-grow-1">
 
@@ -240,7 +244,7 @@
             <a asp-controller="Reports"
                asp-action="CashFlowStatement"
                class="list-group-item list-group-item-action bg-transparent text-white border-0 rounded my-1 py-1 px-2">
-                Cash Flow Statement
+                Cash Flow
             </a>
 
         </div>

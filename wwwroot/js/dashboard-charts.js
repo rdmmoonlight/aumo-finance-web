@@ -1,12 +1,21 @@
 /**
  * Dashboard Module - AumoFinance
- * Menangani Command Palette Keyboard Shortcut & Inisialisasi Chart.js (Line + Doughnut)
+ * Menangani Command Palette Keyboard Shortcut & Inisialisasi Chart.js (Line + Doughnut).
+ *
+ * initCommandPalette(): dipanggil SEKALI saat komponen Dashboard pertama kali
+ * dirender (attach keydown listener sekali saja, tidak boleh dobel).
+ *
+ * renderDashboardCharts(config): boleh dipanggil BERULANG KALI (mis. saat
+ * toggle Monthly/Annual tanpa reload halaman). Instance Chart.js lama selalu
+ * dihancurkan dulu sebelum membuat yang baru, supaya canvas tidak konflik.
  */
 
-function initDashboard(config) {
-    // 1. Shortcut Keyboard (Ctrl + K / Cmd + K) untuk Command Palette Modal
+window.aumoCharts = window.aumoCharts || { trend: null, doughnut: null };
+
+function initCommandPalette() {
     const cmdModalEl = document.getElementById('commandPaletteModal');
-    if (cmdModalEl && typeof bootstrap !== 'undefined') {
+    if (cmdModalEl && typeof bootstrap !== 'undefined' && !cmdModalEl.dataset.aumoBound) {
+        cmdModalEl.dataset.aumoBound = 'true';
         const cmdModal = new bootstrap.Modal(cmdModalEl);
         document.addEventListener('keydown', function (e) {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -15,8 +24,9 @@ function initDashboard(config) {
             }
         });
     }
+}
 
-    // Detector Theme Dark / Light Bootstrap
+function renderDashboardCharts(config) {
     const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const textColor = isDark ? '#adb5bd' : '#6c757d';
     const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
@@ -26,7 +36,6 @@ function initDashboard(config) {
         Chart.defaults.borderColor = gridColor;
     }
 
-    // Helper Format Currency Rupiah
     const formatIDR = (value) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -35,10 +44,14 @@ function initDashboard(config) {
         }).format(value);
     };
 
-    // 2. Setup Line Chart (Financial Trend)
+    // 1. Line Chart (Financial Trend)
+    if (window.aumoCharts.trend) {
+        window.aumoCharts.trend.destroy();
+        window.aumoCharts.trend = null;
+    }
     const trendCanvas = document.getElementById('trendChart');
     if (trendCanvas && config.trendData) {
-        new Chart(trendCanvas.getContext('2d'), {
+        window.aumoCharts.trend = new Chart(trendCanvas.getContext('2d'), {
             type: 'line',
             data: {
                 labels: config.trendData.labels || [],
@@ -91,10 +104,14 @@ function initDashboard(config) {
         });
     }
 
-    // 3. Setup Doughnut Chart (Expense Composition)
+    // 2. Doughnut Chart (Expense Composition)
+    if (window.aumoCharts.doughnut) {
+        window.aumoCharts.doughnut.destroy();
+        window.aumoCharts.doughnut = null;
+    }
     const doughnutCanvas = document.getElementById('expenseDoughnut');
     if (doughnutCanvas && config.expenseData) {
-        new Chart(doughnutCanvas.getContext('2d'), {
+        window.aumoCharts.doughnut = new Chart(doughnutCanvas.getContext('2d'), {
             type: 'doughnut',
             data: {
                 labels: config.expenseData.labels || [],
@@ -119,4 +136,11 @@ function initDashboard(config) {
             }
         });
     }
+}
+
+// Kompatibilitas mundur: nama lama initDashboard() dipertahankan untuk
+// dipanggil dari halaman MVC lama mana pun yang mungkin masih memakainya.
+function initDashboard(config) {
+    initCommandPalette();
+    renderDashboardCharts(config);
 }

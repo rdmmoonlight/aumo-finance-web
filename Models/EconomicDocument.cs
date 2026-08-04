@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Http;
 
 namespace AumoFinance.Models;
 
@@ -8,36 +10,37 @@ public class EconomicDocument
 {
     [Key]
     public int Id { get; set; }
-
-    // Pemilik dokumen ini — setiap user punya arsip dokumennya sendiri.
     public Guid UserId { get; set; }
 
-    [Required]
-    [StringLength(200)]
+    [Required, StringLength(200)]
     public string Title { get; set; } = string.Empty;
 
-    [Required]
-    [StringLength(50)]
+    [Required, StringLength(50)]
     public string Category { get; set; } = string.Empty;
 
     [StringLength(100)]
     public string? ReferenceNumber { get; set; }
 
-    // --- INTEGRASI SSOT (Foreign Key ke JournalEntry) ---
     [Display(Name = "Linked Journal Entry")]
     public int? JournalEntryId { get; set; }
 
-    [ForeignKey("JournalEntryId")]
+    [ForeignKey(nameof(JournalEntryId))]
     public JournalEntry? JournalEntry { get; set; }
-    // ----------------------------------------------------
 
-    [Required]
-    [StringLength(255)]
+    // Lokasi folder dokumen ini. Null berarti dokumen berada di root.
+    public Guid? FolderId { get; set; }
+
+    [ForeignKey(nameof(FolderId))]
+    public Folder? Folder { get; set; }
+
+    [Required, StringLength(255)]
     public string FileName { get; set; } = string.Empty;
 
-    [Required]
-    [StringLength(500)]
+    [Required, StringLength(500)]
     public string FilePath { get; set; } = string.Empty;
+
+    [StringLength(150)]
+    public string? CloudPublicId { get; set; }
 
     public long FileSize { get; set; }
 
@@ -51,4 +54,52 @@ public class EconomicDocument
     public DateTime UploadDate { get; set; } = DateTime.UtcNow;
 
     public string? Description { get; set; }
+}
+
+public class DocumentUploadViewModel
+{
+    [Required]
+    [Display(Name = "Document Title")]
+    public string Title { get; set; } = string.Empty;
+
+    [Required]
+    public string Category { get; set; } = string.Empty;
+
+    [Display(Name = "Reference Number (Optional)")]
+    public string? ReferenceNumber { get; set; }
+
+    [Display(Name = "Link to Journal Entry (SSOT)")]
+    public int? JournalEntryId { get; set; }
+
+    [Display(Name = "Folder")]
+    public Guid? FolderId { get; set; }
+
+    public string? Description { get; set; }
+
+    [Required]
+    [Display(Name = "Select File")]
+    public IFormFile? UploadedFile { get; set; }
+}
+
+public class DocumentIndexViewModel
+{
+    public IEnumerable<EconomicDocument> Documents { get; set; } = new List<EconomicDocument>();
+
+    public IEnumerable<Folder> Folders { get; set; } = new List<Folder>();
+    public Guid? CurrentFolderId { get; set; }
+    public Folder? CurrentFolder { get; set; }
+    public List<Folder> FolderBreadcrumbs { get; set; } = new();
+
+    public int TotalDocuments { get; set; }
+    public double TotalStorageMB { get; set; }
+    public int AddedLast7Days { get; set; }
+    public string MostFrequentCategory { get; set; } = "-";
+
+    public DateTime AppDeploymentDate { get; set; }
+    public int AppAgeDays { get; set; }
+    public int TotalJournalEntries { get; set; }
+    public int TotalChartOfAccounts { get; set; }
+    public int TotalActivePeriods { get; set; }
+    public int TotalSystemUsers { get; set; }
+    public double AverageFileSizeKB { get; set; }
 }
