@@ -13,5 +13,11 @@ window.aumoModal = {
         if (!el) return;
         var instance = bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
         instance.hide();
+    },
+    show: function (elementId) {
+        var el = document.getElementById(elementId);
+        if (!el) return;
+        var instance = bootstrap.Modal.getOrCreateInstance(el);
+        instance.show();
     }
 };
