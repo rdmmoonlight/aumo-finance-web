@@ -30,7 +30,7 @@ yang sudah ada: `Components/MarketWidget.razor` ditanam ke View lewat
   - Income Statement, Statement of Financial Position
   - Worksheet, Closing Journal, General Ledger, Retained Earnings
 
-- [ ] **Fase 5 — Pendukung**
+- [x] **Fase 5 — Pendukung**
   - Document, Mobile Classification, Tools (Import Journal), AI Assistant
 
 - [ ] **Fase 6 — Auth & Security (terakhir)**
