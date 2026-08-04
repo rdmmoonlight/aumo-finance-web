@@ -161,7 +161,7 @@
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
                                         <input type="text" inputmode="numeric" name="CashBalance" id="CashBalance"
-                                               value="@((Model.CashBalance ?? 0) == 0 ? "" : Model.CashBalance!.Value.ToString("N0"))"
+                                               value="@((Model.CashBalance ?? 0) == 0 ? "" : Model.CashBalance!.Value.ToString("N0", new System.Globalization.CultureInfo("id-ID")))"
                                                class="form-control text-end currency-input" placeholder="0" autocomplete="off" />
                                     </div>
                                 </div>
@@ -182,7 +182,7 @@
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
                                         <input type="text" inputmode="numeric" name="BankBalance" id="BankBalance"
-                                               value="@((Model.BankBalance ?? 0) == 0 ? "" : Model.BankBalance!.Value.ToString("N0"))"
+                                               value="@((Model.BankBalance ?? 0) == 0 ? "" : Model.BankBalance!.Value.ToString("N0", new System.Globalization.CultureInfo("id-ID")))"
                                                class="form-control text-end currency-input" placeholder="0" autocomplete="off" />
                                     </div>
                                 </div>

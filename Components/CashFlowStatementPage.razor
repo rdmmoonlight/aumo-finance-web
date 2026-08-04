@@ -51,14 +51,14 @@
                             <tr>
                                 <td class="ps-4">@l.Description</td>
                                 <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
-                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount):N2})" : l.Amount.ToString("N2"))
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount).ToString("N0", Idr)})" : l.Amount.ToString("N0", Idr))
                                 </td>
                             </tr>
                         }
                         <tr class="border-top border-secondary fw-semibold">
                             <td class="ps-4 pt-2">Net Cash Provided by (Used in) Operating Activities</td>
                             <td class="text-end pt-2 @(vm.NetOperating < 0 ? "text-danger" : "text-success")">
-                                @(vm.NetOperating < 0 ? $"({Math.Abs(vm.NetOperating):N2})" : vm.NetOperating.ToString("N2"))
+                                @(vm.NetOperating < 0 ? $"({Math.Abs(vm.NetOperating).ToString("N0", Idr)})" : vm.NetOperating.ToString("N0", Idr))
                             </td>
                         </tr>
 
@@ -80,14 +80,14 @@
                             <tr>
                                 <td class="ps-4">@l.Description</td>
                                 <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
-                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount):N2})" : l.Amount.ToString("N2"))
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount).ToString("N0", Idr)})" : l.Amount.ToString("N0", Idr))
                                 </td>
                             </tr>
                         }
                         <tr class="border-top border-secondary fw-semibold">
                             <td class="ps-4 pt-2">Net Cash Provided by (Used in) Investing Activities</td>
                             <td class="text-end pt-2 @(vm.NetInvesting < 0 ? "text-danger" : "text-success")">
-                                @(vm.NetInvesting < 0 ? $"({Math.Abs(vm.NetInvesting):N2})" : vm.NetInvesting.ToString("N2"))
+                                @(vm.NetInvesting < 0 ? $"({Math.Abs(vm.NetInvesting).ToString("N0", Idr)})" : vm.NetInvesting.ToString("N0", Idr))
                             </td>
                         </tr>
 
@@ -109,14 +109,14 @@
                             <tr>
                                 <td class="ps-4">@l.Description</td>
                                 <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
-                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount):N2})" : l.Amount.ToString("N2"))
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount).ToString("N0", Idr)})" : l.Amount.ToString("N0", Idr))
                                 </td>
                             </tr>
                         }
                         <tr class="border-top border-secondary fw-semibold">
                             <td class="ps-4 pt-2">Net Cash Provided by (Used in) Financing Activities</td>
                             <td class="text-end pt-2 @(vm.NetFinancing < 0 ? "text-danger" : "text-success")">
-                                @(vm.NetFinancing < 0 ? $"({Math.Abs(vm.NetFinancing):N2})" : vm.NetFinancing.ToString("N2"))
+                                @(vm.NetFinancing < 0 ? $"({Math.Abs(vm.NetFinancing).ToString("N0", Idr)})" : vm.NetFinancing.ToString("N0", Idr))
                             </td>
                         </tr>
 
@@ -124,16 +124,16 @@
                         <tr class="border-top border-secondary" style="border-top-width: 3px !important;">
                             <td class="fw-bold fs-5 pt-3">Net Increase (Decrease) in Cash and Cash Equivalents</td>
                             <td class="text-end fw-bold fs-5 pt-3 @(vm.NetChangeInCash < 0 ? "text-danger" : "text-success")">
-                                @(vm.NetChangeInCash < 0 ? $"({Math.Abs(vm.NetChangeInCash):N2})" : vm.NetChangeInCash.ToString("N2"))
+                                @(vm.NetChangeInCash < 0 ? $"({Math.Abs(vm.NetChangeInCash).ToString("N0", Idr)})" : vm.NetChangeInCash.ToString("N0", Idr))
                             </td>
                         </tr>
                         <tr>
                             <td class="ps-3 text-white-50">Cash and Cash Equivalents, Beginning of Period</td>
-                            <td class="text-end text-white-50">@vm.BeginningCash.ToString("N2")</td>
+                            <td class="text-end text-white-50">@vm.BeginningCash.ToString("N0", Idr)</td>
                         </tr>
                         <tr class="fw-bold border-top border-secondary">
                             <td class="ps-3 pt-2 text-info">Cash and Cash Equivalents, End of Period</td>
-                            <td class="text-end pt-2 text-info">@vm.EndingCash.ToString("N2")</td>
+                            <td class="text-end pt-2 text-info">@vm.EndingCash.ToString("N0", Idr)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -151,6 +151,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
 
     private CashFlowStatementViewModel vm = new();

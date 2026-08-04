@@ -34,20 +34,20 @@
                         <tr><td colspan="2" class="fw-bold text-warning text-uppercase small">Revenue</td></tr>
                         @foreach (var l in vm.Revenues)
                         {
-                            <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">@l.Amount.ToString("N2")</td></tr>
+                            <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">@l.Amount.ToString("N0", Idr)</td></tr>
                         }
-                        <tr class="border-top border-secondary fw-semibold"><td class="ps-4">Total Revenue</td><td class="text-end">@vm.TotalRevenue.ToString("N2")</td></tr>
+                        <tr class="border-top border-secondary fw-semibold"><td class="ps-4">Total Revenue</td><td class="text-end">@vm.TotalRevenue.ToString("N0", Idr)</td></tr>
 
                         <tr><td colspan="2" class="pt-3 fw-bold text-warning text-uppercase small">Operating Expenses</td></tr>
                         @foreach (var l in vm.OperatingExpenses)
                         {
-                            <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">(@l.Amount.ToString("N2"))</td></tr>
+                            <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">(@l.Amount.ToString("N0", Idr))</td></tr>
                         }
-                        <tr class="border-top border-secondary fw-semibold"><td class="ps-4">Total Operating Expenses</td><td class="text-end">(@vm.TotalOperatingExpenses.ToString("N2"))</td></tr>
+                        <tr class="border-top border-secondary fw-semibold"><td class="ps-4">Total Operating Expenses</td><td class="text-end">(@vm.TotalOperatingExpenses.ToString("N0", Idr))</td></tr>
 
                         <tr class="border-top border-bottom border-secondary fw-bold fs-5">
                             <td class="pt-2 pb-2">Operating Income</td>
-                            <td class="text-end pt-2 pb-2 @(vm.OperatingIncome >= 0 ? "text-success" : "text-danger")">@vm.OperatingIncome.ToString("N2")</td>
+                            <td class="text-end pt-2 pb-2 @(vm.OperatingIncome >= 0 ? "text-success" : "text-danger")">@vm.OperatingIncome.ToString("N0", Idr)</td>
                         </tr>
 
                         @if (vm.OtherIncome.Any() || vm.OtherExpenses.Any())
@@ -55,17 +55,17 @@
                             <tr><td colspan="2" class="pt-3 fw-bold text-warning text-uppercase small">Other Income &amp; Expenses</td></tr>
                             @foreach (var l in vm.OtherIncome)
                             {
-                                <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">@l.Amount.ToString("N2")</td></tr>
+                                <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">@l.Amount.ToString("N0", Idr)</td></tr>
                             }
                             @foreach (var l in vm.OtherExpenses)
                             {
-                                <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">(@l.Amount.ToString("N2"))</td></tr>
+                                <tr><td class="ps-4"><code class="text-muted me-2">@l.ReferenceNumber</code>@l.AccountName</td><td class="text-end">(@l.Amount.ToString("N0", Idr))</td></tr>
                             }
                         }
 
                         <tr class="border-top border-secondary" style="border-top-width: 3px !important;">
                             <td class="fw-bold fs-5 pt-2">Net Income</td>
-                            <td class="text-end fw-bold fs-5 pt-2 @(vm.NetIncome >= 0 ? "text-success" : "text-danger")">@vm.NetIncome.ToString("N2")</td>
+                            <td class="text-end fw-bold fs-5 pt-2 @(vm.NetIncome >= 0 ? "text-success" : "text-danger")">@vm.NetIncome.ToString("N0", Idr)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -75,6 +75,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
 
     private IncomeStatementViewModel vm = new();

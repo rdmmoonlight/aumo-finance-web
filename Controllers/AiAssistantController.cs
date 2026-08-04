@@ -115,16 +115,17 @@ namespace AumoFinance.Controllers
                 .Take(5)
                 .ToList();
 
+            var idr = new System.Globalization.CultureInfo("id-ID");
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Active period: {activePeriod?.PeriodName ?? "None"}");
-            sb.AppendLine($"Cash and equivalents: {cash:N0}");
-            sb.AppendLine($"Revenue: {revenue:N0}");
-            sb.AppendLine($"Operating expenses: {expenses:N0}");
-            sb.AppendLine($"Net income: {netIncome:N0}");
+            sb.AppendLine($"Cash and equivalents: {cash.ToString("N0", idr)}");
+            sb.AppendLine($"Revenue: {revenue.ToString("N0", idr)}");
+            sb.AppendLine($"Operating expenses: {expenses.ToString("N0", idr)}");
+            sb.AppendLine($"Net income: {netIncome.ToString("N0", idr)}");
             sb.AppendLine("Top expense accounts:");
             foreach (var exp in topExpenses)
             {
-                sb.AppendLine($"- {exp.AccountName}: {exp.Amount:N0}");
+                sb.AppendLine($"- {exp.AccountName}: {exp.Amount.ToString("N0", idr)}");
             }
 
             return sb.ToString();

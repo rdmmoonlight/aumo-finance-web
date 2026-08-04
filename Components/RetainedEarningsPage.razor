@@ -35,22 +35,22 @@
                     <tbody>
                         <tr>
                             <td>Retained earnings, @vm.StartDate.ToString("MMMM d")</td>
-                            <td class="text-end">@vm.BeginningBalance.ToString("N2")</td>
+                            <td class="text-end">@vm.BeginningBalance.ToString("N0", Idr)</td>
                         </tr>
                         <tr>
                             <td class="ps-3">Add: Net Income for the Period</td>
-                            <td class="text-end @(vm.NetIncome >= 0 ? "text-success" : "text-danger")">@vm.NetIncome.ToString("N2")</td>
+                            <td class="text-end @(vm.NetIncome >= 0 ? "text-success" : "text-danger")">@vm.NetIncome.ToString("N0", Idr)</td>
                         </tr>
                         @if (vm.Dividends != 0)
                         {
                             <tr>
                                 <td class="ps-3">Less: Dividends / Withdrawals</td>
-                                <td class="text-end text-danger">(@vm.Dividends.ToString("N2"))</td>
+                                <td class="text-end text-danger">(@vm.Dividends.ToString("N0", Idr))</td>
                             </tr>
                         }
                         <tr class="border-top border-secondary fw-bold fs-5" style="border-top-width: 3px !important;">
                             <td class="pt-2">Retained earnings, @vm.EndDate.ToString("MMMM d")</td>
-                            <td class="text-end pt-2 text-success">@vm.EndingBalance.ToString("N2")</td>
+                            <td class="text-end pt-2 text-success">@vm.EndingBalance.ToString("N0", Idr)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -60,6 +60,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
 
     private RetainedEarningsViewModel vm = new();

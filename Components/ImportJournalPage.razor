@@ -152,16 +152,16 @@
                                                     }
                                                 </td>
                                                 <td class="text-secondary">@line.Description</td>
-                                                <td class="text-end fw-semibold text-success">@(line.Debit?.ToString("N2") ?? "-")</td>
-                                                <td class="text-end fw-semibold text-danger">@(line.Credit?.ToString("N2") ?? "-")</td>
+                                                <td class="text-end fw-semibold text-success">@(line.Debit?.ToString("N0", Idr) ?? "-")</td>
+                                                <td class="text-end fw-semibold text-danger">@(line.Credit?.ToString("N0", Idr) ?? "-")</td>
                                             </tr>
                                         }
                                     </tbody>
                                     <tfoot class="table-group-divider fw-bold">
                                         <tr>
                                             <td colspan="4" class="text-end">Total Amount:</td>
-                                            <td class="text-end text-success">@tx.Lines.Sum(l => l.Debit ?? 0).ToString("N2")</td>
-                                            <td class="text-end text-danger">@tx.Lines.Sum(l => l.Credit ?? 0).ToString("N2")</td>
+                                            <td class="text-end text-success">@tx.Lines.Sum(l => l.Debit ?? 0).ToString("N0", Idr)</td>
+                                            <td class="text-end text-danger">@tx.Lines.Sum(l => l.Credit ?? 0).ToString("N0", Idr)</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -183,6 +183,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
 
     private const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB

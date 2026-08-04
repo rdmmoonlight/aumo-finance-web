@@ -50,7 +50,7 @@
                                     <td class="text-center"><code>@asset.ReferenceNumber</code></td>
                                     <td>@asset.AccountName</td>
                                     <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Assets</span></td>
-                                    <td class="text-end text-success">@asset.Amount.ToString("N2")</td>
+                                    <td class="text-end text-success">@asset.Amount.ToString("N0", Idr)</td>
                                     <td class="text-end text-danger">-</td>
                                 </tr>
                             }
@@ -63,7 +63,7 @@
                                     <td>@liab.AccountName</td>
                                     <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Liabilities</span></td>
                                     <td class="text-end text-success">-</td>
-                                    <td class="text-end text-danger">@liab.Amount.ToString("N2")</td>
+                                    <td class="text-end text-danger">@liab.Amount.ToString("N0", Idr)</td>
                                 </tr>
                             }
 
@@ -75,7 +75,7 @@
                                     <td>@eq.AccountName</td>
                                     <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Equity</span></td>
                                     <td class="text-end text-success">-</td>
-                                    <td class="text-end text-danger">@eq.Amount.ToString("N2")</td>
+                                    <td class="text-end text-danger">@eq.Amount.ToString("N0", Idr)</td>
                                 </tr>
                             }
 
@@ -84,15 +84,15 @@
                                 <td class="text-center"><code>-</code></td>
                                 <td>Retained earnings, @vm.AsOfDate.ToString("MMMM d")</td>
                                 <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">Equity</span></td>
-                                <td class="text-end text-success">@(vm.RetainedEarningsEnding < 0 ? Math.Abs(vm.RetainedEarningsEnding).ToString("N2") : "-")</td>
-                                <td class="text-end text-danger">@(vm.RetainedEarningsEnding >= 0 ? vm.RetainedEarningsEnding.ToString("N2") : "-")</td>
+                                <td class="text-end text-success">@(vm.RetainedEarningsEnding < 0 ? Math.Abs(vm.RetainedEarningsEnding).ToString("N0", Idr) : "-")</td>
+                                <td class="text-end text-danger">@(vm.RetainedEarningsEnding >= 0 ? vm.RetainedEarningsEnding.ToString("N0", Idr) : "-")</td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr class="border-top border-secondary fw-bold">
                                 <td colspan="3" class="text-end pe-3">Total</td>
-                                <td class="text-end text-success">@vm.TotalAssets.ToString("N2")</td>
-                                <td class="text-end text-danger">@vm.TotalLiabilitiesAndEquity.ToString("N2")</td>
+                                <td class="text-end text-success">@vm.TotalAssets.ToString("N0", Idr)</td>
+                                <td class="text-end text-danger">@vm.TotalLiabilitiesAndEquity.ToString("N0", Idr)</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -117,6 +117,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
 
     private StatementOfFinancialPositionViewModel vm = new();

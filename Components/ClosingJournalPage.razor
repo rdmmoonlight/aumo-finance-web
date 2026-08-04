@@ -52,16 +52,16 @@
                                 <tr>
                                     <td class="text-center"><code>@(line.ReferenceNumber > 0 ? line.ReferenceNumber.ToString() : "-")</code></td>
                                     <td class="@(line.Credit > 0 ? "ps-4" : "fw-semibold")">@line.AccountName</td>
-                                    <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N2") : "-")</td>
-                                    <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N2") : "-")</td>
+                                    <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : "-")</td>
                                 </tr>
                             }
                         </tbody>
                         <tfoot>
                             <tr class="border-top border-secondary fw-bold">
                                 <td colspan="2" class="text-end">Total</td>
-                                <td class="text-end text-success">@group.TotalDebit.ToString("N2")</td>
-                                <td class="text-end text-danger">@group.TotalCredit.ToString("N2")</td>
+                                <td class="text-end text-success">@group.TotalDebit.ToString("N0", Idr)</td>
+                                <td class="text-end text-danger">@group.TotalCredit.ToString("N0", Idr)</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -73,13 +73,14 @@
         {
             <div class="alert alert-info bg-opacity-10 mb-0 py-2 small">
                 <i class="bi bi-info-circle-fill me-1"></i>
-                After closing entries are posted, all nominal accounts will have a zero balance and Net Income of <strong>@vm.NetIncome.ToString("N2")</strong> will transfer to <strong>@vm.RetainedEarningsAccountName</strong>.
+                After closing entries are posted, all nominal accounts will have a zero balance and Net Income of <strong>@vm.NetIncome.ToString("N0", Idr)</strong> will transfer to <strong>@vm.RetainedEarningsAccountName</strong>.
             </div>
         }
     }
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
 
     private ClosingJournalViewModel vm = new();

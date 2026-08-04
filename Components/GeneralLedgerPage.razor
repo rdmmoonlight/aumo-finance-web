@@ -48,7 +48,7 @@
             <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <span class="fw-semibold text-warning">Net Income / (Loss) before closing</span>
-                    <span class="fw-bold fs-5 @(netTotal >= 0 ? "text-success" : "text-danger")">@netTotal.ToString("N2")</span>
+                    <span class="fw-bold fs-5 @(netTotal >= 0 ? "text-success" : "text-danger")">@netTotal.ToString("N0", Idr)</span>
                 </div>
             </div>
         }
@@ -61,7 +61,7 @@
                         <span class="badge bg-secondary bg-opacity-25 border border-secondary ms-2">@ledger.Type</span>
                     </h5>
                     <span class="fw-semibold @(ledger.EndingBalance >= 0 ? "text-success" : "text-danger")">
-                        Balance: @ledger.EndingBalance.ToString("N2") (@(ledger.NormalBalanceIsDebit ? "Dr" : "Cr"))
+                        Balance: @ledger.EndingBalance.ToString("N0", Idr) (@(ledger.NormalBalanceIsDebit ? "Dr" : "Cr"))
                     </span>
                 </div>
                 <div class="card-body p-0">
@@ -84,9 +84,9 @@
                                         <tr>
                                             <td class="text-nowrap">@line.EntryDate.ToString("dd-MM-yyyy")</td>
                                             <td class="text-muted small">@line.Description</td>
-                                            <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N2") : "-")</td>
-                                            <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N2") : "-")</td>
-                                            <td class="text-end fw-semibold">@line.RunningBalance.ToString("N2")</td>
+                                            <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : "-")</td>
+                                            <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : "-")</td>
+                                            <td class="text-end fw-semibold">@line.RunningBalance.ToString("N0", Idr)</td>
                                         </tr>
                                     }
                                 }
@@ -106,6 +106,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
     [Parameter] public bool IsTemporary { get; set; }
 

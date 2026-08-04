@@ -90,10 +90,10 @@
                                             <code>@line.Account?.ReferenceNumber</code>
                                         </td>
                                         <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
-                                            @(isDebit ? line.Debit.ToString("N0") : "-")
+                                            @(isDebit ? line.Debit.ToString("N0", Idr) : "-")
                                         </td>
                                         <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
-                                            @(!isDebit ? line.Credit.ToString("N0") : "-")
+                                            @(!isDebit ? line.Credit.ToString("N0", Idr) : "-")
                                         </td>
                                     </tr>
                                 }
@@ -124,6 +124,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
 
     private List<JournalEntry> entries = new();

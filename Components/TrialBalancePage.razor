@@ -71,8 +71,8 @@
                                         <td class="text-center"><code>@row.ReferenceNumber</code></td>
                                         <td>@row.AccountName</td>
                                         <td><span class="badge bg-secondary bg-opacity-25 border border-secondary">@row.Type</span></td>
-                                        <td class="text-end text-success">@(row.Debit > 0 ? row.Debit.ToString("N2") : "-")</td>
-                                        <td class="text-end text-danger">@(row.Credit > 0 ? row.Credit.ToString("N2") : "-")</td>
+                                        <td class="text-end text-success">@(row.Debit > 0 ? row.Debit.ToString("N0", Idr) : "-")</td>
+                                        <td class="text-end text-danger">@(row.Credit > 0 ? row.Credit.ToString("N0", Idr) : "-")</td>
                                     </tr>
                                 }
                             }
@@ -86,8 +86,8 @@
                         <tfoot>
                             <tr class="border-top border-secondary fw-bold">
                                 <td colspan="3" class="text-end">Total</td>
-                                <td class="text-end text-success">@TotalDebit.ToString("N2")</td>
-                                <td class="text-end text-danger">@TotalCredit.ToString("N2")</td>
+                                <td class="text-end text-success">@TotalDebit.ToString("N0", Idr)</td>
+                                <td class="text-end text-danger">@TotalCredit.ToString("N0", Idr)</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -112,6 +112,7 @@
 </div>
 
 @code {
+    private static readonly CultureInfo Idr = new("id-ID");
     [Parameter] public Guid UserId { get; set; }
     [Parameter] public bool IncludeAdjusting { get; set; }
 
