@@ -1,7 +1,10 @@
 @model AumoFinance.ViewModels.DocumentIndexViewModel
 
 @{
-    ViewData["Title"] = "Economic Documents & Analytics";
+    ViewData["Title"] = "Economic Documents & Cloud Repository";
+    // Hitung persentase penggunaan storage (asumsi kuota cloud 15 GB)
+    double storageQuotaMB = 15360; // 15 GB
+    double storagePercent = Math.Min(100, Math.Round((Model.TotalStorageMB / storageQuotaMB) * 100, 1));
 }
 
 <div class="container-fluid py-4">
@@ -9,16 +12,21 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="h4 text-dark mb-1">
-                <i class="bi bi-file-earmark-text me-2"></i> Document Repository & Intelligence
+                <i class="bi bi-cloud-arrow-up text-primary me-2"></i> Document Repository & Cloud Storage
             </h2>
-            <p class="text-muted small mb-0">System metrics, financial records, and economic documentation repository</p>
+            <p class="text-muted small mb-0">System metrics, financial records, and cloud file explorer</p>
         </div>
-        <a asp-action="Create" class="btn btn-primary btn-sm">
-            <i class="bi bi-upload me-1"></i> Upload Document
-        </a>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newFolderModal">
+                <i class="bi bi-folder-plus me-1"></i> New Folder
+            </button>
+            <a asp-action="Create" class="btn btn-primary btn-sm shadow-sm">
+                <i class="bi bi-upload me-1"></i> Upload File
+            </a>
+        </div>
     </div>
 
-    <!-- ROW 1: DOCUMENT METRICS -->
+    <!-- ROW 1: DOCUMENT & CLOUD METRICS -->
     <div class="row g-3 mb-3">
         <div class="col-xl-3 col-md-6">
             <div class="card border-0 shadow-sm bg-body rounded p-3 h-100">
@@ -35,17 +43,23 @@
             </div>
         </div>
 
+        <!-- CLOUD STORAGE METER -->
         <div class="col-xl-3 col-md-6">
             <div class="card border-0 shadow-sm bg-body rounded p-3 h-100">
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center mb-2">
                     <div class="badge bg-success-subtle text-success p-3 rounded-circle me-3">
-                        <i class="bi bi-hdd-network fs-5"></i>
+                        <i class="bi bi-cloud-check fs-5"></i>
                     </div>
-                    <div>
-                        <div class="text-muted small">Storage Consumption</div>
-                        <div class="fw-bold fs-5 text-dark">@Model.TotalStorageMB MB</div>
-                        <div class="text-secondary" style="font-size: 0.75rem;">Secure Server Storage</div>
+                    <div class="w-100">
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span>Cloud Storage</span>
+                            <span class="fw-bold text-dark">@storagePercent%</span>
+                        </div>
+                        <div class="fw-bold fs-6 text-dark">@Model.TotalStorageMB MB / 15 GB</div>
                     </div>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: @storagePercent%;" aria-valuenow="@storagePercent" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
             </div>
         </div>
@@ -124,81 +138,271 @@
         </div>
     }
 
-    <!-- FILTER & SEARCH BAR -->
-    <div class="card shadow-sm border-0 mb-3">
-        <div class="card-body py-2 px-3">
-            <form method="get" asp-action="Index" class="row g-2 align-items-center">
-                <div class="col-md-5">
-                    <input type="text" name="searchString" class="form-control form-control-sm" placeholder="Search by title or reference number..." />
-                </div>
-                <div class="col-md-4">
-                    <select name="category" class="form-select form-control-sm">
-                        <option value="">-- All Categories --</option>
-                        <option value="Invoice">Invoice</option>
-                        <option value="Receipt">Receipt</option>
-                        <option value="Bank Statement">Bank Statement</option>
-                        <option value="Tax Return">Tax Return</option>
-                        <option value="Contract">Contract</option>
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex gap-1">
-                    <button type="submit" class="btn btn-sm btn-secondary w-100">
-                        <i class="bi bi-search"></i> Filter
-                    </button>
-                    <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Reset</a>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- TAB NAVIGATION: TABLE VS CLOUD EXPLORER -->
+    <ul class="nav nav-tabs border-0 mb-3" id="docTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-medium" id="explorer-tab" data-bs-toggle="tab" data-bs-target="#explorer-pane" type="button" role="tab">
+                <i class="bi bi-hdd-stack me-2"></i>Cloud File Explorer
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-medium" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-pane" type="button" role="tab">
+                <i class="bi bi-table me-2"></i>All Documents Table
+            </button>
+        </li>
+    </ul>
 
-    <!-- DOCUMENT TABLE -->
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-secondary small">
-                        <tr>
-                            <th class="ps-4">Document Title</th>
-                            <th>Category</th>
-                            <th>Ref Number</th>
-                            <th>Date</th>
-                            <th>Size</th>
-                            <th class="text-end pe-4">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        @if (!Model.Documents.Any())
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">
-                                    No documentation records found.
-                                </td>
-                            </tr>
-                        }
-                        else
-                        {
-                            @foreach (var item in Model.Documents)
+    <div class="tab-content" id="docTabsContent">
+        
+        <!-- PANE 1: CLOUD FILE EXPLORER -->
+        <div class="tab-pane fade show active" id="explorer-pane" role="tabpanel">
+            <div class="row g-3">
+                <!-- SIDEBAR NAV FOR CLOUD -->
+                <div class="col-lg-3">
+                    <div class="card border-0 shadow-sm p-3">
+                        <div class="list-group list-group-flush small">
+                            <a href="#" class="list-group-item list-group-item-action border-0 active rounded mb-1">
+                                <i class="bi bi-cloud-fill me-2"></i> My Cloud Drive
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action border-0 rounded mb-1">
+                                <i class="bi bi-folder-symlink me-2"></i> Shared with Me
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action border-0 rounded mb-1">
+                                <i class="bi bi-star me-2"></i> Starred
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action border-0 rounded mb-1">
+                                <i class="bi bi-trash me-2"></i> Trash
+                            </a>
+                        </div>
+                        <hr class="my-3 text-muted" />
+                        <div class="px-2">
+                            <span class="text-muted extra-small d-block mb-2">STORAGE PROVIDER</span>
+                            <div class="d-flex align-items-center text-success small">
+                                <i class="bi bi-check-circle-fill me-2"></i> Cloud Sync Active
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILE EXPLORER MAIN CONTENT -->
+                <div class="col-lg-9">
+                    <div class="card border-0 shadow-sm p-3 mb-3">
+                        <!-- BREADCRUMB & TOOLBAR -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb mb-0 small">
+                                    <li class="breadcrumb-item"><a href="#" class="text-decoration-none"><i class="bi bi-house-door"></i> Drive</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Financial Documents</li>
+                                </ol>
+                            </nav>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary active"><i class="bi bi-grid-fill"></i></button>
+                                <button type="button" class="btn btn-outline-secondary"><i class="bi bi-list-task"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- FOLDERS SECTION -->
+                        <h6 class="text-muted small fw-bold mb-2">FOLDERS</h6>
+                        <div class="row g-2 mb-4">
+                            <div class="col-md-4 col-sm-6">
+                                <div class="card border shadow-none rounded p-2 hover-shadow cursor-pointer">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-folder-fill fs-3 text-warning me-2"></i>
+                                        <div class="text-truncate">
+                                            <div class="fw-medium text-dark small">Invoices & Receipts</div>
+                                            <div class="text-muted extra-small">24 files</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="card border shadow-none rounded p-2 hover-shadow cursor-pointer">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-folder-fill fs-3 text-warning me-2"></i>
+                                        <div class="text-truncate">
+                                            <div class="fw-medium text-dark small">Tax Returns 2026</div>
+                                            <div class="text-muted extra-small">12 files</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-6">
+                                <div class="card border shadow-none rounded p-2 hover-shadow cursor-pointer">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-folder-fill fs-3 text-warning me-2"></i>
+                                        <div class="text-truncate">
+                                            <div class="fw-medium text-dark small">Legal Contracts</div>
+                                            <div class="text-muted extra-small">8 files</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FILES GRID SECTION -->
+                        <h6 class="text-muted small fw-bold mb-2">FILES</h6>
+                        <div class="row g-3">
+                            @if (!Model.Documents.Any())
                             {
-                                <tr>
-                                    <td class="ps-4 fw-medium">
-                                        @item.Title <br />
-                                        <small class="text-muted fw-normal">@item.FileName</small>
-                                    </td>
-                                    <td><span class="badge bg-secondary">@item.Category</span></td>
-                                    <td>@(string.IsNullOrEmpty(item.ReferenceNumber) ? "-" : item.ReferenceNumber)</td>
-                                    <td>@item.UploadDate.ToString("dd MMM yyyy")</td>
-                                    <td>@Math.Round((double)item.FileSize / 1024, 1) KB</td>
-                                    <td class="text-end pe-4">
-                                        <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary" title="Download">
-                                            <i class="bi bi-download"></i>
-                                        </a>
-                                    </td>
-                                </tr>
+                                <div class="col-12 text-center py-5 text-muted">
+                                    <i class="bi bi-cloud-slash fs-1 d-block mb-2"></i>
+                                    No cloud files found in this repository.
+                                </div>
                             }
-                        }
-                    </tbody>
-                </table>
+                            else
+                            {
+                                @foreach (var item in Model.Documents)
+                                {
+                                    <div class="col-md-4 col-sm-6">
+                                        <div class="card border h-100 shadow-none hover-card">
+                                            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                                                <div class="d-flex align-items-start justify-content-between mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        @if (item.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                                        {
+                                                            <i class="bi bi-file-earmark-pdf-fill fs-2 text-danger me-2"></i>
+                                                        }
+                                                        else if (item.FileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) || item.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                                                        {
+                                                            <i class="bi bi-file-earmark-excel-fill fs-2 text-success me-2"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi bi-file-earmark-text-fill fs-2 text-primary me-2"></i>
+                                                        }
+                                                        <div class="text-truncate" style="max-width: 140px;">
+                                                            <span class="fw-medium text-dark small d-block text-truncate" title="@item.Title">@item.Title</span>
+                                                            <span class="text-muted extra-small">@item.Category</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                                            <i class="bi bi-three-dots-vertical"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu dropdown-menu-end small">
+                                                            <li><a class="dropdown-menu-item dropdown-item" asp-action="Download" asp-route-id="@item.Id"><i class="bi bi-download me-2"></i>Download</a></li>
+                                                            <li><a class="dropdown-menu-item dropdown-item" href="#"><i class="bi bi-share me-2"></i>Share Link</a></li>
+                                                            <li><hr class="dropdown-divider"></li>
+                                                            <li><a class="dropdown-menu-item dropdown-item text-danger" href="#"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top text-muted extra-small">
+                                                    <span>@item.UploadDate.ToString("dd MMM yyyy")</span>
+                                                    <span>@Math.Round((double)item.FileSize / 1024, 1) KB</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- PANE 2: ORIGINAL TABLE VIEW -->
+        <div class="tab-pane fade" id="table-pane" role="tabpanel">
+            <!-- FILTER & SEARCH BAR -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-body py-2 px-3">
+                    <form method="get" asp-action="Index" class="row g-2 align-items-center">
+                        <div class="col-md-5">
+                            <input type="text" name="searchString" class="form-control form-control-sm" placeholder="Search by title or reference number..." />
+                        </div>
+                        <div class="col-md-4">
+                            <select name="category" class="form-select form-control-sm">
+                                <option value="">-- All Categories --</option>
+                                <option value="Invoice">Invoice</option>
+                                <option value="Receipt">Receipt</option>
+                                <option value="Bank Statement">Bank Statement</option>
+                                <option value="Tax Return">Tax Return</option>
+                                <option value="Contract">Contract</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex gap-1">
+                            <button type="submit" class="btn btn-sm btn-secondary w-100">
+                                <i class="bi bi-search"></i> Filter
+                            </button>
+                            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- DOCUMENT TABLE -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-secondary small">
+                                <tr>
+                                    <th class="ps-4">Document Title</th>
+                                    <th>Category</th>
+                                    <th>Ref Number</th>
+                                    <th>Date</th>
+                                    <th>Size</th>
+                                    <th class="text-end pe-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border-top-0">
+                                @if (!Model.Documents.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No documentation records found.
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var item in Model.Documents)
+                                    {
+                                        <tr>
+                                            <td class="ps-4 fw-medium">
+                                                @item.Title <br />
+                                                <small class="text-muted fw-normal">@item.FileName</small>
+                                            </td>
+                                            <td><span class="badge bg-secondary">@item.Category</span></td>
+                                            <td>@(string.IsNullOrEmpty(item.ReferenceNumber) ? "-" : item.ReferenceNumber)</td>
+                                            <td>@item.UploadDate.ToString("dd MMM yyyy")</td>
+                                            <td>@Math.Round((double)item.FileSize / 1024, 1) KB</td>
+                                            <td class="text-end pe-4">
+                                                <a asp-action="Download" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary" title="Download">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
+
+<!-- STYLES KHUSUS FILE EXPLORER -->
+<style>
+    .extra-small {
+        font-size: 0.725rem;
+    }
+    .hover-shadow:hover {
+        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075)!important;
+        background-color: var(--bs-tertiary-bg);
+    }
+    .hover-card {
+        transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .hover-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .25rem .5rem rgba(0,0,0,.05)!important;
+    }
+    .cursor-pointer {
+        cursor: pointer;
+    }
+</style>
