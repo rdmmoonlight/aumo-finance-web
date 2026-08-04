@@ -1,9 +1,12 @@
 @using System.Security.Claims
+
 @{
     ViewData["Title"] = "Upload Document";
     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
     var uploadedByName = User.Identity?.Name ?? "System";
 }
 
-<component type="typeof(AumoFinance.Components.DocumentUploadPage)" render-mode="ServerPrerendered"
-           param-UserId="@userId" param-UploadedByName="@uploadedByName" />
+<component type="typeof(AumoFinance.Components.DocumentUploadPage)" 
+           render-mode="ServerPrerendered"
+           param-UserId="@userId" 
+           param-UploadedByName="@uploadedByName" />

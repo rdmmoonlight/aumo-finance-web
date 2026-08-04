@@ -22,7 +22,7 @@
 
     <div class="row g-4">
         <!-- ============================================= -->
-        <!-- FORM                                            -->
+        <!-- FORM                                          -->
         <!-- ============================================= -->
         <div class="col-12 col-xl-8">
             <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
@@ -65,7 +65,7 @@
                                             }
                                         </span>
                                         <span class="text-secondary small">
-                                            Reuse the existing Cash, Bank, and Retained Earnings accounts. Balances carry forward automatically — no new journal entry needed.
+                                            Reuse existing accounts. Balances carry forward automatically from closed ledger.
                                         </span>
                                         @if (!Model.HasExistingPermanentAccounts)
                                         {
@@ -81,7 +81,7 @@
                                     <span>
                                         <span class="fw-semibold d-block">Register new permanent accounts</span>
                                         <span class="text-secondary small">
-                                            For a brand-new setup with no accounting history yet. Creates Cash, Bank, and Retained Earnings in the Chart of Accounts and posts the opening balances.
+                                            For a brand-new setup with no accounting history yet.
                                         </span>
                                     </span>
                                 </label>
@@ -97,7 +97,12 @@
                                         <option value="">Select account...</option>
                                         @foreach (var acc in Model.AvailableCashAndBankAccounts)
                                         {
-                                            <option value="@acc.Id" selected="@(Model.CashAccountId == acc.Id)">@acc.ReferenceNumber - @acc.AccountName</option>
+                                            <option value="@acc.Id" 
+                                                    data-ref="@acc.ReferenceNumber" 
+                                                    data-name="@acc.AccountName" 
+                                                    selected="@(Model.CashAccountId == acc.Id)">
+                                                @acc.ReferenceNumber - @acc.AccountName
+                                            </option>
                                         }
                                     </select>
                                 </div>
@@ -107,7 +112,12 @@
                                         <option value="">Select account...</option>
                                         @foreach (var acc in Model.AvailableCashAndBankAccounts)
                                         {
-                                            <option value="@acc.Id" selected="@(Model.BankAccountId == acc.Id)">@acc.ReferenceNumber - @acc.AccountName</option>
+                                            <option value="@acc.Id" 
+                                                    data-ref="@acc.ReferenceNumber" 
+                                                    data-name="@acc.AccountName" 
+                                                    selected="@(Model.BankAccountId == acc.Id)">
+                                                @acc.ReferenceNumber - @acc.AccountName
+                                            </option>
                                         }
                                     </select>
                                 </div>
@@ -117,13 +127,18 @@
                                         <option value="">Select account...</option>
                                         @foreach (var acc in Model.AvailableRetainedEarningsAccounts)
                                         {
-                                            <option value="@acc.Id" selected="@(Model.RetainedEarningsAccountId == acc.Id)">@acc.ReferenceNumber - @acc.AccountName</option>
+                                            <option value="@acc.Id" 
+                                                    data-ref="@acc.ReferenceNumber" 
+                                                    data-name="@acc.AccountName" 
+                                                    selected="@(Model.RetainedEarningsAccountId == acc.Id)">
+                                                @acc.ReferenceNumber - @acc.AccountName
+                                            </option>
                                         }
                                     </select>
                                 </div>
                                 <div class="col-12">
                                     <div class="form-text text-secondary mb-0">
-                                        <i class="bi bi-info-circle"></i> No new Chart of Accounts entries or opening journal will be created. This period simply reuses the ledger already in place.
+                                        <i class="bi bi-lock-fill text-success me-1"></i> Balances are locked from previous period closure and will automatically carry forward to this new cycle.
                                     </div>
                                 </div>
                             </div>
@@ -135,11 +150,11 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold small">Reference</label>
-                                    <input name="CashAccountCode" value="@Model.CashAccountCode" class="form-control" placeholder="e.g., 101" autocomplete="off" />
+                                    <input name="CashAccountCode" id="CashAccountCode" value="@Model.CashAccountCode" class="form-control" placeholder="e.g., 101" autocomplete="off" />
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label fw-semibold small">Account Name</label>
-                                    <input name="CashAccountName" value="@Model.CashAccountName" class="form-control" placeholder="e.g., Cash" autocomplete="off" />
+                                    <input name="CashAccountName" id="CashAccountName" value="@Model.CashAccountName" class="form-control" placeholder="e.g., Cash" autocomplete="off" />
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Opening Balance</label>
@@ -156,11 +171,11 @@
                             <div class="row g-3 mb-4">
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold small">Reference</label>
-                                    <input name="BankAccountCode" value="@Model.BankAccountCode" class="form-control" placeholder="e.g., 102" autocomplete="off" />
+                                    <input name="BankAccountCode" id="BankAccountCode" value="@Model.BankAccountCode" class="form-control" placeholder="e.g., 102" autocomplete="off" />
                                 </div>
                                 <div class="col-md-5">
                                     <label class="form-label fw-semibold small">Account Name</label>
-                                    <input name="BankAccountName" value="@Model.BankAccountName" class="form-control" placeholder="e.g., Bank Central" autocomplete="off" />
+                                    <input name="BankAccountName" id="BankAccountName" value="@Model.BankAccountName" class="form-control" placeholder="e.g., Bank Central" autocomplete="off" />
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Opening Balance</label>
@@ -177,11 +192,11 @@
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <label class="form-label fw-semibold small">Reference</label>
-                                    <input name="RetainedEarningsAccountCode" value="@Model.RetainedEarningsAccountCode" class="form-control" placeholder="e.g., 301" autocomplete="off" />
+                                    <input name="RetainedEarningsAccountCode" id="RetainedEarningsAccountCode" value="@Model.RetainedEarningsAccountCode" class="form-control" placeholder="e.g., 301" autocomplete="off" />
                                 </div>
                                 <div class="col-md-9">
                                     <label class="form-label fw-semibold small">Account Name</label>
-                                    <input name="RetainedEarningsAccountName" value="@Model.RetainedEarningsAccountName" class="form-control" placeholder="e.g., Retained Earnings" autocomplete="off" />
+                                    <input name="RetainedEarningsAccountName" id="RetainedEarningsAccountName" value="@Model.RetainedEarningsAccountName" class="form-control" placeholder="e.g., Retained Earnings" autocomplete="off" />
                                     <div class="form-text text-secondary mt-2">
                                         <i class="bi bi-info-circle"></i> This account will be credited automatically with the sum of the Cash and Bank balances (<strong>Rp <span id="creditPreview">0</span></strong>).
                                     </div>
@@ -202,35 +217,41 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- SIDEBAR: Existing Chart of Accounts Reference   -->
+        <!-- SIDEBAR: Existing Permanent Accounts Reference -->
         <!-- ============================================= -->
         <div class="col-12 col-xl-4">
             <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary h-100">
                 <div class="card-header bg-transparent border-bottom py-3 px-4">
                     <h6 class="fw-bold mb-0 text-body-emphasis">
-                        <i class="bi bi-card-list me-2 text-secondary"></i> Existing Chart of Accounts
+                        <i class="bi bi-shield-lock me-2 text-primary"></i> Existing Permanent Accounts
                     </h6>
-                    <small class="text-secondary">Reference numbers already in use.</small>
+                    <small class="text-secondary">Balance Sheet accounts (Assets, Liabilities, Equity) carrying forward.</small>
                 </div>
                 <div class="card-body p-0" style="max-height: 640px; overflow-y: auto;">
-                    @if (Model.ExistingAccounts != null && Model.ExistingAccounts.Any())
+                    @if (Model.PermanentAccounts != null && Model.PermanentAccounts.Any())
                     {
                         <table class="table table-sm table-hover align-middle mb-0">
                             <thead class="table-light sticky-top">
                                 <tr>
                                     <th class="ps-3" style="width: 70px;">Ref</th>
                                     <th>Account Name</th>
-                                    <th class="text-end pe-3">Type</th>
+                                    <th>Type</th>
+                                    <th class="text-end pe-3">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var acc in Model.ExistingAccounts)
+                                @foreach (var acc in Model.PermanentAccounts)
                                 {
                                     <tr>
                                         <td class="ps-3 fw-semibold">@acc.ReferenceNumber</td>
                                         <td>@acc.AccountName</td>
+                                        <td>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">@acc.Type</span>
+                                        </td>
                                         <td class="text-end pe-3">
-                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle small">@acc.Type</span>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle small">
+                                                <i class="bi bi-lock-fill me-1"></i>Carried
+                                            </span>
                                         </td>
                                     </tr>
                                 }
@@ -241,7 +262,7 @@
                     {
                         <div class="text-center text-secondary py-5 px-3">
                             <i class="bi bi-inbox mb-2 d-block" style="font-size: 2rem;"></i>
-                            <small>No accounts registered yet. The three accounts created below will be the first entries in your Chart of Accounts.</small>
+                            <small>No permanent accounts registered yet.</small>
                         </div>
                     }
                 </div>
@@ -264,6 +285,39 @@
         const panelCreateNew = document.getElementById("panelCreateNew");
         const creditPreviewEl = document.getElementById("creditPreview");
 
+        const selCash = document.getElementById("selCashAccountId");
+        const selBank = document.getElementById("selBankAccountId");
+        const selRetained = document.getElementById("selRetainedEarningsAccountId");
+
+        const inputCashCode = document.getElementById("CashAccountCode");
+        const inputCashName = document.getElementById("CashAccountName");
+        const inputBankCode = document.getElementById("BankAccountCode");
+        const inputBankName = document.getElementById("BankAccountName");
+        const inputRetainedCode = document.getElementById("RetainedEarningsAccountCode");
+        const inputRetainedName = document.getElementById("RetainedEarningsAccountName");
+
+        function syncFieldsFromDropdowns() {
+            if (!modeLoadExisting.checked) return;
+
+            const optCash = selCash.options[selCash.selectedIndex];
+            if (optCash && optCash.value) {
+                inputCashCode.value = optCash.getAttribute("data-ref") || "";
+                inputCashName.value = optCash.getAttribute("data-name") || "";
+            }
+
+            const optBank = selBank.options[selBank.selectedIndex];
+            if (optBank && optBank.value) {
+                inputBankCode.value = optBank.getAttribute("data-ref") || "";
+                inputBankName.value = optBank.getAttribute("data-name") || "";
+            }
+
+            const optRetained = selRetained.options[selRetained.selectedIndex];
+            if (optRetained && optRetained.value) {
+                inputRetainedCode.value = optRetained.getAttribute("data-ref") || "";
+                inputRetainedName.value = optRetained.getAttribute("data-name") || "";
+            }
+        }
+
         function togglePanels() {
             const usingExisting = modeLoadExisting.checked;
 
@@ -272,13 +326,19 @@
 
             panelLoadExisting.querySelectorAll("select").forEach(el => el.disabled = !usingExisting);
             panelCreateNew.querySelectorAll("input").forEach(el => el.disabled = usingExisting);
+
+            if (usingExisting) {
+                syncFieldsFromDropdowns();
+            }
         }
 
         modeLoadExisting.addEventListener("change", togglePanels);
         modeCreateNew.addEventListener("change", togglePanels);
-        togglePanels();
 
-        // --- Thousands-separator formatting (Create New panel) ---
+        selCash.addEventListener("change", syncFieldsFromDropdowns);
+        selBank.addEventListener("change", syncFieldsFromDropdowns);
+        selRetained.addEventListener("change", syncFieldsFromDropdowns);
+
         function formatNumber(value) {
             if (!value) return "";
             let cleanValue = value.replace(/\D/g, "");
@@ -317,6 +377,7 @@
             }
         });
 
+        togglePanels();
         updateCreditPreview();
     });
 </script>

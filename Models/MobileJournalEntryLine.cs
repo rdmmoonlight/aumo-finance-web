@@ -1,36 +1,25 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+namespace AumoFinance.Views;
 
-namespace AumoFinance.Models
+public partial class TopBarView : ContentView
 {
-    // Baris jurnal untuk MobileJournalEntry Mode = "Manual". Akun sudah
-    // dipilih langsung oleh pengguna di aplikasi Android; disimpan di sini
-    // dulu (bukan JournalEntryLines) sampai diverifikasi/disetujui di web.
-    public class MobileJournalEntryLine
+    public TopBarView()
     {
-        public int Id { get; set; }
+        InitializeComponent();
+    }
 
-        [Required]
-        public int MobileJournalEntryId { get; set; }
+    public string PeriodText
+    {
+        get => PeriodLabel.Text;
+        set => PeriodLabel.Text = value;
+    }
 
-        [ForeignKey(nameof(MobileJournalEntryId))]
-        public MobileJournalEntry? MobileJournalEntry { get; set; }
-
-        [Required]
-        public int AccountId { get; set; }
-
-        [ForeignKey(nameof(AccountId))]
-        public ChartOfAccount? Account { get; set; }
-
-        [StringLength(250)]
-        public string? LineDescription { get; set; }
-
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Debit { get; set; }
-
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Credit { get; set; }
-
-        public int LineOrder { get; set; }
+    // Mengubah indikator badge (misal: hijau untuk terhubung)
+    public void SetSyncStatus(bool isSuccess)
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            SyncBadge.BackgroundColor = isSuccess ? Color.FromArgb("#10B981") : Color.FromArgb("#EF4444");
+            SyncBadge.Stroke = isSuccess ? Color.FromArgb("#10B981") : Color.FromArgb("#EF4444");
+        });
     }
 }
