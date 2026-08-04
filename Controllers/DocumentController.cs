@@ -178,7 +178,7 @@ public class DocumentController : Controller
                 {
                     // 1. Upload ke Cloudinary via Service
                     var (publicId, fileUrl, fileSize) = await _cloudStorageService.UploadFileAsync(
-                        model.UploadedFile, 
+                        model.UploadedFile,
                         folderName: "aumo_finance_docs"
                     );
 
@@ -234,8 +234,8 @@ public class DocumentController : Controller
     {
         var userId = this.CurrentUserId();
         var document = await _context.EconomicDocuments.FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
-        
-        if (document == null || string.IsNullOrEmpty(document.FilePath)) 
+
+        if (document == null || string.IsNullOrEmpty(document.FilePath))
             return NotFound();
 
         // Karena FilePath menyimpan URL dari Cloudinary, langsung redirect pengguna ke CDN Cloudinary

@@ -29,7 +29,7 @@ namespace AumoFinance.Services
                 throw new ArgumentException("File tidak boleh kosong.");
 
             using var stream = file.OpenReadStream();
-            
+
             // Cloudinary menggunakan RawUploadParams untuk dokumen non-gambar (PDF, XLSX, DOCX, dll.)
             var uploadParams = new RawUploadParams
             {
