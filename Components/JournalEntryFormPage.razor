@@ -1,0 +1,483 @@
+@using AumoFinance.Models
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="container-fluid py-4 px-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            @if (IsEdit)
+            {
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-pencil-square me-2 text-warning"></i> Edit Journal Entry
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-2">@referenceNumber</span>
+                </h2>
+                <p class="text-secondary mb-0">Update this double-entry transaction for Aumo Finance.</p>
+            }
+            else
+            {
+                <h2 class="fw-bold text-body-emphasis mb-1"><i class="bi bi-journal-plus me-2 text-warning"></i> Create Journal Entry</h2>
+                <p class="text-secondary mb-0">Record double-entry financial transactions or adjusting entries for Aumo Finance.</p>
+            }
+        </div>
+        <div>
+            <a href="/GeneralJournal" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Journal
+            </a>
+        </div>
+    </div>
+
+    @if (successMessage != null)
+    {
+        <div class="alert alert-success shadow-sm py-2">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+        </div>
+    }
+
+    @if (validationErrors.Any())
+    {
+        <div class="alert alert-danger shadow-sm py-2">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <ul class="mb-0 small fw-semibold">
+                @foreach (var error in validationErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+
+    @if (lockedMessage != null)
+    {
+        <div class="alert alert-warning shadow-sm py-2">
+            <i class="bi bi-lock-fill me-2"></i>@lockedMessage
+            <a href="/GeneralJournal" class="alert-link ms-1">Back to General Journal</a>
+        </div>
+    }
+    else
+    {
+        <!-- Transaction Header Metadata -->
+        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    @if (IsEdit)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Reference No.</label>
+                            <input type="text" class="form-control bg-body-secondary fw-semibold" value="@referenceNumber" readonly tabindex="-1" />
+                        </div>
+                    }
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Journal Type</label>
+                        <select class="form-select fw-semibold" @bind="journalType">
+                            <option value="General">General Journal (GJ)</option>
+                            <option value="Adjusting">Adjusting Entry (AJE)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Transaction Date</label>
+                        <input type="date" lang="id-ID" class="form-control" required
+                               value="@entryDate.ToString("yyyy-MM-dd")"
+                               @onchange="@(e => entryDate = DateTime.Parse((string)e.Value!))" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Journal Lines Table -->
+        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                <h5 class="mb-0 fw-bold text-body-emphasis"><i class="bi bi-list-task me-2 text-warning"></i> Journal Lines</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" @onclick="AddLine">
+                    <i class="bi bi-plus-lg me-1"></i> Add Line
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 10%;" class="ps-4">Ref No.</th>
+                                <th style="width: 25%;">Account Name</th>
+                                <th style="width: 25%;">Description</th>
+                                <th style="width: 15%;" class="text-end">Debit</th>
+                                <th style="width: 15%;" class="text-end">Credit</th>
+                                <th style="width: 10%;" class="text-center pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            @foreach (var line in lines)
+                            {
+                                var refNumber = availableAccounts.FirstOrDefault(a => a.Id == line.AccountId)?.ReferenceNumber;
+                                <tr>
+                                    <td class="ps-4">
+                                        <input type="text" class="form-control text-center bg-body-secondary" readonly tabindex="-1"
+                                               placeholder="---" value="@(refNumber?.ToString() ?? "")" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select" @bind="line.AccountId">
+                                            <option value="0" disabled>Select Account...</option>
+                                            @foreach (var acc in availableAccounts)
+                                            {
+                                                <option value="@acc.Id">@acc.AccountName</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="position-relative">
+                                        <input type="text" class="form-control" placeholder="Note..." autocomplete="off"
+                                               value="@line.LineDescription"
+                                               @oninput="@(e => OnDescriptionInput(line, (string?)e.Value))" />
+                                        @if (line.ShowSuggestions && line.Suggestions.Any())
+                                        {
+                                            <div class="list-group shadow-sm" style="position:absolute; z-index:1060; top:100%; left:0; width:100%; max-height:220px; overflow-y:auto;">
+                                                @foreach (var suggestion in line.Suggestions)
+                                                {
+                                                    <button type="button" class="list-group-item list-group-item-action small py-1"
+                                                            @onmousedown="@(() => SelectSuggestion(line, suggestion))" @onmousedown:preventDefault="true">
+                                                        @suggestion
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control text-end" placeholder="0"
+                                               @bind="line.Debit" @bind:event="oninput" />
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control text-end" placeholder="0"
+                                               @bind="line.Credit" @bind:event="oninput" />
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLine(line)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light border-top fw-bold">
+                            <tr>
+                                <td colspan="3" class="text-end py-3">Total Balance:</td>
+                                <td class="text-end text-success fs-6 py-3">@TotalDebit.ToString("N0", CultureInfo)</td>
+                                <td class="text-end text-danger fs-6 py-3">@TotalCredit.ToString("N0", CultureInfo)</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end pb-3 border-bottom-0">Status:</td>
+                                <td colspan="2" class="text-center pb-3 border-bottom-0">
+                                    @if (IsBalanced)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2"><i class="bi bi-check-circle me-1"></i> Balanced</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2"><i class="bi bi-exclamation-triangle me-1"></i> Unbalanced (@Math.Abs(TotalDebit - TotalCredit).ToString("N0", CultureInfo))</span>
+                                    }
+                                </td>
+                                <td class="border-bottom-0"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Action Controls -->
+        <div class="d-flex justify-content-end gap-2">
+            @if (IsEdit)
+            {
+                <a href="/GeneralJournal" class="btn btn-outline-secondary px-4">Cancel</a>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-secondary px-4" @onclick="ResetForm">Reset Form</button>
+            }
+            <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" disabled="@(!IsBalanced)" @onclick="HandleSubmit">
+                <i class="bi bi-save me-1"></i> @(IsEdit ? "Save Changes" : "Post Journal Entry")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+    [Parameter] public int? EntryId { get; set; }
+
+    private static readonly CultureInfo CultureInfo = new("id-ID");
+
+    private bool IsEdit => EntryId.HasValue;
+
+    private List<LineItem> lines = new();
+    private List<ChartOfAccount> availableAccounts = new();
+    private string journalType = "General";
+    private DateTime entryDate = DateTime.Today;
+    private string referenceNumber = string.Empty;
+    private string? successMessage;
+    private string? lockedMessage;
+    private List<string> validationErrors = new();
+
+    private decimal TotalDebit => lines.Sum(l => l.Debit ?? 0);
+    private decimal TotalCredit => lines.Sum(l => l.Credit ?? 0);
+    private bool IsBalanced => TotalDebit > 0 && TotalCredit > 0 && TotalDebit == TotalCredit;
+
+    protected override async Task OnInitializedAsync()
+    {
+        availableAccounts = await ActiveAccountsAsync();
+
+        if (IsEdit)
+        {
+            var entry = await DbContext.JournalEntries
+                .Include(j => j.Lines)
+                .FirstOrDefaultAsync(j => j.Id == EntryId!.Value && j.UserId == UserId);
+
+            if (entry == null)
+            {
+                lockedMessage = "Journal entry not found.";
+                return;
+            }
+
+            var closedPeriods = await DbContext.Periods.Where(p => p.UserId == UserId && p.IsClosed).ToListAsync();
+            if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods))
+            {
+                lockedMessage = $"Journal entry {entry.ReferenceNumber} belongs to a closed period and cannot be edited. View it from the Periods page instead.";
+                return;
+            }
+
+            referenceNumber = entry.ReferenceNumber;
+            journalType = entry.JournalType;
+            entryDate = entry.EntryDate;
+            lines = entry.Lines
+                .OrderBy(l => l.LineOrder)
+                .Select(l => new LineItem
+                {
+                    AccountId = l.AccountId,
+                    LineDescription = l.LineDescription,
+                    Debit = l.Debit == 0 ? null : l.Debit,
+                    Credit = l.Credit == 0 ? null : l.Credit
+                }).ToList();
+        }
+        else
+        {
+            ResetForm();
+        }
+    }
+
+    private void ResetForm()
+    {
+        journalType = "General";
+        entryDate = DateTime.Today;
+        lines = new List<LineItem> { new LineItem(), new LineItem() };
+        validationErrors.Clear();
+    }
+
+    private void AddLine() => lines.Add(new LineItem());
+
+    private async Task RemoveLine(LineItem line)
+    {
+        if (lines.Count <= 2)
+        {
+            await JS.InvokeVoidAsync("alert", "A journal entry must have at least two line items (Debit & Credit).");
+            return;
+        }
+        lines.Remove(line);
+    }
+
+    private void OnDescriptionInput(LineItem line, string? value)
+    {
+        line.LineDescription = value;
+        line.SearchVersion++;
+        var myVersion = line.SearchVersion;
+
+        var query = value?.Trim() ?? "";
+        if (query.Length < 2)
+        {
+            line.ShowSuggestions = false;
+            line.Suggestions.Clear();
+            return;
+        }
+
+        _ = DebouncedSearchAsync(line, query, myVersion);
+    }
+
+    private async Task DebouncedSearchAsync(LineItem line, string query, int myVersion)
+    {
+        await Task.Delay(250);
+        if (line.SearchVersion != myVersion) return; // superseded by newer keystroke
+
+        var results = await SearchDescriptionsAsync(query);
+        if (line.SearchVersion != myVersion) return;
+
+        line.Suggestions = results;
+        line.ShowSuggestions = results.Any();
+        StateHasChanged();
+    }
+
+    private void SelectSuggestion(LineItem line, string text)
+    {
+        line.LineDescription = text;
+        line.ShowSuggestions = false;
+    }
+
+    private async Task<List<string>> SearchDescriptionsAsync(string q)
+    {
+        var keyword = q.Trim();
+        return await DbContext.JournalEntryLines
+            .Include(l => l.JournalEntry)
+            .Where(l => l.JournalEntry!.UserId == UserId
+                     && l.LineDescription != null && l.LineDescription != ""
+                     && EF.Functions.ILike(l.LineDescription, $"%{keyword}%"))
+            .GroupBy(l => l.LineDescription)
+            .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => g.Max(l => l.Id))
+            .Select(g => g.Key!)
+            .Take(8)
+            .ToListAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        validationErrors.Clear();
+        successMessage = null;
+
+        var effectiveLines = lines
+            .Where(l => l.AccountId != 0 && ((l.Debit ?? 0) != 0 || (l.Credit ?? 0) != 0))
+            .ToList();
+
+        if (effectiveLines.Count < 2)
+        {
+            validationErrors.Add("A journal entry must have at least two line items.");
+        }
+
+        var totalDebit = effectiveLines.Sum(l => l.Debit ?? 0);
+        var totalCredit = effectiveLines.Sum(l => l.Credit ?? 0);
+        if (totalDebit != totalCredit || totalDebit == 0)
+        {
+            validationErrors.Add("Total debit must equal total credit before posting.");
+        }
+
+        var validAccountIds = (await DbContext.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == UserId).Select(a => a.Id).ToListAsync()).ToHashSet();
+        if (effectiveLines.Any(l => !validAccountIds.Contains(l.AccountId)))
+        {
+            validationErrors.Add("One or more selected accounts are invalid or inactive.");
+        }
+
+        var closedPeriods = await DbContext.Periods.Where(p => p.UserId == UserId && p.IsClosed).ToListAsync();
+
+        if (IsEdit)
+        {
+            var entry = await DbContext.JournalEntries
+                .Include(j => j.Lines)
+                .FirstOrDefaultAsync(j => j.Id == EntryId!.Value && j.UserId == UserId);
+
+            if (entry == null)
+            {
+                lockedMessage = "Journal entry not found.";
+                return;
+            }
+
+            if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods) || PeriodLock.IsDateLocked(entryDate, closedPeriods))
+            {
+                lockedMessage = $"Journal entry {entry.ReferenceNumber} falls within a closed period and cannot be modified.";
+                return;
+            }
+
+            if (validationErrors.Any()) return;
+
+            entry.JournalType = journalType;
+            entry.EntryDate = DateTime.SpecifyKind(entryDate, DateTimeKind.Utc);
+
+            DbContext.JournalEntryLines.RemoveRange(entry.Lines);
+            entry.Lines = effectiveLines.Select((l, index) => new JournalEntryLine
+            {
+                JournalEntryId = entry.Id,
+                AccountId = l.AccountId,
+                LineDescription = l.LineDescription,
+                Debit = l.Debit ?? 0,
+                Credit = l.Credit ?? 0,
+                LineOrder = index
+            }).ToList();
+
+            await DbContext.SaveChangesAsync();
+            Nav.NavigateTo("/GeneralJournal");
+        }
+        else
+        {
+            if (PeriodLock.IsDateLocked(entryDate, closedPeriods))
+            {
+                validationErrors.Add("This date falls within a closed period. Choose a date in an open period.");
+            }
+
+            if (validationErrors.Any()) return;
+
+            var entry = new JournalEntry
+            {
+                UserId = UserId,
+                ReferenceNumber = await GenerateReferenceNumberAsync(journalType),
+                JournalType = journalType,
+                EntryDate = DateTime.SpecifyKind(entryDate, DateTimeKind.Utc),
+                Lines = effectiveLines.Select((l, index) => new JournalEntryLine
+                {
+                    AccountId = l.AccountId,
+                    LineDescription = l.LineDescription,
+                    Debit = l.Debit ?? 0,
+                    Credit = l.Credit ?? 0,
+                    LineOrder = index
+                }).ToList()
+            };
+
+            DbContext.JournalEntries.Add(entry);
+            await DbContext.SaveChangesAsync();
+
+            successMessage = $"Journal entry {entry.ReferenceNumber} has been posted.";
+            ResetForm();
+        }
+    }
+
+    private async Task<string> GenerateReferenceNumberAsync(string type)
+    {
+        var prefix = type == "Adjusting" ? "AJE" : "GJ";
+
+        var lastNumber = await DbContext.JournalEntries
+            .Where(e => e.UserId == UserId && e.ReferenceNumber.StartsWith(prefix + "-"))
+            .OrderByDescending(e => e.Id)
+            .Select(e => e.ReferenceNumber)
+            .FirstOrDefaultAsync();
+
+        var nextSeq = 1;
+        if (lastNumber != null)
+        {
+            var parts = lastNumber.Split('-');
+            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+            {
+                nextSeq = lastSeq + 1;
+            }
+        }
+
+        return $"{prefix}-{nextSeq:D6}";
+    }
+
+    private async Task<List<ChartOfAccount>> ActiveAccountsAsync()
+    {
+        return await DbContext.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == UserId)
+            .OrderBy(a => a.ReferenceNumber)
+            .ToListAsync();
+    }
+
+    private class LineItem
+    {
+        public int AccountId { get; set; }
+        public string? LineDescription { get; set; }
+        public decimal? Debit { get; set; }
+        public decimal? Credit { get; set; }
+
+        public List<string> Suggestions { get; set; } = new();
+        public bool ShowSuggestions { get; set; }
+        public int SearchVersion { get; set; }
+    }
+}
