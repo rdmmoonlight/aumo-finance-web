@@ -26,20 +26,20 @@
 
         <div class="mb-3">
             <label class="form-label">Full Name</label>
-            <InputText class="form-control" @bind-Value="Input.FullName" placeholder="John Doe" />
-            <ValidationMessage For="() => Input.FullName" class="text-danger" />
+            <InputText class="form-control" @bind-Value="Input!.FullName" placeholder="John Doe" />
+            <ValidationMessage For="() => Input!.FullName" class="text-danger" />
         </div>
 
         <div class="mb-3">
             <label class="form-label">Email</label>
-            <InputText class="form-control" @bind-Value="Input.Email" placeholder="name@example.com" />
-            <ValidationMessage For="() => Input.Email" class="text-danger" />
+            <InputText class="form-control" @bind-Value="Input!.Email" placeholder="name@example.com" />
+            <ValidationMessage For="() => Input!.Email" class="text-danger" />
         </div>
 
         <div class="mb-3">
             <label class="form-label">Password</label>
-            <InputText type="password" class="form-control" @bind-Value="Input.Password" />
-            <ValidationMessage For="() => Input.Password" class="text-danger" />
+            <InputText type="password" class="form-control" @bind-Value="Input!.Password" />
+            <ValidationMessage For="() => Input!.Password" class="text-danger" />
         </div>
 
         <button type="submit" class="btn btn-primary w-100" disabled="@isSubmitting">
@@ -61,14 +61,23 @@
 </div>
 
 @code {
+    // Properti nullable TANPA inisialisasi awal (= new()) untuk menghindari error BL0008
     [SupplyParameterFromForm]
-    private RegisterInputModel Input { get; set; } = new();
+    private RegisterInputModel? Input { get; set; }
 
     private string? errorMessage;
     private bool isSubmitting = false;
 
+    protected override void OnInitialized()
+    {
+        // Inisialisasi aman dilakukan di sini
+        Input ??= new();
+    }
+
     private async Task HandleRegisterAsync()
     {
+        if (Input == null) return;
+
         isSubmitting = true;
         errorMessage = null;
 
