@@ -49,7 +49,8 @@ public class DashboardDataService
         var lines = await _db.JournalEntryLines.Include(l => l.JournalEntry).Include(l => l.Account)
             .Where(l => l.JournalEntry != null && l.JournalEntry.UserId == userId && l.JournalEntry.EntryDate <= periodEnd).ToListAsync();
 
-        var accountBalances = accounts.ToDictionary(a => a.Id, a => {
+        var accountBalances = accounts.ToDictionary(a => a.Id, a =>
+        {
             var normalDebit = IsNormalBalanceDebitSafe(a.Type);
             var accountLines = lines.Where(l => l.AccountId == a.Id);
             return normalDebit ? accountLines.Sum(l => l.Debit - l.Credit) : accountLines.Sum(l => l.Credit - l.Debit);
@@ -61,7 +62,8 @@ public class DashboardDataService
 
         var filteredLines = lines.Where(l => l.JournalEntry!.EntryDate >= periodStart && l.JournalEntry!.EntryDate <= periodEnd).ToList();
 
-        decimal SumByType(string type) {
+        decimal SumByType(string type)
+        {
             var ids = accounts.Where(a => a.Type == type).Select(a => a.Id).ToHashSet();
             var normalDebit = IsNormalBalanceDebitSafe(type);
             var relevant = filteredLines.Where(l => ids.Contains(l.AccountId));
@@ -76,7 +78,8 @@ public class DashboardDataService
         DateTime priorEnd = isAnnual ? periodEnd.AddYears(-1) : periodStart.AddDays(-1);
 
         var priorLines = lines.Where(l => l.JournalEntry!.EntryDate >= priorStart && l.JournalEntry!.EntryDate <= priorEnd).ToList();
-        decimal PriorSumByType(string type) {
+        decimal PriorSumByType(string type)
+        {
             var ids = accounts.Where(a => a.Type == type).Select(a => a.Id).ToHashSet();
             var normalDebit = IsNormalBalanceDebitSafe(type);
             var relevant = priorLines.Where(l => ids.Contains(l.AccountId));
@@ -94,7 +97,8 @@ public class DashboardDataService
         var monthly = lines.GroupBy(l => new { l.JournalEntry!.EntryDate.Year, l.JournalEntry!.EntryDate.Month })
             .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month).TakeLast(isAnnual ? 12 : 7).ToList();
 
-        foreach (var g in monthly) {
+        foreach (var g in monthly)
+        {
             newModel.ChartLabels.Add(new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yy"));
             var revIds = accounts.Where(a => a.Type is "OperatingIncome" or "OtherIncome").Select(a => a.Id).ToHashSet();
             var expIds = accounts.Where(a => a.Type is "OperatingExpenses" or "OtherExpenses").Select(a => a.Id).ToHashSet();
@@ -102,19 +106,25 @@ public class DashboardDataService
             newModel.ChartExpenses.Add(g.Where(l => expIds.Contains(l.AccountId)).Sum(l => l.Debit - l.Credit));
         }
 
-        foreach (var acc in accounts.Where(a => a.Type is "OperatingExpenses" or "OtherExpenses")) {
+        foreach (var acc in accounts.Where(a => a.Type is "OperatingExpenses" or "OtherExpenses"))
+        {
             var amount = filteredLines.Where(l => l.AccountId == acc.Id).Sum(l => l.Debit - l.Credit);
-            if (amount != 0) {
+            if (amount != 0)
+            {
                 newModel.ExpenseCategoryLabels.Add(acc.AccountName);
                 newModel.ExpenseCategoryValues.Add(amount);
             }
         }
 
         var keyRoles = new[] { "CashAndEquivalents", "AccountsReceivable", "AccountsPayable" };
-        foreach (var acc in accounts.Where(a => (a.Role != null && keyRoles.Contains(a.Role)) || a.Type == "Equity").OrderBy(a => a.ReferenceNumber).Take(6)) {
-            newModel.MainCoaBalances.Add(new CoaBalanceDto {
-                AccountCode = acc.ReferenceNumber.ToString(), AccountName = acc.AccountName,
-                Category = acc.Type ?? "Other", Balance = accountBalances.GetValueOrDefault(acc.Id)
+        foreach (var acc in accounts.Where(a => (a.Role != null && keyRoles.Contains(a.Role)) || a.Type == "Equity").OrderBy(a => a.ReferenceNumber).Take(6))
+        {
+            newModel.MainCoaBalances.Add(new CoaBalanceDto
+            {
+                AccountCode = acc.ReferenceNumber.ToString(),
+                AccountName = acc.AccountName,
+                Category = acc.Type ?? "Other",
+                Balance = accountBalances.GetValueOrDefault(acc.Id)
             });
         }
 
@@ -126,12 +136,14 @@ public class DashboardDataService
         newModel.CashRunwayMonths = newModel.MonthlyBurnRate > 0 ? (double)Math.Round(newModel.TotalCashAndEquivalents / newModel.MonthlyBurnRate, 1) : 99;
 
         int healthScore = 50;
-        if (newModel.TotalLiabilities > 0) {
+        if (newModel.TotalLiabilities > 0)
+        {
             var quickRatio = newModel.TotalCashAndEquivalents / newModel.TotalLiabilities;
             if (quickRatio >= 1.5m) healthScore += 25;
             else if (quickRatio >= 1.0m) healthScore += 15;
             else if (quickRatio >= 0.5m) healthScore += 5;
-        } else healthScore += 25;
+        }
+        else healthScore += 25;
 
         if (newModel.NetIncome > 0) healthScore += 25;
         else if (newModel.NetIncome < 0) healthScore -= 15;
@@ -140,13 +152,15 @@ public class DashboardDataService
         return newModel;
     }
 
-    private static bool IsNormalBalanceDebitSafe(string? type) {
+    private static bool IsNormalBalanceDebitSafe(string? type)
+    {
         if (string.IsNullOrWhiteSpace(type)) return true;
         try { return AccountClassification.NormalBalanceIsDebit(type); }
         catch { return type is "Assets" or "OperatingExpenses" or "OtherExpenses"; }
     }
 
-    private static decimal? CalcTrend(decimal current, decimal prior) {
+    private static decimal? CalcTrend(decimal current, decimal prior)
+    {
         if (prior == 0) return current == 0 ? 0 : null;
         return Math.Round((current - prior) / Math.Abs(prior) * 100m, 1);
     }
