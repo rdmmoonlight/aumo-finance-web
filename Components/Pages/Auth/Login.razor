@@ -25,7 +25,7 @@
         <div class="alert alert-info">@infoMessage</div>
     }
 
-    <!-- Menggunakan Form Submit standar agar Cookie Identity dapat diset oleh ASP.NET Core -->
+    <!-- Menggunakan Form Submit standar agar Cookie Identity diset oleh ASP.NET Core -->
     <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
         <DataAnnotationsValidator />
         <ValidationSummary class="text-danger" />
@@ -68,9 +68,9 @@
     [SupplyParameterFromQuery(Name = "infoMessage")]
     private string? QueryInfoMessage { get; set; }
 
-    // DIBERSIHKAN: Tanpa '= new()' untuk cegah error BL0008
+    // Gunakan '= default!' untuk mencegah CS8618 & BL0008
     [SupplyParameterFromForm]
-    private LoginInputModel Input { get; set; }
+    private LoginInputModel Input { get; set; } = default!;
 
     private string? successMessage;
     private string? errorMessage;
@@ -78,7 +78,6 @@
 
     protected override void OnInitialized()
     {
-        // Inisialisasi aman jika properti bernilai null saat halaman pertama dimuat
         Input ??= new();
 
         successMessage = QuerySuccessMessage ?? QueryMessage;
