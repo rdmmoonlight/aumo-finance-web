@@ -31,8 +31,8 @@
 
         <div class="mb-3">
             <label for="email" class="form-label">Email Address</label>
-            <InputText id="email" class="form-control" @bind-Value="model.Email" placeholder="name@example.com" />
-            <ValidationMessage For="() => model.Email" class="text-danger" />
+            <InputText id="email" class="form-control" @bind-Value="model!.Email" placeholder="name@example.com" />
+            <ValidationMessage For="() => model!.Email" class="text-danger" />
         </div>
 
         <button type="submit" class="btn btn-primary w-100" disabled="@isSubmitting">
@@ -54,9 +54,9 @@
 </div>
 
 @code {
-    // DIBERSIHKAN: Tanpa '= new()' untuk cegah error BL0008
+    // Diisi Nullable (?) + OnInitialized default instansiasi untuk bebas dari CS8618 & BL0008
     [SupplyParameterFromForm]
-    private ResendVerificationModel model { get; set; }
+    private ResendVerificationModel? model { get; set; }
 
     private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(60);
     private string? statusMessage;
@@ -65,12 +65,14 @@
 
     protected override void OnInitialized()
     {
-        // Inisialisasi aman saat form pertama dipanggil
         model ??= new();
     }
 
     private async Task HandleResendAsync()
     {
+        if (model == null || string.IsNullOrWhiteSpace(model.Email))
+            return;
+
         isSubmitting = true;
         statusMessage = null;
 
