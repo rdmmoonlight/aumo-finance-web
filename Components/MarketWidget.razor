@@ -22,11 +22,11 @@
                     <span class="text-uppercase text-secondary style-label mb-1">USD / IDR</span>
                     <div class="d-flex align-items-center justify-content-center gap-2">
                         <span class="fw-bold style-value text-body-emphasis">
-                            Rp @marketData.Usd?.Price.ToString("N0", new System.Globalization.CultureInfo("id-ID"))
+                            Rp @marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
                         </span>
                         <span class="badge rounded-pill @(marketData.Usd?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
                             <i class="bi @(marketData.Usd?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
-                            @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2")%
+                            @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
                         </span>
                     </div>
                 </div>
@@ -38,11 +38,11 @@
                     <span class="text-uppercase text-secondary style-label mb-1">IDX Composite</span>
                     <div class="d-flex align-items-center justify-content-center gap-2">
                         <span class="fw-bold style-value text-body-emphasis">
-                            @marketData.Ihsg?.Price.ToString("N0", new System.Globalization.CultureInfo("id-ID"))
+                            @marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
                         </span>
                         <span class="badge rounded-pill @(marketData.Ihsg?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
                             <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
-                            @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2")%
+                            @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
                         </span>
                     </div>
                 </div>
