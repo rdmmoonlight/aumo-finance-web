@@ -61,22 +61,14 @@
 </div>
 
 @code {
-    // Nullable + OnInitialized untuk aman dari error CS8618 & BL0008
     [SupplyParameterFromForm]
-    private RegisterInputModel? Input { get; set; }
+    private RegisterInputModel Input { get; set; } = new();
 
     private string? errorMessage;
     private bool isSubmitting = false;
 
-    protected override void OnInitialized()
-    {
-        Input ??= new();
-    }
-
     private async Task HandleRegisterAsync()
     {
-        if (Input == null) return;
-
         isSubmitting = true;
         errorMessage = null;
 
@@ -94,8 +86,6 @@
             if (result.Succeeded)
             {
                 Logger.LogInformation("User created a new account with password.");
-                
-                // Sign in otomatis setelah register
                 await SignInManager.SignInAsync(user, isPersistent: false);
                 Navigation.NavigateTo("/", forceLoad: true);
             }
