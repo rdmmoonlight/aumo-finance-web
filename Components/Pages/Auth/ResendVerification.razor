@@ -54,13 +54,20 @@
 </div>
 
 @code {
+    // DIBERSIHKAN: Tanpa '= new()' untuk cegah error BL0008
     [SupplyParameterFromForm]
-    private ResendVerificationModel model { get; set; } = new();
+    private ResendVerificationModel model { get; set; }
 
     private static readonly TimeSpan ResendCooldown = TimeSpan.FromSeconds(60);
     private string? statusMessage;
     private string alertClass = "alert-info";
     private bool isSubmitting = false;
+
+    protected override void OnInitialized()
+    {
+        // Inisialisasi aman saat form pertama dipanggil
+        model ??= new();
+    }
 
     private async Task HandleResendAsync()
     {
