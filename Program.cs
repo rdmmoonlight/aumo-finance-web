@@ -20,14 +20,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")
     );
 
-    // The model snapshot has drifted from the current model (e.g. the Folders
-    // migration was hand-written without regenerating AppDbContextModelSnapshot.cs).
-    // Left unconfigured, EF Core throws PendingModelChangesWarning as an exception
-    // during Database.Migrate() at startup, which silently aborts ALL pending
-    // migrations on every deploy (caught further below, but nothing gets applied).
-    // Ignoring this specific warning lets genuinely pending migrations still run;
-    // the proper long-term fix is to regenerate the snapshot with `dotnet ef
-    // migrations add` locally so it matches the current model again.
+    // Ignoring this specific warning lets genuinely pending migrations still run
     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
@@ -71,6 +64,9 @@ builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IJournalImportService, JournalImportService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
+
+// DITAMBAHKAN: Pendaftaran DashboardDataService untuk Blazor Component FinancialDashboard
+builder.Services.AddScoped<DashboardDataService>();
 
 // =====================================
 // Blazor Services
@@ -134,9 +130,8 @@ if (!string.IsNullOrWhiteSpace(googleClientId) &&
 var app = builder.Build();
 
 // =====================================
-// AUTOMATIC DATABASE MIGRATION (REVISI BARU)
+// AUTOMATIC DATABASE MIGRATION
 // =====================================
-// Menjalankan migrasi otomatis ke DB saat aplikasi booting di Railway/Production
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
