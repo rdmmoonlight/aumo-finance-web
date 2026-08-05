@@ -1,4 +1,4 @@
-using AumoFinance.Components; // Sesuaikan dengan namespace tempat App.razor lu berada
+using AumoFinance.Components;
 using AumoFinance.Models;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
@@ -12,17 +12,18 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
-// Database - Neon / Railway PostgreSQL
+// Database - PostgreSQL (DbContextFactory & Scoped)
 // =====================================
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     );
-
-    // Ignoring this specific warning lets genuinely pending migrations still run
     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
+
+builder.Services.AddScoped(sp => 
+    sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
 // Data Protection
@@ -49,7 +50,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    // Route disesuaikan dengan halaman Blazor baru
     options.LoginPath = "/auth/login";
     options.AccessDeniedPath = "/auth/login";
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
@@ -62,7 +62,6 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Wajib untuk menyalurkan data User/Claims ke komponen <AuthorizeView> di Blazor
 builder.Services.AddCascadingAuthenticationState();
 
 // =====================================
@@ -76,9 +75,6 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
 builder.Services.AddScoped<DashboardDataService>();
 builder.Services.AddHttpClient();
-
-// opsional: Tetap sediakan ini jika lu masih punya API Controllers murni (tanpa Views)
-builder.Services.AddControllers();
 
 // =====================================
 // Forwarded Headers (Railway / Proxy)
@@ -155,7 +151,7 @@ else
 }
 
 app.UseStaticFiles();
-app.UseAntiforgery(); // Antiforgery middleware wajib untuk form Blazor di .NET 8/9
+app.UseAntiforgery();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -163,11 +159,16 @@ app.UseAuthorization();
 // =====================================
 // Routes Mapping
 // =====================================
-// Mengarahkan Root Entry Point sepenuhnya ke App.razor
+
+// Minimal API Endpoint khusus Logout (Dipanggil form di Sidebar.razor)
+app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/auth/login");
+});
+
+// Entry point utama Blazor Web App
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
-// Tetap dipasang jika lu masih butuh Endpoint REST API (misal buat Mobile / Webhook)
-app.MapControllers();
 
 app.Run();
