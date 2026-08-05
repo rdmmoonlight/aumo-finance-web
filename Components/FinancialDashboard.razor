@@ -17,10 +17,12 @@
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #ffffff !important;
     }
     [data-bs-theme="light"] .glass-card {
         background: rgba(255, 255, 255, 0.85);
         border-color: rgba(0, 0, 0, 0.06) !important;
+        color: #212529 !important;
     }
 
     .glow-hover-success:hover { border-color: rgba(25, 135, 84, 0.4) !important; box-shadow: 0 8px 25px -6px rgba(25, 135, 84, 0.25) !important; transform: translateY(-3px); }
@@ -35,19 +37,6 @@
     .icon-square {
         width: 36px; height: 36px;
         display: flex; align-items: center; justify-content: center;
-    }
-
-    .pulse-dot {
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background-color: #198754;
-        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7);
-        animation: pulse-animation 1.8s infinite;
-    }
-    @@keyframes pulse-animation {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(25, 135, 84, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
     }
 
     .health-circle {
@@ -74,13 +63,13 @@
     .account-item:hover { background-color: rgba(255,255,255,0.04); }
 </style>
 
-<div class="container-fluid px-0">
+<div class="container-fluid px-0 text-white">
     @if (!model.HasSelectedPeriod)
     {
         <div class="text-center py-5 my-5">
             <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 3rem;"></i>
-            <h4 class="fw-bold text-body-emphasis mb-2">No Period Selected</h4>
-            <p class="text-secondary mb-4">
+            <h4 class="fw-bold text-white mb-2">No Period Selected</h4>
+            <p class="text-white-50 mb-4">
                 The Dashboard follows whichever period you're viewing.<br />
                 Go to <strong>Periods</strong> and click <i class="bi bi-eye"></i> on a period to see its data here.
             </p>
@@ -91,59 +80,21 @@
     }
     else
     {
-        <!-- Header -->
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-            <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
-                    <span class="pulse-dot"></span>
-                    <h4 class="fw-bold mb-0">Financial Overview</h4>
-                </div>
-                <p class="text-secondary small mb-0">
-                    Active Period: <span class="fw-semibold text-body">@model.ActivePeriodName</span>
-                    @if (model.ActivePeriodStart.HasValue && model.ActivePeriodEnd.HasValue)
-                    {
-                        <span class="ms-1 opacity-75">
-                            (@model.ActivePeriodStart.Value.ToString("dd MMM yyyy") &ndash; @model.ActivePeriodEnd.Value.ToString("dd MMM yyyy"))
-                        </span>
-                    }
-                    &middot; <i class="bi bi-clock-history me-1"></i> Live updated
-                </p>
-            </div>
-
-            <div class="d-flex flex-wrap align-items-center gap-2">
-                <!-- Monthly vs Annual Switch Toggle -->
-                <div class="btn-group btn-group-sm p-1 bg-body-tertiary border border-opacity-10 rounded-pill shadow-sm" role="group" aria-label="Period Switch">
-                    <button type="button" @onclick='() => SwitchPeriod("monthly")'
-                            class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(periodType == "monthly" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none opacity-75")">
-                        Monthly
-                    </button>
-                    <button type="button" @onclick='() => SwitchPeriod("annual")'
-                            class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(periodType == "annual" ? "btn-primary shadow-sm" : "btn-link text-body text-decoration-none opacity-75")">
-                        Annual
-                    </button>
-                </div>
-
-                <a href="/JournalEntry/Create" class="btn btn-warning btn-sm fw-semibold shadow-sm d-flex align-items-center gap-2 px-3 rounded-3">
-                    <i class="bi bi-plus-lg"></i> New Entry
-                </a>
-                <a href="/Reports/IncomeStatement" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2 px-3 rounded-3">
-                    <i class="bi bi-file-earmark-bar-graph"></i> Report
-                </a>
-            </div>
-        </div>
+        <!-- Header Komponen Terpisah -->
+        <DashboardHeader Model="@model" PeriodType="@periodType" OnPeriodSwitch="SwitchPeriod" />
 
         <!-- Row 1: Predictive & Financial Health Widgets -->
         <div class="row g-3 mb-4">
             <div class="col-12 col-md-6">
                 <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Financial Health Index</span>
+                        <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Financial Health Index</span>
                         <i class="bi bi-activity text-primary fs-5"></i>
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <div class="position-relative d-inline-flex align-items-center justify-content-center">
                             <div class="health-circle" style="--score-deg: @(model.FinancialHealthScore * 3.6)deg;">
-                                <span class="fw-bold fs-4 text-body">@model.FinancialHealthScore</span>
+                                <span class="fw-bold fs-4 text-white">@model.FinancialHealthScore</span>
                             </div>
                         </div>
                         <div>
@@ -161,7 +112,7 @@
                                     <span class="text-warning">Attention Required</span>
                                 }
                             </h6>
-                            <p class="text-secondary fs-8 mb-0">Analyzed from liquidity, debt coverage, and net profit margin.</p>
+                            <p class="text-white-50 fs-8 mb-0">Analyzed from liquidity, debt coverage, and net profit margin.</p>
                         </div>
                     </div>
                 </div>
@@ -170,17 +121,17 @@
             <div class="col-12 col-md-6">
                 <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Cash Runway &amp; Burn Rate</span>
+                        <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Cash Runway &amp; Burn Rate</span>
                         <i class="bi bi-speedometer2 text-warning fs-5"></i>
                     </div>
                     <div class="d-flex justify-content-between align-items-baseline mb-2">
-                        <h4 class="fw-bold mb-0">
+                        <h4 class="fw-bold mb-0 text-white">
                             @(double.IsNaN(model.CashRunwayMonths) || double.IsInfinity(model.CashRunwayMonths) || model.CashRunwayMonths >= 99
                                 ? "∞"
                                 : model.CashRunwayMonths.ToString("0.0"))
-                            <span class="fs-6 text-secondary fw-normal">Months Runway</span>
+                            <span class="fs-6 text-white-50 fw-normal">Months Runway</span>
                         </h4>
-                        <span class="fs-8 text-secondary">Burn: <strong class="text-body">@model.MonthlyBurnRate.ToString("C0", Idr)</strong>/mo</span>
+                        <span class="fs-8 text-white-50">Burn: <strong class="text-white">@model.MonthlyBurnRate.ToString("C0", Idr)</strong>/mo</span>
                     </div>
                     <div class="progress rounded-pill bg-body-tertiary" style="height: 8px;">
                         <div class="progress-bar @(model.CashRunwayMonths > 6 ? "bg-success" : (model.CashRunwayMonths > 3 ? "bg-warning" : "bg-danger")) rounded-pill"
@@ -196,22 +147,22 @@
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3 glow-hover-success">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Cash &amp; Equivalents</span>
+                        <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Cash &amp; Equivalents</span>
                         <div class="icon-square bg-success-subtle text-success rounded-3"><i class="bi bi-wallet2"></i></div>
                     </div>
-                    <h4 class="fw-bold mb-1">@model.TotalCashAndEquivalents.ToString("C0", Idr)</h4>
-                    <div class="small text-secondary fs-8">Liquid Reserves</div>
+                    <h4 class="fw-bold mb-1 text-white">@model.TotalCashAndEquivalents.ToString("C0", Idr)</h4>
+                    <div class="small text-white-50 fs-8">Liquid Reserves</div>
                 </div>
             </div>
 
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3 glow-hover-primary">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Revenue</span>
+                        <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Revenue</span>
                         <div class="icon-square bg-primary-subtle text-primary rounded-3"><i class="bi bi-graph-up-arrow"></i></div>
                     </div>
-                    <h4 class="fw-bold text-primary mb-1">@model.RevenueThisPeriod.ToString("C0", Idr)</h4>
-                    <div class="small @(model.RevenueTrendPercent.HasValue ? (model.RevenueTrendPercent >= 0 ? "text-success" : "text-danger") : "text-secondary") fs-8 fw-semibold">
+                    <h4 class="fw-bold text-white mb-1">@model.RevenueThisPeriod.ToString("C0", Idr)</h4>
+                    <div class="small @(model.RevenueTrendPercent.HasValue ? (model.RevenueTrendPercent >= 0 ? "text-success" : "text-danger") : "text-white-50") fs-8 fw-semibold">
                         @if (model.RevenueTrendPercent.HasValue)
                         {
                             <i class="bi @(model.RevenueTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
@@ -228,11 +179,11 @@
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3 glow-hover-danger">
                     <div class="d-flex align-items-center justify-content-between mb-2">
-                        <span class="text-secondary small fw-semibold text-uppercase tracking-wider">Expenses</span>
+                        <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Expenses</span>
                         <div class="icon-square bg-danger-subtle text-danger rounded-3"><i class="bi bi-arrow-down-left-circle"></i></div>
                     </div>
-                    <h4 class="fw-bold text-danger mb-1">@model.OperatingExpenses.ToString("C0", Idr)</h4>
-                    <div class="small @(model.ExpenseTrendPercent.HasValue ? (model.ExpenseTrendPercent <= 0 ? "text-success" : "text-danger") : "text-secondary") fs-8 fw-semibold">
+                    <h4 class="fw-bold text-white mb-1">@model.OperatingExpenses.ToString("C0", Idr)</h4>
+                    <div class="small @(model.ExpenseTrendPercent.HasValue ? (model.ExpenseTrendPercent <= 0 ? "text-success" : "text-danger") : "text-white-50") fs-8 fw-semibold">
                         @if (model.ExpenseTrendPercent.HasValue)
                         {
                             <i class="bi @(model.ExpenseTrendPercent >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
@@ -252,7 +203,7 @@
                         <span class="small fw-semibold text-white-50 text-uppercase tracking-wider">Net Income</span>
                         <i class="bi bi-shield-check text-warning fs-5"></i>
                     </div>
-                    <h4 class="fw-bold mb-1">@model.NetIncome.ToString("C0", Idr)</h4>
+                    <h4 class="fw-bold mb-1 text-white">@model.NetIncome.ToString("C0", Idr)</h4>
                     <div class="small text-white-50 fs-8 fw-semibold">
                         @if (model.NetIncomeTrendPercent.HasValue)
                         {
@@ -274,8 +225,8 @@
                 <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-secondary small fw-semibold text-uppercase tracking-wider d-block">Total Assets</span>
-                            <h5 class="fw-bold mb-0 mt-1">@model.TotalAssets.ToString("C0", Idr)</h5>
+                            <span class="text-white-50 small fw-semibold text-uppercase tracking-wider d-block">Total Assets</span>
+                            <h5 class="fw-bold mb-0 mt-1 text-white">@model.TotalAssets.ToString("C0", Idr)</h5>
                         </div>
                         <div class="icon-square bg-info-subtle text-info rounded-3 fs-5"><i class="bi bi-building"></i></div>
                     </div>
@@ -285,8 +236,8 @@
                 <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-secondary small fw-semibold text-uppercase tracking-wider d-block">Total Liabilities</span>
-                            <h5 class="fw-bold mb-0 mt-1">@model.TotalLiabilities.ToString("C0", Idr)</h5>
+                            <span class="text-white-50 small fw-semibold text-uppercase tracking-wider d-block">Total Liabilities</span>
+                            <h5 class="fw-bold mb-0 mt-1 text-white">@model.TotalLiabilities.ToString("C0", Idr)</h5>
                         </div>
                         <div class="icon-square bg-warning-subtle text-warning rounded-3 fs-5"><i class="bi bi-credit-card"></i></div>
                     </div>
@@ -300,8 +251,8 @@
                 <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div>
-                            <h6 class="fw-bold mb-0">Financial Trend</h6>
-                            <span class="text-secondary fs-8">Revenue vs Operating Expenses</span>
+                            <h6 class="fw-bold mb-0 text-white">Financial Trend</h6>
+                            <span class="text-white-50 fs-8">Revenue vs Operating Expenses</span>
                         </div>
                         <div class="icon-square bg-primary-subtle text-primary rounded-3">
                             <i class="bi bi-graph-up"></i>
@@ -317,8 +268,8 @@
                 <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
                     <div class="d-flex align-items-center justify-content-between mb-3">
                         <div>
-                            <h6 class="fw-bold mb-0">Expense Composition</h6>
-                            <span class="text-secondary fs-8">Breakdown by Account</span>
+                            <h6 class="fw-bold mb-0 text-white">Expense Composition</h6>
+                            <span class="text-white-50 fs-8">Breakdown by Account</span>
                         </div>
                         <div class="icon-square bg-danger-subtle text-danger rounded-3">
                             <i class="bi bi-pie-chart"></i>
@@ -333,7 +284,7 @@
                     }
                     else
                     {
-                        <div class="text-center text-secondary py-4 d-flex flex-column align-items-center justify-content-center h-100">
+                        <div class="text-center text-white-50 py-4 d-flex flex-column align-items-center justify-content-center h-100">
                             <i class="bi bi-pie-chart fs-1 d-block mb-2 opacity-50"></i>
                             <span>No expense data for this period.</span>
                         </div>
@@ -347,12 +298,12 @@
             <div class="col-12 col-xl-6">
                 <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="fw-bold mb-0">Key Accounts Overview</h6>
-                        <a href="/ChartOfAccounts" class="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold">View All</a>
+                        <h6 class="fw-bold mb-0 text-white">Key Accounts Overview</h6>
+                        <a href="/ChartOfAccounts" class="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold text-info">View All</a>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover table-borderless align-middle mb-0">
-                            <thead class="text-secondary fs-8 border-bottom">
+                        <table class="table table-hover table-borderless align-middle mb-0 text-white">
+                            <thead class="text-white-50 fs-8 border-bottom border-secondary">
                                 <tr>
                                     <th>CODE</th>
                                     <th>ACCOUNT NAME</th>
@@ -365,16 +316,16 @@
                                     @foreach (var item in model.MainCoaBalances)
                                     {
                                         <tr class="account-item">
-                                            <td class="fw-bold text-secondary">@item.AccountCode</td>
-                                            <td class="fw-semibold">@item.AccountName</td>
-                                            <td class="text-end fw-bold">@item.Balance.ToString("C0", Idr)</td>
+                                            <td class="fw-bold text-white-50">@item.AccountCode</td>
+                                            <td class="fw-semibold text-white">@item.AccountName</td>
+                                            <td class="text-end fw-bold text-white">@item.Balance.ToString("C0", Idr)</td>
                                         </tr>
                                     }
                                 }
                                 else
                                 {
                                     <tr>
-                                        <td colspan="3" class="text-center text-secondary py-3">No account balances found.</td>
+                                        <td colspan="3" class="text-center text-white-50 py-3">No account balances found.</td>
                                     </tr>
                                 }
                             </tbody>
@@ -386,12 +337,12 @@
             <div class="col-12 col-xl-6">
                 <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="fw-bold mb-0">Recent Activity</h6>
-                        <a href="/JournalEntry" class="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold">View All</a>
+                        <h6 class="fw-bold mb-0 text-white">Recent Activity</h6>
+                        <a href="/JournalEntry" class="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold text-info">View All</a>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-hover table-borderless align-middle mb-0">
-                            <thead class="text-secondary fs-8 border-bottom">
+                        <table class="table table-hover table-borderless align-middle mb-0 text-white">
+                            <thead class="text-white-50 fs-8 border-bottom border-secondary">
                                 <tr>
                                     <th>DATE</th>
                                     <th class="text-end">DEBIT</th>
@@ -404,7 +355,7 @@
                                     @foreach (var journal in model.RecentJournals)
                                     {
                                         <tr class="account-item">
-                                            <td class="text-secondary">@journal.Date.ToString("dd MMM yyyy")</td>
+                                            <td class="text-white-50">@journal.Date.ToString("dd MMM yyyy")</td>
                                             <td class="text-end fw-semibold text-success">@journal.TotalDebit.ToString("C0", Idr)</td>
                                             <td class="text-end fw-semibold text-danger">@journal.TotalCredit.ToString("C0", Idr)</td>
                                         </tr>
@@ -413,7 +364,7 @@
                                 else
                                 {
                                     <tr>
-                                        <td colspan="3" class="text-center text-secondary py-3">No recent journals recorded.</td>
+                                        <td colspan="3" class="text-center text-white-50 py-3">No recent journals recorded.</td>
                                     </tr>
                                 }
                             </tbody>
@@ -430,26 +381,26 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content glass-card border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="p-3 border-bottom border-secondary border-opacity-10 d-flex align-items-center gap-2">
-                <i class="bi bi-search text-secondary"></i>
-                <input type="text" id="cmdInput" class="form-control border-0 bg-transparent shadow-none" placeholder="Type a command or page name..." autofocus>
-                <span class="cmd-badge text-secondary">ESC</span>
+                <i class="bi bi-search text-white-50"></i>
+                <input type="text" id="cmdInput" class="form-control border-0 bg-transparent shadow-none text-white" placeholder="Type a command or page name..." autofocus>
+                <span class="cmd-badge text-white-50">ESC</span>
             </div>
             <div class="list-group list-group-flush small py-2">
-                <a href="/JournalEntry/Create" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-body d-flex align-items-center justify-content-between">
+                <a href="/JournalEntry/Create" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-white d-flex align-items-center justify-content-between">
                     <span><i class="bi bi-plus-circle me-2 text-primary"></i> Create New Journal Entry</span>
-                    <span class="cmd-badge text-secondary">Action</span>
+                    <span class="cmd-badge text-white-50">Action</span>
                 </a>
-                <a href="/ai" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-body d-flex align-items-center justify-content-between">
+                <a href="/ai" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-white d-flex align-items-center justify-content-between">
                     <span><i class="bi bi-robot me-2 text-warning"></i> Open AI Financial Controller</span>
-                    <span class="cmd-badge text-secondary">AI</span>
+                    <span class="cmd-badge text-white-50">AI</span>
                 </a>
-                <a href="/Reports/IncomeStatement" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-body d-flex align-items-center justify-content-between">
+                <a href="/Reports/IncomeStatement" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-white d-flex align-items-center justify-content-between">
                     <span><i class="bi bi-file-earmark-bar-graph me-2 text-info"></i> View Income Statement</span>
-                    <span class="cmd-badge text-secondary">Report</span>
+                    <span class="cmd-badge text-white-50">Report</span>
                 </a>
-                <a href="/ChartOfAccounts" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-body d-flex align-items-center justify-content-between">
+                <a href="/ChartOfAccounts" class="list-group-item list-group-item-action bg-transparent border-0 px-3 py-2 text-white d-flex align-items-center justify-content-between">
                     <span><i class="bi bi-diagram-3 me-2 text-success"></i> Manage Chart of Accounts</span>
-                    <span class="cmd-badge text-secondary">Setup</span>
+                    <span class="cmd-badge text-white-50">Setup</span>
                 </a>
             </div>
         </div>
