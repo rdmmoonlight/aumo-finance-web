@@ -1,0 +1,26 @@
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    <div class="container text-center mt-5">
+                        <h3>Akses Ditolak</h3>
+                        <p>Lu harus login terlebih dahulu untuk mengakses halaman ini.</p>
+                        <a href="/auth/login" class="btn btn-primary">Login Sekarang</a>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not Found - Aumo Finance</PageTitle>
+            <LayoutView Layout="@typeof(Layout.MainLayout)">
+                <div class="container text-center mt-5">
+                    <h3>Halaman Tidak Ditemukan</h3>
+                    <p>Maaf, halaman yang lu cari gak ada, bro.</p>
+                    <a href="/" class="btn btn-secondary">Kembali ke Beranda</a>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
