@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Linq; // Tambahkan namespace System.Linq
+using System.Linq;
 
 namespace AumoFinance.Models
 {
     public class DashboardViewModel
     {
+        // PERBAIKAN: Ditambahkan untuk menangani @Model.UserId di Views/Dashboard/Index.cshtml
+        public Guid UserId { get; set; }
+
         public decimal TotalCashAndEquivalents { get; set; }
         public decimal RevenueThisPeriod { get; set; }
         public decimal OperatingExpenses { get; set; }
@@ -19,7 +22,7 @@ namespace AumoFinance.Models
         public decimal? ExpenseTrendPercent { get; set; }
         public decimal? NetIncomeTrendPercent { get; set; }
 
-        // Properti Predictive & Financial Health Metrics
+        // Predictive & Financial Health Metrics
         public decimal MonthlyBurnRate { get; set; }
         public double CashRunwayMonths { get; set; }
         public int FinancialHealthScore { get; set; }
@@ -31,8 +34,8 @@ namespace AumoFinance.Models
         public List<string> ExpenseCategoryLabels { get; set; } = new();
         public List<decimal> ExpenseCategoryValues { get; set; } = new();
 
-        // TAMBAHKAN PROPERTI INI:
-        public bool HasExpenseData => ExpenseCategoryValues != null && ExpenseCategoryValues.Any(v => v > 0);
+        // Safe null-check & penyederhanaan LINQ
+        public bool HasExpenseData => ExpenseCategoryValues?.Any(v => v > 0) ?? false;
 
         public List<JournalEntryDto> RecentJournals { get; set; } = new();
         public List<CoaBalanceDto> MainCoaBalances { get; set; } = new();
@@ -41,9 +44,6 @@ namespace AumoFinance.Models
         public DateTime? ActivePeriodStart { get; set; }
         public DateTime? ActivePeriodEnd { get; set; }
 
-        // True hanya jika ada periode yang sedang di-view (dipilih lewat
-        // ikon mata di halaman Periods). Kalau false, Dashboard tidak
-        // menampilkan angka apa pun — hanya prompt untuk memilih periode.
         public bool HasSelectedPeriod { get; set; }
         public bool IsSelectedPeriodClosed { get; set; }
     }
