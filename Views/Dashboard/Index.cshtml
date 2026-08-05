@@ -5,7 +5,7 @@
     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }
 
-<component type="typeof(AumoFinance.Components.DashboardPage)" render-mode="ServerPrerendered" param-UserId="@userId" />
+<component type="typeof(FinancialDashboard)" render-mode="ServerPrerendered" param-UserId="@Model.UserId" />
 
 @section Scripts {
     <!-- Pustaka Chart.js -->
