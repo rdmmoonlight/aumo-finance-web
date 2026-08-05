@@ -1,12 +1,12 @@
+using AumoFinance.Components; // Sesuaikan dengan namespace tempat App.razor lu berada
 using AumoFinance.Models;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
 using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,14 +49,24 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Auth/Login";
-    options.AccessDeniedPath = "/Auth/Login";
+    // Route disesuaikan dengan halaman Blazor baru
+    options.LoginPath = "/auth/login";
+    options.AccessDeniedPath = "/auth/login";
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
 });
 
 // =====================================
-// Services
+// Blazor Core & Authentication State
+// =====================================
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+// Wajib untuk menyalurkan data User/Claims ke komponen <AuthorizeView> di Blazor
+builder.Services.AddCascadingAuthenticationState();
+
+// =====================================
+// Application Services
 // =====================================
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
@@ -64,15 +74,11 @@ builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IJournalImportService, JournalImportService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
-
-// DITAMBAHKAN: Pendaftaran DashboardDataService untuk Blazor Component FinancialDashboard
 builder.Services.AddScoped<DashboardDataService>();
-
-// =====================================
-// Blazor Services
-// =====================================
-builder.Services.AddServerSideBlazor();
 builder.Services.AddHttpClient();
+
+// opsional: Tetap sediakan ini jika lu masih punya API Controllers murni (tanpa Views)
+builder.Services.AddControllers();
 
 // =====================================
 // Forwarded Headers (Railway / Proxy)
@@ -85,20 +91,6 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
-});
-
-// =====================================
-// MVC + Global Authorization + Controllers API
-// =====================================
-builder.Services.AddControllers();
-
-builder.Services.AddControllersWithViews(options =>
-{
-    var policy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-
-    options.Filters.Add(new AuthorizeFilter(policy));
 });
 
 // =====================================
@@ -151,16 +143,19 @@ using (var scope = app.Services.CreateScope())
 // HTTP Pipeline
 // =====================================
 app.UseForwardedHeaders();
-app.UseDeveloperExceptionPage();
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseHsts();
     app.UseHttpsRedirection();
 }
 
 app.UseStaticFiles();
-app.UseRouting();
+app.UseAntiforgery(); // Antiforgery middleware wajib untuk form Blazor di .NET 8/9
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -168,12 +163,11 @@ app.UseAuthorization();
 // =====================================
 // Routes Mapping
 // =====================================
-app.MapControllers();
-app.MapBlazorHub();
+// Mengarahkan Root Entry Point sepenuhnya ke App.razor
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}"
-);
+// Tetap dipasang jika lu masih butuh Endpoint REST API (misal buat Mobile / Webhook)
+app.MapControllers();
 
 app.Run();
