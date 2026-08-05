@@ -2,15 +2,17 @@
 @using System.Security.Claims
 @{
     ViewData["Title"] = "Dashboard";
+    // Ambil User ID langsung dari Claim
     var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }
 
-<component type="typeof(FinancialDashboard)" render-mode="ServerPrerendered" param-UserId="@Model.UserId" />
+<!-- UBAH @Model.UserId MENJADI @userId -->
+<component type="typeof(FinancialDashboard)" render-mode="ServerPrerendered" param-UserId="@userId" />
 
 @section Scripts {
     <!-- Pustaka Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-    <!-- Modul JS Dashboard (dipanggil langsung oleh komponen Blazor lewat JS interop) -->
+    <!-- Modul JS Dashboard -->
     <script src="~/js/dashboard-charts.js" asp-append-version="true"></script>
 }
