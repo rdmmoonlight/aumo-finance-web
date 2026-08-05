@@ -14,7 +14,13 @@ public class DashboardDataService
 
     public async Task<DashboardViewModel> GetDashboardDataAsync(Guid userId, string periodType)
     {
-        var newModel = new DashboardViewModel();
+        // PERBAIKAN: Mengisi UserId agar tidak bernilai Guid.Empty
+        // ketika dilempar dari Razor View ke Blazor Component
+        var newModel = new DashboardViewModel
+        {
+            UserId = userId
+        };
+
         var isAnnual = periodType == "annual";
 
         var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
