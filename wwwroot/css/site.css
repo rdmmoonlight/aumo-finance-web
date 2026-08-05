@@ -1,5 +1,7 @@
 html {
   font-size: 14px;
+  position: relative;
+  min-height: 100%;
 }
 
 @media (min-width: 768px) {
@@ -8,24 +10,71 @@ html {
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
-}
-
 body {
   margin-bottom: 60px;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+.btn:focus, 
+.btn:active:focus, 
+.btn-link.nav-link:focus, 
+.form-control:focus, 
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+.form-floating > .form-control-plaintext::placeholder, 
+.form-floating > .form-control::placeholder {
   color: var(--bs-secondary-color);
   text-align: end;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+.form-floating > .form-control-plaintext:focus::placeholder, 
+.form-floating > .form-control:focus::placeholder {
   text-align: start;
+}
+
+/* =====================================
+   AumoFinance Custom Font & Color Theme
+   ===================================== */
+
+/* Warna Teks Utama & Sub-teks Dashboard */
+.card.glass-card {
+  color: #f8fafc !important; /* Warna teks utama terang */
+}
+
+/* Judul Card & Heading */
+.card.glass-card h4, 
+.card.glass-card h5, 
+.card.glass-card h6 {
+  color: #ffffff !important;
+}
+
+/* Sub-teks & Label Kecil (Ganti abu-abu gelap bawaan Bootstrap) */
+.card.glass-card .text-secondary,
+.card.glass-card .fs-8 {
+  color: #94a3b8 !important; /* Abu-abu terang netral */
+}
+
+/* Header Table & Isinya */
+.card.glass-card table thead th {
+  color: #64748b !important;
+}
+
+.card.glass-card table tbody td {
+  color: #e2e8f0 !important;
+}
+
+/* Gaya Khusus Health Circle Score */
+.health-circle .text-body {
+  color: #ffffff !important;
+}
+
+/* Animasi Pulse Dot */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 8px #10b981;
 }
