@@ -68,8 +68,9 @@
     [SupplyParameterFromQuery(Name = "infoMessage")]
     private string? QueryInfoMessage { get; set; }
 
+    // DIBERSIHKAN: Tanpa '= new()' untuk cegah error BL0008
     [SupplyParameterFromForm]
-    private LoginInputModel Input { get; set; } = new();
+    private LoginInputModel Input { get; set; }
 
     private string? successMessage;
     private string? errorMessage;
@@ -77,6 +78,9 @@
 
     protected override void OnInitialized()
     {
+        // Inisialisasi aman jika properti bernilai null saat halaman pertama dimuat
+        Input ??= new();
+
         successMessage = QuerySuccessMessage ?? QueryMessage;
         errorMessage = QueryErrorMessage;
         infoMessage = QueryInfoMessage;
