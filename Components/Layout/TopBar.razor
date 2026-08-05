@@ -16,42 +16,33 @@
         animation: spin 1.5s linear infinite;
     }
 
-    @keyframes spin {
+    /* PERBAIKAN CS0103: Gunakan @@keyframes agar tidak dianggap C# code */
+    @@keyframes spin {
         100% { transform: rotate(360deg); }
     }
 </style>
 
 <script>
-    /**
-     * Triggers the UI Sync Indicator.
-     * param {boolean} isSuccess - true = success saving to DB, false = error
-     * param {number} queueTimeMs - Wait time, default 10 seconds (10000 ms)
-     */
     window.triggerSyncProcess = function(isSuccess = true, queueTimeMs = 10000) {
         const syncBtn = document.getElementById('syncBtn');
         const syncIcon = document.getElementById('syncIcon');
 
         if (!syncBtn || !syncIcon) return;
 
-        // 1. QUEUE PHASE: Sweet potato orange color and spinning icon
         syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
-        syncBtn.style.color = '#d97706'; // Sweet potato orange hex
+        syncBtn.style.color = '#d97706';
         syncBtn.title = "Syncing: In queue (10 seconds)...";
         syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
 
-        // 2. 10-SECOND QUEUE DELAY
         setTimeout(() => {
             syncIcon.classList.remove('icon-spin');
-            syncBtn.style.color = ''; // Reset custom inline color
+            syncBtn.style.color = '';
 
-            // 3. DB EXECUTION RESULT PHASE
             if (isSuccess) {
-                // Success: Light blue
                 syncBtn.classList.add('text-info');
                 syncBtn.title = "Sync: Saved to Database";
                 syncIcon.className = "bi bi-cloud-check";
             } else {
-                // Failed: Red
                 syncBtn.classList.add('text-danger');
                 syncBtn.title = "Sync: Error saving data!";
                 syncIcon.className = "bi bi-cloud-slash";
@@ -60,38 +51,31 @@
     };
 </script>
 
-<!-- ========================================== -->
-<!-- ROW 1: Main Header                         -->
-<!-- ========================================== -->
 <header class="navbar navbar-expand border-bottom py-2 bg-body-tertiary" style="min-height: 56px;">
     
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
-        <!-- 1. Left Section: Title -->
         <div class="d-flex align-items-center me-2" style="max-width: 160px;">
             <span class="fw-semibold text-truncate text-body" style="font-size: 0.8rem;">
                 Aumo Finance
             </span>
         </div>
 
-        <!-- 2. Center Section: Quran Verse Component -->
+        <!-- Center Section: Quran Verse -->
         <div class="d-none d-md-flex flex-column align-items-center justify-content-center flex-grow-1 mx-2 text-center" style="max-width: 800px;">
             <QuranVerse />
         </div>
 
-        <!-- Right Section: Search & Kebab Menu -->
         <div class="d-flex align-items-center gap-1">
             
             <AuthorizeView>
                 <Authorized>
-                    <!-- 3. Search Icon -->
                     <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                         <i class="bi bi-search" style="font-size: 0.825rem;"></i>
                     </button>
                 </Authorized>
             </AuthorizeView>
 
-            <!-- 4. Kebab Menu -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
                     <i class="bi bi-three-dots-vertical" style="font-size: 0.875rem;"></i>
@@ -107,14 +91,10 @@
     </div>
 </header>
 
-<!-- ========================================== -->
-<!-- ROW 2: Active Period & Indicators          -->
-<!-- ========================================== -->
 <AuthorizeView>
     <Authorized>
         <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm text-nowrap" style="min-height: 28px; font-size: 0.75rem;">
             
-            <!-- Active Period Dropdown -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi @iconClass"></i>
@@ -149,17 +129,13 @@
                 </ul>
             </div>
 
-            <!-- Vertical Divider -->
             <span class="text-secondary opacity-50">|</span>
 
-            <!-- Row 2 Indicators: Guardian & Sync -->
             <div class="d-flex align-items-center gap-1">
-                <!-- Indicator: Guardian (Shield) -->
                 <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
                     <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
                 </button>
 
-                <!-- Indicator: Sync -->
                 <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
                     <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
                 </button>
@@ -169,9 +145,6 @@
     </Authorized>
 </AuthorizeView>
 
-<!-- ========================================== -->
-<!-- Search Modal                               -->
-<!-- ========================================== -->
 <AuthorizeView>
     <Authorized>
         <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
