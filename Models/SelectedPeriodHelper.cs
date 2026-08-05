@@ -13,7 +13,7 @@ namespace AumoFinance.Models
             var selected = await db.Periods
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
-                
+
             if (selected != null)
             {
                 return selected;
