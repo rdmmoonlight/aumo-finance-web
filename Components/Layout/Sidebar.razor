@@ -1,3 +1,4 @@
+@rendermode InteractiveServer
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Routing
 
@@ -33,7 +34,7 @@
                 </NavLink>
             </li>
 
-            <!-- MENU REPORTS (IKON FOLDER DENGAN TOGGLE FLYOUT) -->
+            <!-- MENU REPORTS (TOGGLE FLYOUT) -->
             <li class="nav-item mb-1">
                 <button type="button" @onclick="ToggleReportsFlyout" class="nav-link text-white icon-btn border-0 bg-transparent @(showReportsFlyout ? "active text-warning" : "")" title="Reports">
                     <i class="bi bi-folder fs-6"></i>
@@ -117,7 +118,7 @@
 
     </nav>
 
-    <!-- FLYOUT REPORTS (Dikontrol penuh oleh state C# showReportsFlyout) -->
+    <!-- FLYOUT REPORTS -->
     <div id="reports-flyout" class="sidebar-flyout bg-dark border-end border-secondary text-white @(showReportsFlyout ? "show" : "")" style="@(showReportsFlyout ? "display: block;" : "display: none;")">
 
         <div class="p-2 border-bottom border-secondary d-flex justify-content-between align-items-center">
