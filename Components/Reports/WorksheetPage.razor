@@ -1,6 +1,14 @@
-@using AumoFinance.Models
+@page "/reports/worksheet"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using AumoFinance.Models
 @inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container-fluid">
     @if (noPeriodSelected)
@@ -9,7 +17,7 @@
             <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
             <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
             <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
-            <a href="/Periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
                 <i class="bi bi-calendar3 me-1"></i> Go to Periods
             </a>
         </div>
@@ -22,7 +30,7 @@
                 <p class="text-muted mb-0">10-column worksheet: Trial Balance, Adjustments, Adjusted Trial Balance, Income Statement, and Balance Sheet.</p>
             </div>
             <div class="d-flex gap-2">
-                <a href="/Reports/IncomeStatement" class="btn btn-outline-secondary">
+                <a href="/reports/income-statement" class="btn btn-outline-secondary">
                     <i class="bi bi-graph-up-arrow me-1"></i> Income Statement
                 </a>
             </div>
@@ -120,13 +128,37 @@
 
 @code {
     private static readonly CultureInfo Idr = new("id-ID");
-    [Parameter] public Guid UserId { get; set; }
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private Guid UserId { get; set; }
     private WorksheetViewModel vm = new();
     private bool noPeriodSelected;
 
     protected override async Task OnInitializedAsync()
     {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
         var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
         if (period == null)
         {
