@@ -81,7 +81,7 @@ builder.Services.AddAuthentication()
 // =====================================
 // Blazor Core, Controllers & Authentication State
 // =====================================
-builder.Services.AddControllers(); // Mendukung API Controllers
+builder.Services.AddControllers(); 
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -101,7 +101,7 @@ builder.Services.AddScoped<DashboardDataService>();
 builder.Services.AddHttpClient();
 
 // =====================================
-// Forwarded Headers (Railway / Proxy)
+// Forwarded Headers (Railway / Proxy Configuration)
 // =====================================
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -162,6 +162,7 @@ using (var scope = app.Services.CreateScope())
 // =====================================
 // HTTP Pipeline
 // =====================================
+// 1. Forwarded Headers WAJIB dipanggil paling atas
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -171,7 +172,8 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
+    // CATATAN: app.UseHttpsRedirection() DIHAPUS/DIKOMEN
+    // Karena HTTPS termination di-handle oleh Reverse Proxy Railway.
 }
 
 app.UseStaticFiles();
@@ -184,14 +186,12 @@ app.UseAuthorization();
 // Routes Mapping
 // =====================================
 
-// Minimal API Endpoint khusus Logout
 app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
     return Results.Redirect("/auth/login");
 });
 
-// Map REST API Controller (untuk /api/mobile/*)
 app.MapControllers();
 
 // Entry point utama Blazor Web App
