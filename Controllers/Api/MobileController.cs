@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using AumoFinance.Models;
 using AumoFinance.Models.DTOs;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,26 +14,30 @@ namespace AumoFinance.Controllers.Api;
 
 [ApiController]
 [Route("api/mobile")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class MobileController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly AppDbContext _context;
+    private readonly AppDbContext _db;
 
-    // Hardcoded Secret Key untuk penandatanganan JWT (Minimal 32 karakter/256-bit)
+    // Hardcoded Secret Key untuk penandatanganan JWT
     public static readonly string JwtSecretKey = "AumoFinance_Mobile_Secure_JWT_Secret_Key_2026_998877665544332211";
     public static readonly string JwtIssuer = "AumoFinanceWeb";
 
     public MobileController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        AppDbContext context)
+        AppDbContext db)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _context = context;
+        _db = db;
     }
 
+    // ==========================================
+    // 1. POST: /api/mobile/login
+    // ==========================================
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] MobileLoginRequest request)
@@ -42,7 +47,7 @@ public class MobileController : ControllerBase
             return BadRequest(new MobileLoginResponse { Success = false, Message = "Email dan password wajib diisi." });
         }
 
-        var user = await _userManager.FindByEmailAsync(request.Email)
+        var user = await _userManager.FindByEmailAsync(request.Email) 
                    ?? await _userManager.FindByNameAsync(request.Email);
 
         if (user == null)
@@ -59,7 +64,7 @@ public class MobileController : ControllerBase
         // Generate JWT Token
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(JwtSecretKey);
-
+        
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
@@ -68,7 +73,7 @@ public class MobileController : ControllerBase
                 new Claim(ClaimTypes.Email, user.Email ?? ""),
                 new Claim(ClaimTypes.Name, user.UserName ?? "")
             }),
-            Expires = DateTime.UtcNow.AddDays(30), // Token berlaku 30 hari
+            Expires = DateTime.UtcNow.AddDays(30),
             Issuer = JwtIssuer,
             Audience = JwtIssuer,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -77,7 +82,7 @@ public class MobileController : ControllerBase
         var token = tokenHandler.CreateToken(tokenDescriptor);
         var tokenString = tokenHandler.WriteToken(token);
 
-        // Record User Session jika diperlukan
+        // Record User Session
         var session = new AumoFinance.Models.Security.UserSession
         {
             Id = Guid.NewGuid(),
@@ -94,8 +99,8 @@ public class MobileController : ControllerBase
             CreatedAt = DateTime.UtcNow,
             LastActivityAt = DateTime.UtcNow
         };
-        _context.UserSessions.Add(session);
-        await _context.SaveChangesAsync();
+        _db.UserSessions.Add(session);
+        await _db.SaveChangesAsync();
 
         return Ok(new MobileLoginResponse
         {
@@ -107,92 +112,177 @@ public class MobileController : ControllerBase
         });
     }
 
+    // ==========================================
+    // 2. GET: /api/mobile/accounts
+    // ==========================================
     [HttpGet("accounts")]
-    [Authorize]
     public async Task<IActionResult> GetAccounts()
     {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out Guid userId))
-        {
-            return Unauthorized();
-        }
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty) return Unauthorized();
 
-        var accounts = await _context.ChartOfAccounts
-            .Where(x => x.UserId == userId && x.IsActive)
-            .OrderBy(x => x.ReferenceNumber)
-            .Select(x => new AccountDto
+        var accounts = await _db.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == userId)
+            .OrderBy(a => a.ReferenceNumber)
+            .Select(a => new AccountDto
             {
-                Id = x.Id,
-                ReferenceNumber = x.ReferenceNumber,
-                AccountName = x.AccountName,
-                Type = x.Type,
-                Role = x.Role
+                Id = a.Id,
+                ReferenceNumber = a.ReferenceNumber,
+                AccountName = a.AccountName,
+                Type = a.Type,
+                Role = a.Role
             })
             .ToListAsync();
 
         return Ok(accounts);
     }
 
+    // ==========================================
+    // 3. POST: /api/mobile/journal-entries
+    // ==========================================
     [HttpPost("journal-entries")]
-    [Authorize]
     public async Task<IActionResult> CreateJournalEntry([FromBody] CreateJournalEntryRequest request)
     {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out Guid userId))
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        // A. Filter baris kosong (sama persis dengan Controller Web)
+        var validLines = request.Lines
+            .Where(l => l.AccountId != 0 && (l.Debit != 0 || l.Credit != 0))
+            .ToList();
+
+        if (validLines.Count < 2)
         {
-            return Unauthorized();
+            return BadRequest(new { message = "Jurnal harus memiliki minimal 2 baris rincian (line items)." });
         }
 
-        if (request.Lines == null || !request.Lines.Any())
+        // B. Validasi Total Debit == Total Kredit & Total > 0
+        var totalDebit = validLines.Sum(l => l.Debit);
+        var totalCredit = validLines.Sum(l => l.Credit);
+
+        if (totalDebit != totalCredit || totalDebit == 0)
         {
-            return BadRequest(new { message = "Jurnal harus memiliki minimal satu baris rincian." });
+            return BadRequest(new { message = "Total debit harus sama dengan total kredit dan tidak boleh nol." });
         }
 
-        // Check Balance Debit & Credit
-        decimal totalDebit = request.Lines.Sum(x => x.Debit);
-        decimal totalCredit = request.Lines.Sum(x => x.Credit);
+        // C. Validasi Kepemilikan Akun (Akun harus milik user yang login)
+        var validAccountIds = (await _db.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == userId)
+            .Select(a => a.Id)
+            .ToListAsync())
+            .ToHashSet();
 
-        if (totalDebit != totalCredit)
+        if (validLines.Any(l => !validAccountIds.Contains(l.AccountId)))
         {
-            return BadRequest(new { message = $"Jurnal tidak seimbang. Total Debit: {totalDebit}, Total Kredit: {totalCredit}" });
+            return BadRequest(new { message = "Satu atau lebih akun yang dipilih tidak valid atau tidak aktif." });
         }
 
-        // Auto Generate Nomor Referensi per User
-        int lastRefNo = await _context.JournalEntries
-            .Where(x => x.UserId == userId)
-            .CountAsync();
+        // D. Validasi Kunci Periode (PeriodLock)
+        var closedPeriods = await _db.Periods
+            .Where(p => p.UserId == userId && p.IsClosed)
+            .ToListAsync();
 
-        string refNumber = $"{request.JournalType}-{(lastRefNo + 1):D6}";
+        if (PeriodLock.IsDateLocked(request.EntryDate, closedPeriods))
+        {
+            return BadRequest(new { message = "Tanggal transaksi berada pada periode yang sudah ditutup." });
+        }
 
+        // E. Generate Nomor Referensi Otomatis (GJ-xxxxxx / AJE-xxxxxx)
+        string refNumber = await GenerateReferenceNumberAsync(userId, request.JournalType);
+
+        // F. Simpan Jurnal Baru
         var entry = new JournalEntry
         {
             UserId = userId,
-            EntryDate = request.EntryDate.ToUniversalTime(),
-            CreatedAt = DateTime.UtcNow,
-            JournalType = request.JournalType,
             ReferenceNumber = refNumber,
-            MobileNote = request.MobileNote,
+            JournalType = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType,
+            EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc),
+            CreatedAt = DateTime.UtcNow,
             Source = "Mobile App",
+            MobileNote = request.MobileNote,
             NeedsClassification = false,
-            Lines = request.Lines.Select(l => new JournalEntryLine
+            Lines = validLines.Select((l, index) => new JournalEntryLine
             {
                 AccountId = l.AccountId,
+                LineDescription = l.LineDescription,
                 Debit = l.Debit,
                 Credit = l.Credit,
-                LineDescription = l.LineDescription,
-                LineOrder = l.LineOrder
+                LineOrder = index
             }).ToList()
         };
 
-        _context.JournalEntries.Add(entry);
-        await _context.SaveChangesAsync();
+        _db.JournalEntries.Add(entry);
+        await _db.SaveChangesAsync();
 
         return Ok(new
         {
             success = true,
-            message = "Jurnal berhasil disimpan.",
+            message = $"Jurnal {entry.ReferenceNumber} berhasil disimpan.",
             journalId = entry.Id,
             referenceNumber = entry.ReferenceNumber
         });
+    }
+
+    // ==========================================
+    // 4. GET: /api/mobile/search-descriptions?q=xxx
+    // ==========================================
+    [HttpGet("search-descriptions")]
+    public async Task<IActionResult> SearchDescriptions([FromQuery] string q)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+        {
+            return Ok(Array.Empty<string>());
+        }
+
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        var keyword = q.Trim();
+
+        var results = await _db.JournalEntryLines
+            .Include(l => l.JournalEntry)
+            .Where(l => l.JournalEntry!.UserId == userId
+                     && l.LineDescription != null && l.LineDescription != ""
+                     && EF.Functions.ILike(l.LineDescription, $"%{keyword}%"))
+            .GroupBy(l => l.LineDescription)
+            .OrderByDescending(g => g.Count())
+            .ThenByDescending(g => g.Max(l => l.Id))
+            .Select(g => g.Key)
+            .Take(8)
+            .ToListAsync();
+
+        return Ok(results);
+    }
+
+    // ==========================================
+    // HELPER METHODS
+    // ==========================================
+    private Guid GetCurrentUserId()
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
+    }
+
+    private async Task<string> GenerateReferenceNumberAsync(Guid userId, string journalType)
+    {
+        var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
+
+        var lastNumber = await _db.JournalEntries
+            .Where(e => e.UserId == userId && e.ReferenceNumber.StartsWith(prefix + "-"))
+            .OrderByDescending(e => e.Id)
+            .Select(e => e.ReferenceNumber)
+            .FirstOrDefaultAsync();
+
+        var nextSeq = 1;
+        if (lastNumber != null)
+        {
+            var parts = lastNumber.Split('-');
+            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+            {
+                nextSeq = lastSeq + 1;
+            }
+        }
+
+        return $"{prefix}-{nextSeq:D6}";
     }
 }
