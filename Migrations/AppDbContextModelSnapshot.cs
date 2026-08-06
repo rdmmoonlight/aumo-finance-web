@@ -201,94 +201,6 @@ namespace AumoFinance.Migrations
                     b.ToTable("JournalEntryLines");
                 });
 
-            modelBuilder.Entity("AumoFinance.Models.MobileJournalEntry", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal?>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("EntryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Mode")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("RejectedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<DateTime>("SubmittedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Type")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<DateTime?>("VerifiedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("VerifiedJournalEntryId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("VerifiedJournalEntryId");
-
-                    b.ToTable("MobileJournalEntries");
-                });
-
-            modelBuilder.Entity("AumoFinance.Models.MobileJournalEntryLine", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AccountId")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Credit")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("Debit")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("LineDescription")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
-                    b.Property<int>("LineOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MobileJournalEntryId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountId");
-
-                    b.HasIndex("MobileJournalEntryId");
-
-                    b.ToTable("MobileJournalEntryLines");
-                });
-
             modelBuilder.Entity("AumoFinance.Models.Security.LoginActivity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -565,35 +477,6 @@ namespace AumoFinance.Migrations
                     b.Navigation("JournalEntry");
                 });
 
-            modelBuilder.Entity("AumoFinance.Models.MobileJournalEntry", b =>
-                {
-                    b.HasOne("AumoFinance.Models.JournalEntry", "VerifiedJournalEntry")
-                        .WithMany()
-                        .HasForeignKey("VerifiedJournalEntryId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("VerifiedJournalEntry");
-                });
-
-            modelBuilder.Entity("AumoFinance.Models.MobileJournalEntryLine", b =>
-                {
-                    b.HasOne("AumoFinance.Models.ChartOfAccount", "Account")
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AumoFinance.Models.MobileJournalEntry", "MobileJournalEntry")
-                        .WithMany("Lines")
-                        .HasForeignKey("MobileJournalEntryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
-
-                    b.Navigation("MobileJournalEntry");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
@@ -671,11 +554,7 @@ namespace AumoFinance.Migrations
                 {
                     b.Navigation("Lines");
                 });
-
-            modelBuilder.Entity("AumoFinance.Models.MobileJournalEntry", b =>
-                {
-                    b.Navigation("Lines");
-                });
+                
 #pragma warning restore 612, 618
         }
     }
