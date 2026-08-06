@@ -38,7 +38,7 @@ public class ChartOfAccountsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(search))
         {
             var keyword = search.Trim().ToLower();
-            query = query.Where(a => a.AccountName.ToLower().Contains(keyword) 
+            query = query.Where(a => a.AccountName.ToLower().Contains(keyword)
                                   || a.ReferenceNumber.ToString().Contains(keyword));
         }
 
