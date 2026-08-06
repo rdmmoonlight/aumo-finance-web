@@ -1,8 +1,0 @@
-@using System.Security.Claims
-@{
-    ViewData["Title"] = "Mobile Verification";
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-}
-
-<component type="typeof(AumoFinance.Components.MobileClassificationPage)" render-mode="ServerPrerendered"
-           param-UserId="@userId" param-ViewMode="@("List")" />
