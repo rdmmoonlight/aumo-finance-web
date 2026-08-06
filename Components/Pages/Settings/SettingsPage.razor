@@ -1,0 +1,64 @@
+@page "/settings"
+@namespace AumoFinance.Components.Pages.Settings
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Settings</PageTitle>
+
+<div class="container-fluid p-0">
+    <h2 class="mb-4 fw-bold">Application Settings</h2>
+
+    <div class="row">
+        <!-- Panel 1: Appearance & Theme -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 h-100 shadow-sm border-0 rounded-4 bg-body-tertiary">
+                <h5 class="card-title mb-4 fw-bold">
+                    <i class="bi bi-palette-fill me-2 text-primary"></i>Appearance &amp; Theme
+                </h5>
+
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="mb-1 fw-semibold">Dark Mode</h6>
+                        <small class="text-secondary">Reduce eye strain when working in low-light environments.</small>
+                    </div>
+                    <div class="form-check form-switch fs-4">
+                        <input class="form-check-input" type="checkbox" role="switch" id="themeToggleSwitch"
+                               checked="@isDarkMode" @onchange="OnThemeChanged">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Notifications & Reminders -->
+        <div class="col-md-6 mb-4">
+            <div class="card p-4 h-100 shadow-sm border-0 rounded-4 bg-body-tertiary">
+                <h5 class="card-title mb-4 fw-bold">
+                    <i class="bi bi-bell-fill me-2 text-warning"></i>Notifications &amp; Reminders
+                </h5>
+
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <h6 class="mb-1 fw-semibold">System Alerts</h6>
+                        <small class="text-secondary">Receive notifications for important system activities.</small>
+                    </div>
+                    <div class="form-check form-switch fs-5">
+                        <input class="form-check-input" type="checkbox" role="switch" id="systemAlertToggle"
+                               checked="@enableSystemAlerts" @onchange="OnSystemAlertsChanged">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="settingsToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                @toastMessage
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
