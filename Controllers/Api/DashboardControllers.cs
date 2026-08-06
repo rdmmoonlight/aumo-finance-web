@@ -1,106 +1,99 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AumoFinance.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Controllers.Api; // Sesuaikan dengan namespace backend Anda
+namespace AumoFinance.Controllers.Api;
 
 [ApiController]
-[Route("api/[controller]")] // Menghasilkan URL: GET /api/dashboard
-public class DashboardController : ControllerBase
+[Route("api/mobile/dashboard")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+public class DashboardControllers : ControllerBase
 {
-    private readonly AppDbContext _context; // Sesuaikan nama DbContext Anda
+    private readonly AppDbContext _db;
 
-    public DashboardController(AppDbContext context)
+    public DashboardControllers(AppDbContext db)
     {
-        _context = context;
+        _db = db;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetDashboard()
+    public async Task<IActionResult> GetDashboardData()
     {
-        try
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        // 1. Ambil Periode Aktif (Periode yang belum ditutup / !IsClosed)
+        var activePeriod = await _db.Periods
+            .Where(p => p.UserId == userId && !p.IsClosed)
+            .OrderByDescending(p => p.StartDate)
+            .FirstOrDefaultAsync();
+
+        // 2. Filter Jurnal Berdasarkan Periode Aktif (atau Bulan Ini jika periode tidak ditemukan)
+        DateTime startDate = activePeriod?.StartDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        DateTime endDate = activePeriod?.EndDate ?? startDate.AddMonths(1).AddDays(-1);
+
+        var journalLines = await _db.JournalEntryLines
+            .Include(l => l.JournalEntry)
+            .Include(l => l.Account)
+            .Where(l => l.JournalEntry!.UserId == userId 
+                     && l.JournalEntry.EntryDate >= startDate 
+                     && l.JournalEntry.EntryDate <= endDate)
+            .ToListAsync();
+
+        // 3. Hitung Kas & Bank (Role == "CashAndEquivalents")
+        var cashAccountIds = await _db.ChartOfAccounts
+            .Where(a => a.UserId == userId && a.IsActive && a.Role == "CashAndEquivalents")
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var totalCashBalance = journalLines
+            .Where(l => cashAccountIds.Contains(l.AccountId))
+            .Sum(l => l.Debit - l.Credit);
+
+        // 4. Hitung Total Pendapatan (Type == "OperatingIncome")
+        var incomeAccountIds = await _db.ChartOfAccounts
+            .Where(a => a.UserId == userId && a.IsActive && a.Type == "OperatingIncome")
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var totalIncome = journalLines
+            .Where(l => incomeAccountIds.Contains(l.AccountId))
+            .Sum(l => l.Credit - l.Debit);
+
+        // 5. Hitung Total Beban (Type == "OperatingExpenses")
+        var expenseAccountIds = await _db.ChartOfAccounts
+            .Where(a => a.UserId == userId && a.IsActive && a.Type == "OperatingExpenses")
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var totalExpense = journalLines
+            .Where(l => expenseAccountIds.Contains(l.AccountId))
+            .Sum(l => l.Debit - l.Credit);
+
+        // 6. Hitung Laba Bersih
+        var netIncome = totalIncome - totalExpense;
+
+        return Ok(new
         {
-            // 1. Ambil Periode Akuntansi yang Aktif
-            // Asumsi tabel 'Periods' memfilter periode aktif (atau ambil periode paling baru)
-            var activePeriodObj = await _context.Periods
-                .OrderByDescending(p => p.StartDate) // Sesuaikan nama kolom tanggal jika berbeda
-                .FirstOrDefaultAsync(p => p.IsActive); // Sesuaikan dengan properti status aktif di tabel Periods
+            success = true,
+            periodName = activePeriod?.PeriodName ?? "Periode Berjalan",
+            totalCash = totalCashBalance,
+            income = totalIncome,
+            expense = totalExpense,
+            netIncome = netIncome
+        });
+    }
 
-            string activePeriodText = activePeriodObj?.Name ?? "Agustus 2026";
-            bool isClosed = activePeriodObj?.IsClosed ?? false;
-
-            // Jika periode ditutup, tidak perlu kalkulasi jurnal
-            if (isClosed)
-            {
-                return Ok(new
-                {
-                    activePeriod = activePeriodText,
-                    isClosed = true,
-                    totalCash = 0m,
-                    netIncome = 0m,
-                    revenue = 0m,
-                    expenses = 0m
-                });
-            }
-
-            // 2. Kalkulasi Data Keuangan berdasarkan ChartOfAccounts & JournalEntryLines
-            // Mengambil semua jurnal line yang terkait dengan periode berjalan/aktif
-            var journalLinesQuery = _context.JournalEntryLines
-                .Include(j => j.Account)
-                .AsQueryable();
-
-            if (activePeriodObj != null)
-            {
-                // Filter jurnal berdasarkan rentang tanggal periode aktif
-                journalLinesQuery = journalLinesQuery.Where(j =>
-                    j.JournalEntry.EntryDate >= activePeriodObj.StartDate &&
-                    j.JournalEntry.EntryDate <= activePeriodObj.EndDate);
-            }
-
-            var lines = await journalLinesQuery.ToListAsync();
-
-            // Total Kas: Akun dengan tipe Kas/Bank (misal AccountType == "Asset" / "Cash")
-            // Saldo Kas Normal = Debit - Kredit
-            decimal totalCash = lines
-                .Where(l => l.Account.AccountType == "Asset" || l.Account.IsCashAccount)
-                .Sum(l => l.Debit - l.Credit);
-
-            // Revenue (Pendapatan): Akun Tipe Revenue/Income
-            // Saldo Pendapatan Normal = Kredit - Debit
-            decimal revenue = lines
-                .Where(l => l.Account.AccountType == "Revenue")
-                .Sum(l => l.Credit - l.Debit);
-
-            // Expenses (Beban): Akun Tipe Expense
-            // Saldo Beban Normal = Debit - Kredit
-            decimal expenses = lines
-                .Where(l => l.Account.AccountType == "Expense")
-                .Sum(l => l.Debit - l.Credit);
-
-            // Net Income = Pendapatan - Beban
-            decimal netIncome = revenue - expenses;
-
-            // 3. Return JSON sesuai ekspektasi C# MAUI Client
-            return Ok(new
-            {
-                activePeriod = activePeriodText,
-                isClosed = false,
-                totalCash = totalCash,
-                netIncome = netIncome,
-                revenue = revenue,
-                expenses = expenses
-            });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new
-            {
-                message = "Gagal memproses data dashboard.",
-                detail = ex.Message
-            });
-        }
+    private Guid GetCurrentUserId()
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
     }
 }
