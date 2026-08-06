@@ -1,4 +1,5 @@
-@page "/reports/general-journal"
+@page "/reports/general-ledger"
+@page "/reports/general-ledger/{IsTemporary:bool}"
 @rendermode InteractiveServer
 @attribute [Authorize]
 
@@ -11,159 +12,111 @@
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container-fluid py-4 px-4">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-body-emphasis mb-1">
-                <i class="bi bi-journal-bookmark me-2 text-warning"></i> General Journal
-            </h2>
-            <p class="text-secondary mb-0">Chronological record of financial transactions for Aumo Finance.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="/JournalEntry/Create" class="btn btn-primary fw-semibold shadow-sm d-flex align-items-center">
-                <i class="bi bi-plus-lg me-2"></i> Add Entry
-            </a>
-            <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm d-flex align-items-center @(editMode ? "active" : "")"
-                    @onclick="ToggleEditMode" disabled="@(!entries.Any())">
-                <i class="bi bi-pencil me-2"></i> Edit
-            </button>
-        </div>
-    </div>
-
-    @if (selectedPeriod != null)
+    @if (noPeriodSelected)
     {
-        <div class="alert alert-secondary shadow-sm py-2 px-3 small d-flex align-items-center gap-2 rounded-3">
-            <i class="bi bi-eye-fill fs-5"></i>
-            <span>Showing <strong>@selectedPeriod.PeriodName</strong></span>
-            @if (selectedPeriod.IsClosed)
-            {
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-auto">
-                    <i class="bi bi-lock-fill me-1"></i>Closed
-                </span>
-            }
+        <div class="text-center py-5 my-4">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
+            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
         </div>
     }
-
-    <!-- General Journal Table -->
-    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary overflow-hidden">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <!-- Tambahkan table-sm untuk membuat baris lebih compact -->
-                <table class="table table-sm table-hover align-middle mb-0">
-                    <!-- table-dark untuk header hitam -->
-                    <thead class="table-dark">
-                        <tr>
-                            <th class="ps-3 text-center py-2" style="width: 8%;">Tgl</th>
-                            <th class="py-2" style="width: 25%;">Account</th>
-                            <th class="py-2 text-white" style="width: 27%;">Description</th>
-                            <th class="text-center py-2 text-white" style="width: 8%;">Ref.</th>
-                            <th class="text-end py-2" style="width: 16%;">Debit</th>
-                            <th class="text-end pe-3 py-2" style="width: 16%;">Credit</th>
-                        </tr>
-                    </thead>
-                    <tbody class="border-top-0">
-                        @if (entries.Any())
-                        {
-                            string lastDate = "";
-                            int dateGroupIndex = 0;
-
-                            for (int e = 0; e < entries.Count; e++)
-                            {
-                                var entry = entries[e];
-                                var allLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
-
-                                var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
-                                var showDate = (currentDateStr != lastDate);
-                                if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
-
-                                var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
-
-                                for (int i = 0; i < allLines.Count; i++)
-                                {
-                                    var line = allLines[i];
-                                    var isFirstRow = (i == 0);
-                                    var isDebit = line.Debit > 0;
-
-                                    <tr class="@entryShade">
-                                        <td class="ps-3 text-center align-top py-1">
-                                            @if (isFirstRow && showDate)
-                                            {
-                                                <div>
-                                                    <span class="badge rounded-pill bg-primary text-white fw-bold px-2 py-1 shadow-sm">
-                                                        @entry.EntryDate.Day
-                                                    </span>
-                                                </div>
-                                            }
-                                            @if (isFirstRow)
-                                            {
-                                                <div class="d-flex flex-column align-items-center mt-1">
-                                                    @if (entry.CreatedAt != default)
-                                                    {
-                                                        <!-- Hapus ikon jam, sisa teks jam saja -->
-                                                        <span class="text-muted fw-medium" style="font-size: 0.70rem;" title="Waktu Input">
-                                                            @entry.CreatedAt.ToString("HH:mm:ss")
-                                                        </span>
-                                                    }
-
-                                                    <a href="/JournalEntry/Edit/@entry.Id"
-                                                       class="btn btn-sm btn-light text-primary border-0 shadow-sm mt-1 py-0 px-1 @(editMode ? "" : "d-none")" 
-                                                       title="Edit entri ini">
-                                                        <i class="bi bi-pencil-fill" style="font-size: 0.8rem;"></i>
-                                                    </a>
-                                                </div>
-                                            }
-                                        </td>
-                                        <td class="align-top py-1 @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
-                                            @line.Account?.AccountName
-                                        </td>
-                                        <!-- Warna deskripsi tetap putih -->
-                                        <td class="small align-top py-1 text-white">
-                                            @line.LineDescription
-                                        </td>
-                                        <!-- Ref tanpa kotak, langsung text-white -->
-                                        <td class="text-center align-top py-1">
-                                            <span class="text-white fw-medium">
-                                                @line.Account?.ReferenceNumber
-                                            </span>
-                                        </td>
-                                        <td class="text-end align-top py-1 @(isDebit ? "text-success fw-bold" : "text-secondary")">
-                                            @(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : null)
-                                        </td>
-                                        <td class="text-end pe-3 align-top py-1 @(!isDebit ? "text-danger fw-bold" : "text-secondary")">
-                                            @(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : null)
-                                        </td>
-                                    </tr>
-                                }
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center py-5 text-secondary">
-                                    @if (selectedPeriod == null)
-                                    {
-                                        <div class="py-3">
-                                            <i class="bi bi-eye-slash mb-2 d-block text-muted" style="font-size: 2.5rem;"></i>
-                                            <h6 class="fw-semibold">No Period Selected</h6>
-                                            <p class="mb-0 small">Go to <a href="/periods" class="text-decoration-none fw-bold">Periods</a> and click <i class="bi bi-eye"></i> to view one.</p>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="py-3">
-                                            <i class="bi bi-journal-x mb-2 d-block text-muted" style="font-size: 2.5rem;"></i>
-                                            <h6 class="fw-semibold">No Entries Found</h6>
-                                            <p class="mb-0 small">No journal entries recorded in <strong>@selectedPeriod.PeriodName</strong>.</p>
-                                        </div>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                @if (IsTemporary)
+                {
+                    <h2 class="fw-bold text-body-emphasis mb-1">
+                        <i class="bi bi-calculator me-2 text-success"></i> General Ledger (Temporary Accounts)
+                    </h2>
+                    <p class="text-secondary mb-0">Nominal (temporary) accounts — Operating Income, Operating Expenses, Other Income, Other Expenses. Closed to Equity at period end; posted from the same General Journal entries.</p>
+                }
+                else
+                {
+                    <h2 class="fw-bold text-body-emphasis mb-1">
+                        <i class="bi bi-book me-2 text-info"></i> General Ledger
+                    </h2>
+                    <p class="text-secondary mb-0">Permanent (real) accounts — Assets, Liabilities, Equity. Every line is posted from the General Journal via the account's Chart of Accounts reference number.</p>
+                }
+            </div>
+            <div>
+                <a href="/reports/general-journal" class="btn btn-outline-secondary fw-semibold shadow-sm">
+                    <i class="bi bi-journal-bookmark me-1"></i> General Journal
+                </a>
             </div>
         </div>
-    </div>
+
+        @if (!ledgers.Any())
+        {
+            <div class="alert alert-secondary shadow-sm py-2 px-3 small rounded-3">
+                No @(IsTemporary ? "temporary" : "permanent") accounts found in the Chart of Accounts.
+            </div>
+        }
+
+        @if (IsTemporary && ledgers.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+                <div class="card-body d-flex justify-content-between align-items-center py-3 px-4">
+                    <span class="fw-semibold text-warning">Net Income / (Loss) before closing</span>
+                    <span class="fw-bold fs-5 @(netTotal >= 0 ? "text-success" : "text-danger")">@netTotal.ToString("N0", Idr)</span>
+                </div>
+            </div>
+        }
+
+        @foreach (var ledger in ledgers)
+        {
+            <div id="account-@ledger.AccountId" class="card border-0 shadow-sm rounded-4 bg-body-tertiary overflow-hidden mb-4">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center py-3 px-4">
+                    <h5 class="mb-0 fw-bold">
+                        <span class="text-warning me-2">@ledger.ReferenceNumber</span> @ledger.AccountName
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-2 small">@ledger.Type</span>
+                    </h5>
+                    <span class="fw-semibold @(ledger.EndingBalance >= 0 ? "text-success" : "text-danger")">
+                        Balance: @ledger.EndingBalance.ToString("N0", Idr) (@(ledger.NormalBalanceIsDebit ? "Dr" : "Cr"))
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="ps-4 py-2" style="width: 15%;">Date</th>
+                                    <th class="py-2 text-white" style="width: 45%;">Description</th>
+                                    <th class="text-end py-2" style="width: 13%;">Debit</th>
+                                    <th class="text-end py-2" style="width: 13%;">Credit</th>
+                                    <th class="text-end pe-4 py-2" style="width: 14%;">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border-top-0">
+                                @if (ledger.Lines.Any())
+                                {
+                                    @foreach (var line in ledger.Lines)
+                                    {
+                                        <tr>
+                                            <td class="ps-4 text-nowrap py-1">@line.EntryDate.ToString("dd-MM-yyyy")</td>
+                                            <td class="small py-1 text-white">@line.Description</td>
+                                            <td class="text-end py-1 @(line.Debit > 0 ? "text-success fw-bold" : "text-secondary")">@(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : null)</td>
+                                            <td class="text-end py-1 @(line.Credit > 0 ? "text-danger fw-bold" : "text-secondary")">@(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : null)</td>
+                                            <td class="text-end pe-4 py-1 fw-semibold">@line.RunningBalance.ToString("N0", Idr)</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-secondary">No postings yet for this account.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
 </div>
 
 @code {
@@ -172,10 +125,12 @@
     [CascadingParameter]
     private Task<AuthenticationState>? AuthStateTask { get; set; }
 
+    [Parameter] public bool IsTemporary { get; set; }
+
     private Guid UserId { get; set; }
-    private List<JournalEntry> entries = new();
-    private Period? selectedPeriod;
-    private bool editMode;
+    private List<LedgerAccountViewModel> ledgers = new();
+    private bool noPeriodSelected;
+    private decimal netTotal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -194,27 +149,88 @@
             }
         }
 
-        if (UserId == Guid.Empty) return;
-
-        selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
-
-        if (selectedPeriod == null)
+        if (UserId == Guid.Empty)
         {
-            entries = new List<JournalEntry>();
+            noPeriodSelected = true;
             return;
         }
 
-        entries = await DbContext.JournalEntries
-            .Include(j => j.Lines)
-                .ThenInclude(l => l.Account)
-            .Where(j => j.UserId == UserId
-                     && j.EntryDate >= selectedPeriod.StartDate 
-                     && j.EntryDate <= selectedPeriod.EndDate)
-            .OrderBy(j => j.EntryDate)    
-            .ThenBy(j => j.CreatedAt)     
-            .ThenBy(j => j.Id)             
-            .ToListAsync();
+        var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
+        if (period == null)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        Func<string, bool> typeFilter = IsTemporary
+            ? AccountClassification.IsTemporary
+            : AccountClassification.IsPermanent;
+
+        ledgers = await BuildLedgersAsync(period, typeFilter);
+
+        if (IsTemporary)
+        {
+            netTotal = ledgers.Sum(l => l.NormalBalanceIsDebit ? -l.EndingBalance : l.EndingBalance);
+        }
     }
 
-    private void ToggleEditMode() => editMode = !editMode;
+    private async Task<List<LedgerAccountViewModel>> BuildLedgersAsync(Period period, Func<string, bool> typeFilter)
+    {
+        var accounts = (await DbContext.ChartOfAccounts
+                .Where(a => a.IsActive && a.UserId == UserId)
+                .OrderBy(a => a.ReferenceNumber)
+                .ToListAsync())
+            .Where(a => typeFilter(a.Type))
+            .ToList();
+
+        var accountIds = accounts.Select(a => a.Id).ToList();
+
+        var lines = await DbContext.JournalEntryLines
+            .Include(l => l.JournalEntry)
+            .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == UserId)
+            .OrderBy(l => l.JournalEntry!.EntryDate)
+            .ThenBy(l => l.JournalEntry!.Id)
+            .ThenBy(l => l.LineOrder)
+            .ToListAsync();
+
+        var result = new List<LedgerAccountViewModel>();
+
+        foreach (var account in accounts)
+        {
+            var isPermanent = AccountClassification.IsPermanent(account.Type);
+            var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
+            decimal running = 0;
+
+            var accountLines = isPermanent
+                ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate)
+                : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate);
+
+            var ledgerLines = new List<LedgerLineViewModel>();
+            foreach (var line in accountLines)
+            {
+                running += normalDebit ? (line.Debit - line.Credit) : (line.Credit - line.Debit);
+                ledgerLines.Add(new LedgerLineViewModel
+                {
+                    EntryDate = line.JournalEntry!.EntryDate,
+                    Description = line.LineDescription,
+                    Debit = line.Debit,
+                    Credit = line.Credit,
+                    RunningBalance = running
+                });
+            }
+
+            result.Add(new LedgerAccountViewModel
+            {
+                AccountId = account.Id,
+                ReferenceNumber = account.ReferenceNumber,
+                AccountName = account.AccountName,
+                Type = account.Type,
+                NormalBalanceIsDebit = normalDebit,
+                Lines = ledgerLines,
+                EndingBalance = running
+            });
+        }
+
+        return result;
+    }
 }
