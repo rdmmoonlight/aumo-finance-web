@@ -1,8 +1,0 @@
-@using System.Security.Claims
-@{
-    ViewData["Title"] = "Trial Balance";
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-}
-
-<component type="typeof(AumoFinance.Components.TrialBalancePage)" render-mode="ServerPrerendered"
-           param-UserId="@userId" param-IncludeAdjusting="false" />

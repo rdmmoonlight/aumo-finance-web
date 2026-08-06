@@ -1,8 +1,0 @@
-@using System.Security.Claims
-@{
-    ViewData["Title"] = "General Ledger";
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-}
-
-<component type="typeof(AumoFinance.Components.GeneralLedgerPage)" render-mode="ServerPrerendered"
-           param-UserId="@userId" param-IsTemporary="false" />
