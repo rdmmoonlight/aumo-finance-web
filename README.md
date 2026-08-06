@@ -22,7 +22,7 @@ To maintain the highest level of financial integrity, economic rationality, and 
 
 ## 🛠️ Tech Stack
 
-* **Framework:** .NET 10 / ASP.NET Core (Blazor Web App & MVC Hybrid)
+* **Framework:** Pure Blazor SPA (Single Page Application)
 * **Database:** PostgreSQL (Hosted on Neon)
 * **ORM:** Entity Framework Core (EF Core 10)
 * **Authentication:** ASP.NET Core Identity
