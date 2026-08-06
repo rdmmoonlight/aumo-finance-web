@@ -47,7 +47,7 @@ public class MobileController : ControllerBase
             return BadRequest(new MobileLoginResponse { Success = false, Message = "Email dan password wajib diisi." });
         }
 
-        var user = await _userManager.FindByEmailAsync(request.Email) 
+        var user = await _userManager.FindByEmailAsync(request.Email)
                    ?? await _userManager.FindByNameAsync(request.Email);
 
         if (user == null)
@@ -64,7 +64,7 @@ public class MobileController : ControllerBase
         // Generate JWT Token
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(JwtSecretKey);
-        
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
