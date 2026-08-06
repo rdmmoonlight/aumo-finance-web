@@ -1,6 +1,15 @@
-@using AumoFinance.Models
+@page "/reports/trial-balance"
+@page "/reports/trial-balance/{IncludeAdjusting:bool}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using AumoFinance.Models
 @inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container-fluid">
     @if (noPeriodSelected)
@@ -9,7 +18,7 @@
             <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
             <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
             <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
-            <a href="/Periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
                 <i class="bi bi-calendar3 me-1"></i> Go to Periods
             </a>
         </div>
@@ -31,10 +40,10 @@
             @if (IncludeAdjusting)
             {
                 <div class="d-flex gap-2">
-                    <a href="/Reports/TrialBalance" class="btn btn-outline-secondary">
+                    <a href="/reports/trial-balance" class="btn btn-outline-secondary">
                         <i class="bi bi-list-columns me-1"></i> Trial Balance
                     </a>
-                    <a href="/AdjustingJournal" class="btn btn-outline-secondary">
+                    <a href="/reports/adjusting-journal" class="btn btn-outline-secondary">
                         <i class="bi bi-journal-medical me-1"></i> Adjusting Journal
                     </a>
                 </div>
@@ -42,7 +51,7 @@
             else
             {
                 <div>
-                    <a href="/Reports/GeneralLedger" class="btn btn-outline-secondary">
+                    <a href="/reports/general-ledger" class="btn btn-outline-secondary">
                         <i class="bi bi-book me-1"></i> General Ledger
                     </a>
                 </div>
@@ -113,9 +122,13 @@
 
 @code {
     private static readonly CultureInfo Idr = new("id-ID");
-    [Parameter] public Guid UserId { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
     [Parameter] public bool IncludeAdjusting { get; set; }
 
+    private Guid UserId { get; set; }
     private string Title => IncludeAdjusting ? "Adjusted Trial Balance" : "Trial Balance";
 
     private List<TrialBalanceRow> rows = new();
@@ -127,6 +140,27 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
         var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
         if (period == null)
         {
@@ -137,8 +171,6 @@
         rows = await BuildTrialBalanceRowsAsync(period, IncludeAdjusting);
     }
 
-    // Dipakai juga oleh WorksheetPage.razor (logika identik dengan
-    // ReportsController.BuildTrialBalanceRowsAsync).
     public static async Task<List<TrialBalanceRow>> BuildTrialBalanceRowsAsync(AppDbContext db, Guid userId, Period period, bool includeAdjusting)
     {
         var accounts = await db.ChartOfAccounts
