@@ -1,3 +1,5 @@
+@inject IJSRuntime JS
+
 <div class="w-100 px-1 text-center mx-auto" style="max-width: 95%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
     
     <!-- Teks Terjemahan -->
@@ -11,3 +13,19 @@
     </span>
     
 </div>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Dipanggil setiap kali komponen selesai dirender (termasuk saat navigasi antar page)
+        // agar elemen DOM di topbar selalu terisi dengan benar oleh script JS.
+        try
+        {
+            await JS.InvokeVoidAsync("loadQuranVerse");
+        }
+        catch
+        {
+            // Menghindari exception jika JS runtime belum siap saat prerendering
+        }
+    }
+}
