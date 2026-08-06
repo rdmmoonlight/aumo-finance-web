@@ -10,58 +10,56 @@
 @inject AppDbContext DbContext
 @inject AuthenticationStateProvider AuthStateProvider
 
-<div class="container-fluid py-4 px-4">
+<div class="container-fluid">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold text-body-emphasis mb-1">
+            <h2 class="mb-1">
                 <i class="bi bi-journal-bookmark me-2 text-warning"></i> General Journal
             </h2>
-            <p class="text-secondary mb-0">Chronological record of financial transactions for Aumo Finance.</p>
+            <p class="text-muted mb-0">Chronological record of financial transactions for Aumo Finance.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="/JournalEntry/Create" class="btn btn-primary fw-semibold shadow-sm d-flex align-items-center">
-                <i class="bi bi-plus-lg me-2"></i> Add Entry
+            <a href="/JournalEntry/Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Add Entry
             </a>
-            <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm d-flex align-items-center @(editMode ? "active" : "")"
+            <button type="button" class="btn btn-outline-secondary @(editMode ? "active" : "")"
                     @onclick="ToggleEditMode" disabled="@(!entries.Any())">
-                <i class="bi bi-pencil me-2"></i> Edit
+                <i class="bi bi-pencil me-1"></i> Edit
             </button>
         </div>
     </div>
 
     @if (selectedPeriod != null)
     {
-        <div class="alert alert-secondary shadow-sm py-2 px-3 small d-flex align-items-center gap-2 rounded-3">
-            <i class="bi bi-eye-fill fs-5"></i>
-            <span>Showing <strong>@selectedPeriod.PeriodName</strong></span>
+        <div class="alert alert-secondary bg-dark text-muted border-secondary shadow-sm py-2 px-3 small d-flex align-items-center gap-2 rounded-3 mb-4">
+            <i class="bi bi-eye-fill fs-5 text-warning"></i>
+            <span>Showing Period: <strong>@selectedPeriod.PeriodName</strong></span>
             @if (selectedPeriod.IsClosed)
             {
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-auto">
+                <span class="badge bg-secondary bg-opacity-25 border border-secondary ms-auto text-muted">
                     <i class="bi bi-lock-fill me-1"></i>Closed
                 </span>
             }
         </div>
     }
 
-    <!-- General Journal Table -->
-    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary overflow-hidden">
+    <!-- General Journal Table Card -->
+    <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <!-- Tambahkan table-sm untuk membuat baris lebih compact -->
-                <table class="table table-sm table-hover align-middle mb-0">
-                    <!-- table-dark untuk header hitam -->
-                    <thead class="table-dark">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead class="table-active border-bottom border-secondary">
                         <tr>
-                            <th class="ps-3 text-center py-2" style="width: 8%;">Tgl</th>
-                            <th class="py-2" style="width: 25%;">Account</th>
-                            <th class="py-2 text-white" style="width: 27%;">Description</th>
-                            <th class="text-center py-2 text-white" style="width: 8%;">Ref.</th>
-                            <th class="text-end py-2" style="width: 16%;">Debit</th>
-                            <th class="text-end pe-3 py-2" style="width: 16%;">Credit</th>
+                            <th class="ps-3" style="width: 10%;">Date</th>
+                            <th style="width: 28%;">Account</th>
+                            <th style="width: 30%;">Description</th>
+                            <th class="text-center" style="width: 8%;">Ref.</th>
+                            <th class="text-end" style="width: 12%;">Debit</th>
+                            <th class="text-end pe-3" style="width: 12%;">Credit</th>
                         </tr>
                     </thead>
-                    <tbody class="border-top-0">
+                    <tbody>
                         @if (entries.Any())
                         {
                             string lastDate = "";
@@ -76,7 +74,7 @@
                                 var showDate = (currentDateStr != lastDate);
                                 if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
 
-                                var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-body-secondary bg-opacity-25";
+                                var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-black bg-opacity-25";
 
                                 for (int i = 0; i < allLines.Count; i++)
                                 {
@@ -85,52 +83,49 @@
                                     var isDebit = line.Debit > 0;
 
                                     <tr class="@entryShade">
-                                        <td class="ps-3 text-center align-top py-1">
+                                        <td class="ps-3 text-nowrap align-top py-2">
                                             @if (isFirstRow && showDate)
                                             {
                                                 <div>
-                                                    <span class="badge rounded-pill bg-primary text-white fw-bold px-2 py-1 shadow-sm">
-                                                        @entry.EntryDate.Day
+                                                    <span class="badge bg-secondary bg-opacity-25 border border-secondary text-white fw-bold px-2 py-1">
+                                                        @entry.EntryDate.ToString("dd-MM-yyyy")
                                                     </span>
                                                 </div>
                                             }
                                             @if (isFirstRow)
                                             {
-                                                <div class="d-flex flex-column align-items-center mt-1">
+                                                <div class="d-flex flex-column align-items-start mt-1">
                                                     @if (entry.CreatedAt != default)
                                                     {
-                                                        <!-- Hapus ikon jam, sisa teks jam saja -->
-                                                        <span class="text-muted fw-medium" style="font-size: 0.70rem;" title="Waktu Input">
+                                                        <span class="text-muted" style="font-size: 0.70rem;" title="Waktu Input">
                                                             @entry.CreatedAt.ToString("HH:mm:ss")
                                                         </span>
                                                     }
 
                                                     <a href="/JournalEntry/Edit/@entry.Id"
-                                                       class="btn btn-sm btn-light text-primary border-0 shadow-sm mt-1 py-0 px-1 @(editMode ? "" : "d-none")" 
+                                                       class="btn btn-sm btn-dark text-warning border border-secondary shadow-sm mt-1 py-0 px-1 @(editMode ? "" : "d-none")" 
                                                        title="Edit entri ini">
-                                                        <i class="bi bi-pencil-fill" style="font-size: 0.8rem;"></i>
+                                                        <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
                                                     </a>
                                                 </div>
                                             }
                                         </td>
-                                        <td class="align-top py-1 @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
+                                        <td class="align-top py-2 @(isDebit ? "fw-semibold text-white" : "ps-4 text-muted")">
                                             @line.Account?.AccountName
                                         </td>
-                                        <!-- Warna deskripsi tetap putih -->
-                                        <td class="small align-top py-1 text-white">
+                                        <td class="small align-top py-2 text-muted">
                                             @line.LineDescription
                                         </td>
-                                        <!-- Ref tanpa kotak, langsung text-white -->
-                                        <td class="text-center align-top py-1">
-                                            <span class="text-white fw-medium">
+                                        <td class="text-center align-top py-2">
+                                            <code class="text-warning">
                                                 @line.Account?.ReferenceNumber
-                                            </span>
+                                            </code>
                                         </td>
-                                        <td class="text-end align-top py-1 @(isDebit ? "text-success fw-bold" : "text-secondary")">
-                                            @(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : null)
+                                        <td class="text-end align-top py-2 text-success">
+                                            @(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : "-")
                                         </td>
-                                        <td class="text-end pe-3 align-top py-1 @(!isDebit ? "text-danger fw-bold" : "text-secondary")">
-                                            @(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : null)
+                                        <td class="text-end pe-3 align-top py-2 text-danger">
+                                            @(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : "-")
                                         </td>
                                     </tr>
                                 }
@@ -139,20 +134,20 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-secondary">
+                                <td colspan="6" class="text-center py-5 text-muted">
                                     @if (selectedPeriod == null)
                                     {
                                         <div class="py-3">
-                                            <i class="bi bi-eye-slash mb-2 d-block text-muted" style="font-size: 2.5rem;"></i>
-                                            <h6 class="fw-semibold">No Period Selected</h6>
-                                            <p class="mb-0 small">Go to <a href="/periods" class="text-decoration-none fw-bold">Periods</a> and click <i class="bi bi-eye"></i> to view one.</p>
+                                            <i class="bi bi-eye-slash mb-2 d-block text-secondary" style="font-size: 2.5rem;"></i>
+                                            <h6 class="fw-semibold text-white">No Period Selected</h6>
+                                            <p class="mb-0 small">Go to <a href="/periods" class="text-decoration-none fw-bold">Periods</a> to select one.</p>
                                         </div>
                                     }
                                     else
                                     {
                                         <div class="py-3">
-                                            <i class="bi bi-journal-x mb-2 d-block text-muted" style="font-size: 2.5rem;"></i>
-                                            <h6 class="fw-semibold">No Entries Found</h6>
+                                            <i class="bi bi-journal-x mb-2 d-block text-secondary" style="font-size: 2.5rem;"></i>
+                                            <h6 class="fw-semibold text-white">No Entries Found</h6>
                                             <p class="mb-0 small">No journal entries recorded in <strong>@selectedPeriod.PeriodName</strong>.</p>
                                         </div>
                                     }
