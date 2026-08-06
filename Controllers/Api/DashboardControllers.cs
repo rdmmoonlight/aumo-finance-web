@@ -54,8 +54,8 @@ public class DashboardController : ControllerBase
             if (activePeriodObj != null)
             {
                 // Filter jurnal berdasarkan rentang tanggal periode aktif
-                journalLinesQuery = journalLinesQuery.Where(j => 
-                    j.JournalEntry.EntryDate >= activePeriodObj.StartDate && 
+                journalLinesQuery = journalLinesQuery.Where(j =>
+                    j.JournalEntry.EntryDate >= activePeriodObj.StartDate &&
                     j.JournalEntry.EntryDate <= activePeriodObj.EndDate);
             }
 
@@ -64,7 +64,7 @@ public class DashboardController : ControllerBase
             // Total Kas: Akun dengan tipe Kas/Bank (misal AccountType == "Asset" / "Cash")
             // Saldo Kas Normal = Debit - Kredit
             decimal totalCash = lines
-                .Where(l => l.Account.AccountType == "Asset" || l.Account.IsCashAccount) 
+                .Where(l => l.Account.AccountType == "Asset" || l.Account.IsCashAccount)
                 .Sum(l => l.Debit - l.Credit);
 
             // Revenue (Pendapatan): Akun Tipe Revenue/Income
@@ -95,10 +95,10 @@ public class DashboardController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new 
-            { 
-                message = "Gagal memproses data dashboard.", 
-                detail = ex.Message 
+            return StatusCode(500, new
+            {
+                message = "Gagal memproses data dashboard.",
+                detail = ex.Message
             });
         }
     }
