@@ -49,8 +49,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4 text-center" style="width: 5%;">Tgl</th>
-                            <th style="width: 27%;">Account</th>
+                            <th class="ps-4 text-center" style="width: 8%;">Tgl</th>
+                            <th style="width: 25%;">Account</th>
                             <th style="width: 27%;">Description</th>
                             <th class="text-center" style="width: 8%;">Ref.</th>
                             <th class="text-end" style="width: 16%;">Debit</th>
@@ -68,6 +68,7 @@
                                 var entry = entries[e];
                                 var allLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
 
+                                // Hanya mengambil string tanggal (DD-MM-YYYY) untuk pengelompokan grup baris
                                 var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
                                 var showDate = (currentDateStr != lastDate);
                                 if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
@@ -84,10 +85,20 @@
                                         <td class="ps-4 text-center align-top">
                                             @if (isFirstRow && showDate)
                                             {
-                                                <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold small px-2 py-1">@entry.EntryDate.Day</span>
+                                                <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold small px-2 py-1">
+                                                    @entry.EntryDate.Day
+                                                </span>
                                             }
                                             @if (isFirstRow)
                                             {
+                                                <!-- Opsi: Menampilkan jam & menit input (jika ada properti CreatedAt) -->
+                                                @if (entry.CreatedAt != default)
+                                                {
+                                                    <div class="text-muted small" style="font-size: 0.75rem;" title="Waktu Input">
+                                                        @entry.CreatedAt.ToString("HH:mm:ss")
+                                                    </div>
+                                                }
+
                                                 <a href="/JournalEntry/Edit/@entry.Id"
                                                    class="text-primary ms-1 @(editMode ? "" : "d-none")" title="Edit entri ini">
                                                     <i class="bi bi-pencil-fill"></i>
@@ -177,13 +188,16 @@
             return;
         }
 
+        // 3. Query dengan pengurutan: EntryDate -> CreatedAt (Jam/Menit/Detik Input) -> Id
         entries = await DbContext.JournalEntries
             .Include(j => j.Lines)
                 .ThenInclude(l => l.Account)
             .Where(j => j.UserId == UserId
-                     && j.EntryDate >= selectedPeriod.StartDate && j.EntryDate <= selectedPeriod.EndDate)
-            .OrderBy(j => j.EntryDate)
-            .ThenBy(j => j.Id)
+                     && j.EntryDate >= selectedPeriod.StartDate 
+                     && j.EntryDate <= selectedPeriod.EndDate)
+            .OrderBy(j => j.EntryDate)    // Urutkan tanggal transaksi
+            .ThenBy(j => j.CreatedAt)     // Urutkan berdasarkan jam, menit, dan detik waktu input
+            .ThenBy(j => j.Id)             // Fallback pengaman jika waktu input persis sama
             .ToListAsync();
     }
 
