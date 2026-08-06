@@ -1,6 +1,14 @@
-@using AumoFinance.Models
+@page "/reports/general-journal"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
+@using AumoFinance.Models
 @inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container-fluid py-4 px-4">
     <!-- Page Header -->
@@ -112,7 +120,7 @@
                                     @if (selectedPeriod == null)
                                     {
                                         <i class="bi bi-eye-slash mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                        <span>No period selected. Go to <a href="/Periods">Periods</a> and click <i class="bi bi-eye"></i> to view one.</span>
+                                        <span>No period selected. Go to <a href="/periods">Periods</a> and click <i class="bi bi-eye"></i> to view one.</span>
                                     }
                                     else
                                     {
@@ -131,14 +139,36 @@
 
 @code {
     private static readonly CultureInfo Idr = new("id-ID");
-    [Parameter] public Guid UserId { get; set; }
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private Guid UserId { get; set; }
     private List<JournalEntry> entries = new();
     private Period? selectedPeriod;
     private bool editMode;
 
     protected override async Task OnInitializedAsync()
     {
+        // 1. Ambil UserId langsung dari AuthenticationState
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty) return;
+
+        // 2. Load data berdasarkan UserId
         selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
 
         if (selectedPeriod == null)
