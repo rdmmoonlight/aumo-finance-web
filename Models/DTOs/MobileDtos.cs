@@ -24,6 +24,16 @@ public class AccountDto
     public string Role { get; set; } = string.Empty;
 }
 
+public class PeriodDto
+{
+    public int Id { get; set; }
+    public string PeriodName { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    public bool IsClosed { get; set; }
+    public bool IsSelected { get; set; }
+}
+
 public class CreateJournalEntryRequest
 {
     public DateTime EntryDate { get; set; }
