@@ -146,7 +146,7 @@ public class MobileController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
-        // A. Filter baris kosong (sama persis dengan Controller Web)
+        // A. Filter baris kosong
         var validLines = request.Lines
             .Where(l => l.AccountId != 0 && (l.Debit != 0 || l.Credit != 0))
             .ToList();
@@ -165,7 +165,7 @@ public class MobileController : ControllerBase
             return BadRequest(new { message = "Total debit harus sama dengan total kredit dan tidak boleh nol." });
         }
 
-        // C. Validasi Kepemilikan Akun (Akun harus milik user yang login)
+        // C. Validasi Kepemilikan Akun
         var validAccountIds = (await _db.ChartOfAccounts
             .Where(a => a.IsActive && a.UserId == userId)
             .Select(a => a.Id)
@@ -190,7 +190,7 @@ public class MobileController : ControllerBase
         // E. Generate Nomor Referensi Otomatis (GJ-xxxxxx / AJE-xxxxxx)
         string refNumber = await GenerateReferenceNumberAsync(userId, request.JournalType);
 
-        // F. Simpan Jurnal Baru (Properti yang tidak ada di model JournalEntry sudah dihapus)
+        // F. Simpan Jurnal Baru
         var entry = new JournalEntry
         {
             UserId = userId,
@@ -249,119 +249,6 @@ public class MobileController : ControllerBase
             .ToListAsync();
 
         return Ok(results);
-    }
-
-    // ==========================================
-    // 5. GET: /api/mobile/periods
-    // ==========================================
-    [HttpGet("periods")]
-    public async Task<IActionResult> GetPeriods()
-    {
-        var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) return Unauthorized();
-
-        var periods = await _db.Periods
-            .Where(p => p.UserId == userId)
-            .OrderByDescending(p => p.StartDate)
-            .Select(p => new PeriodDto
-            {
-                Id = p.Id,
-                PeriodName = p.PeriodName,
-                StartDate = p.StartDate,
-                EndDate = p.EndDate,
-                IsClosed = p.IsClosed,
-                IsSelected = p.IsSelected
-            })
-            .ToListAsync();
-
-        return Ok(periods);
-    }
-
-    // ==========================================
-    // 6. POST: /api/mobile/periods/{id}/select
-    // ==========================================
-    [HttpPost("periods/{id:int}/select")]
-    public async Task<IActionResult> SelectPeriod(int id)
-    {
-        var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) return Unauthorized();
-
-        var entity = await _db.Periods.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
-        if (entity == null)
-        {
-            return NotFound(new { message = "Periode tidak ditemukan." });
-        }
-
-        var currentlySelected = await _db.Periods
-            .Where(p => p.UserId == userId && p.IsSelected)
-            .ToListAsync();
-
-        foreach (var p in currentlySelected)
-        {
-            p.IsSelected = false;
-        }
-
-        entity.IsSelected = true;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { success = true, message = $"Berhasil melihat periode {entity.PeriodName}." });
-    }
-
-    // ==========================================
-    // 7. POST: /api/mobile/periods/clear-selection
-    // ==========================================
-    [HttpPost("periods/clear-selection")]
-    public async Task<IActionResult> ClearPeriodSelection()
-    {
-        var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) return Unauthorized();
-
-        var currentlySelected = await _db.Periods
-            .Where(p => p.UserId == userId && p.IsSelected)
-            .ToListAsync();
-
-        foreach (var p in currentlySelected)
-        {
-            p.IsSelected = false;
-        }
-
-        await _db.SaveChangesAsync();
-
-        return Ok(new { success = true, message = "Berhenti melihat periode." });
-    }
-
-    // ==========================================
-    // 8. POST: /api/mobile/periods/{id}/close
-    // ==========================================
-    [HttpPost("periods/{id:int}/close")]
-    public async Task<IActionResult> ClosePeriod(int id)
-    {
-        var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) return Unauthorized();
-
-        var entity = await _db.Periods.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
-        if (entity == null)
-        {
-            return NotFound(new { message = "Periode tidak ditemukan." });
-        }
-
-        if (entity.IsClosed)
-        {
-            return BadRequest(new { message = $"Periode {entity.PeriodName} sudah ditutup." });
-        }
-
-        var hasEarlierOpenPeriod = await _db.Periods
-            .AnyAsync(p => p.UserId == userId && p.Id != entity.Id && p.StartDate < entity.StartDate && !p.IsClosed);
-
-        if (hasEarlierOpenPeriod)
-        {
-            return BadRequest(new { message = $"Tidak bisa menutup {entity.PeriodName}: ada periode sebelumnya yang masih terbuka. Tutup periode sebelumnya terlebih dahulu." });
-        }
-
-        entity.IsClosed = true;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { success = true, message = $"Periode {entity.PeriodName} berhasil ditutup." });
     }
 
     // ==========================================
