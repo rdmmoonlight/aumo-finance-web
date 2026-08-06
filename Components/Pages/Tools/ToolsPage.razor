@@ -1,0 +1,37 @@
+@page "/tools"
+@namespace AumoFinance.Components.Pages.Tools
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Tools &amp; Utilities</PageTitle>
+
+<div class="container-fluid py-4 px-4">
+    <div class="mb-4">
+        <h2 class="fw-bold text-body-emphasis mb-1">
+            <i class="bi bi-tools me-2 text-primary"></i> Tools &amp; Utilities
+        </h2>
+        <p class="text-secondary mb-0">System utilities, batch processing, and data import/export tools.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Import Journal Card -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="badge bg-success-subtle text-success p-3 rounded-circle fit-content mb-3">
+                        <i class="bi bi-file-earmark-spreadsheet-fill fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Import Journal (.xlsx)</h5>
+                    <p class="text-secondary small flex-grow-1">Batch upload journal entries directly from Excel files with instant validation and preview.</p>
+                    <a href="/tools/import-journal" class="btn btn-outline-primary rounded-3 w-100 fw-semibold mt-3">
+                        Open Import Tool <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fit-content { width: fit-content; }
+</style>
