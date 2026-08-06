@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AumoFinance.Models;
 
 namespace AumoFinance.Controllers.Api; // Sesuaikan dengan namespace backend Anda
 
