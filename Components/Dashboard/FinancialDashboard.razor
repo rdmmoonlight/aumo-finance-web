@@ -1,10 +1,16 @@
+@page "/dashboard"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
 @using System.Globalization
+@using System.Security.Claims
 @using AumoFinance.Models
 @using AumoFinance.Services
 @using AumoFinance.Components.Dashboard
 @inject DashboardDataService DataService
 @inject IJSRuntime JS
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
 <style>
     .tracking-wider { letter-spacing: 0.05em; }
@@ -43,8 +49,19 @@
     .account-item:hover { background-color: rgba(255,255,255,0.04); }
 </style>
 
+<PageTitle>Financial Dashboard</PageTitle>
+
 <div class="container-fluid px-0 text-white">
-    @if (!model.HasSelectedPeriod)
+    @if (UserId == Guid.Empty)
+    {
+        <div class="text-center py-5 my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-white-50 mt-3">Memuat data pengguna...</p>
+        </div>
+    }
+    else if (!model.HasSelectedPeriod)
     {
         <div class="text-center py-5 my-5">
             <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 3rem;"></i>
@@ -53,7 +70,7 @@
                 The Dashboard follows whichever period you're viewing.<br />
                 Go to <strong>Periods</strong> and click <i class="bi bi-eye"></i> on a period to see its data here.
             </p>
-            <a href="/Periods" class="btn btn-primary fw-semibold shadow-sm px-4">
+            <a href="/periods" class="btn btn-primary fw-semibold shadow-sm px-4">
                 <i class="bi bi-calendar3 me-1"></i> Go to Periods
             </a>
         </div>
@@ -107,7 +124,7 @@
 </div>
 
 @code {
-    [Parameter] public Guid UserId { get; set; }
+    private Guid UserId;
     private static readonly CultureInfo Idr = new("id-ID");
     private DashboardViewModel model = new();
     private string periodType = "monthly";
@@ -115,13 +132,29 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = new Uri(Nav.Uri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (query.TryGetValue("period", out var p) && p.ToString().Equals("annual", StringComparison.OrdinalIgnoreCase))
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
         {
-            periodType = "annual";
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+
+                var uri = new Uri(Nav.Uri);
+                var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+                if (query.TryGetValue("period", out var p) && p.ToString().Equals("annual", StringComparison.OrdinalIgnoreCase))
+                {
+                    periodType = "annual";
+                }
+
+                await LoadDashboardAsync();
+                return;
+            }
         }
-        await LoadDashboardAsync();
+
+        Nav.NavigateTo("/Account/Login", true);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -146,6 +179,7 @@
 
     private async Task LoadDashboardAsync()
     {
+        if (UserId == Guid.Empty) return;
         model = await DataService.GetDashboardDataAsync(UserId, periodType);
         chartsNeedRender = true;
     }
