@@ -1,3 +1,8 @@
+@page "/guardian"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
 @using AumoFinance.Models
 @using AumoFinance.Models.Security
 @using AumoFinance.Services.Security
@@ -8,8 +13,11 @@
 @inject IGuardianService GuardianService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
 
-<div class="container-fluid">
+<PageTitle>Guardian Security</PageTitle>
+
+<div class="container-fluid py-4">
 
     <!-- Header & Overall Health Badge -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -30,7 +38,7 @@
     {
         <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
             <i class="bi bi-check-circle me-2"></i>@successMessage
-            <button type="button" class="btn-close btn-close-white" @onclick="() => successMessage = null"></button>
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
         </div>
     }
     @if (errorMessage != null)
@@ -284,7 +292,7 @@
 </div>
 
 @code {
-    [Parameter] public Guid UserId { get; set; }
+    private Guid UserId;
 
     private string activeTab = "health";
     private List<UserSession> sessions = new();
@@ -294,8 +302,22 @@
 
     protected override async Task OnInitializedAsync()
     {
-        sessions = await GuardianService.GetActiveSessionsAsync(UserId);
-        activities = await GuardianService.GetLoginActivitiesAsync(UserId);
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+                sessions = await GuardianService.GetActiveSessionsAsync(UserId);
+                activities = await GuardianService.GetLoginActivitiesAsync(UserId);
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/Account/Login", true);
     }
 
     private async Task HandleRevokeSession(Guid sessionId)
@@ -331,13 +353,8 @@
 
         await DbContext.SaveChangesAsync();
 
-        // Kunci utama: perbarui Security Stamp agar cookie ASP.NET di semua
-        // browser (termasuk browser saat ini) hangus pada request berikutnya.
         await UserManager.UpdateSecurityStampAsync(user);
 
-        // Navigasi paksa (forceLoad) supaya browser benar-benar mengirim
-        // request baru ke /Auth/Login — cookie lama sudah tidak valid lagi
-        // karena security stamp berubah, jadi middleware auth akan menolaknya.
-        Nav.NavigateTo("/Auth/Login", forceLoad: true);
+        Nav.NavigateTo("/Account/Login", forceLoad: true);
     }
 }
