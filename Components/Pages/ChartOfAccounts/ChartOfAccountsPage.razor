@@ -1,8 +1,8 @@
-@using System.Globalization
-@using AumoFinance.Models
-@using Microsoft.EntityFrameworkCore
-@inject AppDbContext DbContext
-@inject IJSRuntime JS
+@page "/chart-of-accounts"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Chart of Accounts</PageTitle>
 
 <div class="container-fluid py-4 px-4">
     <!-- Page Header -->
@@ -65,7 +65,15 @@
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
-                        @if (FilteredAccounts.Any())
+                        @if (UserId == Guid.Empty)
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-secondary">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading account data...
+                                </td>
+                            </tr>
+                        }
+                        else if (FilteredAccounts.Any())
                         {
                             @foreach (var account in FilteredAccounts)
                             {
@@ -259,239 +267,3 @@
         </div>
     </div>
 </div>
-
-@code {
-    [Parameter] public Guid UserId { get; set; }
-
-    private static readonly CultureInfo CultureId = new("id-ID");
-
-    private static readonly string[] AccountTypes =
-    {
-        "Assets", "Liabilities", "Equity", "OperatingIncome",
-        "OperatingExpenses", "OtherIncome", "OtherExpenses"
-    };
-
-    private List<ChartOfAccount> accounts = new();
-    private string? successMessage;
-    private string? errorMessage;
-    private string searchText = string.Empty;
-    private string categoryFilter = string.Empty;
-
-    private ChartOfAccount newAccount = new() { Role = "Default" };
-    private ChartOfAccount editAccount = new();
-    private string? createError;
-    private string? editError;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadAccountsAsync();
-    }
-
-    private async Task LoadAccountsAsync()
-    {
-        var loaded = await DbContext.ChartOfAccounts
-            .Where(a => a.UserId == UserId)
-            .OrderBy(a => a.ReferenceNumber)
-            .ToListAsync();
-
-        var accountIds = loaded.Select(a => a.Id).ToList();
-
-        var currentPeriod = await DbContext.Periods
-            .FirstOrDefaultAsync(p => p.UserId == UserId && p.IsSelected);
-
-        if (currentPeriod == null)
-        {
-            foreach (var account in loaded)
-            {
-                account.Balance = 0;
-            }
-        }
-        else
-        {
-            var accountBalances = await DbContext.JournalEntryLines
-                .Where(j => accountIds.Contains(j.AccountId) &&
-                            j.JournalEntry != null &&
-                            j.JournalEntry.EntryDate >= currentPeriod.StartDate &&
-                            j.JournalEntry.EntryDate <= currentPeriod.EndDate)
-                .GroupBy(j => j.AccountId)
-                .Select(g => new
-                {
-                    AccountId = g.Key,
-                    TotalDebit = g.Sum(j => j.Debit),
-                    TotalCredit = g.Sum(j => j.Credit)
-                })
-                .ToDictionaryAsync(x => x.AccountId);
-
-            foreach (var account in loaded)
-            {
-                if (accountBalances.TryGetValue(account.Id, out var balance))
-                {
-                    account.Balance = AccountClassification.NormalBalanceIsDebit(account.Type)
-                        ? balance.TotalDebit - balance.TotalCredit
-                        : balance.TotalCredit - balance.TotalDebit;
-                }
-                else
-                {
-                    account.Balance = 0;
-                }
-            }
-        }
-
-        accounts = loaded;
-    }
-
-    private IEnumerable<ChartOfAccount> FilteredAccounts => accounts.Where(a =>
-        (string.IsNullOrWhiteSpace(searchText)
-            || a.AccountName.Contains(searchText, StringComparison.OrdinalIgnoreCase)
-            || a.ReferenceNumber.ToString().Contains(searchText))
-        && (string.IsNullOrWhiteSpace(categoryFilter) || a.Type == categoryFilter));
-
-    private static string FormatCategoryLabel(string type) => type switch
-    {
-        "Assets" => "Assets (100 - 199)",
-        "Liabilities" => "Liabilities (200 - 299)",
-        "Equity" => "Equity (300 - 399)",
-        "OperatingIncome" => "Operating Income (400 - 499)",
-        "OperatingExpenses" => "Operating Expenses (500 - 599)",
-        "OtherIncome" => "Other Income (600 - 799)",
-        "OtherExpenses" => "Other Expenses (800 - 999)",
-        _ => type
-    };
-
-    private string GetLedgerUrl(ChartOfAccount account)
-    {
-        var action = AccountClassification.IsTemporary(account.Type) ? "GeneralLedgerTemporary" : "GeneralLedger";
-        return $"/Reports/{action}#account-{account.Id}";
-    }
-
-    private async Task HandleCreate()
-    {
-        createError = null;
-
-        if (!AccountClassification.ValidateReferenceNumber(newAccount.Type, newAccount.ReferenceNumber))
-        {
-            createError = $"Invalid reference number {newAccount.ReferenceNumber} for category {newAccount.Type}.";
-            return;
-        }
-
-        bool isCodeTaken = await DbContext.ChartOfAccounts
-            .AnyAsync(a => a.UserId == UserId && a.ReferenceNumber == newAccount.ReferenceNumber);
-        if (isCodeTaken)
-        {
-            createError = $"Account code {newAccount.ReferenceNumber} is already in use!";
-            return;
-        }
-
-        newAccount.UserId = UserId;
-        newAccount.IsActive = true;
-        newAccount.Balance = 0;
-
-        try
-        {
-            DbContext.ChartOfAccounts.Add(newAccount);
-            await DbContext.SaveChangesAsync();
-            successMessage = $"Account '{newAccount.AccountName}' successfully created.";
-            await JS.InvokeVoidAsync("aumoModal.hide", "addAccountModal");
-            newAccount = new ChartOfAccount { Role = "Default" };
-            await LoadAccountsAsync();
-        }
-        catch (Exception)
-        {
-            createError = "A fatal error occurred while saving the account.";
-        }
-    }
-
-    private void OpenEditModal(ChartOfAccount account)
-    {
-        editError = null;
-        editAccount = new ChartOfAccount
-        {
-            Id = account.Id,
-            ReferenceNumber = account.ReferenceNumber,
-            AccountName = account.AccountName,
-            Type = account.Type,
-            Role = account.Role,
-            IsActive = account.IsActive,
-            UserId = account.UserId
-        };
-    }
-
-    private async Task HandleEdit()
-    {
-        editError = null;
-
-        var account = await DbContext.ChartOfAccounts
-            .FirstOrDefaultAsync(a => a.Id == editAccount.Id && a.UserId == UserId);
-        if (account == null)
-        {
-            editError = "Account not found.";
-            return;
-        }
-
-        if (!AccountClassification.ValidateReferenceNumber(editAccount.Type, editAccount.ReferenceNumber))
-        {
-            editError = $"Invalid reference number {editAccount.ReferenceNumber} for category {editAccount.Type}.";
-            return;
-        }
-
-        bool isCodeTaken = await DbContext.ChartOfAccounts
-            .AnyAsync(a => a.UserId == UserId && a.ReferenceNumber == editAccount.ReferenceNumber && a.Id != editAccount.Id);
-        if (isCodeTaken)
-        {
-            editError = $"Account code {editAccount.ReferenceNumber} is already in use!";
-            return;
-        }
-
-        account.ReferenceNumber = editAccount.ReferenceNumber;
-        account.AccountName = editAccount.AccountName;
-        account.Type = editAccount.Type;
-        account.Role = editAccount.Role;
-        account.IsActive = editAccount.IsActive;
-
-        try
-        {
-            await DbContext.SaveChangesAsync();
-            successMessage = $"Account '{account.AccountName}' successfully updated.";
-            await JS.InvokeVoidAsync("aumoModal.hide", "editAccountModal");
-            await LoadAccountsAsync();
-        }
-        catch (Exception)
-        {
-            editError = "A fatal error occurred while updating the account.";
-        }
-    }
-
-    private async Task ConfirmAndDelete(ChartOfAccount account)
-    {
-        var confirmed = await JS.InvokeAsync<bool>("confirm",
-            $"Delete account \"{account.AccountName}\"? This action cannot be undone.");
-        if (!confirmed) return;
-
-        var entity = await DbContext.ChartOfAccounts
-            .FirstOrDefaultAsync(a => a.Id == account.Id && a.UserId == UserId);
-        if (entity == null)
-        {
-            errorMessage = "Account not found.";
-            return;
-        }
-
-        bool hasJournalLines = await DbContext.JournalEntryLines.AnyAsync(l => l.AccountId == account.Id);
-        if (hasJournalLines)
-        {
-            errorMessage = $"Account '{entity.AccountName}' cannot be deleted because it already has journal entries. Set it to Inactive instead.";
-            return;
-        }
-
-        try
-        {
-            DbContext.ChartOfAccounts.Remove(entity);
-            await DbContext.SaveChangesAsync();
-            successMessage = $"Account '{entity.AccountName}' successfully deleted.";
-            await LoadAccountsAsync();
-        }
-        catch (Exception)
-        {
-            errorMessage = "A fatal error occurred while deleting the account.";
-        }
-    }
-}
