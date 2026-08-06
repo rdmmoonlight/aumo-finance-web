@@ -1,5 +1,14 @@
+@page "/reports/closing-journal"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
 @using AumoFinance.Models
 @inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container-fluid">
     @if (noPeriodSelected)
@@ -8,7 +17,7 @@
             <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
             <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
             <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
-            <a href="/Periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
                 <i class="bi bi-calendar3 me-1"></i> Go to Periods
             </a>
         </div>
@@ -21,7 +30,7 @@
                 <p class="text-muted mb-0">Closing entries are calculated automatically based on current nominal account balances — not yet posted to the General Journal.</p>
             </div>
             <div>
-                <a href="/Reports/PostClosingTrialBalance" class="btn btn-outline-secondary">
+                <a href="/reports/post-closing-trial-balance" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-right-circle me-1"></i> Post-Closing Trial Balance
                 </a>
             </div>
@@ -37,34 +46,36 @@
             <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
                 <div class="card-header bg-transparent border-secondary fw-semibold">@group.Description</div>
                 <div class="card-body p-0">
-                    <table class="table table-dark table-hover align-middle mb-0">
-                        <thead class="table-active border-bottom border-secondary">
-                            <tr>
-                                <th class="text-center">Ref.</th>
-                                <th>Account</th>
-                                <th class="text-end">Debit</th>
-                                <th class="text-end">Credit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var line in group.Lines)
-                            {
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover align-middle mb-0">
+                            <thead class="table-active border-bottom border-secondary">
                                 <tr>
-                                    <td class="text-center"><code>@(line.ReferenceNumber > 0 ? line.ReferenceNumber.ToString() : "-")</code></td>
-                                    <td class="@(line.Credit > 0 ? "ps-4" : "fw-semibold")">@line.AccountName</td>
-                                    <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : "-")</td>
-                                    <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : "-")</td>
+                                    <th class="text-center">Ref.</th>
+                                    <th>Account</th>
+                                    <th class="text-end">Debit</th>
+                                    <th class="text-end">Credit</th>
                                 </tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            <tr class="border-top border-secondary fw-bold">
-                                <td colspan="2" class="text-end">Total</td>
-                                <td class="text-end text-success">@group.TotalDebit.ToString("N0", Idr)</td>
-                                <td class="text-end text-danger">@group.TotalCredit.ToString("N0", Idr)</td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @foreach (var line in group.Lines)
+                                {
+                                    <tr>
+                                        <td class="text-center"><code>@(line.ReferenceNumber > 0 ? line.ReferenceNumber.ToString() : "-")</code></td>
+                                        <td class="@(line.Credit > 0 ? "ps-4" : "fw-semibold")">@line.AccountName</td>
+                                        <td class="text-end text-success">@(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : "-")</td>
+                                        <td class="text-end text-danger">@(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : "-")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="border-top border-secondary fw-bold">
+                                    <td colspan="2" class="text-end">Total</td>
+                                    <td class="text-end text-success">@group.TotalDebit.ToString("N0", Idr)</td>
+                                    <td class="text-end text-danger">@group.TotalCredit.ToString("N0", Idr)</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
             </div>
         }
@@ -81,13 +92,37 @@
 
 @code {
     private static readonly CultureInfo Idr = new("id-ID");
-    [Parameter] public Guid UserId { get; set; }
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private Guid UserId { get; set; }
     private ClosingJournalViewModel vm = new();
     private bool noPeriodSelected;
 
     protected override async Task OnInitializedAsync()
     {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
         var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
         if (period == null)
         {
