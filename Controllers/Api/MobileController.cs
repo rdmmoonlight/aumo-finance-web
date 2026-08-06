@@ -190,7 +190,7 @@ public class MobileController : ControllerBase
         // E. Generate Nomor Referensi Otomatis (GJ-xxxxxx / AJE-xxxxxx)
         string refNumber = await GenerateReferenceNumberAsync(userId, request.JournalType);
 
-        // F. Simpan Jurnal Baru
+        // F. Simpan Jurnal Baru (Properti yang tidak ada di model JournalEntry sudah dihapus)
         var entry = new JournalEntry
         {
             UserId = userId,
@@ -198,9 +198,6 @@ public class MobileController : ControllerBase
             JournalType = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType,
             EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc),
             CreatedAt = DateTime.UtcNow,
-            Source = "Mobile App",
-            MobileNote = request.MobileNote,
-            NeedsClassification = false,
             Lines = validLines.Select((l, index) => new JournalEntryLine
             {
                 AccountId = l.AccountId,
