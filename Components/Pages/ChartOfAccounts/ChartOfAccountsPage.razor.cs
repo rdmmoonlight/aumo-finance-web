@@ -1,12 +1,13 @@
 using System.Globalization;
 using System.Security.Claims;
 using AumoFinance.Models;
+using AumoFinance.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.JSInterop;
 
-namespace AumoFinance.Components;
+namespace AumoFinance.Components.Pages.ChartOfAccounts;
 
 public partial class ChartOfAccountsPage : ComponentBase
 {
