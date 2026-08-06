@@ -4,9 +4,9 @@
 <div class="d-flex vh-100 overflow-hidden">
     <AuthorizeView>
         <Authorized>
-            <!-- Sidebar Component -->
+            <!-- Sidebar Component (Aktifkan Mode Interaktif) -->
             <div class="sidebar-wrapper d-flex">
-                <Sidebar />
+                <Sidebar @rendermode="InteractiveServer" />
             </div>
         </Authorized>
     </AuthorizeView>
@@ -15,7 +15,7 @@
     <div class="d-flex flex-column flex-grow-1 min-vw-0">
         
         <!-- TopBar Component -->
-        <TopBar />
+        <TopBar @rendermode="InteractiveServer" />
 
         <!-- Main Content Area -->
         <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto" role="main">
@@ -26,8 +26,6 @@
 </div>
 
 <style>
-    /* CSS Lainnya ... */
-
     /* PERBAIKAN: Gunakan @@media di Blazor Component agar tidak dianggap variabel C# */
     @@media (max-width: 767.98px) {
         #mainContent {
