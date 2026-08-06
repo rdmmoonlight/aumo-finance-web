@@ -11,8 +11,9 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoFinance.Controllers;
 
 [Authorize]
-[Route("[controller]")]
-public class ToolsController : Controller
+[ApiController]
+[Route("api/[controller]")]
+public class ToolsController : ControllerBase
 {
     private readonly AppDbContext _context;
 
@@ -27,165 +28,29 @@ public class ToolsController : Controller
         return Guid.TryParse(claim, out var userId) ? userId : Guid.Empty;
     }
 
-    [HttpGet]
-    public IActionResult Index()
-    {
-        return View();
-    }
-
-    [HttpGet("ImportJournal")]
-    public IActionResult ImportJournal()
-    {
-        return View();
-    }
-
     // ==========================================
-    // 1. PREVIEW DATA EXCEL (AJAX POST)
+    // 1. PREVIEW DATA EXCEL (API POST)
     // ==========================================
     [HttpPost("PreviewJournal")]
     public async Task<IActionResult> PreviewJournal(IFormFile excelFile)
     {
         if (excelFile == null || excelFile.Length == 0)
         {
-            return Json(new { success = false, message = "Please select a valid Excel file." });
+            return BadRequest(new { success = false, message = "Please select a valid Excel file." });
         }
 
         var parseResult = await ParseJournalExcelAsync(excelFile);
 
         if (!parseResult.IsSuccess)
         {
-            return Json(new { success = false, message = parseResult.Message });
+            return BadRequest(new { success = false, message = parseResult.Message });
         }
 
-        TempData["ParsedImportData"] = JsonSerializer.Serialize(parseResult);
-
-        return Json(new { success = true, data = parseResult });
+        return Ok(new { success = true, data = parseResult });
     }
 
     // ==========================================
-    // 2. IMPORT / SAVE DATA TO DATABASE
-    // ==========================================
-    [HttpPost("ConfirmImport")]
-    public async Task<IActionResult> ConfirmImport()
-    {
-        if (TempData["ParsedImportData"] is not string jsonStr)
-        {
-            TempData["ErrorMessage"] = "Import session expired. Please preview the file again.";
-            return RedirectToAction(nameof(ImportJournal));
-        }
-
-        var parseResult = JsonSerializer.Deserialize<JournalImportResultDto>(jsonStr);
-        if (parseResult == null || parseResult.Transactions.Count == 0)
-        {
-            TempData["ErrorMessage"] = "No valid transactions to import.";
-            return RedirectToAction(nameof(ImportJournal));
-        }
-
-        var userId = GetCurrentUserId();
-        if (userId == Guid.Empty)
-        {
-            TempData["ErrorMessage"] = "User session invalid.";
-            return RedirectToAction(nameof(ImportJournal));
-        }
-
-        int accountsCreated = 0;
-        int transactionsImported = 0;
-
-        var seqCounters = new Dictionary<string, int>();
-        async Task<int> NextSeqAsync(string prefix)
-        {
-            if (!seqCounters.TryGetValue(prefix, out var seq))
-            {
-                var last = await _context.JournalEntries
-                    .Where(e => e.UserId == userId && e.ReferenceNumber.StartsWith(prefix + "-"))
-                    .OrderByDescending(e => e.Id)
-                    .Select(e => e.ReferenceNumber)
-                    .FirstOrDefaultAsync();
-
-                seq = 0;
-                if (last != null)
-                {
-                    var parts = last.Split('-');
-                    if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
-                    {
-                        seq = lastSeq;
-                    }
-                }
-            }
-            seq += 1;
-            seqCounters[prefix] = seq;
-            return seq;
-        }
-
-        try
-        {
-            foreach (var txDto in parseResult.Transactions)
-            {
-                var entryLines = new List<JournalEntryLine>();
-
-                foreach (var lineDto in txDto.Lines)
-                {
-                    var account = await _context.ChartOfAccounts
-                        .FirstOrDefaultAsync(a => a.ReferenceNumber == lineDto.RefNumber && a.UserId == userId);
-
-                    if (account == null)
-                    {
-                        var accountType = AccountClassification.TypeFromReferenceNumber(lineDto.RefNumber);
-
-                        account = new ChartOfAccount
-                        {
-                            UserId = userId,
-                            ReferenceNumber = lineDto.RefNumber,
-                            AccountName = lineDto.AccountName,
-                            Type = accountType ?? "Other",
-                            Role = "Default",
-                            IsActive = true,
-                        };
-
-                        _context.ChartOfAccounts.Add(account);
-                        accountsCreated++;
-                    }
-
-                    entryLines.Add(new JournalEntryLine
-                    {
-                        Account = account,
-                        LineDescription = lineDto.Description,
-                        Debit = lineDto.Debit ?? 0m,
-                        Credit = lineDto.Credit ?? 0m,
-                        LineOrder = entryLines.Count + 1
-                    });
-                }
-
-                var prefix = txDto.JournalType == "Adjusting" ? "AJE" : "GJ";
-                var seq = await NextSeqAsync(prefix);
-
-                var entry = new JournalEntry
-                {
-                    UserId = userId,
-                    ReferenceNumber = $"{prefix}-{seq:D6}",
-                    JournalType = txDto.JournalType,
-                    EntryDate = txDto.Date,
-                    Lines = entryLines,
-                };
-
-                _context.JournalEntries.Add(entry);
-                transactionsImported++;
-            }
-
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = $"Successfully imported {transactionsImported} journal entries with {accountsCreated} new COA accounts created.";
-        }
-        catch (Exception ex)
-        {
-            TempData["ErrorMessage"] = $"Failed to save entries: {ex.Message}";
-        }
-
-        return RedirectToAction(nameof(ImportJournal));
-    }
-
-    // ==========================================
-    // 3. DOWNLOAD TEMPLATE EXCEL
+    // 2. DOWNLOAD TEMPLATE EXCEL
     // ==========================================
     [HttpGet("DownloadJournalTemplate")]
     public IActionResult DownloadJournalTemplate()
