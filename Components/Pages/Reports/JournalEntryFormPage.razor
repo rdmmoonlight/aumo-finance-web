@@ -1,8 +1,18 @@
+@page "/journal-entry/create"
+@page "/journal-entry/edit/{EntryId:int}"
+@namespace AumoFinance.Components.Pages.Reports
+@using System.Globalization
+@using System.Security.Claims
 @using AumoFinance.Models
 @using Microsoft.EntityFrameworkCore
+@rendermode InteractiveServer
+@attribute [Authorize]
 @inject AppDbContext DbContext
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>@(IsEdit ? "Edit Journal Entry" : "Create Journal Entry")</PageTitle>
 
 <div class="container-fluid py-4 px-4">
     <!-- Page Header -->
@@ -81,7 +91,7 @@
                         <label class="form-label fw-semibold small">Transaction Date</label>
                         <input type="date" lang="id-ID" class="form-control" required
                                value="@entryDate.ToString("yyyy-MM-dd")"
-                               @onchange="@(e => entryDate = DateTime.Parse((string)e.Value!))" />
+                               @onchange="@(e => entryDate = DateTime.TryParse((string?)e.Value, out var dt) ? dt : DateTime.Today)" />
                     </div>
                 </div>
             </div>
@@ -111,11 +121,11 @@
                         <tbody class="border-top-0">
                             @foreach (var line in lines)
                             {
-                                var refNumber = availableAccounts.FirstOrDefault(a => a.Id == line.AccountId)?.ReferenceNumber;
+                                var accountRef = availableAccounts.FirstOrDefault(a => a.Id == line.AccountId)?.ReferenceNumber;
                                 <tr>
                                     <td class="ps-4">
                                         <input type="text" class="form-control text-center bg-body-secondary" readonly tabindex="-1"
-                                               placeholder="---" value="@(refNumber?.ToString() ?? "")" />
+                                               placeholder="---" value="@(accountRef?.ToString() ?? "")" />
                                     </td>
                                     <td>
                                         <select class="form-select" @bind="line.AccountId">
@@ -204,8 +214,8 @@
 </div>
 
 @code {
-    [Parameter] public Guid UserId { get; set; }
     [Parameter] public int? EntryId { get; set; }
+    public Guid UserId { get; set; }
 
     private static readonly CultureInfo CultureInfo = new("id-ID");
 
@@ -226,6 +236,24 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(claim, out var parsedId))
+            {
+                UserId = parsedId;
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            Nav.NavigateTo("/auth/login", true);
+            return;
+        }
+
         availableAccounts = await ActiveAccountsAsync();
 
         if (IsEdit)
@@ -306,7 +334,7 @@
     private async Task DebouncedSearchAsync(LineItem line, string query, int myVersion)
     {
         await Task.Delay(250);
-        if (line.SearchVersion != myVersion) return; // superseded by newer keystroke
+        if (line.SearchVersion != myVersion) return;
 
         var results = await SearchDescriptionsAsync(query);
         if (line.SearchVersion != myVersion) return;
