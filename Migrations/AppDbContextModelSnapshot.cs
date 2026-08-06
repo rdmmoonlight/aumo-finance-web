@@ -22,19 +22,16 @@ namespace AumoFinance.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            // Domain Models
             BuildDomainEntities(modelBuilder);
-
-            // Identity & Security Models
-            BuildIdentityAndSecurityEntities(modelBuilder);
-
-            // Relationships
+            BuildSecurityEntities(modelBuilder);
+            BuildIdentityEntities(modelBuilder);
             BuildRelationships(modelBuilder);
 #pragma warning restore 612, 618
         }
 
         static partial void BuildDomainEntities(ModelBuilder modelBuilder);
-        static partial void BuildIdentityAndSecurityEntities(ModelBuilder modelBuilder);
+        static partial void BuildSecurityEntities(ModelBuilder modelBuilder);
+        static partial void BuildIdentityEntities(ModelBuilder modelBuilder);
         static partial void BuildRelationships(ModelBuilder modelBuilder);
     }
 }
