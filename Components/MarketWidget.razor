@@ -1,30 +1,35 @@
 @inject NavigationManager NavManager
 @inject IHttpClientFactory HttpClientFactory
 
-<div class="market-widget-card card border-0 shadow-sm rounded-4 bg-body bg-opacity-75 backdrop-blur px-3 py-2 mx-auto mb-4" style="max-width: 620px;">
+<div class="market-futuristic-card mx-auto mb-4 p-3 rounded-4">
+    <div class="card-glass-bg"></div>
+    
     @if (isLoading)
     {
-        <!-- State: Loading -->
-        <div class="d-flex justify-content-center align-items-center py-1 gap-2 text-secondary">
-            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-            <span class="small fw-medium style-loading-text">Loading market indicators...</span>
+        <!-- State: Loading Futuristic -->
+        <div class="d-flex justify-content-center align-items-center py-2 gap-2 text-secondary position-relative z-1">
+            <div class="spinner-border spinner-border-sm text-info spinner-glow" role="status"></div>
+            <span class="small fw-medium style-loading-text text-light-50">Syncing live market data...</span>
         </div>
     }
     else if (marketData != null && marketData.Success)
     {
-        <!-- State: Success (Centered Layout) -->
-        <div class="row align-items-center g-2 text-center justify-content-center">
+        <!-- State: Success (Futuristic Grid Layout) -->
+        <div class="row align-items-center g-3 text-center justify-content-center position-relative z-1">
             
             <!-- USD / IDR -->
-            <div class="col-12 col-md-4 border-end-md">
-                <div class="d-flex flex-column align-items-center justify-content-center py-1">
-                    <span class="text-uppercase text-secondary style-label mb-1">USD / IDR</span>
+            <div class="col-12 col-md-4 border-end-futuristic">
+                <div class="d-flex flex-column align-items-center justify-content-center px-2">
+                    <div class="d-flex align-items-center gap-1 mb-1">
+                        <span class="indicator-dot @(marketData.Usd?.IsUp == true ? "dot-up" : "dot-down")"></span>
+                        <span class="style-label text-uppercase">USD / IDR</span>
+                    </div>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-body-emphasis">
+                        <span class="fw-bold style-value text-glow">
                             Rp @marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
                         </span>
-                        <span class="badge rounded-pill @(marketData.Usd?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
-                            <i class="bi @(marketData.Usd?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
+                        <span class="badge badge-futuristic @(marketData.Usd?.IsUp == true ? "badge-up" : "badge-down")">
+                            <i class="bi @(marketData.Usd?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
                             @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
                         </span>
                     </div>
@@ -32,15 +37,18 @@
             </div>
 
             <!-- IHSG (IDX COMPOSITE) -->
-            <div class="col-12 col-md-4 border-end-md">
-                <div class="d-flex flex-column align-items-center justify-content-center py-1">
-                    <span class="text-uppercase text-secondary style-label mb-1">IDX Composite</span>
+            <div class="col-12 col-md-4 border-end-futuristic">
+                <div class="d-flex flex-column align-items-center justify-content-center px-2">
+                    <div class="d-flex align-items-center gap-1 mb-1">
+                        <span class="indicator-dot @(marketData.Ihsg?.IsUp == true ? "dot-up" : "dot-down")"></span>
+                        <span class="style-label text-uppercase">IDX Composite</span>
+                    </div>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-body-emphasis">
+                        <span class="fw-bold style-value text-glow">
                             @marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
                         </span>
-                        <span class="badge rounded-pill @(marketData.Ihsg?.IsUp == true ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger") style-badge">
-                            <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-caret-up-fill" : "bi-caret-down-fill") me-1"></i>
+                        <span class="badge badge-futuristic @(marketData.Ihsg?.IsUp == true ? "badge-up" : "badge-down")">
+                            <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
                             @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
                         </span>
                     </div>
@@ -49,10 +57,13 @@
 
             <!-- BI-RATE -->
             <div class="col-12 col-md-4">
-                <div class="d-flex flex-column align-items-center justify-content-center py-1">
-                    <span class="text-uppercase text-secondary style-label mb-1">BI-Rate</span>
+                <div class="d-flex flex-column align-items-center justify-content-center px-2">
+                    <div class="d-flex align-items-center gap-1 mb-1">
+                        <span class="indicator-dot dot-info"></span>
+                        <span class="style-label text-uppercase">BI-Rate</span>
+                    </div>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-primary">
+                        <span class="fw-bold style-value text-info-glow">
                             @marketData.BiRate
                         </span>
                     </div>
@@ -64,32 +75,102 @@
     else
     {
         <!-- State: Error / Fallback -->
-        <div class="d-flex align-items-center justify-content-center text-muted small py-1 gap-2">
-            <i class="bi bi-exclamation-circle text-warning"></i>
-            <span class="style-loading-text">Market indicators are temporarily unavailable.</span>
+        <div class="d-flex align-items-center justify-content-center text-muted small py-1 gap-2 position-relative z-1">
+            <i class="bi bi-exclamation-triangle text-warning-glow"></i>
+            <span class="style-loading-text">Market indicators temporarily offline.</span>
         </div>
     }
 </div>
 
 <style>
+    .market-futuristic-card {
+        position: relative;
+        max-width: 650px;
+        background: rgba(18, 24, 38, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .market-futuristic-card:hover {
+        border-color: rgba(56, 189, 248, 0.25);
+        box-shadow: 0 8px 32px 0 rgba(14, 165, 233, 0.15);
+    }
+
     .style-label {
-        font-size: 0.7rem;
-        letter-spacing: 0.06em;
-        font-weight: 600;
+        font-size: 0.65rem;
+        letter-spacing: 0.1em;
+        font-weight: 700;
+        color: rgba(148, 163, 184, 0.8);
     }
+
     .style-value {
-        font-size: 0.95rem;
+        font-size: 0.98rem;
+        letter-spacing: -0.01em;
     }
-    .style-badge {
+
+    .indicator-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .dot-up {
+        background-color: #10b981;
+        box-shadow: 0 0 8px #10b981;
+    }
+
+    .dot-down {
+        background-color: #ef4444;
+        box-shadow: 0 0 8px #ef4444;
+    }
+
+    .dot-info {
+        background-color: #38bdf8;
+        box-shadow: 0 0 8px #38bdf8;
+    }
+
+    .badge-futuristic {
         font-size: 0.675rem;
-        padding: 0.2em 0.5em;
+        font-weight: 600;
+        padding: 0.25em 0.6em;
+        border-radius: 20px;
+        letter-spacing: 0.02em;
     }
-    .style-loading-text {
-        font-size: 0.8rem;
+
+    .badge-up {
+        background: rgba(16, 185, 129, 0.12);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.25);
     }
-    @media (min-width: 768px) {
-        .border-end-md {
-            border-right: 1px solid var(--bs-border-color-translucent);
+
+    .badge-down {
+        background: rgba(239, 68, 68, 0.12);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    .text-glow {
+        text-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+    }
+
+    .text-info-glow {
+        color: #38bdf8;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .spinner-glow {
+        filter: drop-shadow(0 0 6px #0ea5e9);
+    }
+
+    /* PERBAIKAN BUG CS0103: Gunakan @@media agar tidak terbaca sebagai syntax Razor C# */
+    @@media (min-width: 768px) {
+        .border-end-futuristic {
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
         }
     }
 </style>
@@ -103,7 +184,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Gunakan cache jika data berumur kurang dari 5 menit untuk menghindari load berulang
         if (cachedMarketData != null && DateTime.Now - lastFetchTime < TimeSpan.FromMinutes(5))
         {
             marketData = cachedMarketData;
@@ -120,8 +200,6 @@
         {
             isLoading = true;
             var client = HttpClientFactory.CreateClient();
-            
-            // Pastikan HttpClient menangani base address aplikasi dengan aman
             var baseUrl = NavManager.BaseUri.TrimEnd('/');
             var requestUrl = $"{baseUrl}/Market/GetMarketData";
 
@@ -139,7 +217,6 @@
         catch (Exception ex)
         {
             Console.WriteLine($"[MarketWidget Error] {ex.Message}");
-            // Fallback ke cache sebelumnya jika error saat fetch
             if (cachedMarketData != null)
             {
                 marketData = cachedMarketData;
