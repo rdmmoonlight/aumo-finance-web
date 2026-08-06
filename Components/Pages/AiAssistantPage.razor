@@ -196,6 +196,7 @@
     private bool isLoading;
     private string summaryText = string.Empty;
     private bool summaryLoaded;
+    private bool hasInitializedSummary;
 
     protected override async Task OnInitializedAsync()
     {
@@ -208,28 +209,40 @@
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
             {
                 UserId = parsedId;
-
-                try
-                {
-                    var context = await BuildFinancialContextAsync();
-                    summaryText = await AiService.AnalyzeFinancialQueryAsync(
-                        "Give a one-paragraph, max 3-sentence live summary of the current cash flow and financial condition based on the data provided.",
-                        context);
-                }
-                catch (Exception)
-                {
-                    summaryText = "Failed to load automated summary. Make sure connection and journal data exist.";
-                }
-                finally
-                {
-                    summaryLoaded = true;
-                }
-
                 return;
             }
         }
 
         Nav.NavigateTo("/Account/Login", true);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && UserId != Guid.Empty && !hasInitializedSummary)
+        {
+            hasInitializedSummary = true;
+            await LoadLiveSummaryAsync();
+        }
+    }
+
+    private async Task LoadLiveSummaryAsync()
+    {
+        try
+        {
+            var context = await BuildFinancialContextAsync();
+            summaryText = await AiService.AnalyzeFinancialQueryAsync(
+                "Give a one-paragraph, max 3-sentence live summary of the current cash flow and financial condition based on the data provided.",
+                context);
+        }
+        catch (Exception)
+        {
+            summaryText = "Failed to load automated summary. Make sure connection and journal data exist.";
+        }
+        finally
+        {
+            summaryLoaded = true;
+            StateHasChanged();
+        }
     }
 
     private Task SendQuickPrompt(string prompt)
@@ -265,6 +278,7 @@
         finally
         {
             isLoading = false;
+            StateHasChanged();
         }
     }
 
