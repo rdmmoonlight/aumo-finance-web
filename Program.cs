@@ -1,13 +1,17 @@
+using System.Text;
 using AumoFinance.Components;
+using AumoFinance.Controllers.Api;
 using AumoFinance.Models;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,8 +61,28 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // =====================================
-// Blazor Core & Authentication State
+// JWT Authentication Setup (Khusus API Mobile)
 // =====================================
+builder.Services.AddAuthentication()
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = MobileController.JwtIssuer,
+            ValidAudience = MobileController.JwtIssuer,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(MobileController.JwtSecretKey))
+        };
+    });
+
+// =====================================
+// Blazor Core, Controllers & Authentication State
+// =====================================
+builder.Services.AddControllers(); // Mendukung API Controllers
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -160,12 +184,15 @@ app.UseAuthorization();
 // Routes Mapping
 // =====================================
 
-// Minimal API Endpoint khusus Logout (Dipanggil form di Sidebar.razor)
+// Minimal API Endpoint khusus Logout
 app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
     return Results.Redirect("/auth/login");
 });
+
+// Map REST API Controller (untuk /api/mobile/*)
+app.MapControllers();
 
 // Entry point utama Blazor Web App
 app.MapRazorComponents<App>()
