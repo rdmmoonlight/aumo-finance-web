@@ -98,10 +98,9 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 }
 
 // =====================================
-// 5. BLAZOR CORE, MVC & CONTROLLERS
+// 5. BLAZOR CORE & API CONTROLLERS
 // =====================================
-builder.Services.AddControllersWithViews();
-builder.Services.AddControllers();
+builder.Services.AddControllers(); // Hanya API Controller untuk Mobile & Service Endpoints
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -153,7 +152,6 @@ using (var scope = app.Services.CreateScope())
 // =====================================
 // 9. HTTP PIPELINE MIDDLEWARE
 // =====================================
-// Forwarded Headers wajib diletakkan di posisi teratas
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -163,7 +161,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-    // HTTPS Redirection diserahkan ke Reverse Proxy (Railway)
 }
 
 app.UseStaticFiles();
@@ -181,9 +178,8 @@ app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager)
     return Results.Redirect("/auth/login");
 });
 
-app.MapControllers();
+app.MapControllers(); // Diperlukan untuk Mobile API (/api/mobile/...)
 
-// Entry point utama Blazor Web App
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
