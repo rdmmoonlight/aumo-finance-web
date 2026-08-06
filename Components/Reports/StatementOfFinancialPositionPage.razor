@@ -1,5 +1,14 @@
+@page "/reports/statement-of-financial-position"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
 @using AumoFinance.Models
 @inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container-fluid py-2">
     @if (noPeriodSelected)
@@ -8,7 +17,7 @@
             <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
             <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
             <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
-            <a href="/Periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
                 <i class="bi bi-calendar3 me-1"></i> Go to Periods
             </a>
         </div>
@@ -26,7 +35,7 @@
                 </p>
             </div>
             <div>
-                <a href="/Reports/ClosingJournal" class="btn btn-outline-secondary">
+                <a href="/reports/closing-journal" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-right-circle me-1"></i> Closing Journal
                 </a>
             </div>
@@ -151,13 +160,37 @@
 
 @code {
     private static readonly CultureInfo Idr = new("id-ID");
-    [Parameter] public Guid UserId { get; set; }
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private Guid UserId { get; set; }
     private StatementOfFinancialPositionViewModel vm = new();
     private bool noPeriodSelected;
 
     protected override async Task OnInitializedAsync()
     {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
         var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
         if (period == null)
         {
@@ -168,8 +201,6 @@
         vm = await BuildSofpAsync(DbContext, UserId, period, isPostClosing: false);
     }
 
-    // Dipakai juga oleh PostClosingTrialBalancePage (logika identik dengan
-    // ReportsController.BuildSofpAsync).
     public static async Task<StatementOfFinancialPositionViewModel> BuildSofpAsync(AppDbContext db, Guid userId, Period period, bool isPostClosing)
     {
         var rows = await TrialBalancePage.BuildTrialBalanceRowsAsync(db, userId, period, includeAdjusting: true);
