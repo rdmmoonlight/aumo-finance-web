@@ -42,8 +42,8 @@ public class DashboardControllers : ControllerBase
         var journalLines = await _db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Include(l => l.Account)
-            .Where(l => l.JournalEntry!.UserId == userId 
-                     && l.JournalEntry.EntryDate >= startDate 
+            .Where(l => l.JournalEntry!.UserId == userId
+                     && l.JournalEntry.EntryDate >= startDate
                      && l.JournalEntry.EntryDate <= endDate)
             .ToListAsync();
 
