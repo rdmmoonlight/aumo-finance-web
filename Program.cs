@@ -81,7 +81,7 @@ builder.Services.AddAuthentication()
 // =====================================
 // Blazor Core, Controllers & Authentication State
 // =====================================
-builder.Services.AddControllers(); 
+builder.Services.AddControllers();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
