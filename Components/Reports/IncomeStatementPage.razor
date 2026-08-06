@@ -1,5 +1,14 @@
+@page "/reports/income-statement"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
 @using AumoFinance.Models
 @inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container-fluid">
     @if (noPeriodSelected)
@@ -8,7 +17,7 @@
             <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
             <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
             <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
-            <a href="/Periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
                 <i class="bi bi-calendar3 me-1"></i> Go to Periods
             </a>
         </div>
@@ -21,7 +30,7 @@
                 <p class="text-muted mb-0">Statement of Profit or Loss (IAS 1) untuk periode berjalan, per @vm.AsOfDate.ToString("dd MMMM yyyy").</p>
             </div>
             <div>
-                <a href="/Reports/RetainedEarnings" class="btn btn-outline-secondary">
+                <a href="/reports/retained-earnings" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-right-circle me-1"></i> Retained Earnings
                 </a>
             </div>
@@ -76,13 +85,37 @@
 
 @code {
     private static readonly CultureInfo Idr = new("id-ID");
-    [Parameter] public Guid UserId { get; set; }
 
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private Guid UserId { get; set; }
     private IncomeStatementViewModel vm = new();
     private bool noPeriodSelected;
 
     protected override async Task OnInitializedAsync()
     {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
         var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
         if (period == null)
         {
@@ -94,8 +127,6 @@
         vm = BuildIncomeStatement(rows, period);
     }
 
-    // Dipakai juga oleh RetainedEarningsPage & ClosingJournalPage (logika
-    // identik dengan ReportsController.BuildIncomeStatement).
     public static IncomeStatementViewModel BuildIncomeStatement(List<TrialBalanceRow> rows, Period period)
     {
         var result = new IncomeStatementViewModel { AsOfDate = period.EndDate };
