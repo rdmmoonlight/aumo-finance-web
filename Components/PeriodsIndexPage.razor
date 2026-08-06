@@ -1,7 +1,17 @@
+@page "/periods"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
 @using AumoFinance.Models
+@using AumoFinance.Helpers
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
 @inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>Accounting Periods</PageTitle>
 
 <div class="container-fluid py-4 px-4">
     <!-- Page Header -->
@@ -22,7 +32,7 @@
                     <i class="bi bi-eye-slash me-1"></i> Stop Viewing
                 </button>
             }
-            <a href="/Periods/Create" class="btn btn-primary fw-semibold shadow-sm">
+            <a href="/periods/create" class="btn btn-primary fw-semibold shadow-sm">
                 <i class="bi bi-plus-lg me-1"></i> Open New Period
             </a>
         </div>
@@ -64,7 +74,15 @@
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
-                        @if (periods.Any())
+                        @if (UserId == Guid.Empty)
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-secondary">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div> Memuat data...
+                                </td>
+                            </tr>
+                        }
+                        else if (periods.Any())
                         {
                             @foreach (var period in periods)
                             {
@@ -129,8 +147,7 @@
 </div>
 
 @code {
-    [Parameter] public Guid UserId { get; set; }
-
+    private Guid UserId;
     private List<Period> periods = new();
     private int? selectedPeriodId;
     private string? successMessage;
@@ -138,11 +155,27 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadPeriodsAsync();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+                await LoadPeriodsAsync();
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/Account/Login", true);
     }
 
     private async Task LoadPeriodsAsync()
     {
+        if (UserId == Guid.Empty) return;
+
         periods = await DbContext.Periods
             .Where(p => p.UserId == UserId)
             .OrderByDescending(p => p.StartDate)
