@@ -10,9 +10,9 @@ namespace AumoFinance.Controllers.Api; // Sesuaikan dengan namespace backend And
 [Route("api/[controller]")] // Menghasilkan URL: GET /api/dashboard
 public class DashboardController : ControllerBase
 {
-    private readonly ApplicationDbContext _context; // Sesuaikan nama DbContext Anda
+    private readonly AppDbContext _context; // Sesuaikan nama DbContext Anda
 
-    public DashboardController(ApplicationDbContext context)
+    public DashboardController(AppDbContext context)
     {
         _context = context;
     }
