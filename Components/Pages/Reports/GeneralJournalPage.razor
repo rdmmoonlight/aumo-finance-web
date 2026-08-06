@@ -20,41 +20,43 @@
             <p class="text-secondary mb-0">Chronological record of financial transactions for Aumo Finance.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="/JournalEntry/Create" class="btn btn-primary fw-semibold shadow-sm">
-                <i class="bi bi-plus-lg me-1"></i> Add Entry
+            <a href="/JournalEntry/Create" class="btn btn-primary fw-semibold shadow-sm d-flex align-items-center">
+                <i class="bi bi-plus-lg me-2"></i> Add Entry
             </a>
-            <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm @(editMode ? "active" : "")"
+            <button type="button" class="btn btn-outline-secondary fw-semibold shadow-sm d-flex align-items-center @(editMode ? "active" : "")"
                     @onclick="ToggleEditMode" disabled="@(!entries.Any())">
-                <i class="bi bi-pencil me-1"></i> Edit
+                <i class="bi bi-pencil me-2"></i> Edit
             </button>
         </div>
     </div>
 
     @if (selectedPeriod != null)
     {
-        <div class="alert alert-secondary shadow-sm py-2 small d-flex align-items-center gap-2">
-            <i class="bi bi-eye-fill"></i>
-            Showing <strong>@selectedPeriod.PeriodName</strong>
+        <div class="alert alert-secondary shadow-sm py-2 px-3 small d-flex align-items-center gap-2 rounded-3">
+            <i class="bi bi-eye-fill fs-5"></i>
+            <span>Showing <strong>@selectedPeriod.PeriodName</strong></span>
             @if (selectedPeriod.IsClosed)
             {
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-lock-fill me-1"></i>Closed</span>
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-auto">
+                    <i class="bi bi-lock-fill me-1"></i>Closed
+                </span>
             }
         </div>
     }
 
     <!-- General Journal Table -->
-    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4 text-center" style="width: 8%;">Tgl</th>
-                            <th style="width: 25%;">Account</th>
-                            <th style="width: 27%;">Description</th>
-                            <th class="text-center" style="width: 8%;">Ref.</th>
-                            <th class="text-end" style="width: 16%;">Debit</th>
-                            <th class="text-end pe-4" style="width: 16%;">Credit</th>
+                            <th class="ps-4 text-center py-3" style="width: 8%;">Tgl</th>
+                            <th class="py-3" style="width: 25%;">Account</th>
+                            <th class="py-3 text-white" style="width: 27%;">Description</th>
+                            <th class="text-center py-3 text-white" style="width: 8%;">Ref.</th>
+                            <th class="text-end py-3" style="width: 16%;">Debit</th>
+                            <th class="text-end pe-4 py-3" style="width: 16%;">Credit</th>
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
@@ -68,7 +70,6 @@
                                 var entry = entries[e];
                                 var allLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
 
-                                // Hanya mengambil string tanggal (DD-MM-YYYY) untuk pengelompokan grup baris
                                 var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
                                 var showDate = (currentDateStr != lastDate);
                                 if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
@@ -82,42 +83,48 @@
                                     var isDebit = line.Debit > 0;
 
                                     <tr class="@entryShade">
-                                        <td class="ps-4 text-center align-top">
+                                        <td class="ps-4 text-center align-top py-2">
                                             @if (isFirstRow && showDate)
                                             {
-                                                <span class="badge rounded-pill bg-body-secondary text-body-emphasis fw-bold small px-2 py-1">
-                                                    @entry.EntryDate.Day
-                                                </span>
+                                                <div class="mb-1">
+                                                    <span class="badge rounded-pill bg-primary text-white fw-bold px-3 py-2 shadow-sm">
+                                                        @entry.EntryDate.Day
+                                                    </span>
+                                                </div>
                                             }
                                             @if (isFirstRow)
                                             {
-                                                <!-- Opsi: Menampilkan jam & menit input (jika ada properti CreatedAt) -->
-                                                @if (entry.CreatedAt != default)
-                                                {
-                                                    <div class="text-muted small" style="font-size: 0.75rem;" title="Waktu Input">
-                                                        @entry.CreatedAt.ToString("HH:mm:ss")
-                                                    </div>
-                                                }
+                                                <div class="d-flex flex-column align-items-center gap-1 mt-1">
+                                                    @if (entry.CreatedAt != default)
+                                                    {
+                                                        <span class="text-muted fw-medium" style="font-size: 0.75rem;" title="Waktu Input">
+                                                            <i class="bi bi-clock me-1"></i>@entry.CreatedAt.ToString("HH:mm:ss")
+                                                        </span>
+                                                    }
 
-                                                <a href="/JournalEntry/Edit/@entry.Id"
-                                                   class="text-primary ms-1 @(editMode ? "" : "d-none")" title="Edit entri ini">
-                                                    <i class="bi bi-pencil-fill"></i>
-                                                </a>
+                                                    <a href="/JournalEntry/Edit/@entry.Id"
+                                                       class="btn btn-sm btn-light text-primary border-0 shadow-sm mt-1 @(editMode ? "" : "d-none")" 
+                                                       title="Edit entri ini">
+                                                        <i class="bi bi-pencil-fill"></i>
+                                                    </a>
+                                                </div>
                                             }
                                         </td>
-                                        <td class="align-top @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
+                                        <td class="align-top py-2 @(isDebit ? "fw-semibold text-body" : "ps-4 text-body")">
                                             @line.Account?.AccountName
                                         </td>
-                                        <td class="text-secondary small align-top">
+                                        <td class="small align-top py-2 text-white">
                                             @line.LineDescription
                                         </td>
-                                        <td class="text-center align-top">
-                                            <code>@line.Account?.ReferenceNumber</code>
+                                        <td class="text-center align-top py-2">
+                                            <code class="text-white bg-transparent fw-bold border border-light rounded px-2 py-1">
+                                                @line.Account?.ReferenceNumber
+                                            </code>
                                         </td>
-                                        <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
+                                        <td class="text-end align-top py-2 @(isDebit ? "text-success fw-bold" : "text-secondary")">
                                             @(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : null)
                                         </td>
-                                        <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
+                                        <td class="text-end pe-4 align-top py-2 @(!isDebit ? "text-danger fw-bold" : "text-secondary")">
                                             @(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : null)
                                         </td>
                                     </tr>
@@ -130,13 +137,19 @@
                                 <td colspan="6" class="text-center py-5 text-secondary">
                                     @if (selectedPeriod == null)
                                     {
-                                        <i class="bi bi-eye-slash mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                        <span>No period selected. Go to <a href="/periods">Periods</a> and click <i class="bi bi-eye"></i> to view one.</span>
+                                        <div class="py-4">
+                                            <i class="bi bi-eye-slash mb-3 d-block text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="fw-semibold">No Period Selected</h5>
+                                            <p class="mb-0">Go to <a href="/periods" class="text-decoration-none fw-bold">Periods</a> and click <i class="bi bi-eye"></i> to view one.</p>
+                                        </div>
                                     }
                                     else
                                     {
-                                        <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                        <span>No journal entries recorded in @selectedPeriod.PeriodName.</span>
+                                        <div class="py-4">
+                                            <i class="bi bi-journal-x mb-3 d-block text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="fw-semibold">No Entries Found</h5>
+                                            <p class="mb-0">No journal entries recorded in <strong>@selectedPeriod.PeriodName</strong>.</p>
+                                        </div>
                                     }
                                 </td>
                             </tr>
@@ -161,7 +174,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // 1. Ambil UserId langsung dari AuthenticationState
         if (AuthStateTask != null)
         {
             var authState = await AuthStateTask;
@@ -179,7 +191,6 @@
 
         if (UserId == Guid.Empty) return;
 
-        // 2. Load data berdasarkan UserId
         selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
 
         if (selectedPeriod == null)
@@ -188,16 +199,15 @@
             return;
         }
 
-        // 3. Query dengan pengurutan: EntryDate -> CreatedAt (Jam/Menit/Detik Input) -> Id
         entries = await DbContext.JournalEntries
             .Include(j => j.Lines)
                 .ThenInclude(l => l.Account)
             .Where(j => j.UserId == UserId
                      && j.EntryDate >= selectedPeriod.StartDate 
                      && j.EntryDate <= selectedPeriod.EndDate)
-            .OrderBy(j => j.EntryDate)    // Urutkan tanggal transaksi
-            .ThenBy(j => j.CreatedAt)     // Urutkan berdasarkan jam, menit, dan detik waktu input
-            .ThenBy(j => j.Id)             // Fallback pengaman jika waktu input persis sama
+            .OrderBy(j => j.EntryDate)    
+            .ThenBy(j => j.CreatedAt)     
+            .ThenBy(j => j.Id)             
             .ToListAsync();
     }
 
