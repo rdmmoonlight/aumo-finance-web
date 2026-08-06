@@ -1,10 +1,19 @@
+@page "/ai-assistant"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
 @using System.Text
 @using System.Net
+@using System.Security.Claims
 @using AumoFinance.Models
 @using AumoFinance.Services
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
 @inject IAiService AiService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>AI Financial Assistant</PageTitle>
 
 <div class="container py-4">
     <!-- Header -->
@@ -181,8 +190,7 @@
 </style>
 
 @code {
-    [Parameter] public Guid UserId { get; set; }
-
+    private Guid UserId;
     private List<ChatMessage> messages = new();
     private string userInput = string.Empty;
     private bool isLoading;
@@ -191,21 +199,37 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
         {
-            var context = await BuildFinancialContextAsync();
-            summaryText = await AiService.AnalyzeFinancialQueryAsync(
-                "Give a one-paragraph, max 3-sentence live summary of the current cash flow and financial condition based on the data provided.",
-                context);
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+
+                try
+                {
+                    var context = await BuildFinancialContextAsync();
+                    summaryText = await AiService.AnalyzeFinancialQueryAsync(
+                        "Give a one-paragraph, max 3-sentence live summary of the current cash flow and financial condition based on the data provided.",
+                        context);
+                }
+                catch (Exception)
+                {
+                    summaryText = "Failed to load automated summary. Make sure connection and journal data exist.";
+                }
+                finally
+                {
+                    summaryLoaded = true;
+                }
+
+                return;
+            }
         }
-        catch (Exception)
-        {
-            summaryText = "Failed to load automated summary. Make sure connection and journal data exist.";
-        }
-        finally
-        {
-            summaryLoaded = true;
-        }
+
+        Nav.NavigateTo("/Account/Login", true);
     }
 
     private Task SendQuickPrompt(string prompt)
@@ -256,6 +280,8 @@
 
     private async Task<string> BuildFinancialContextAsync()
     {
+        if (UserId == Guid.Empty) return "User identity unavailable.";
+
         var activePeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
 
         if (activePeriod == null)
