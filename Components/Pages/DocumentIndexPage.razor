@@ -1,8 +1,16 @@
+@page "/documents"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
 @using AumoFinance.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Document Repository & Intelligence</PageTitle>
 
 <div class="container-fluid py-4">
     <!-- HEADER -->
@@ -13,7 +21,7 @@
             </h2>
             <p class="text-muted small mb-0">System metrics, financial records, and economic documentation repository</p>
         </div>
-        <a href="/Document/Create" class="btn btn-primary btn-sm">
+        <a href="/documents/upload" class="btn btn-primary btn-sm">
             <i class="bi bi-upload me-1"></i> Upload Document
         </a>
     </div>
@@ -168,7 +176,15 @@
                         </tr>
                     </thead>
                     <tbody class="border-top-0">
-                        @if (!vm.Documents.Any())
+                        @if (UserId == Guid.Empty)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading user data...
+                                </td>
+                            </tr>
+                        }
+                        else if (!vm.Documents.Any())
                         {
                             <tr>
                                 <td colspan="6" class="text-center py-4 text-muted">
@@ -205,8 +221,7 @@
 </div>
 
 @code {
-    [Parameter] public Guid UserId { get; set; }
-
+    private Guid UserId;
     private DocumentIndexViewModel vm = new();
     private string searchString = string.Empty;
     private string category = string.Empty;
@@ -214,11 +229,26 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = new Uri(Nav.Uri);
-        var query = QueryHelpers.ParseQuery(uri.Query);
-        showUploadedMessage = query.ContainsKey("uploaded");
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
 
-        await LoadAsync();
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+
+                var uri = new Uri(Nav.Uri);
+                var query = QueryHelpers.ParseQuery(uri.Query);
+                showUploadedMessage = query.ContainsKey("uploaded");
+
+                await LoadAsync();
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/Account/Login", true);
     }
 
     private Task ApplyFilterAsync() => LoadAsync();
@@ -234,6 +264,8 @@
 
     private async Task LoadAsync()
     {
+        if (UserId == Guid.Empty) return;
+
         var currentPeriod = await DbContext.Periods.FirstOrDefaultAsync(p => p.UserId == UserId && p.IsSelected);
 
         if (currentPeriod == null)
