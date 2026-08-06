@@ -4,9 +4,8 @@ using AumoFinance.Controllers.Api;
 using AumoFinance.Models;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -16,7 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
-// Database - PostgreSQL (DbContextFactory & Scoped)
+// 1. DATABASE CONFIGURATION (PostgreSQL)
 // =====================================
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
@@ -30,14 +29,14 @@ builder.Services.AddScoped(sp =>
     sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
-// Data Protection
+// 2. DATA PROTECTION & PERSISTENCE
 // =====================================
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>()
     .SetApplicationName("AumoFinanceApp");
 
 // =====================================
-// ASP.NET Core Identity
+// 3. ASP.NET CORE IDENTITY SETUP
 // =====================================
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
@@ -61,26 +60,47 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // =====================================
-// JWT Authentication Setup (Khusus API Mobile)
+// 4. AUTHENTICATION (Cookie, JWT & OAuth)
 // =====================================
-builder.Services.AddAuthentication()
-    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+var authBuilder = builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+})
+.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = MobileController.JwtIssuer,
-            ValidAudience = MobileController.JwtIssuer,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(MobileController.JwtSecretKey))
-        };
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = MobileController.JwtIssuer,
+        ValidAudience = MobileController.JwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(MobileController.JwtSecretKey))
+    };
+});
+
+// Google OAuth (Optional Configuration)
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
+    ?? builder.Configuration["Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+    ?? builder.Configuration["Google:ClientSecret"];
+
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    authBuilder.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.SignInScheme = IdentityConstants.ExternalScheme;
     });
+}
 
 // =====================================
-// Blazor Core, Controllers & Authentication State
+// 5. BLAZOR CORE, MVC & CONTROLLERS
 // =====================================
+builder.Services.AddControllersWithViews();
 builder.Services.AddControllers();
 
 builder.Services.AddRazorComponents()
@@ -89,7 +109,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 
 // =====================================
-// Application Services
+// 6. APPLICATION SERVICES (DI)
 // =====================================
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
@@ -101,48 +121,19 @@ builder.Services.AddScoped<DashboardDataService>();
 builder.Services.AddHttpClient();
 
 // =====================================
-// Forwarded Headers (Railway / Proxy Configuration)
+// 7. FORWARDED HEADERS (Railway / Proxy)
 // =====================================
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor |
-        ForwardedHeaders.XForwardedProto;
-
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
-// =====================================
-// Google Login (Optional)
-// =====================================
-var googleClientId =
-    builder.Configuration["Authentication:Google:ClientId"]
-    ?? builder.Configuration["Google:ClientId"];
-
-var googleClientSecret =
-    builder.Configuration["Authentication:Google:ClientSecret"]
-    ?? builder.Configuration["Google:ClientSecret"];
-
-if (!string.IsNullOrWhiteSpace(googleClientId) &&
-    !string.IsNullOrWhiteSpace(googleClientSecret))
-{
-    builder.Services
-        .AddAuthentication()
-        .AddGoogle(
-            GoogleDefaults.AuthenticationScheme,
-            options =>
-            {
-                options.ClientId = googleClientId;
-                options.ClientSecret = googleClientSecret;
-                options.SignInScheme = IdentityConstants.ExternalScheme;
-            });
-}
-
 var app = builder.Build();
 
 // =====================================
-// AUTOMATIC DATABASE MIGRATION
+// 8. AUTOMATIC DATABASE MIGRATION
 // =====================================
 using (var scope = app.Services.CreateScope())
 {
@@ -160,9 +151,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 // =====================================
-// HTTP Pipeline
+// 9. HTTP PIPELINE MIDDLEWARE
 // =====================================
-// 1. Forwarded Headers WAJIB dipanggil paling atas
+// Forwarded Headers wajib diletakkan di posisi teratas
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -172,8 +163,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-    // CATATAN: app.UseHttpsRedirection() DIHAPUS/DIKOMEN
-    // Karena HTTPS termination di-handle oleh Reverse Proxy Railway.
+    // HTTPS Redirection diserahkan ke Reverse Proxy (Railway)
 }
 
 app.UseStaticFiles();
@@ -183,9 +173,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // =====================================
-// Routes Mapping
+// 10. ROUTES & ENDPOINTS MAPPING
 // =====================================
-
 app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
