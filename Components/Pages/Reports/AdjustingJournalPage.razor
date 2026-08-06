@@ -10,17 +10,17 @@
 @inject AppDbContext DbContext
 @inject AuthenticationStateProvider AuthStateProvider
 
-<div class="container-fluid py-4 px-4">
+<div class="container-fluid">
     <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold text-body-emphasis mb-1">
+            <h2 class="mb-1">
                 <i class="bi bi-journal-medical me-2 text-warning"></i> Adjusting Journal
             </h2>
-            <p class="text-secondary mb-0">Period-end adjusting entries (accruals, deferrals, depreciation) recorded under IAS 1's accrual basis of accounting.</p>
+            <p class="text-muted mb-0">Period-end adjusting entries (accruals, deferrals, depreciation) recorded under IAS 1's accrual basis of accounting.</p>
         </div>
         <div class="d-flex gap-2">
-            <a href="/JournalEntry/Create" class="btn btn-primary fw-semibold shadow-sm">
+            <a href="/JournalEntry/Create" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i> Add Adjusting Entry
             </a>
         </div>
@@ -28,35 +28,38 @@
 
     @if (selectedPeriod != null)
     {
-        <div class="alert alert-secondary shadow-sm py-2 small d-flex align-items-center gap-2">
-            <i class="bi bi-eye-fill"></i>
-            Showing <strong>@selectedPeriod.PeriodName</strong>
+        <div class="alert alert-secondary bg-dark text-muted border-secondary shadow-sm py-2 px-3 small d-flex align-items-center gap-2 rounded-3 mb-4">
+            <i class="bi bi-eye-fill fs-5 text-warning"></i>
+            <span>Showing Period: <strong>@selectedPeriod.PeriodName</strong></span>
             @if (selectedPeriod.IsClosed)
             {
-                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle"><i class="bi bi-lock-fill me-1"></i>Closed</span>
+                <span class="badge bg-secondary bg-opacity-25 border border-secondary ms-auto text-muted">
+                    <i class="bi bi-lock-fill me-1"></i>Closed
+                </span>
             }
         </div>
     }
 
-    <!-- Adjusting Journal Table -->
-    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+    <!-- Adjusting Journal Table Card -->
+    <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead class="table-active border-bottom border-secondary">
                         <tr>
-                            <th class="ps-4 text-center" style="width: 8%;">Date</th>
-                            <th style="width: 27%;">Account</th>
-                            <th style="width: 27%;">Description</th>
-                            <th class="text-center" style="width: 10%;">Ref.</th>
-                            <th class="text-end" style="width: 14%;">Debit</th>
-                            <th class="text-end pe-4" style="width: 14%;">Credit</th>
+                            <th class="ps-3" style="width: 10%;">Date</th>
+                            <th style="width: 28%;">Account</th>
+                            <th style="width: 30%;">Description</th>
+                            <th class="text-center" style="width: 8%;">Ref.</th>
+                            <th class="text-end" style="width: 12%;">Debit</th>
+                            <th class="text-end pe-3" style="width: 12%;">Credit</th>
                         </tr>
                     </thead>
-                    <tbody class="border-top-0">
+                    <tbody>
                         @if (entries.Any())
                         {
                             string lastDate = "";
+                            int dateGroupIndex = 0;
 
                             foreach (var entry in entries)
                             {
@@ -67,41 +70,54 @@
 
                                 var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
                                 var showDate = (currentDateStr != lastDate);
-                                if (showDate)
-                                {
-                                    lastDate = currentDateStr;
-                                }
+                                if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
+
+                                var entryShade = (dateGroupIndex % 2 == 0) ? "" : "bg-black bg-opacity-25";
 
                                 for (int i = 0; i < allLines.Count; i++)
                                 {
                                     var line = allLines[i];
                                     var isFirstRow = (i == 0);
-                                    var isLastRow = (i == allLines.Count - 1);
                                     var isDebit = line.Debit > 0;
 
-                                    var rowClass = isLastRow ? "border-bottom border-2" : "border-bottom-0";
-
-                                    <tr class="@rowClass">
-                                        <td class="ps-4 text-center align-top">
+                                    <tr class="@entryShade">
+                                        <td class="ps-3 text-nowrap align-top py-2">
                                             @if (isFirstRow && showDate)
                                             {
-                                                <span class="fw-bold text-body small">@currentDateStr</span>
+                                                <div>
+                                                    <span class="badge bg-secondary bg-opacity-25 border border-secondary text-white fw-bold px-2 py-1">
+                                                        @entry.EntryDate.ToString("dd-MM-yyyy")
+                                                    </span>
+                                                </div>
+                                            }
+                                            @if (isFirstRow)
+                                            {
+                                                <div class="d-flex flex-column align-items-start mt-1">
+                                                    @if (entry.CreatedAt != default)
+                                                    {
+                                                        <span class="text-muted" style="font-size: 0.70rem;" title="Waktu Input">
+                                                            @entry.CreatedAt.ToString("HH:mm:ss")
+                                                        </span>
+                                                    }
+                                                </div>
                                             }
                                         </td>
-                                        <td class="align-top @(isDebit ? "fw-bold text-body" : "ps-4 text-body")">
+                                        <td class="align-top py-2 @(isDebit ? "fw-semibold text-white" : "ps-4 text-muted")">
                                             @line.Account?.AccountName
                                         </td>
-                                        <td class="text-secondary small align-top">
+                                        <td class="small align-top py-2 text-muted">
                                             @line.LineDescription
                                         </td>
-                                        <td class="text-center align-top">
-                                            <code>@line.Account?.ReferenceNumber</code>
+                                        <td class="text-center align-top py-2">
+                                            <code class="text-warning">
+                                                @line.Account?.ReferenceNumber
+                                            </code>
                                         </td>
-                                        <td class="text-end align-top @(isDebit ? "text-success fw-semibold" : "text-secondary")">
-                                            @(isDebit ? line.Debit.ToString("N0", Idr) : "-")
+                                        <td class="text-end align-top py-2 text-success">
+                                            @(line.Debit > 0 ? line.Debit.ToString("N0", Idr) : "-")
                                         </td>
-                                        <td class="text-end pe-4 align-top @(!isDebit ? "text-danger fw-semibold" : "text-secondary")">
-                                            @(!isDebit ? line.Credit.ToString("N0", Idr) : "-")
+                                        <td class="text-end pe-3 align-top py-2 text-danger">
+                                            @(line.Credit > 0 ? line.Credit.ToString("N0", Idr) : "-")
                                         </td>
                                     </tr>
                                 }
@@ -110,16 +126,22 @@
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-5 text-secondary">
+                                <td colspan="6" class="text-center py-5 text-muted">
                                     @if (selectedPeriod == null)
                                     {
-                                        <i class="bi bi-eye-slash mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                        <span>No period selected. Go to <a href="/periods">Periods</a> and click <i class="bi bi-eye"></i> to view one.</span>
+                                        <div class="py-3">
+                                            <i class="bi bi-eye-slash mb-2 d-block text-secondary" style="font-size: 2.5rem;"></i>
+                                            <h6 class="fw-semibold text-white">No Period Selected</h6>
+                                            <p class="mb-0 small">Go to <a href="/periods" class="text-decoration-none fw-bold">Periods</a> to select one.</p>
+                                        </div>
                                     }
                                     else
                                     {
-                                        <i class="bi bi-journal-x mb-3 d-block" style="font-size: 2.5rem;"></i>
-                                        <span>No adjusting entries recorded in @selectedPeriod.PeriodName.</span>
+                                        <div class="py-3">
+                                            <i class="bi bi-journal-x mb-2 d-block text-secondary" style="font-size: 2.5rem;"></i>
+                                            <h6 class="fw-semibold text-white">No Adjusting Entries Found</h6>
+                                            <p class="mb-0 small">No adjusting entries recorded in <strong>@selectedPeriod.PeriodName</strong>.</p>
+                                        </div>
                                     }
                                 </td>
                             </tr>
@@ -173,9 +195,11 @@
                 .ThenInclude(l => l.Account)
             .Where(j => j.UserId == UserId
                      && j.JournalType == "Adjusting"
-                     && j.EntryDate >= selectedPeriod.StartDate && j.EntryDate <= selectedPeriod.EndDate)
-            .OrderByDescending(j => j.EntryDate)
-            .ThenByDescending(j => j.Id)
+                     && j.EntryDate >= selectedPeriod.StartDate 
+                     && j.EntryDate <= selectedPeriod.EndDate)
+            .OrderBy(j => j.EntryDate)
+            .ThenBy(j => j.CreatedAt)
+            .ThenBy(j => j.Id)
             .ToListAsync();
     }
 }
