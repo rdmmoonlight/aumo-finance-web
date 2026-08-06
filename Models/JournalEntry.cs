@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace AumoFinance.Models
 {
@@ -20,18 +23,6 @@ namespace AumoFinance.Models
         public DateTime EntryDate { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        // Menandai jurnal yang dibuat lewat input cepat mobile dan masih
-        // menunggu diklasifikasikan ke akun pendapatan/beban yang sesuai
-        // lewat halaman admin "Mobile Classification".
-        public bool NeedsClassification { get; set; } = false;
-
-        // Asal input jurnal: "Mobile" | "Web" | null (data lama sebelum kolom ini ada).
-        public string? Source { get; set; }
-
-        // Catatan asli dari Android, dipakai sebagai draft deskripsi saat
-        // diklasifikasikan di web (boleh diedit oleh admin).
-        public string? MobileNote { get; set; }
 
         public List<JournalEntryLine> Lines { get; set; } = new();
 
