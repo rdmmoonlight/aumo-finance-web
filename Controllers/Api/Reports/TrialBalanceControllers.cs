@@ -91,9 +91,9 @@ public class TrialBalanceControllers : ControllerBase
     /// Parameter `includeAdjusting` dan `reportType` disediakan agar kompatibel dengan controller laporan lain.
     /// </summary>
     public static async Task<List<TrialBalanceRowApiResponse>> BuildTrialBalanceRowsAsync(
-        AppDbContext db, 
-        Guid userId, 
-        Period period, 
+        AppDbContext db,
+        Guid userId,
+        Period period,
         string reportType = "unadjusted",
         bool includeAdjusting = false)
     {
