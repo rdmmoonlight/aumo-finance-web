@@ -69,10 +69,10 @@
             </div>
             <h4 class="fw-bold text-white mb-1">@Model.RevenueThisPeriod.ToString("C0", Idr)</h4>
             @{
-                double revTrend = Model.RevenueTrendPercent ?? 0.0;
+                decimal revTrend = Model.RevenueTrendPercent ?? 0m;
             }
-            <div class="small @(revTrend >= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
-                <i class="bi @(revTrend >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
+            <div class="small @(revTrend >= 0m ? "text-success" : "text-danger") fs-8 fw-semibold">
+                <i class="bi @(revTrend >= 0m ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
                 <span>@(Math.Abs(revTrend).ToString("0.0"))% vs prior</span>
             </div>
         </div>
@@ -87,10 +87,10 @@
             </div>
             <h4 class="fw-bold text-white mb-1">@Model.OperatingExpenses.ToString("C0", Idr)</h4>
             @{
-                double expTrend = Model.ExpenseTrendPercent ?? 0.0;
+                decimal expTrend = Model.ExpenseTrendPercent ?? 0m;
             }
-            <div class="small @(expTrend <= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
-                <i class="bi @(expTrend >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
+            <div class="small @(expTrend <= 0m ? "text-success" : "text-danger") fs-8 fw-semibold">
+                <i class="bi @(expTrend >= 0m ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
                 <span>@(Math.Abs(expTrend).ToString("0.0"))% vs prior</span>
             </div>
         </div>
@@ -105,10 +105,10 @@
             </div>
             <h4 class="fw-bold mb-1 text-white">@Model.NetIncome.ToString("C0", Idr)</h4>
             @{
-                double netTrend = Model.NetIncomeTrendPercent ?? 0.0;
+                decimal netTrend = Model.NetIncomeTrendPercent ?? 0m;
             }
-            <div class="small @(netTrend >= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
-                <i class="bi @(netTrend >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
+            <div class="small @(netTrend >= 0m ? "text-success" : "text-danger") fs-8 fw-semibold">
+                <i class="bi @(netTrend >= 0m ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
                 <span>@(Math.Abs(netTrend).ToString("0.0"))% vs prior</span>
             </div>
         </div>
