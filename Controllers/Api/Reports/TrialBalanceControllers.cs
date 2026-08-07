@@ -103,22 +103,22 @@ public class TrialBalanceControllers : ControllerBase
         if (reportType == "post-closing")
         {
             // Post-Closing mencakup General, Adjusting, dan Closing entries
-            lines = await linesQuery.Where(l => 
-                l.JournalEntry!.JournalType == "General" || 
-                l.JournalEntry!.JournalType == "Adjusting" || 
+            lines = await linesQuery.Where(l =>
+                l.JournalEntry!.JournalType == "General" ||
+                l.JournalEntry!.JournalType == "Adjusting" ||
                 l.JournalEntry!.JournalType == "Closing").ToListAsync();
         }
         else if (reportType == "adjusted")
         {
             // Adjusted mencakup General dan Adjusting entries
-            lines = await linesQuery.Where(l => 
-                l.JournalEntry!.JournalType == "General" || 
+            lines = await linesQuery.Where(l =>
+                l.JournalEntry!.JournalType == "General" ||
                 l.JournalEntry!.JournalType == "Adjusting").ToListAsync();
         }
         else
         {
             // Unadjusted HANYA General entries
-            lines = await linesQuery.Where(l => 
+            lines = await linesQuery.Where(l =>
                 l.JournalEntry!.JournalType == "General").ToListAsync();
         }
 
