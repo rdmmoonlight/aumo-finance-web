@@ -20,12 +20,14 @@
 
     <div class="d-flex flex-wrap align-items-center gap-2">
         <div class="btn-group btn-group-sm p-1 bg-body-tertiary border border-opacity-10 rounded-pill shadow-sm" role="group">
-            <button type="button" @onclick='() => OnPeriodSwitch.InvokeAsync("monthly")'
-                    class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(PeriodType == "monthly" ? "btn-primary shadow-sm" : "btn-link text-white text-decoration-none opacity-75")">
+            <button type="button" 
+                    @onclick='() => HandlePeriodSwitch("monthly")'
+                    class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(IsMonthly ? "btn-primary shadow-sm" : "btn-link text-white text-decoration-none opacity-75")">
                 Monthly
             </button>
-            <button type="button" @onclick='() => OnPeriodSwitch.InvokeAsync("annual")'
-                    class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(PeriodType == "annual" ? "btn-primary shadow-sm" : "btn-link text-white text-decoration-none opacity-75")">
+            <button type="button" 
+                    @onclick='() => HandlePeriodSwitch("annual")'
+                    class="btn btn-sm rounded-pill px-3 fw-semibold transition-all @(IsAnnual ? "btn-primary shadow-sm" : "btn-link text-white text-decoration-none opacity-75")">
                 Annual
             </button>
         </div>
@@ -41,8 +43,12 @@
 
 <style>
     .pulse-dot {
-        width: 8px; height: 8px; border-radius: 50%; background-color: #00ff66;
-        box-shadow: 0 0 10px #00ff66, 0 0 20px #00ff66; animation: pulse-animation 1.5s infinite;
+        width: 8px; 
+        height: 8px; 
+        border-radius: 50%; 
+        background-color: #00ff66;
+        box-shadow: 0 0 10px #00ff66, 0 0 20px #00ff66; 
+        animation: pulse-animation 1.5s infinite;
     }
     @@keyframes pulse-animation {
         0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 102, 0.9); }
@@ -50,7 +56,8 @@
         100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 102, 0); }
     }
     .live-neon-text {
-        color: #00ff66 !important; text-shadow: 0 0 8px rgba(0, 255, 102, 0.8), 0 0 20px rgba(0, 255, 102, 0.5);
+        color: #00ff66 !important; 
+        text-shadow: 0 0 8px rgba(0, 255, 102, 0.8), 0 0 20px rgba(0, 255, 102, 0.5);
         animation: neon-blink 1.2s ease-in-out infinite alternate;
     }
     @@keyframes neon-blink {
@@ -63,4 +70,19 @@
     [Parameter] public DashboardViewModel Model { get; set; } = new();
     [Parameter] public string PeriodType { get; set; } = "monthly";
     [Parameter] public EventCallback<string> OnPeriodSwitch { get; set; }
+
+    private bool IsMonthly => string.Equals(PeriodType, "monthly", StringComparison.OrdinalIgnoreCase);
+    private bool IsAnnual => string.Equals(PeriodType, "annual", StringComparison.OrdinalIgnoreCase);
+
+    private async Task HandlePeriodSwitch(string selectedPeriod)
+    {
+        if (PeriodType != selectedPeriod)
+        {
+            PeriodType = selectedPeriod;
+            if (OnPeriodSwitch.HasDelegate)
+            {
+                await OnPeriodSwitch.InvokeAsync(selectedPeriod);
+            }
+        }
+    }
 }
