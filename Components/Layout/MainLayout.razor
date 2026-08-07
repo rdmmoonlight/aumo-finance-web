@@ -1,0 +1,42 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="d-flex vh-100 overflow-hidden">
+    <AuthorizeView>
+        <Authorized>
+            <!-- Sidebar Component -->
+            <div class="sidebar-wrapper d-flex">
+                <Sidebar />
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <!-- Area Kanan Utama -->
+    <div class="d-flex flex-column flex-grow-1 min-vw-0">
+        
+        <!-- TopBar Component -->
+        <TopBar />
+
+        <!-- Main Content Area -->
+        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto" role="main">
+            @Body
+        </main>
+
+    </div>
+</div>
+
+<style>
+    @@media (max-width: 767.98px) {
+        #mainContent {
+            padding: 0.75rem 0.5rem !important;
+        }
+
+        .table-responsive {
+            border: 0;
+        }
+
+        body {
+            font-size: 0.85rem;
+        }
+    }
+</style>

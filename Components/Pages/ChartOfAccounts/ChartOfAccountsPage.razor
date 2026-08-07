@@ -1,0 +1,273 @@
+@page "/chart-of-accounts"
+@namespace AumoFinance.Components.Pages.ChartOfAccounts
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AumoFinance.Services
+@using AumoFinance.Models
+
+<PageTitle>Chart of Accounts</PageTitle>
+
+<div class="container-fluid py-4 px-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1"><i class="bi bi-diagram-3 me-2 text-warning"></i> Chart of Accounts</h2>
+            <p class="text-secondary mb-0">Master list of financial accounts (Automatically sorted by reference).</p>
+        </div>
+        <div>
+            <button class="btn btn-warning fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                <i class="bi bi-plus-lg me-1"></i> New Account
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Notifications -->
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+    @if (successMessage != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+
+    <!-- COA Table Card -->
+    <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary">
+        <div class="card-header bg-transparent border-bottom py-3 d-flex justify-content-between align-items-center">
+            <div class="d-flex gap-2">
+                <input type="text" class="form-control form-control-sm" style="width: 250px;"
+                       placeholder="Search accounts..." @bind="searchText" @bind:event="oninput" />
+                <select class="form-select form-select-sm" style="width: 180px;" @bind="categoryFilter">
+                    <option value="">All Categories</option>
+                    @foreach (var type in AccountTypes)
+                    {
+                        <option value="@type">@FormatCategoryLabel(type)</option>
+                    }
+                </select>
+            </div>
+            <span class="text-secondary small fw-semibold">Total Accounts: @FilteredAccounts.Count()</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 120px;">Ref No.</th>
+                            <th>Account Name</th>
+                            <th>Category</th>
+                            <th>Role</th>
+                            <th class="text-end">Current Balance</th>
+                            <th class="text-center" style="width: 100px;">Status</th>
+                            <th class="text-center pe-4" style="width: 130px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @if (UserId == Guid.Empty)
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-secondary">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading account data...
+                                </td>
+                            </tr>
+                        }
+                        else if (FilteredAccounts.Any())
+                        {
+                            @foreach (var account in FilteredAccounts)
+                            {
+                                <tr>
+                                    <td class="ps-4"><code>@account.ReferenceNumber</code></td>
+                                    <td class="fw-bold text-body">@account.AccountName</td>
+                                    <td><span class="badge bg-secondary text-light">@account.Type</span></td>
+                                    <td>
+                                        @if (account.Role != "Default")
+                                        {
+                                            <span class="badge bg-info text-dark">@account.Role</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary small">Standard</span>
+                                        }
+                                    </td>
+                                    <td class="text-end fw-semibold @(account.Balance >= 0 ? "text-success" : "text-danger")">
+                                        Rp @account.Balance.ToString("N0", CultureId)
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge @(account.IsActive ? "bg-success" : "bg-danger")">
+                                            @(account.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <div class="btn-group shadow-sm">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit Account"
+                                                    data-bs-toggle="modal" data-bs-target="#editAccountModal"
+                                                    @onclick="() => OpenEditModal(account)">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <a href="@GetLedgerUrl(account)" class="btn btn-sm btn-outline-info" title="View General Ledger">
+                                                <i class="bi bi-journal-text"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete Account"
+                                                    @onclick="() => ConfirmAndDelete(account)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center py-5 text-secondary">
+                                    <i class="bi bi-diagram-3 mb-3 d-block" style="font-size: 2.5rem;"></i>
+                                    No accounts found. Add a new account to get started.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Account -->
+<div class="modal fade" id="addAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-body-emphasis"><i class="bi bi-plus-circle me-2 text-warning"></i> Add New Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <EditForm Model="newAccount" OnValidSubmit="HandleCreate">
+                <DataAnnotationsValidator />
+                <div class="modal-body p-4">
+                    @if (createError != null)
+                    {
+                        <div class="alert alert-danger py-2 small">@createError</div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Account Category</label>
+                        <InputSelect class="form-select" @bind-Value="newAccount.Type">
+                            <option value="">-- Select Category --</option>
+                            @foreach (var type in AccountTypes)
+                            {
+                                <option value="@type">@FormatCategoryLabel(type)</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Reference Number (Account Code)</label>
+                        <InputNumber class="form-control" @bind-Value="newAccount.ReferenceNumber"
+                                     disabled="@(string.IsNullOrEmpty(newAccount.Type))" />
+                        @if (!string.IsNullOrEmpty(newAccount.Type))
+                        {
+                            <div class="form-text text-primary">
+                                <i class="bi bi-info-circle"></i> Valid range for this category:
+                                <strong>@AccountClassification.ValidRangeStart(newAccount.Type) - @AccountClassification.ValidRangeEnd(newAccount.Type)</strong>.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="form-text text-secondary">Please select an account category to see the valid numbering range.</div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Account Name</label>
+                        <InputText class="form-control" placeholder="e.g. Rent Expense" @bind-Value="newAccount.AccountName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">System Role (Special Calculations)</label>
+                        <InputSelect class="form-select" @bind-Value="newAccount.Role">
+                            <option value="Default">Standard / Default</option>
+                            <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
+                            <option value="RetainedEarnings">Retained Earnings</option>
+                            <option value="TaxPayable">Tax Payable</option>
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="modal-footer bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold px-4">Save Account</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Account -->
+<div class="modal fade" id="editAccountModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-body-emphasis"><i class="bi bi-pencil-square me-2 text-warning"></i> Edit Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <EditForm Model="editAccount" OnValidSubmit="HandleEdit">
+                <DataAnnotationsValidator />
+                <div class="modal-body p-4">
+                    @if (editError != null)
+                    {
+                        <div class="alert alert-danger py-2 small">@editError</div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Account Category</label>
+                        <InputSelect class="form-select" @bind-Value="editAccount.Type">
+                            <option value="">-- Select Category --</option>
+                            @foreach (var type in AccountTypes)
+                            {
+                                <option value="@type">@FormatCategoryLabel(type)</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Reference Number (Account Code)</label>
+                        <InputNumber class="form-control" @bind-Value="editAccount.ReferenceNumber" />
+                        @if (!string.IsNullOrEmpty(editAccount.Type))
+                        {
+                            <div class="form-text text-primary">
+                                <i class="bi bi-info-circle"></i> Valid range for this category:
+                                <strong>@AccountClassification.ValidRangeStart(editAccount.Type) - @AccountClassification.ValidRangeEnd(editAccount.Type)</strong>.
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Account Name</label>
+                        <InputText class="form-control" @bind-Value="editAccount.AccountName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">System Role (Special Calculations)</label>
+                        <InputSelect class="form-select" @bind-Value="editAccount.Role">
+                            <option value="Default">Standard / Default</option>
+                            <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
+                            <option value="RetainedEarnings">Retained Earnings</option>
+                            <option value="TaxPayable">Tax Payable</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <InputCheckbox class="form-check-input" id="editIsActive" @bind-Value="editAccount.IsActive" />
+                        <label class="form-check-label fw-semibold small" for="editIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer bg-body-tertiary">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold px-4">Update Account</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>

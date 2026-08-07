@@ -1,0 +1,96 @@
+@inject IJSRuntime JS
+
+<div class="w-100 px-1 text-center mx-auto" style="max-width: 95%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+    
+    <!-- Teks Terjemahan -->
+    <span class="text-body-secondary fst-italic" style="font-size: 0.75rem;">
+        @verseText
+    </span>
+    
+    <!-- Referensi mengekor langsung di belakang teks -->
+    <span class="badge bg-primary-subtle text-primary fw-semibold ms-1 align-baseline" style="font-size: 0.675rem;">
+        @verseRef
+    </span>
+    
+</div>
+
+@code {
+    private string verseText = "Loading verse...";
+    private string verseRef = "--";
+
+    // Cache static agar data tidak fetch ulang terus menerus saat pindah halaman
+    private static string? cachedVerseText;
+    private static string? cachedVerseRef;
+    private static int lastCalculatedAyah = -1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Jika cache sudah ada, langsung pakai agar instan tanpa loading
+        if (!string.IsNullOrEmpty(cachedVerseText))
+        {
+            verseText = cachedVerseText;
+            verseRef = cachedVerseRef ?? "--";
+            return;
+        }
+
+        await FetchAndSetVerseAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Jalankan pengecekan berkala via JS untuk menghitung nomor ayat berdasarkan slot waktu Mas
+        try
+        {
+            int currentAyah = await JS.InvokeAsync<int>("calculateAyahNumber");
+            
+            if (currentAyah != lastCalculatedAyah && lastCalculatedAyah != -1)
+            {
+                lastCalculatedAyah = currentAyah;
+                await FetchAndSetVerseAsync();
+                StateHasChanged();
+            }
+            else if (lastCalculatedAyah == -1)
+            {
+                lastCalculatedAyah = currentAyah;
+            }
+        }
+        catch
+        {
+            // Abaikan jika JS interop belum siap
+        }
+    }
+
+    private async Task FetchAndSetVerseAsync()
+    {
+        try
+        {
+            // Ambil nomor ayat langsung dari fungsi JS yang sudah Mas buat
+            int ayahNumber = await JS.InvokeAsync<int>("calculateAyahNumber");
+            
+            // Panggil API Alquran Cloud
+            var response = await JS.InvokeAsync<System.Text.Json.JsonElement>("eval", 
+                $"fetch('https://api.alquran.cloud/v1/ayah/{ayahNumber}/en.sahih').then(r => r.json())");
+
+            if (response.GetProperty("code").GetInt32() == 200)
+            {
+                var data = response.GetProperty("data");
+                string text = data.GetProperty("text").GetString() ?? "";
+                string surahName = data.GetProperty("surah").GetProperty("englishName").GetString() ?? "";
+                int surahNum = data.GetProperty("surah").GetProperty("number").GetInt32();
+                int ayahNumInSurah = data.GetProperty("numberInSurah").GetInt32();
+
+                cachedVerseText = $"\"{text}\"";
+                cachedVerseRef = $"QS. {surahName} {surahNum}:{ayahNumInSurah}";
+
+                verseText = cachedVerseText;
+                verseRef = cachedVerseRef;
+            }
+        }
+        catch
+        {
+            // Fallback jika offline / gagal fetch
+            verseText = "\"Allah does not charge a soul except with that which He has given it.\"";
+            verseRef = "QS. At-Talaq 65:7";
+        }
+    }
+}

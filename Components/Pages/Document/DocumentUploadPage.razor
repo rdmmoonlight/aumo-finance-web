@@ -1,0 +1,241 @@
+@page "/documents/upload"
+@page "/documents/create"
+@using AumoFinance.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject IWebHostEnvironment Env
+@inject NavigationManager Nav
+
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 col-lg-8 mx-auto">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 text-dark">Upload Economic Document</h5>
+        </div>
+        <div class="card-body p-4">
+            @if (noPeriodSelected)
+            {
+                <div class="alert alert-warning">
+                    Please select an active accounting period before uploading documents.
+                    <a href="/Periods" class="alert-link">Go to Periods</a>
+                </div>
+            }
+            else
+            {
+                @if (errors.Any())
+                {
+                    <div class="alert alert-danger py-2 small">
+                        <ul class="mb-0">
+                            @foreach (var err in errors)
+                            {
+                                <li>@err</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <EditForm Model="model" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Document Title</label>
+                            <InputText class="form-control" @bind-Value="model.Title" placeholder="e.g., Q3 Financial Report" />
+                            <ValidationMessage For="() => model.Title" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Category</label>
+                            <InputSelect class="form-select" @bind-Value="model.Category">
+                                <option value="">-- Select Category --</option>
+                                <option value="Invoice">Invoice</option>
+                                <option value="Receipt">Receipt</option>
+                                <option value="Bank Statement">Bank Statement</option>
+                                <option value="Tax Return">Tax Return</option>
+                                <option value="Contract">Contract</option>
+                                <option value="Other">Other</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => model.Category" class="text-danger small" />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Reference Number (Optional)</label>
+                            <InputText class="form-control" @bind-Value="model.ReferenceNumber" placeholder="Journal entry ID, vendor code, etc." />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Link to Journal Entry (SSOT)</label>
+                            <InputSelect class="form-select" @bind-Value="model.JournalEntryId">
+                                <option value="">-- None --</option>
+                                @foreach (var je in journalEntries)
+                                {
+                                    <option value="@je.Id">@je.ReferenceNumber &ndash; @je.EntryDate.ToString("dd MMM yyyy")</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Description</label>
+                            <InputTextArea class="form-control" rows="3" @bind-Value="model.Description" />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Select File</label>
+                            <InputFile class="form-control" OnChange="OnFileSelected" />
+                            @if (fileError != null)
+                            {
+                                <div class="text-danger small">@fileError</div>
+                            }
+                            <div class="form-text">Accepted formats: PDF, JPG, PNG, DOCX, XLSX. Maximum size: 20 MB.</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                        <a href="/Document" class="btn btn-light border text-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            <i class="bi bi-cloud-arrow-up me-1"></i> @(isSubmitting ? "Uploading..." : "Secure Upload")
+                        </button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+    [Parameter] public string UploadedByName { get; set; } = "System";
+
+    private const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
+
+    private UploadModel model = new();
+    private IBrowserFile? selectedFile;
+    private string? fileError;
+    private List<string> errors = new();
+    private List<JournalEntry> journalEntries = new();
+    private Period? currentPeriod;
+    private bool noPeriodSelected;
+    private bool isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentPeriod = await DbContext.Periods.FirstOrDefaultAsync(p => p.UserId == UserId && p.IsSelected);
+        if (currentPeriod == null)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        journalEntries = await DbContext.JournalEntries
+            .Where(j => j.UserId == UserId &&
+                        j.EntryDate >= currentPeriod.StartDate &&
+                        j.EntryDate <= currentPeriod.EndDate)
+            .OrderByDescending(j => j.Id)
+            .Take(100)
+            .ToListAsync();
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        fileError = null;
+        var file = e.File;
+
+        if (file.Size > MaxFileSizeBytes)
+        {
+            fileError = $"File is too large ({file.Size / 1024 / 1024} MB). Maximum allowed is 20 MB.";
+            selectedFile = null;
+            return;
+        }
+
+        selectedFile = file;
+    }
+
+    private async Task HandleSubmit()
+    {
+        errors.Clear();
+
+        // Gate: pastikan periode aktif masih terkonfirmasi saat submit.
+        currentPeriod = await DbContext.Periods.FirstOrDefaultAsync(p => p.UserId == UserId && p.IsSelected);
+        if (currentPeriod == null)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        if (model.JournalEntryId.HasValue)
+        {
+            var ownsEntry = await DbContext.JournalEntries.AnyAsync(j => j.Id == model.JournalEntryId.Value && j.UserId == UserId);
+            if (!ownsEntry)
+            {
+                errors.Add("The selected journal entry is invalid.");
+            }
+        }
+
+        if (selectedFile == null)
+        {
+            errors.Add("Please select a valid file.");
+        }
+
+        if (errors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            var uploadFolder = Path.Combine(Env.ContentRootPath, "SecureDocuments");
+            if (!Directory.Exists(uploadFolder))
+            {
+                Directory.CreateDirectory(uploadFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(selectedFile!.Name)}";
+            var filePath = Path.Combine(uploadFolder, uniqueFileName);
+
+            await using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await using var uploadStream = selectedFile.OpenReadStream(MaxFileSizeBytes);
+                await uploadStream.CopyToAsync(fileStream);
+            }
+
+            var newDoc = new EconomicDocument
+            {
+                UserId = UserId,
+                Title = model.Title,
+                Category = model.Category,
+                ReferenceNumber = model.ReferenceNumber,
+                JournalEntryId = model.JournalEntryId,
+                Description = model.Description,
+                FileName = selectedFile.Name,
+                FilePath = filePath,
+                FileSize = selectedFile.Size,
+                ContentType = selectedFile.ContentType,
+                UploadedBy = UploadedByName,
+                UploadDate = DateTime.UtcNow
+            };
+
+            DbContext.EconomicDocuments.Add(newDoc);
+            await DbContext.SaveChangesAsync();
+
+            Nav.NavigateTo("/Document?uploaded=1");
+        }
+        catch (Exception)
+        {
+            errors.Add("A fatal error occurred while uploading the document.");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private class UploadModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Title { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required]
+        public string Category { get; set; } = string.Empty;
+
+        public string? ReferenceNumber { get; set; }
+        public int? JournalEntryId { get; set; }
+        public string? Description { get; set; }
+    }
+}

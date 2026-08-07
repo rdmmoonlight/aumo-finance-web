@@ -1,0 +1,228 @@
+@page "/reports/worksheet"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using AumoFinance.Models
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container-fluid">
+    @if (noPeriodSelected)
+    {
+        <div class="text-center py-5 my-4">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
+            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-grid-3x3 me-2 text-info"></i> Worksheet</h2>
+                <p class="text-muted mb-0">10-column worksheet: Trial Balance, Adjustments, Adjusted Trial Balance, Income Statement, and Balance Sheet.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/reports/income-statement" class="btn btn-outline-secondary">
+                    <i class="bi bi-graph-up-arrow me-1"></i> Income Statement
+                </a>
+            </div>
+        </div>
+
+        <div class="card bg-dark border-secondary text-white shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0 small">
+                        <thead class="table-active border-bottom border-secondary text-center">
+                            <tr>
+                                <th rowspan="2" class="align-middle text-start">Account</th>
+                                <th colspan="2">Trial Balance</th>
+                                <th colspan="2">Adjustments</th>
+                                <th colspan="2">Adjusted Trial Balance</th>
+                                <th colspan="2">Income Statement</th>
+                                <th colspan="2">Balance Sheet</th>
+                            </tr>
+                            <tr>
+                                <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                                <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                                <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                                <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                                <th class="text-end">Dr</th><th class="text-end">Cr</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in vm.Rows)
+                            {
+                                <tr>
+                                    <td class="text-nowrap"><code class="text-warning">@row.ReferenceNumber</code> @row.AccountName</td>
+                                    <td class="text-end">@(row.UnadjustedDebit > 0 ? row.UnadjustedDebit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end">@(row.UnadjustedCredit > 0 ? row.UnadjustedCredit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end text-warning">@(row.AdjustmentDebit > 0 ? row.AdjustmentDebit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end text-warning">@(row.AdjustmentCredit > 0 ? row.AdjustmentCredit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end">@(row.AdjustedDebit > 0 ? row.AdjustedDebit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end">@(row.AdjustedCredit > 0 ? row.AdjustedCredit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end text-success">@(row.IncomeStatementDebit > 0 ? row.IncomeStatementDebit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end text-success">@(row.IncomeStatementCredit > 0 ? row.IncomeStatementCredit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end text-info">@(row.FinancialPositionDebit > 0 ? row.FinancialPositionDebit.ToString("N0", Idr) : "-")</td>
+                                    <td class="text-end text-info">@(row.FinancialPositionCredit > 0 ? row.FinancialPositionCredit.ToString("N0", Idr) : "-")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-top border-secondary fw-bold">
+                                <td class="text-end">Total</td>
+                                <td class="text-end">@vm.TotalUnadjustedDebit.ToString("N0", Idr)</td>
+                                <td class="text-end">@vm.TotalUnadjustedCredit.ToString("N0", Idr)</td>
+                                <td class="text-end text-warning">@vm.TotalAdjustmentDebit.ToString("N0", Idr)</td>
+                                <td class="text-end text-warning">@vm.TotalAdjustmentCredit.ToString("N0", Idr)</td>
+                                <td class="text-end">@vm.TotalAdjustedDebit.ToString("N0", Idr)</td>
+                                <td class="text-end">@vm.TotalAdjustedCredit.ToString("N0", Idr)</td>
+                                <td class="text-end text-success">@vm.TotalIncomeStatementDebit.ToString("N0", Idr)</td>
+                                <td class="text-end text-success">@vm.TotalIncomeStatementCredit.ToString("N0", Idr)</td>
+                                <td class="text-end text-info">@vm.TotalFinancialPositionDebit.ToString("N0", Idr)</td>
+                                <td class="text-end text-info">@vm.TotalFinancialPositionCredit.ToString("N0", Idr)</td>
+                            </tr>
+                            <tr class="fw-bold">
+                                <td class="text-end" colspan="7">Net Income (plug Income Statement &rarr; Balance Sheet)</td>
+                                @if (vm.NetIncome >= 0)
+                                {
+                                    <td class="text-end text-success">@vm.NetIncome.ToString("N0", Idr)</td>
+                                    <td class="text-end">-</td>
+                                    <td class="text-end">-</td>
+                                    <td class="text-end text-info">@vm.NetIncome.ToString("N0", Idr)</td>
+                                }
+                                else
+                                {
+                                    <td class="text-end">-</td>
+                                    <td class="text-end text-success">@((-vm.NetIncome).ToString("N0", Idr))</td>
+                                    <td class="text-end text-info">@((-vm.NetIncome).ToString("N0", Idr))</td>
+                                    <td class="text-end">-</td>
+                                }
+                            </tr>
+                            <tr class="border-top border-secondary fw-bold">
+                                <td class="text-end" colspan="7">Total (after plug)</td>
+                                <td class="text-end text-success">@((vm.TotalIncomeStatementDebit + (vm.NetIncome >= 0 ? vm.NetIncome : 0)).ToString("N0", Idr))</td>
+                                <td class="text-end text-success">@((vm.TotalIncomeStatementCredit + (vm.NetIncome < 0 ? -vm.NetIncome : 0)).ToString("N0", Idr))</td>
+                                <td class="text-end text-info">@((vm.TotalFinancialPositionDebit + (vm.NetIncome < 0 ? -vm.NetIncome : 0)).ToString("N0", Idr))</td>
+                                <td class="text-end text-info">@((vm.TotalFinancialPositionCredit + (vm.NetIncome >= 0 ? vm.NetIncome : 0)).ToString("N0", Idr))</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info bg-opacity-10 mt-3 mb-0 py-2 small">
+            <i class="bi bi-info-circle-fill me-1"></i>
+            Net Income / (Loss): <strong>@vm.NetIncome.ToString("N0", Idr)</strong> — plugged from the Income Statement column to the Balance Sheet column to balance both sections.
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly CultureInfo Idr = new("id-ID");
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private Guid UserId { get; set; }
+    private WorksheetViewModel vm = new();
+    private bool noPeriodSelected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
+        if (period == null)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        var unadjusted = await TrialBalancePage.BuildTrialBalanceRowsAsync(DbContext, UserId, period, includeAdjusting: false);
+        var adjusted = await TrialBalancePage.BuildTrialBalanceRowsAsync(DbContext, UserId, period, includeAdjusting: true);
+
+        var accounts = await DbContext.ChartOfAccounts.Where(a => a.IsActive && a.UserId == UserId).OrderBy(a => a.ReferenceNumber).ToListAsync();
+
+        var newVm = new WorksheetViewModel();
+        var allRefs = unadjusted.Select(r => r.AccountId)
+            .Union(adjusted.Select(r => r.AccountId))
+            .ToList();
+
+        foreach (var accountId in allRefs)
+        {
+            var account = accounts.First(a => a.Id == accountId);
+            var u = unadjusted.FirstOrDefault(r => r.AccountId == accountId);
+            var a = adjusted.FirstOrDefault(r => r.AccountId == accountId);
+            var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
+
+            var uDebit = u?.Debit ?? 0;
+            var uCredit = u?.Credit ?? 0;
+            var aDebit = a?.Debit ?? 0;
+            var aCredit = a?.Credit ?? 0;
+
+            var adjNet = (aDebit - aCredit) - (uDebit - uCredit);
+
+            var row = new WorksheetRow
+            {
+                AccountId = accountId,
+                ReferenceNumber = account.ReferenceNumber,
+                AccountName = account.AccountName,
+                Type = account.Type,
+                NormalBalanceIsDebit = normalDebit,
+                UnadjustedDebit = uDebit,
+                UnadjustedCredit = uCredit,
+                AdjustmentDebit = adjNet > 0 ? adjNet : 0,
+                AdjustmentCredit = adjNet < 0 ? -adjNet : 0,
+                AdjustedDebit = aDebit,
+                AdjustedCredit = aCredit
+            };
+
+            var isTemporary = AccountClassification.IsTemporary(account.Type);
+            if (isTemporary)
+            {
+                row.IncomeStatementDebit = aDebit;
+                row.IncomeStatementCredit = aCredit;
+            }
+            else
+            {
+                row.FinancialPositionDebit = aDebit;
+                row.FinancialPositionCredit = aCredit;
+            }
+
+            newVm.Rows.Add(row);
+        }
+
+        newVm.Rows = newVm.Rows.OrderBy(r => r.ReferenceNumber).ToList();
+        newVm.NetIncome = newVm.TotalIncomeStatementCredit - newVm.TotalIncomeStatementDebit;
+
+        vm = newVm;
+    }
+}

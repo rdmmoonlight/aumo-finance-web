@@ -1,9 +1,0 @@
-@using System.Security.Claims
-@{
-    ViewData["Title"] = "Review Jurnal Mobile";
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    var entryId = int.Parse(ViewContext.RouteData.Values["id"]!.ToString()!);
-}
-
-<component type="typeof(AumoFinance.Components.MobileClassificationPage)" render-mode="ServerPrerendered"
-           param-UserId="@userId" param-ViewMode="@("Manual")" param-EntryId="@entryId" />

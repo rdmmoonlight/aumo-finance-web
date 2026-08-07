@@ -1,0 +1,344 @@
+@page "/documents"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using AumoFinance.Models
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Document Repository & Intelligence</PageTitle>
+
+<div class="container-fluid py-4">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 text-dark mb-1">
+                <i class="bi bi-file-earmark-text me-2"></i> Document Repository &amp; Intelligence
+            </h2>
+            <p class="text-muted small mb-0">System metrics, financial records, and economic documentation repository</p>
+        </div>
+        <a href="/documents/upload" class="btn btn-primary btn-sm">
+            <i class="bi bi-upload me-1"></i> Upload Document
+        </a>
+    </div>
+
+    <!-- ROW 1: DOCUMENT METRICS -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="badge bg-primary-subtle text-primary p-3 rounded-circle me-3">
+                        <i class="bi bi-files fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Total Documents</div>
+                        <div class="fw-bold fs-5 text-dark">@vm.TotalDocuments</div>
+                        <div class="text-secondary" style="font-size: 0.75rem;">Avg Size: @vm.AverageFileSizeKB KB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="badge bg-success-subtle text-success p-3 rounded-circle me-3">
+                        <i class="bi bi-hdd-network fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Storage Consumption</div>
+                        <div class="fw-bold fs-5 text-dark">@vm.TotalStorageMB MB</div>
+                        <div class="text-secondary" style="font-size: 0.75rem;">Secure Server Storage</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="badge bg-warning-subtle text-warning p-3 rounded-circle me-3">
+                        <i class="bi bi-clock-history fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Recent Uploads (7D)</div>
+                        <div class="fw-bold fs-5 text-dark">@vm.AddedLast7Days</div>
+                        <div class="text-secondary" style="font-size: 0.75rem;">Active documentation flow</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100">
+                <div class="d-flex align-items-center">
+                    <div class="badge bg-info-subtle text-info p-3 rounded-circle me-3">
+                        <i class="bi bi-pie-chart fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Dominant Category</div>
+                        <div class="fw-bold fs-6 text-dark text-truncate" style="max-width: 140px;" title="@vm.MostFrequentCategory">@vm.MostFrequentCategory</div>
+                        <div class="text-secondary" style="font-size: 0.75rem;">Highest frequency</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: SYSTEM & ACCOUNTING METRICS -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100 border-start border-primary border-4">
+                <div class="text-muted small">Application Deployment</div>
+                <div class="fw-bold fs-6 text-dark mt-1">@vm.AppDeploymentDate.ToString("dd MMM yyyy")</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Active for @vm.AppAgeDays days</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100 border-start border-success border-4">
+                <div class="text-muted small">Total Journal Entries</div>
+                <div class="fw-bold fs-6 text-dark mt-1">@vm.TotalJournalEntries Transactions</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Recorded in General Ledger</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100 border-start border-warning border-4">
+                <div class="text-muted small">Chart of Accounts &amp; Periods</div>
+                <div class="fw-bold fs-6 text-dark mt-1">@vm.TotalChartOfAccounts Accounts</div>
+                <div class="text-muted" style="font-size: 0.75rem;">@vm.TotalActivePeriods active period(s)</div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm bg-body rounded p-3 h-100 border-start border-info border-4">
+                <div class="text-muted small">System Accountability</div>
+                <div class="fw-bold fs-6 text-dark mt-1">@vm.TotalSystemUsers Registered User(s)</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Secured Access Control</div>
+            </div>
+        </div>
+    </div>
+
+    @if (showUploadedMessage)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            Document uploaded and linked to SSOT successfully.
+            <button type="button" class="btn-close" @onclick="() => showUploadedMessage = false"></button>
+        </div>
+    }
+
+    <!-- FILTER & SEARCH BAR -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-2 px-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search by title or reference number..."
+                           @bind="searchString" @bind:event="oninput" @onkeyup="HandleSearchKeyUp" />
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select form-control-sm" @bind="category">
+                        <option value="">-- All Categories --</option>
+                        <option value="Invoice">Invoice</option>
+                        <option value="Receipt">Receipt</option>
+                        <option value="Bank Statement">Bank Statement</option>
+                        <option value="Tax Return">Tax Return</option>
+                        <option value="Contract">Contract</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-1">
+                    <button type="button" class="btn btn-sm btn-secondary w-100" @onclick="ApplyFilterAsync">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ResetFilterAsync">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCUMENT TABLE -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary small">
+                        <tr>
+                            <th class="ps-4">Document Title</th>
+                            <th>Category</th>
+                            <th>Ref Number</th>
+                            <th>Date</th>
+                            <th>Size</th>
+                            <th class="text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="border-top-0">
+                        @if (UserId == Guid.Empty)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status"></div> Loading user data...
+                                </td>
+                            </tr>
+                        }
+                        else if (!vm.Documents.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    No documentation records found.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in vm.Documents)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-medium">
+                                        @item.Title <br />
+                                        <small class="text-muted fw-normal">@item.FileName</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary">@item.Category</span></td>
+                                    <td>@(string.IsNullOrEmpty(item.ReferenceNumber) ? "-" : item.ReferenceNumber)</td>
+                                    <td>@item.UploadDate.ToString("dd MMM yyyy")</td>
+                                    <td>@Math.Round((double)item.FileSize / 1024, 1) KB</td>
+                                    <td class="text-end pe-4">
+                                        <a href="/Document/Download/@item.Id" class="btn btn-sm btn-outline-secondary" title="Download">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Guid UserId;
+    private DocumentIndexViewModel vm = new();
+    private string searchString = string.Empty;
+    private string category = string.Empty;
+    private bool showUploadedMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+
+                var uri = new Uri(Nav.Uri);
+                var query = QueryHelpers.ParseQuery(uri.Query);
+                showUploadedMessage = query.ContainsKey("uploaded");
+
+                await LoadAsync();
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/Account/Login", true);
+    }
+
+    private Task ApplyFilterAsync() => LoadAsync();
+
+    private Task HandleSearchKeyUp(KeyboardEventArgs e) => e.Key == "Enter" ? LoadAsync() : Task.CompletedTask;
+
+    private Task ResetFilterAsync()
+    {
+        searchString = string.Empty;
+        category = string.Empty;
+        return LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (UserId == Guid.Empty) return;
+
+        var currentPeriod = await DbContext.Periods.FirstOrDefaultAsync(p => p.UserId == UserId && p.IsSelected);
+
+        if (currentPeriod == null)
+        {
+            vm = new DocumentIndexViewModel
+            {
+                Documents = new List<EconomicDocument>(),
+                TotalDocuments = 0,
+                TotalStorageMB = 0,
+                AddedLast7Days = 0,
+                MostFrequentCategory = "-",
+                AverageFileSizeKB = 0,
+                AppDeploymentDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                AppAgeDays = 1,
+                TotalJournalEntries = 0,
+                TotalChartOfAccounts = 0,
+                TotalActivePeriods = await DbContext.Periods.CountAsync(p => p.UserId == UserId),
+                TotalSystemUsers = await DbContext.Users.CountAsync()
+            };
+            return;
+        }
+
+        var query = DbContext.EconomicDocuments
+            .Include(d => d.JournalEntry)
+            .Where(d => d.UserId == UserId &&
+                        d.UploadDate >= currentPeriod.StartDate &&
+                        d.UploadDate <= currentPeriod.EndDate)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            query = query.Where(d => d.Title.Contains(searchString) ||
+                                       (d.ReferenceNumber != null && d.ReferenceNumber.Contains(searchString)));
+        }
+
+        if (!string.IsNullOrEmpty(category))
+        {
+            query = query.Where(d => d.Category == category);
+        }
+
+        var documentList = await query.OrderByDescending(d => d.UploadDate).ToListAsync();
+
+        var allDocsInPeriod = await DbContext.EconomicDocuments
+            .Where(d => d.UserId == UserId &&
+                        d.UploadDate >= currentPeriod.StartDate &&
+                        d.UploadDate <= currentPeriod.EndDate)
+            .ToListAsync();
+
+        var totalBytes = allDocsInPeriod.Sum(d => d.FileSize);
+
+        var topCategory = allDocsInPeriod.GroupBy(d => d.Category)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.Key)
+            .FirstOrDefault() ?? "-";
+
+        var deploymentDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var ageInDays = (int)(DateTime.UtcNow - deploymentDate).TotalDays;
+
+        vm = new DocumentIndexViewModel
+        {
+            Documents = documentList,
+            TotalDocuments = allDocsInPeriod.Count,
+            TotalStorageMB = Math.Round((double)totalBytes / (1024 * 1024), 2),
+            AddedLast7Days = allDocsInPeriod.Count(d => d.UploadDate >= DateTime.UtcNow.AddDays(-7)),
+            MostFrequentCategory = topCategory,
+            AverageFileSizeKB = allDocsInPeriod.Any() ? Math.Round((double)totalBytes / allDocsInPeriod.Count / 1024, 2) : 0,
+
+            AppDeploymentDate = deploymentDate,
+            AppAgeDays = ageInDays > 0 ? ageInDays : 1,
+            TotalJournalEntries = await DbContext.JournalEntries.CountAsync(j => j.UserId == UserId && j.EntryDate >= currentPeriod.StartDate && j.EntryDate <= currentPeriod.EndDate),
+            TotalChartOfAccounts = await DbContext.ChartOfAccounts.CountAsync(a => a.UserId == UserId),
+            TotalActivePeriods = await DbContext.Periods.CountAsync(p => p.UserId == UserId),
+            TotalSystemUsers = await DbContext.Users.CountAsync()
+        };
+    }
+}

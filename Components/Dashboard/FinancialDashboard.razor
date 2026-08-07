@@ -1,0 +1,206 @@
+@page "/dashboard"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Globalization
+@using System.Security.Claims
+@using AumoFinance.Models
+@using AumoFinance.Services
+@using AumoFinance.Components.Dashboard
+@inject DashboardDataService DataService
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+
+<style>
+    .tracking-wider { letter-spacing: 0.05em; }
+    .fs-8 { font-size: 0.75rem; }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #ffffff !important;
+    }
+    [data-bs-theme="light"] .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        border-color: rgba(0, 0, 0, 0.06) !important;
+        color: #212529 !important;
+    }
+    .glow-hover-success:hover { border-color: rgba(25, 135, 84, 0.4) !important; box-shadow: 0 8px 25px -6px rgba(25, 135, 84, 0.25) !important; transform: translateY(-3px); }
+    .glow-hover-primary:hover { border-color: rgba(13, 110, 253, 0.4) !important; box-shadow: 0 8px 25px -6px rgba(13, 110, 253, 0.25) !important; transform: translateY(-3px); }
+    .glow-hover-danger:hover { border-color: rgba(220, 53, 69, 0.4) !important; box-shadow: 0 8px 25px -6px rgba(220, 53, 69, 0.25) !important; transform: translateY(-3px); }
+    .gradient-neon-blue {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        box-shadow: 0 8px 20px -5px rgba(13, 110, 253, 0.4);
+    }
+    .icon-square { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+    .health-circle {
+        width: 60px; height: 60px; border-radius: 50%;
+        background: conic-gradient(var(--bs-primary) var(--score-deg), rgba(255,255,255,0.1) 0deg);
+        display: flex; align-items: center; justify-content: center; position: relative;
+    }
+    .health-circle::before { content: ""; position: absolute; width: 48px; height: 48px; border-radius: 50%; background: var(--bs-body-bg); }
+    .health-circle span { position: relative; z-index: 1; }
+    .cmd-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); }
+    .chart-container { position: relative; height: 280px; }
+    .account-item { transition: background-color 0.15s ease; }
+    .account-item:hover { background-color: rgba(255,255,255,0.04); }
+</style>
+
+<PageTitle>Financial Dashboard</PageTitle>
+
+<div class="container-fluid px-0 text-white">
+    @if (UserId == Guid.Empty)
+    {
+        <div class="text-center py-5 my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-white-50 mt-3">Memuat data pengguna...</p>
+        </div>
+    }
+    else if (!model.HasSelectedPeriod)
+    {
+        <div class="text-center py-5 my-5">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 3rem;"></i>
+            <h4 class="fw-bold text-white mb-2">No Period Selected</h4>
+            <p class="text-white-50 mb-4">
+                The Dashboard follows whichever period you're viewing.<br />
+                Go to <strong>Periods</strong> and click <i class="bi bi-eye"></i> on a period to see its data here.
+            </p>
+            <a href="/periods" class="btn btn-primary fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
+        </div>
+    }
+    else
+    {
+        <DashboardHeader Model="@model" PeriodType="@periodType" OnPeriodSwitch="SwitchPeriod" />
+        <DashboardMetricsGrid Model="@model" Idr="@Idr" />
+
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-xl-8">
+                <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-white">Financial Trend</h6>
+                            <span class="text-white-50 fs-8">Revenue vs Operating Expenses</span>
+                        </div>
+                        <div class="icon-square bg-primary-subtle text-primary rounded-3"><i class="bi bi-graph-up"></i></div>
+                    </div>
+                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-0 text-white">Expense Composition</h6>
+                            <span class="text-white-50 fs-8">Breakdown by Account</span>
+                        </div>
+                        <div class="icon-square bg-danger-subtle text-danger rounded-3"><i class="bi bi-pie-chart"></i></div>
+                    </div>
+
+                    @if (model.HasExpenseData)
+                    {
+                        <div class="chart-container"><canvas id="expenseDoughnut"></canvas></div>
+                    }
+                    else
+                    {
+                        <div class="text-center text-white-50 py-4 d-flex flex-column align-items-center justify-content-center h-100">
+                            <i class="bi bi-pie-chart fs-1 d-block mb-2 opacity-50"></i>
+                            <span>No expense data for this period.</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <DashboardTables Model="@model" Idr="@Idr" />
+    }
+</div>
+
+@code {
+    private Guid UserId;
+    private static readonly CultureInfo Idr = new("id-ID");
+    private DashboardViewModel model = new();
+    private string periodType = "monthly";
+    private bool chartsNeedRender;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+
+                var uri = new Uri(Nav.Uri);
+                var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+                if (query.TryGetValue("period", out var p) && p.ToString().Equals("annual", StringComparison.OrdinalIgnoreCase))
+                {
+                    periodType = "annual";
+                }
+
+                await LoadDashboardAsync();
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/Account/Login", true);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("initCommandPalette");
+            }
+            catch (JSException ex)
+            {
+                Console.WriteLine($"[JS Interop Warning] initCommandPalette: {ex.Message}");
+            }
+        }
+
+        if (chartsNeedRender)
+        {
+            chartsNeedRender = false;
+            try
+            {
+                await JS.InvokeVoidAsync("renderDashboardCharts", new {
+                    trendData = new { labels = model.ChartLabels, revenue = model.ChartRevenue, expenses = model.ChartExpenses },
+                    expenseData = new { labels = model.ExpenseCategoryLabels, values = model.ExpenseCategoryValues }
+                });
+            }
+            catch (JSException ex)
+            {
+                Console.WriteLine($"[JS Interop Warning] renderDashboardCharts: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task SwitchPeriod(string type)
+    {
+        if (periodType == type) return;
+        periodType = type;
+        StateHasChanged();
+        await LoadDashboardAsync();
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        if (UserId == Guid.Empty) return;
+        model = await DataService.GetDashboardDataAsync(UserId, periodType);
+        chartsNeedRender = true;
+        StateHasChanged();
+    }
+}

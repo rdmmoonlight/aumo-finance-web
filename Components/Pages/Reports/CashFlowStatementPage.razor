@@ -1,0 +1,263 @@
+@page "/reports/cash-flow"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using AumoFinance.Models
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container-fluid py-2">
+    @if (noPeriodSelected)
+    {
+        <div class="text-center py-5 my-4">
+            <i class="bi bi-eye-slash text-secondary mb-3 d-block" style="font-size: 2.5rem;"></i>
+            <h5 class="fw-bold text-body-emphasis mb-2">No Period Selected</h5>
+            <p class="text-secondary mb-3">This report follows whichever period you're viewing.</p>
+            <a href="/periods" class="btn btn-primary btn-sm fw-semibold shadow-sm px-4">
+                <i class="bi bi-calendar3 me-1"></i> Go to Periods
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-cash-coin me-2 text-success"></i> Cash Flow Statement</h2>
+                <p class="text-muted mb-0">Indirect method (IAS 7), derived from Adjusted Trial Balance &amp; Income Statement.</p>
+            </div>
+            <div>
+                <a href="/reports/income-statement" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-right-circle me-1"></i> Income Statement
+                </a>
+            </div>
+        </div>
+
+        <!-- Cash Flow Table Card -->
+        <div class="card bg-dark border-secondary text-white shadow-sm">
+            <div class="card-body p-4">
+                <table class="table table-dark table-borderless align-middle mb-0">
+                    <tbody>
+                        <!-- OPERATING ACTIVITIES -->
+                        <tr>
+                            <td colspan="2" class="fw-bold text-warning text-uppercase small pb-2">
+                                Cash Flows from Operating Activities
+                            </td>
+                        </tr>
+                        @if (!vm.OperatingActivities.Any())
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted fst-italic">No operating activities.</td>
+                                <td class="text-end text-muted">-</td>
+                            </tr>
+                        }
+                        @foreach (var l in vm.OperatingActivities)
+                        {
+                            <tr>
+                                <td class="ps-4">@l.Description</td>
+                                <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount).ToString("N0", Idr)})" : l.Amount.ToString("N0", Idr))
+                                </td>
+                            </tr>
+                        }
+                        <tr class="border-top border-secondary fw-semibold">
+                            <td class="ps-4 pt-2">Net Cash Provided by (Used in) Operating Activities</td>
+                            <td class="text-end pt-2 @(vm.NetOperating < 0 ? "text-danger" : "text-success")">
+                                @(vm.NetOperating < 0 ? $"({Math.Abs(vm.NetOperating).ToString("N0", Idr)})" : vm.NetOperating.ToString("N0", Idr))
+                            </td>
+                        </tr>
+
+                        <!-- INVESTING ACTIVITIES -->
+                        <tr>
+                            <td colspan="2" class="pt-4 fw-bold text-warning text-uppercase small pb-2">
+                                Cash Flows from Investing Activities
+                            </td>
+                        </tr>
+                        @if (!vm.InvestingActivities.Any())
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted fst-italic">No investing activities.</td>
+                                <td class="text-end text-muted">-</td>
+                            </tr>
+                        }
+                        @foreach (var l in vm.InvestingActivities)
+                        {
+                            <tr>
+                                <td class="ps-4">@l.Description</td>
+                                <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount).ToString("N0", Idr)})" : l.Amount.ToString("N0", Idr))
+                                </td>
+                            </tr>
+                        }
+                        <tr class="border-top border-secondary fw-semibold">
+                            <td class="ps-4 pt-2">Net Cash Provided by (Used in) Investing Activities</td>
+                            <td class="text-end pt-2 @(vm.NetInvesting < 0 ? "text-danger" : "text-success")">
+                                @(vm.NetInvesting < 0 ? $"({Math.Abs(vm.NetInvesting).ToString("N0", Idr)})" : vm.NetInvesting.ToString("N0", Idr))
+                            </td>
+                        </tr>
+
+                        <!-- FINANCING ACTIVITIES -->
+                        <tr>
+                            <td colspan="2" class="pt-4 fw-bold text-warning text-uppercase small pb-2">
+                                Cash Flows from Financing Activities
+                            </td>
+                        </tr>
+                        @if (!vm.FinancingActivities.Any())
+                        {
+                            <tr>
+                                <td class="ps-4 text-muted fst-italic">No financing activities.</td>
+                                <td class="text-end text-muted">-</td>
+                            </tr>
+                        }
+                        @foreach (var l in vm.FinancingActivities)
+                        {
+                            <tr>
+                                <td class="ps-4">@l.Description</td>
+                                <td class="text-end @(l.Amount < 0 ? "text-danger" : "text-success")">
+                                    @(l.Amount < 0 ? $"({Math.Abs(l.Amount).ToString("N0", Idr)})" : l.Amount.ToString("N0", Idr))
+                                </td>
+                            </tr>
+                        }
+                        <tr class="border-top border-secondary fw-semibold">
+                            <td class="ps-4 pt-2">Net Cash Provided by (Used in) Financing Activities</td>
+                            <td class="text-end pt-2 @(vm.NetFinancing < 0 ? "text-danger" : "text-success")">
+                                @(vm.NetFinancing < 0 ? $"({Math.Abs(vm.NetFinancing).ToString("N0", Idr)})" : vm.NetFinancing.ToString("N0", Idr))
+                            </td>
+                        </tr>
+
+                        <!-- SUMMARY SECTION -->
+                        <tr class="border-top border-secondary" style="border-top-width: 3px !important;">
+                            <td class="fw-bold fs-5 pt-3">Net Increase (Decrease) in Cash and Cash Equivalents</td>
+                            <td class="text-end fw-bold fs-5 pt-3 @(vm.NetChangeInCash < 0 ? "text-danger" : "text-success")">
+                                @(vm.NetChangeInCash < 0 ? $"({Math.Abs(vm.NetChangeInCash).ToString("N0", Idr)})" : vm.NetChangeInCash.ToString("N0", Idr))
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3 text-white-50">Cash and Cash Equivalents, Beginning of Period</td>
+                            <td class="text-end text-white-50">@vm.BeginningCash.ToString("N0", Idr)</td>
+                        </tr>
+                        <tr class="fw-bold border-top border-secondary">
+                            <td class="ps-3 pt-2 text-info">Cash and Cash Equivalents, End of Period</td>
+                            <td class="text-end pt-2 text-info">@vm.EndingCash.ToString("N0", Idr)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Note Footnote -->
+        <div class="alert alert-info bg-opacity-10 text-white border-info mt-3 mb-0 py-2 small d-flex align-items-center shadow-sm">
+            <i class="bi bi-info-circle-fill text-info me-2 fs-6"></i>
+            <span>
+                Prepared using the Indirect Method in accordance with IAS 7 / US GAAP.
+            </span>
+        </div>
+    }
+</div>
+
+@code {
+    private static readonly CultureInfo Idr = new("id-ID");
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private Guid UserId { get; set; }
+    private CashFlowStatementViewModel vm = new();
+    private bool noPeriodSelected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (Guid.TryParse(userIdClaim, out var parsedGuid))
+                {
+                    UserId = parsedGuid;
+                }
+            }
+        }
+
+        if (UserId == Guid.Empty)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
+        if (period == null)
+        {
+            noPeriodSelected = true;
+            return;
+        }
+
+        var rows = await TrialBalancePage.BuildTrialBalanceRowsAsync(DbContext, UserId, period, includeAdjusting: true);
+        var incomeStatement = IncomeStatementPage.BuildIncomeStatement(rows, period);
+
+        var cashRows = rows.Where(r => r.Role == "CashAndEquivalents").ToList();
+        decimal endingCash = cashRows.Sum(r => r.NetBalance);
+
+        var newVm = new CashFlowStatementViewModel
+        {
+            OperatingActivities = new List<CashFlowLine>
+            {
+                new CashFlowLine
+                {
+                    Description = "Net Income per Income Statement",
+                    Amount = incomeStatement.NetIncome
+                }
+            }
+        };
+
+        foreach (var r in rows)
+        {
+            if (r.NetBalance == 0 || r.Role == "CashAndEquivalents" || r.Role == "RetainedEarnings")
+                continue;
+
+            if (AccountClassification.IsTemporary(r.Type) || r.ReferenceNumber >= 400)
+                continue;
+
+            if (r.Type == "Assets" || (r.ReferenceNumber >= 100 && r.ReferenceNumber <= 199))
+            {
+                bool isFixedAsset = r.ReferenceNumber >= 150 ||
+                                   r.AccountName.Contains("Equipment", StringComparison.OrdinalIgnoreCase) ||
+                                   r.AccountName.Contains("Depreciation", StringComparison.OrdinalIgnoreCase) ||
+                                   r.AccountName.Contains("Asset", StringComparison.OrdinalIgnoreCase);
+
+                if (isFixedAsset)
+                    newVm.InvestingActivities.Add(new CashFlowLine { Description = $"Capital expenditure / Sale of {r.AccountName}", Amount = -r.NetBalance });
+                else
+                    newVm.OperatingActivities.Add(new CashFlowLine { Description = $"Change in {r.AccountName}", Amount = -r.NetBalance });
+            }
+            else if (r.Type == "Liabilities" || (r.ReferenceNumber >= 200 && r.ReferenceNumber <= 299))
+            {
+                bool isLongTermDebt = r.ReferenceNumber >= 250 ||
+                                      r.AccountName.Contains("Bank Loan", StringComparison.OrdinalIgnoreCase) ||
+                                      r.AccountName.Contains("Long Term", StringComparison.OrdinalIgnoreCase);
+
+                if (isLongTermDebt)
+                    newVm.FinancingActivities.Add(new CashFlowLine { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
+                else
+                    newVm.OperatingActivities.Add(new CashFlowLine { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
+            }
+            else if (r.Type == "Equity" || (r.ReferenceNumber >= 300 && r.ReferenceNumber <= 399))
+            {
+                newVm.FinancingActivities.Add(new CashFlowLine { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
+            }
+            else
+            {
+                newVm.OperatingActivities.Add(new CashFlowLine { Description = $"Adjustment for {r.AccountName}", Amount = -r.NetBalance });
+            }
+        }
+
+        newVm.BeginningCash = endingCash - newVm.NetChangeInCash;
+        vm = newVm;
+    }
+}

@@ -1,0 +1,82 @@
+@page "/auth/verify-email"
+@using System.Text
+@using AumoFinance.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager Navigation
+@inject ILogger<VerifyEmail> Logger
+
+<PageTitle>Verifying Email - Aumo Finance</PageTitle>
+
+<div class="auth-container text-center">
+    <h3>Verifying Email</h3>
+
+    @if (isProcessing)
+    {
+        <div class="spinner-border text-primary my-4" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p>Please wait while we verify your account...</p>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? Email { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? Token { get; set; }
+
+    private bool isProcessing = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Token))
+        {
+            Navigation.NavigateTo("/auth/login?errorMessage=Invalid email verification link.");
+            return;
+        }
+
+        var user = await UserManager.FindByEmailAsync(Email);
+        if (user == null)
+        {
+            Logger.LogWarning("Email verification failed: User with email {Email} not found.", Email);
+            Navigation.NavigateTo("/auth/login?errorMessage=Invalid email verification link.");
+            return;
+        }
+
+        if (await UserManager.IsEmailConfirmedAsync(user))
+        {
+            Navigation.NavigateTo("/auth/login?infoMessage=Email is already verified. Please sign in.");
+            return;
+        }
+
+        try
+        {
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Token));
+            var result = await UserManager.ConfirmEmailAsync(user, decodedToken);
+
+            if (result.Succeeded)
+            {
+                Logger.LogInformation("User ID {UserId} successfully verified email.", user.Id);
+                Navigation.NavigateTo("/auth/login?successMessage=Email verified successfully! You can now sign in.");
+            }
+            else
+            {
+                Logger.LogWarning("Failed email verification for user ID {UserId}", user.Id);
+                Navigation.NavigateTo("/auth/login?errorMessage=Failed to verify email. Link may have expired.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error occurred while decoding token for email {Email}", Email);
+            Navigation.NavigateTo("/auth/login?errorMessage=Invalid verification link format.");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+}

@@ -1,7 +1,0 @@
-@using System.Security.Claims
-@{
-    ViewData["Title"] = "Worksheet";
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-}
-
-<component type="typeof(AumoFinance.Components.WorksheetPage)" render-mode="ServerPrerendered" param-UserId="@userId" />

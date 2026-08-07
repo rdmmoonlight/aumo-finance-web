@@ -1,7 +1,0 @@
-@using System.Security.Claims
-@{
-    ViewData["Title"] = "Adjusting Journal";
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-}
-
-<component type="typeof(AumoFinance.Components.AdjustingJournalPage)" render-mode="ServerPrerendered" param-UserId="@userId" />

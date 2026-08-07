@@ -11,8 +11,8 @@
   --bs-tertiary-bg: #161B22;
   --bs-secondary-bg: #161B22;
   --bs-secondary-bg-rgb: 22, 27, 34;
-  --bs-body-color: #F8FAFC;
-  --bs-body-color-rgb: 248, 250, 252;
+  --bs-body-color: #FFFFFF; /* Diubah ke putih murni */
+  --bs-body-color-rgb: 255, 255, 255; /* Diubah ke RGB putih murni */
   --bs-secondary-color: #CBD5E1;
   --bs-border-color: #2A313C;
 
@@ -42,7 +42,7 @@
   --aumo-success: #22C55E;
   --aumo-warning: #F59E0B;
   --aumo-error: #EF4444;
-  --aumo-text: #F8FAFC;
+  --aumo-text: #FFFFFF; /* Diubah ke putih murni */
   --aumo-text-muted: #CBD5E1;
 
   --font-heading: "Space Grotesk", sans-serif;

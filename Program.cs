@@ -1,33 +1,42 @@
+using System.Text;
+using AumoFinance.Components;
+using AumoFinance.Controllers.Api;
 using AumoFinance.Models;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
 using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
-// Database - Neon / Railway PostgreSQL
+// 1. DATABASE CONFIGURATION (PostgreSQL)
 // =====================================
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
+{
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+    );
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
+
+builder.Services.AddScoped(sp =>
+    sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
-// Data Protection
+// 2. DATA PROTECTION & PERSISTENCE
 // =====================================
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>()
     .SetApplicationName("AumoFinanceApp");
 
 // =====================================
-// ASP.NET Core Identity
+// 3. ASP.NET CORE IDENTITY SETUP
 // =====================================
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
@@ -44,14 +53,62 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Auth/Login";
-    options.AccessDeniedPath = "/Auth/Login";
+    options.LoginPath = "/auth/login";
+    options.AccessDeniedPath = "/auth/login";
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
 });
 
 // =====================================
-// Services
+// 4. AUTHENTICATION (Cookie, JWT & OAuth)
+// =====================================
+var authBuilder = builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+})
+.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = AuthController.JwtIssuer,
+        ValidAudience = AuthController.JwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AuthController.JwtSecretKey))
+    };
+});
+
+// Google OAuth (Optional Configuration)
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
+    ?? builder.Configuration["Google:ClientId"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+    ?? builder.Configuration["Google:ClientSecret"];
+
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
+{
+    authBuilder.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+    });
+}
+
+// =====================================
+// 5. BLAZOR CORE & API CONTROLLERS
+// =====================================
+builder.Services.AddControllers(); // API Controllers for Mobile & Service Endpoints
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+builder.Services.AddCascadingAuthenticationState();
+
+// =====================================
+// 6. APPLICATION SERVICES (DI)
 // =====================================
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
@@ -59,72 +116,24 @@ builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IJournalImportService, JournalImportService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
-
-// =====================================
-// Blazor Services
-// =====================================
-builder.Services.AddServerSideBlazor();
+builder.Services.AddScoped<DashboardDataService>();
 builder.Services.AddHttpClient();
 
 // =====================================
-// Forwarded Headers (Railway / Proxy)
+// 7. FORWARDED HEADERS (Railway / Proxy)
 // =====================================
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor |
-        ForwardedHeaders.XForwardedProto;
-
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
-// =====================================
-// MVC + Global Authorization + Controllers API
-// =====================================
-builder.Services.AddControllers();
-
-builder.Services.AddControllersWithViews(options =>
-{
-    var policy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-
-    options.Filters.Add(new AuthorizeFilter(policy));
-});
-
-// =====================================
-// Google Login (Optional)
-// =====================================
-var googleClientId =
-    builder.Configuration["Authentication:Google:ClientId"]
-    ?? builder.Configuration["Google:ClientId"];
-
-var googleClientSecret =
-    builder.Configuration["Authentication:Google:ClientSecret"]
-    ?? builder.Configuration["Google:ClientSecret"];
-
-if (!string.IsNullOrWhiteSpace(googleClientId) &&
-    !string.IsNullOrWhiteSpace(googleClientSecret))
-{
-    builder.Services
-        .AddAuthentication()
-        .AddGoogle(
-            GoogleDefaults.AuthenticationScheme,
-            options =>
-            {
-                options.ClientId = googleClientId;
-                options.ClientSecret = googleClientSecret;
-                options.SignInScheme = IdentityConstants.ExternalScheme;
-            });
-}
-
 var app = builder.Build();
 
 // =====================================
-// AUTOMATIC DATABASE MIGRATION (REVISI BARU)
+// 8. AUTOMATIC DATABASE MIGRATION
 // =====================================
-// Menjalankan migrasi otomatis ke DB saat aplikasi booting di Railway/Production
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -136,37 +145,42 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Gagal menjalankan otomatisasi migrasi database.");
+        logger.LogError(ex, "Failed to run automatic database migration.");
     }
 }
 
 // =====================================
-// HTTP Pipeline
+// 9. HTTP PIPELINE MIDDLEWARE
 // =====================================
 app.UseForwardedHeaders();
-app.UseDeveloperExceptionPage();
 
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
 }
 
 app.UseStaticFiles();
-app.UseRouting();
+app.UseAntiforgery();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 // =====================================
-// Routes Mapping
+// 10. ROUTES & ENDPOINTS MAPPING
 // =====================================
-app.MapControllers();
-app.MapBlazorHub();
+app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/auth/login");
+});
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}"
-);
+app.MapControllers(); // Required for Mobile API (/api/mobile/...)
+
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();

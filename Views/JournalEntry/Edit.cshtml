@@ -1,9 +1,0 @@
-@model AumoFinance.Models.JournalEntryEditViewModel
-@using System.Security.Claims
-@{
-    ViewData["Title"] = $"Edit Journal Entry {Model.ReferenceNumber}";
-    var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-}
-
-<component type="typeof(AumoFinance.Components.JournalEntryFormPage)" render-mode="ServerPrerendered"
-           param-UserId="@userId" param-EntryId="@Model.Id" />
