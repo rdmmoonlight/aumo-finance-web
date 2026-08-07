@@ -159,14 +159,32 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) await JS.InvokeVoidAsync("initCommandPalette");
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("initCommandPalette");
+            }
+            catch (JSException ex)
+            {
+                Console.WriteLine($"[JS Interop Warning] initCommandPalette: {ex.Message}");
+            }
+        }
+
         if (chartsNeedRender)
         {
             chartsNeedRender = false;
-            await JS.InvokeVoidAsync("renderDashboardCharts", new {
-                trendData = new { labels = model.ChartLabels, revenue = model.ChartRevenue, expenses = model.ChartExpenses },
-                expenseData = new { labels = model.ExpenseCategoryLabels, values = model.ExpenseCategoryValues }
-            });
+            try
+            {
+                await JS.InvokeVoidAsync("renderDashboardCharts", new {
+                    trendData = new { labels = model.ChartLabels, revenue = model.ChartRevenue, expenses = model.ChartExpenses },
+                    expenseData = new { labels = model.ExpenseCategoryLabels, values = model.ExpenseCategoryValues }
+                });
+            }
+            catch (JSException ex)
+            {
+                Console.WriteLine($"[JS Interop Warning] renderDashboardCharts: {ex.Message}");
+            }
         }
     }
 
@@ -174,6 +192,7 @@
     {
         if (periodType == type) return;
         periodType = type;
+        StateHasChanged();
         await LoadDashboardAsync();
     }
 
@@ -182,5 +201,6 @@
         if (UserId == Guid.Empty) return;
         model = await DataService.GetDashboardDataAsync(UserId, periodType);
         chartsNeedRender = true;
+        StateHasChanged();
     }
 }
