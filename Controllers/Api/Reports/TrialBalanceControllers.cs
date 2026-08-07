@@ -64,7 +64,9 @@ public class TrialBalanceControllers : ControllerBase
             });
         }
 
-        var rows = await BuildTrialBalanceRowsAsync(_db, userId, period, normalizedType);
+        // Memanggil helper dengan parameter reportType dan includeAdjusting
+        bool includeAdjusting = normalizedType == "adjusted" || normalizedType == "post-closing";
+        var rows = await BuildTrialBalanceRowsAsync(_db, userId, period, normalizedType, includeAdjusting);
 
         decimal totalDebit = rows.Sum(r => r.Debit);
         decimal totalCredit = rows.Sum(r => r.Credit);
@@ -84,9 +86,23 @@ public class TrialBalanceControllers : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Membangun baris neraca saldo. 
+    /// Parameter `includeAdjusting` dan `reportType` disediakan agar kompatibel dengan controller laporan lain.
+    /// </summary>
     public static async Task<List<TrialBalanceRowApiResponse>> BuildTrialBalanceRowsAsync(
-        AppDbContext db, Guid userId, Period period, string reportType)
+        AppDbContext db, 
+        Guid userId, 
+        Period period, 
+        string reportType = "unadjusted",
+        bool includeAdjusting = false)
     {
+        // Jika includeAdjusting bernilai true dan reportType masih unadjusted, otomatis disesuaikan
+        if (includeAdjusting && reportType == "unadjusted")
+        {
+            reportType = "adjusted";
+        }
+
         var accounts = await db.ChartOfAccounts
             .Where(a => a.IsActive && a.UserId == userId)
             .OrderBy(a => a.ReferenceNumber)
@@ -108,7 +124,7 @@ public class TrialBalanceControllers : ControllerBase
                 l.JournalEntry!.JournalType == "Adjusting" ||
                 l.JournalEntry!.JournalType == "Closing").ToListAsync();
         }
-        else if (reportType == "adjusted")
+        else if (reportType == "adjusted" || includeAdjusting)
         {
             // Adjusted mencakup General dan Adjusting entries
             lines = await linesQuery.Where(l =>
