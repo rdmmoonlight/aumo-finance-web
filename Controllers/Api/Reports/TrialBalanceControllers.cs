@@ -64,9 +64,8 @@ public class TrialBalanceControllers : ControllerBase
             });
         }
 
-        // Memanggil helper dengan parameter reportType dan includeAdjusting
         bool includeAdjusting = normalizedType == "adjusted" || normalizedType == "post-closing";
-        var rows = await BuildTrialBalanceRowsAsync(_db, userId, period, normalizedType, includeAdjusting);
+        var rows = await BuildTrialBalanceRowsAsync(_db, userId, period, includeAdjusting, normalizedType);
 
         decimal totalDebit = rows.Sum(r => r.Debit);
         decimal totalCredit = rows.Sum(r => r.Credit);
@@ -87,22 +86,16 @@ public class TrialBalanceControllers : ControllerBase
     }
 
     /// <summary>
-    /// Membangun baris neraca saldo. 
-    /// Parameter `includeAdjusting` dan `reportType` disediakan agar kompatibel dengan controller laporan lain.
+    /// Membangun data neraca saldo yang selaras dengan komponen Blazor Web.
+    /// Kompatibel dengan pemanggilan dari Controller Laporan lain (Income Statement, Retained Earnings, dsb).
     /// </summary>
-    public static async Task<List<TrialBalanceRowApiResponse>> BuildTrialBalanceRowsAsync(
+    public static async Task<List<TrialBalanceRow>> BuildTrialBalanceRowsAsync(
         AppDbContext db,
         Guid userId,
         Period period,
-        string reportType = "unadjusted",
-        bool includeAdjusting = false)
+        bool includeAdjusting = false,
+        string reportType = "unadjusted")
     {
-        // Jika includeAdjusting bernilai true dan reportType masih unadjusted, otomatis disesuaikan
-        if (includeAdjusting && reportType == "unadjusted")
-        {
-            reportType = "adjusted";
-        }
-
         var accounts = await db.ChartOfAccounts
             .Where(a => a.IsActive && a.UserId == userId)
             .OrderBy(a => a.ReferenceNumber)
@@ -110,7 +103,6 @@ public class TrialBalanceControllers : ControllerBase
 
         var accountIds = accounts.Select(a => a.Id).ToList();
 
-        // Filter jenis jurnal berdasarkan tipe report
         var linesQuery = db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId);
@@ -118,33 +110,29 @@ public class TrialBalanceControllers : ControllerBase
         List<JournalEntryLine> lines;
         if (reportType == "post-closing")
         {
-            // Post-Closing mencakup General, Adjusting, dan Closing entries
             lines = await linesQuery.Where(l =>
                 l.JournalEntry!.JournalType == "General" ||
                 l.JournalEntry!.JournalType == "Adjusting" ||
                 l.JournalEntry!.JournalType == "Closing").ToListAsync();
         }
-        else if (reportType == "adjusted" || includeAdjusting)
+        else if (includeAdjusting || reportType == "adjusted")
         {
-            // Adjusted mencakup General dan Adjusting entries
             lines = await linesQuery.Where(l =>
                 l.JournalEntry!.JournalType == "General" ||
                 l.JournalEntry!.JournalType == "Adjusting").ToListAsync();
         }
         else
         {
-            // Unadjusted HANYA General entries
             lines = await linesQuery.Where(l =>
                 l.JournalEntry!.JournalType == "General").ToListAsync();
         }
 
-        var result = new List<TrialBalanceRowApiResponse>();
-
+        var rows = new List<TrialBalanceRow>();
         foreach (var account in accounts)
         {
             var isPermanent = AccountClassification.IsPermanent(account.Type);
 
-            // Pada Post-Closing TB, HANYA tampilkan Akun Riil/Permanent (Aset, Kewajiban, Ekuitas)
+            // Tapis akun non-permanen untuk laporan post-closing
             if (reportType == "post-closing" && !isPermanent)
             {
                 continue;
@@ -154,33 +142,26 @@ public class TrialBalanceControllers : ControllerBase
                 ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate).ToList()
                 : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
 
-            if (!accountLines.Any()) continue;
-
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             var netBalance = normalDebit
                 ? accountLines.Sum(l => l.Debit - l.Credit)
                 : accountLines.Sum(l => l.Credit - l.Debit);
 
-            if (netBalance == 0) continue;
+            if (!accountLines.Any() && netBalance == 0) continue;
 
-            decimal debitAmount = normalDebit ? netBalance : 0m;
-            decimal creditAmount = !normalDebit ? netBalance : 0m;
-
-            result.Add(new TrialBalanceRowApiResponse
+            rows.Add(new TrialBalanceRow
             {
                 AccountId = account.Id,
                 ReferenceNumber = account.ReferenceNumber,
                 AccountName = account.AccountName,
                 Type = account.Type,
                 Role = account.Role,
-                Debit = debitAmount,
-                Credit = creditAmount,
-                NetBalance = netBalance,
-                NormalBalanceIsDebit = normalDebit
+                NormalBalanceIsDebit = normalDebit,
+                NetBalance = netBalance
             });
         }
 
-        return result;
+        return rows;
     }
 
     private Guid GetCurrentUserId()
@@ -188,17 +169,4 @@ public class TrialBalanceControllers : ControllerBase
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
     }
-}
-
-public class TrialBalanceRowApiResponse
-{
-    public int AccountId { get; set; }
-    public int ReferenceNumber { get; set; }
-    public string AccountName { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
-    public decimal Debit { get; set; }
-    public decimal Credit { get; set; }
-    public decimal NetBalance { get; set; }
-    public bool NormalBalanceIsDebit { get; set; }
 }
