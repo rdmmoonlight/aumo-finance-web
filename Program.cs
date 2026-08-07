@@ -75,9 +75,9 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = MobileController.JwtIssuer,
-        ValidAudience = MobileController.JwtIssuer,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(MobileController.JwtSecretKey))
+        ValidIssuer = AuthController.JwtIssuer,
+        ValidAudience = AuthController.JwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(AuthController.JwtSecretKey))
     };
 });
 
@@ -100,7 +100,7 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 // =====================================
 // 5. BLAZOR CORE & API CONTROLLERS
 // =====================================
-builder.Services.AddControllers(); // Hanya API Controller untuk Mobile & Service Endpoints
+builder.Services.AddControllers(); // API Controllers for Mobile & Service Endpoints
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -145,7 +145,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Gagal menjalankan otomatisasi migrasi database.");
+        logger.LogError(ex, "Failed to run automatic database migration.");
     }
 }
 
@@ -178,7 +178,7 @@ app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager)
     return Results.Redirect("/auth/login");
 });
 
-app.MapControllers(); // Diperlukan untuk Mobile API (/api/mobile/...)
+app.MapControllers(); // Required for Mobile API (/api/mobile/...)
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
