@@ -24,14 +24,28 @@ public class TrialBalanceControllers : ControllerBase
         _db = db;
     }
 
-    // ==========================================
-    // 1. GET: /api/mobile/reports/trial-balance?includeAdjusting=false
-    // ==========================================
+    // =========================================================================
+    // GET: /api/mobile/reports/trial-balance?type=unadjusted|adjusted|post-closing
+    // =========================================================================
     [HttpGet]
-    public async Task<IActionResult> GetTrialBalance([FromQuery] bool includeAdjusting = false)
+    public async Task<IActionResult> GetTrialBalance([FromQuery] string type = "unadjusted")
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
+
+        string normalizedType = type?.ToLower().Trim() switch
+        {
+            "adjusted" => "adjusted",
+            "postclosing" or "post-closing" => "post-closing",
+            _ => "unadjusted"
+        };
+
+        string title = normalizedType switch
+        {
+            "adjusted" => "Adjusted Trial Balance",
+            "post-closing" => "Post-Closing Trial Balance",
+            _ => "Trial Balance (Unadjusted)"
+        };
 
         var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
         if (period == null)
@@ -41,8 +55,8 @@ public class TrialBalanceControllers : ControllerBase
                 success = true,
                 hasPeriodSelected = false,
                 message = "No accounting period selected.",
-                reportTitle = includeAdjusting ? "Adjusted Trial Balance" : "Trial Balance",
-                includeAdjusting = includeAdjusting,
+                reportTitle = title,
+                type = normalizedType,
                 totalDebit = 0m,
                 totalCredit = 0m,
                 isBalanced = true,
@@ -50,23 +64,10 @@ public class TrialBalanceControllers : ControllerBase
             });
         }
 
-        var rows = await BuildTrialBalanceRowsAsync(_db, userId, period, includeAdjusting);
+        var rows = await BuildTrialBalanceRowsAsync(_db, userId, period, normalizedType);
 
-        var apiRows = rows.Select(r => new TrialBalanceRowApiResponse
-        {
-            AccountId = r.AccountId,
-            ReferenceNumber = r.ReferenceNumber,
-            AccountName = r.AccountName,
-            Type = r.Type,
-            Role = r.Role,
-            Debit = r.Debit,
-            Credit = r.Credit,
-            NetBalance = r.NetBalance,
-            NormalBalanceIsDebit = r.NormalBalanceIsDebit
-        }).ToList();
-
-        decimal totalDebit = apiRows.Sum(r => r.Debit);
-        decimal totalCredit = apiRows.Sum(r => r.Credit);
+        decimal totalDebit = rows.Sum(r => r.Debit);
+        decimal totalCredit = rows.Sum(r => r.Credit);
         bool isBalanced = Math.Round(totalDebit - totalCredit, 2) == 0;
 
         return Ok(new
@@ -74,16 +75,17 @@ public class TrialBalanceControllers : ControllerBase
             success = true,
             hasPeriodSelected = true,
             selectedPeriodName = period.PeriodName,
-            reportTitle = includeAdjusting ? "Adjusted Trial Balance" : "Trial Balance",
-            includeAdjusting = includeAdjusting,
+            reportTitle = title,
+            type = normalizedType,
             totalDebit = totalDebit,
             totalCredit = totalCredit,
             isBalanced = isBalanced,
-            rows = apiRows
+            rows = rows
         });
     }
 
-    public static async Task<List<TrialBalanceRow>> BuildTrialBalanceRowsAsync(AppDbContext db, Guid userId, Period period, bool includeAdjusting)
+    public static async Task<List<TrialBalanceRowApiResponse>> BuildTrialBalanceRowsAsync(
+        AppDbContext db, Guid userId, Period period, string reportType)
     {
         var accounts = await db.ChartOfAccounts
             .Where(a => a.IsActive && a.UserId == userId)
@@ -92,42 +94,77 @@ public class TrialBalanceControllers : ControllerBase
 
         var accountIds = accounts.Select(a => a.Id).ToList();
 
+        // Filter jenis jurnal berdasarkan tipe report
         var linesQuery = db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId);
 
-        var lines = includeAdjusting
-            ? await linesQuery.Where(l => l.JournalEntry!.JournalType == "General" || l.JournalEntry!.JournalType == "Adjusting").ToListAsync()
-            : await linesQuery.Where(l => l.JournalEntry!.JournalType == "General").ToListAsync();
+        List<JournalEntryLine> lines;
+        if (reportType == "post-closing")
+        {
+            // Post-Closing mencakup General, Adjusting, dan Closing entries
+            lines = await linesQuery.Where(l => 
+                l.JournalEntry!.JournalType == "General" || 
+                l.JournalEntry!.JournalType == "Adjusting" || 
+                l.JournalEntry!.JournalType == "Closing").ToListAsync();
+        }
+        else if (reportType == "adjusted")
+        {
+            // Adjusted mencakup General dan Adjusting entries
+            lines = await linesQuery.Where(l => 
+                l.JournalEntry!.JournalType == "General" || 
+                l.JournalEntry!.JournalType == "Adjusting").ToListAsync();
+        }
+        else
+        {
+            // Unadjusted HANYA General entries
+            lines = await linesQuery.Where(l => 
+                l.JournalEntry!.JournalType == "General").ToListAsync();
+        }
 
-        var rows = new List<TrialBalanceRow>();
+        var result = new List<TrialBalanceRowApiResponse>();
+
         foreach (var account in accounts)
         {
             var isPermanent = AccountClassification.IsPermanent(account.Type);
+
+            // Pada Post-Closing TB, HANYA tampilkan Akun Riil/Permanent (Aset, Kewajiban, Ekuitas)
+            if (reportType == "post-closing" && !isPermanent)
+            {
+                continue;
+            }
+
             var accountLines = isPermanent
                 ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate).ToList()
                 : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
+
+            if (!accountLines.Any()) continue;
 
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             var netBalance = normalDebit
                 ? accountLines.Sum(l => l.Debit - l.Credit)
                 : accountLines.Sum(l => l.Credit - l.Debit);
 
-            if (!accountLines.Any() && netBalance == 0) continue;
+            if (netBalance == 0) continue;
 
-            rows.Add(new TrialBalanceRow
+            decimal debitAmount = normalDebit ? netBalance : 0m;
+            decimal creditAmount = !normalDebit ? netBalance : 0m;
+
+            result.Add(new TrialBalanceRowApiResponse
             {
                 AccountId = account.Id,
                 ReferenceNumber = account.ReferenceNumber,
                 AccountName = account.AccountName,
                 Type = account.Type,
                 Role = account.Role,
-                NormalBalanceIsDebit = normalDebit,
-                NetBalance = netBalance
+                Debit = debitAmount,
+                Credit = creditAmount,
+                NetBalance = netBalance,
+                NormalBalanceIsDebit = normalDebit
             });
         }
 
-        return rows;
+        return result;
     }
 
     private Guid GetCurrentUserId()
