@@ -1,127 +1,146 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Maui.Controls;
-using AumoFinance.Services.Reports;
+@using System.Globalization
+@using AumoFinance.Models
 
-namespace AumoFinance.Pages.Reports.GeneralJournal;
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Financial Health Index</span>
+                <i class="bi bi-activity text-primary fs-5"></i>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="position-relative d-inline-flex align-items-center justify-content-center">
+                    <div class="health-circle" style="--score-deg: @(Model.FinancialHealthScore * 3.6)deg;">
+                        <span class="fw-bold fs-4 text-white">@Model.FinancialHealthScore</span>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1">
+                        @if (Model.FinancialHealthScore >= 80) { <span class="text-success">Excellent Condition</span> }
+                        else if (Model.FinancialHealthScore >= 60) { <span class="text-info">Stable Operations</span> }
+                        else { <span class="text-warning">Attention Required</span> }
+                    </h6>
+                    <p class="text-white-50 fs-8 mb-0">Analyzed from liquidity, debt coverage, and net profit margin.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-public partial class GeneralJournalPage : ContentPage
-{
-    private readonly GeneralJournalService _generalJournalService;
-    private readonly CultureInfo _usdCulture = new("en-US");
+    <div class="col-12 col-md-6">
+        <div class="card glass-card border-0 shadow-sm rounded-4 h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Cash Runway &amp; Burn Rate</span>
+                <i class="bi bi-speedometer2 text-warning fs-5"></i>
+            </div>
+            <div class="d-flex justify-content-between align-items-baseline mb-2">
+                <h4 class="fw-bold mb-0 text-white">
+                    @(double.IsNaN(Model.CashRunwayMonths) || double.IsInfinity(Model.CashRunwayMonths) || Model.CashRunwayMonths >= 99 ? "∞" : Model.CashRunwayMonths.ToString("0.0"))
+                    <span class="fs-6 text-white-50 fw-normal">Months Runway</span>
+                </h4>
+                <span class="fs-8 text-white-50">Burn: <strong class="text-white">@Model.MonthlyBurnRate.ToString("C0", Idr)</strong>/mo</span>
+            </div>
+            <div class="progress rounded-pill bg-body-tertiary" style="height: 8px;">
+                <div class="progress-bar @(Model.CashRunwayMonths > 6 ? "bg-success" : (Model.CashRunwayMonths > 3 ? "bg-warning" : "bg-danger")) rounded-pill"
+                     role="progressbar" style="width: @(Math.Min(Model.CashRunwayMonths * 8.3, 100))%"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    public GeneralJournalPage(GeneralJournalService generalJournalService)
-    {
-        InitializeComponent();
-        _generalJournalService = generalJournalService;
-    }
+<div class="row g-3 mb-3">
+    <!-- Cash & Equivalents -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3 glow-hover-success">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Cash &amp; Equivalents</span>
+                <div class="icon-square bg-success-subtle text-success rounded-3"><i class="bi bi-wallet2"></i></div>
+            </div>
+            <h4 class="fw-bold mb-1 text-white">@Model.TotalCashAndEquivalents.ToString("C0", Idr)</h4>
+            <div class="small text-white-50 fs-8">Liquid Reserves</div>
+        </div>
+    </div>
 
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-        await LoadGeneralJournalAsync();
-    }
-
-    private async Task LoadGeneralJournalAsync()
-    {
-        SetLoadingState(true);
-
-        try
-        {
-            var (data, errorDetail) = await _generalJournalService.GetGeneralJournalReportAsync();
-
-            if (!string.IsNullOrEmpty(errorDetail))
-            {
-                await this.DisplayAlertAsync("Error", errorDetail, "OK");
-                return;
+    <!-- Revenue -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3 glow-hover-primary">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Revenue</span>
+                <div class="icon-square bg-primary-subtle text-primary rounded-3"><i class="bi bi-graph-up-arrow"></i></div>
+            </div>
+            <h4 class="fw-bold text-white mb-1">@Model.RevenueThisPeriod.ToString("C0", Idr)</h4>
+            @{
+                double revTrend = Model.RevenueTrendPercent ?? 0.0;
             }
+            <div class="small @(revTrend >= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
+                <i class="bi @(revTrend >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
+                <span>@(Math.Abs(revTrend).ToString("0.0"))% vs prior</span>
+            </div>
+        </div>
+    </div>
 
-            if (data != null)
-            {
-                SelectedPeriodHeaderLabel.Text = string.IsNullOrWhiteSpace(data.SelectedPeriodName)
-                    ? "No Active Period"
-                    : data.SelectedPeriodName;
-
-                var viewModels = data.Entries.Select(e => new GeneralJournalEntryViewModel
-                {
-                    Id = e.Id,
-                    EntryDate = e.EntryDate,
-                    JournalType = e.JournalType ?? "General",
-                    ReferenceNumber = e.ReferenceNumber ?? string.Empty,
-                    Lines = e.Lines.Select(l => new GeneralJournalLineViewModel
-                    {
-                        AccountReferenceNumber = l.ReferenceNumber,
-                        AccountName = l.AccountName ?? string.Empty,
-                        LineDescription = l.LineDescription,
-                        Debit = l.Debit,
-                        Credit = l.Credit,
-                        UsdCulture = _usdCulture
-                    }).ToList(),
-                    UsdCulture = _usdCulture
-                }).ToList();
-
-                JournalCollectionView.ItemsSource = viewModels;
-                EmptyStateView.IsVisible = !viewModels.Any();
-                JournalCollectionView.IsVisible = viewModels.Any();
+    <!-- Expenses -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3 glow-hover-danger">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="text-white-50 small fw-semibold text-uppercase tracking-wider">Expenses</span>
+                <div class="icon-square bg-danger-subtle text-danger rounded-3"><i class="bi bi-arrow-down-left-circle"></i></div>
+            </div>
+            <h4 class="fw-bold text-white mb-1">@Model.OperatingExpenses.ToString("C0", Idr)</h4>
+            @{
+                double expTrend = Model.ExpenseTrendPercent ?? 0.0;
             }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"LoadGeneralJournalAsync error: {ex}");
-            await this.DisplayAlertAsync("Error", $"An unexpected error occurred: {ex.Message}", "OK");
-        }
-        finally
-        {
-            SetLoadingState(false);
-            JournalRefreshView.IsRefreshing = false;
-        }
-    }
+            <div class="small @(expTrend <= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
+                <i class="bi @(expTrend >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
+                <span>@(Math.Abs(expTrend).ToString("0.0"))% vs prior</span>
+            </div>
+        </div>
+    </div>
 
-    public async void OnRefreshClicked(object? sender, EventArgs e)
-    {
-        await LoadGeneralJournalAsync();
-    }
+    <!-- Net Income -->
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 rounded-4 p-3 text-white gradient-neon-blue">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-semibold text-white-50 text-uppercase tracking-wider">Net Income</span>
+                <i class="bi bi-shield-check text-warning fs-5"></i>
+            </div>
+            <h4 class="fw-bold mb-1 text-white">@Model.NetIncome.ToString("C0", Idr)</h4>
+            @{
+                double netTrend = Model.NetIncomeTrendPercent ?? 0.0;
+            }
+            <div class="small @(netTrend >= 0 ? "text-success" : "text-danger") fs-8 fw-semibold">
+                <i class="bi @(netTrend >= 0 ? "bi-arrow-up-right" : "bi-arrow-down-right")"></i>
+                <span>@(Math.Abs(netTrend).ToString("0.0"))% vs prior</span>
+            </div>
+        </div>
+    </div>
+</div>
 
-    public async void OnRefreshViewRefreshing(object? sender, EventArgs e)
-    {
-        await LoadGeneralJournalAsync();
-    }
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6">
+        <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-white-50 small fw-semibold text-uppercase tracking-wider d-block">Total Assets</span>
+                    <h5 class="fw-bold mb-0 mt-1 text-white">@Model.TotalAssets.ToString("C0", Idr)</h5>
+                </div>
+                <div class="icon-square bg-info-subtle text-info rounded-3 fs-5"><i class="bi bi-building"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6">
+        <div class="card glass-card border-0 shadow-sm h-100 rounded-4 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-white-50 small fw-semibold text-uppercase tracking-wider d-block">Total Liabilities</span>
+                    <h5 class="fw-bold mb-0 mt-1 text-white">@Model.TotalLiabilities.ToString("C0", Idr)</h5>
+                </div>
+                <div class="icon-square bg-warning-subtle text-warning rounded-3 fs-5"><i class="bi bi-credit-card"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    private void SetLoadingState(bool isLoading)
-    {
-        LoadingIndicator.IsVisible = isLoading;
-        LoadingIndicator.IsRunning = isLoading;
-    }
-}
-
-// ==========================================
-// VIEW MODELS UNTUK BINDING RENDER
-// ==========================================
-public class GeneralJournalEntryViewModel
-{
-    public int Id { get; set; }
-    public DateTime EntryDate { get; set; }
-    public string JournalType { get; set; } = "General";
-    public string ReferenceNumber { get; set; } = string.Empty;
-    public List<GeneralJournalLineViewModel> Lines { get; set; } = new();
-    public CultureInfo UsdCulture { get; set; } = new("en-US");
-
-    public string FormattedDate => EntryDate.ToString("MMM dd, yyyy");
-}
-
-public class GeneralJournalLineViewModel
-{
-    public int AccountReferenceNumber { get; set; }
-    public string AccountName { get; set; } = string.Empty;
-    public string? LineDescription { get; set; }
-    public decimal Debit { get; set; }
-    public decimal Credit { get; set; }
-    public CultureInfo UsdCulture { get; set; } = new("en-US");
-
-    public string FormattedDebit => Debit > 0 ? Debit.ToString("C2", UsdCulture) : "-";
-    public string FormattedCredit => Credit > 0 ? Credit.ToString("C2", UsdCulture) : "-";
+@code {
+    [Parameter] public DashboardViewModel Model { get; set; } = new();
+    [Parameter] public CultureInfo Idr { get; set; } = new("id-ID");
 }
