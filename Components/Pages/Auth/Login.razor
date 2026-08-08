@@ -9,49 +9,59 @@
 
 <PageTitle>Sign In - Aumo Finance</PageTitle>
 
-<div class="auth-container">
-    <h3>Sign In</h3>
+<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
+    <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4">
+                
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold">Sign In</h3>
+                    <p class="text-muted small">Aumo Finance Account</p>
+                </div>
 
-    @if (!string.IsNullOrEmpty(successMessage))
-    {
-        <div class="alert alert-success">@successMessage</div>
-    }
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger">@errorMessage</div>
-    }
-    @if (!string.IsNullOrEmpty(infoMessage))
-    {
-        <div class="alert alert-info">@infoMessage</div>
-    }
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success py-2 small">@successMessage</div>
+                }
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger py-2 small">@errorMessage</div>
+                }
+                @if (!string.IsNullOrEmpty(infoMessage))
+                {
+                    <div class="alert alert-info py-2 small">@infoMessage</div>
+                }
 
-    <!-- Menggunakan Form Submit standar agar Cookie Identity diset oleh ASP.NET Core -->
-    <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
-        <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" />
+                <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger small mb-3" />
 
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <InputText class="form-control" @bind-Value="Input.Email" placeholder="name@example.com" />
-            <ValidationMessage For="() => Input.Email" class="text-danger" />
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Email</label>
+                        <InputText class="form-control" @bind-Value="Input.Email" placeholder="name@example.com" />
+                        <ValidationMessage For="() => Input.Email" class="text-danger small" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Password</label>
+                        <InputText type="password" class="form-control" @bind-Value="Input.Password" placeholder="••••••••" />
+                        <ValidationMessage For="() => Input.Password" class="text-danger small" />
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
+                        <label class="form-check-label small" for="rememberMe">Remember me</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">Sign In</button>
+                </EditForm>
+
+                <div class="mt-4 text-center">
+                    <a href="/auth/resend-verification" class="text-decoration-none small">Didn't receive verification email?</a>
+                </div>
+
+            </div>
         </div>
-
-        <div class="mb-3">
-            <label class="form-label">Password</label>
-            <InputText type="password" class="form-control" @bind-Value="Input.Password" />
-            <ValidationMessage For="() => Input.Password" class="text-danger" />
-        </div>
-
-        <div class="mb-3 form-check">
-            <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
-            <label class="form-check-label" for="rememberMe">Remember me</label>
-        </div>
-
-        <button type="submit" class="btn btn-primary w-100">Sign In</button>
-    </EditForm>
-
-    <div class="mt-3 text-center">
-        <a href="/auth/resend-verification">Didn't receive verification email?</a>
     </div>
 </div>
 
@@ -68,7 +78,6 @@
     [SupplyParameterFromQuery(Name = "infoMessage")]
     private string? QueryInfoMessage { get; set; }
 
-    // Gunakan '= default!' untuk mencegah CS8618 & BL0008
     [SupplyParameterFromForm]
     private LoginInputModel Input { get; set; } = default!;
 
