@@ -9,106 +9,105 @@
 
 <PageTitle>Sign In - Aumo Finance</PageTitle>
 
-@* Gunakan wrapper kustom untuk kontrol penuh background halaman *@
-<div class="auth-page-wrapper d-flex flex-column justify-content-center align-items-center w-100">
-    <div class="w-100 p-2" style="max-width: 340px;">
-        
-        <!-- Logo & Header (Dikecilkan) -->
-        <div class="auth-header text-center mb-3">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-2 p-2" style="width: 45px; height: 45px;">
-                <i class="bi bi-wallet2 fs-5"></i>
-            </div>
-            <h5 class="fw-bold tracking-tight mb-0" style="font-family: 'Space Grotesk', sans-serif;">Aumo Finance</h5>
-            <p class="text-secondary font-micro">Sign in to continue</p>
-        </div>
-
-        <!-- Login Form Card (Warna background kustom dari CSS) -->
-        <div class="card auth-card shadow-lg overflow-hidden">
-            <div class="card-body p-3 p-sm-4">
-
-                @if (!string.IsNullOrEmpty(successMessage))
-                {
-                    <div class="alert alert-success alert-micro d-flex align-items-center mb-2" role="alert">
-                        <i class="bi bi-check-circle-fill me-2"></i>
-                        <div>@successMessage</div>
-                    </div>
-                }
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="alert alert-danger alert-micro d-flex align-items-center mb-2" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <div>@errorMessage</div>
-                    </div>
-                }
-                @if (!string.IsNullOrEmpty(infoMessage))
-                {
-                    <div class="alert alert-info alert-micro d-flex align-items-center mb-2" role="alert">
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                        <div>@infoMessage</div>
-                    </div>
-                }
-
-                <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
-                    <DataAnnotationsValidator />
-                    @* Sembunyikan ValidationSummary jika terlalu ramai, atau biarkan mikro *@
-                    <ValidationSummary class="text-danger font-micro mb-2 p-0" style="list-style: none;" />
-
-                    <!-- Email Input (Mikro) -->
-                    <div class="mb-2">
-                        <label class="form-label-tiny">Email Address</label>
-                        <div class="input-group input-group-micro">
-                            <span class="input-group-text border-end-0 text-secondary">
-                                <i class="bi bi-envelope"></i>
-                            </span>
-                            <InputText class="form-control border-start-0 ps-0" @bind-Value="Input.Email" placeholder="name@example.com" />
+<div class="container py-5 my-auto">
+    <div class="row justify-content-center">
+        <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 text-center">
+            
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary bg-opacity-75 p-4 p-md-5 backdrop-blur text-start">
+                <div class="card-body p-0">
+                    
+                    <!-- Icon Badge -->
+                    <div class="text-center mb-3">
+                        <div class="text-primary d-inline-block p-3 rounded-circle bg-primary-subtle bg-opacity-50">
+                            <i class="bi bi-shield-lock-fill display-5 lh-1"></i>
                         </div>
-                        <ValidationMessage For="() => Input.Email" class="text-danger font-micro mt-1" />
                     </div>
 
-                    <!-- Password Input (Mikro) -->
-                    <div class="mb-2">
-                        <label class="form-label-tiny mb-0">Password</label>
-                        <div class="input-group input-group-micro">
-                            <span class="input-group-text border-end-0 text-secondary">
-                                <i class="bi bi-lock"></i>
-                            </span>
-                            <InputText type="password" class="form-control border-start-0 ps-0" @bind-Value="Input.Password" placeholder="••••••••" />
+                    <!-- Title & Subtitle -->
+                    <div class="text-center mb-4">
+                        <h2 class="fw-bold text-body-emphasis mb-1 tracking-tight">
+                            Sign In
+                        </h2>
+                        <p class="text-secondary small mb-0">
+                            Access your financial dashboard
+                        </p>
+                    </div>
+
+                    <!-- Alert Messages -->
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success py-2 px-3 small rounded-3 mb-3" role="alert">
+                            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
                         </div>
-                        <ValidationMessage For="() => Input.Password" class="text-danger font-micro mt-1" />
-                    </div>
+                    }
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(infoMessage))
+                    {
+                        <div class="alert alert-info py-2 px-3 small rounded-3 mb-3" role="alert">
+                            <i class="bi bi-info-circle-fill me-2"></i>@infoMessage
+                        </div>
+                    }
 
-                    <!-- Remember Me & Forgot (Compact) -->
-                    <div class="mb-3 d-flex justify-content-between align-items-center">
-                        <div class="form-check mb-0">
-                            <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" style="width: 0.8rem; height: 0.8rem; margin-top: 0.2rem;"/>
-                            <label class="form-check-label font-micro text-secondary" for="rememberMe">
+                    <!-- Login Form -->
+                    <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger small mb-3" />
+
+                        <!-- Email Input -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-medium text-body-secondary">Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-body-secondary border-end-0 text-secondary">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <InputText class="form-control border-start-0 ps-0" @bind-Value="Input.Email" placeholder="name@example.com" />
+                            </div>
+                            <ValidationMessage For="() => Input.Email" class="text-danger small mt-1" />
+                        </div>
+
+                        <!-- Password Input -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-medium text-body-secondary">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-body-secondary border-end-0 text-secondary">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <InputText type="password" class="form-control border-start-0 ps-0" @bind-Value="Input.Password" placeholder="••••••••" />
+                            </div>
+                            <ValidationMessage For="() => Input.Password" class="text-danger small mt-1" />
+                        </div>
+
+                        <!-- Remember Me -->
+                        <div class="mb-4 form-check">
+                            <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
+                            <label class="form-check-label small text-body-secondary" for="rememberMe">
                                 Remember me
                             </label>
                         </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-pill fw-medium shadow-sm d-flex align-items-center justify-content-center gap-2">
+                            <span>Sign In</span>
+                            <i class="bi bi-arrow-right-short fs-5"></i>
+                        </button>
+                    </EditForm>
+
+                    <!-- Links -->
+                    <div class="mt-4 pt-3 text-center border-top border-body-subtle">
+                        <a href="/auth/resend-verification" class="text-decoration-none small text-secondary">
+                            Didn't receive verification email?
+                        </a>
                     </div>
 
-                    <!-- Submit Button (Dikecilkan) -->
-                    <button type="submit" class="btn btn-primary btn-micro w-100 d-flex align-items-center justify-content-center gap-1">
-                        <span>Sign In</span>
-                        <i class="bi bi-arrow-right-short fs-6"></i>
-                    </button>
-                </EditForm>
-
-                <!-- Resend Link -->
-                <div class="mt-3 pt-2 text-center border-top border-secondary border-opacity-10">
-                    <a href="/auth/resend-verification" class="text-decoration-none font-micro text-secondary hover-underline">
-                        Didn't receive verification email?
-                    </a>
                 </div>
-
             </div>
-        </div>
 
-        <!-- Footer -->
-        <div class="text-center mt-3">
-            <p class="text-secondary font-micro mb-0">&copy; @DateTime.Now.Year Aumo Finance.</p>
         </div>
-
     </div>
 </div>
 
@@ -160,7 +159,7 @@
         }
         else if (result.IsLockedOut)
         {
-            errorMessage = "Locked out. Try again later.";
+            errorMessage = "This account has been locked out. Please try again later.";
         }
         else
         {
@@ -170,11 +169,11 @@
 
     public class LoginInputModel
     {
-        [Required(ErrorMessage = "Required.")]
-        [EmailAddress(ErrorMessage = "Invalid email.")]
+        [Required(ErrorMessage = "Email address is required.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string Email { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Required.")]
+        [Required(ErrorMessage = "Password is required.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
 
