@@ -1,3 +1,5 @@
+@page "/JournalEntry/Create"
+@page "/JournalEntry/Edit/{EntryId:int}"
 @page "/journal-entry/create"
 @page "/journal-entry/edit/{EntryId:int}"
 @namespace AumoFinance.Components.Pages.Reports
@@ -33,7 +35,7 @@
             }
         </div>
         <div>
-            <a href="/GeneralJournal" class="btn btn-outline-secondary shadow-sm">
+            <a href="/reports/general-journal" class="btn btn-outline-secondary shadow-sm">
                 <i class="bi bi-arrow-left me-1"></i> Back to Journal
             </a>
         </div>
@@ -63,7 +65,7 @@
     {
         <div class="alert alert-warning shadow-sm py-2">
             <i class="bi bi-lock-fill me-2"></i>@lockedMessage
-            <a href="/GeneralJournal" class="alert-link ms-1">Back to General Journal</a>
+            <a href="/reports/general-journal" class="alert-link ms-1">Back to General Journal</a>
         </div>
     }
     else
@@ -200,7 +202,7 @@
         <div class="d-flex justify-content-end gap-2">
             @if (IsEdit)
             {
-                <a href="/GeneralJournal" class="btn btn-outline-secondary px-4">Cancel</a>
+                <a href="/reports/general-journal" class="btn btn-outline-secondary px-4">Cancel</a>
             }
             else
             {
@@ -431,7 +433,7 @@
             }).ToList();
 
             await DbContext.SaveChangesAsync();
-            Nav.NavigateTo("/GeneralJournal");
+            Nav.NavigateTo("/reports/general-journal");
         }
         else
         {
