@@ -4,21 +4,25 @@
 <div class="d-flex vh-100 overflow-hidden">
     <AuthorizeView>
         <Authorized>
-            <!-- Sidebar Component -->
+            <!-- Sidebar hanya muncul jika SUDAH Login -->
             <div class="sidebar-wrapper d-flex">
                 <Sidebar />
             </div>
         </Authorized>
     </AuthorizeView>
 
-    <!-- Area Kanan Utama -->
-    <div class="d-flex flex-column flex-grow-1 min-vw-0">
+    <!-- Area Utama -->
+    <div class="d-flex flex-column flex-grow-1 min-vw-0 bg-light">
         
-        <!-- TopBar Component -->
-        <TopBar />
+        <AuthorizeView>
+            <Authorized>
+                <!-- TopBar hanya muncul jika SUDAH Login -->
+                <TopBar />
+            </Authorized>
+        </AuthorizeView>
 
         <!-- Main Content Area -->
-        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto" role="main">
+        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto d-flex flex-column" role="main">
             @Body
         </main>
 
