@@ -9,59 +9,104 @@
 
 <PageTitle>Sign In - Aumo Finance</PageTitle>
 
-<div class="d-flex flex-column justify-content-center align-items-center flex-grow-1 w-100 py-4">
-    <div class="w-100" style="max-width: 400px;">
+<div class="d-flex flex-column justify-content-center align-items-center flex-grow-1 w-100 py-4 my-auto">
+    <div class="w-100" style="max-width: 420px; padding: 0 15px;">
         
-        <div class="card shadow-sm border-0 rounded-4">
+        <!-- Logo / Brand Header -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-3 p-3" style="width: 60px; height: 60px;">
+                <i class="bi bi-wallet2 fs-3"></i>
+            </div>
+            <h3 class="fw-bold tracking-tight mb-1" style="font-family: 'Space Grotesk', sans-serif;">Aumo Finance</h3>
+            <p class="text-secondary small">Sign in to your account to continue</p>
+        </div>
+
+        <!-- Login Form Card -->
+        <div class="card border border-secondary border-opacity-25 shadow-lg rounded-4 overflow-hidden">
             <div class="card-body p-4 p-sm-5">
-                
-                <div class="text-center mb-4">
-                    <h3 class="fw-bold text-dark">Sign In</h3>
-                    <p class="text-muted small mb-0">Aumo Finance Account</p>
-                </div>
 
                 @if (!string.IsNullOrEmpty(successMessage))
                 {
-                    <div class="alert alert-success py-2 small">@successMessage</div>
+                    <div class="alert alert-success d-flex align-items-center py-2 px-3 small rounded-3 mb-3" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <div>@successMessage</div>
+                    </div>
                 }
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    <div class="alert alert-danger py-2 small">@errorMessage</div>
+                    <div class="alert alert-danger d-flex align-items-center py-2 px-3 small rounded-3 mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>@errorMessage</div>
+                    </div>
                 }
                 @if (!string.IsNullOrEmpty(infoMessage))
                 {
-                    <div class="alert alert-info py-2 small">@infoMessage</div>
+                    <div class="alert alert-info d-flex align-items-center py-2 px-3 small rounded-3 mb-3" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <div>@infoMessage</div>
+                    </div>
                 }
 
                 <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
                     <DataAnnotationsValidator />
                     <ValidationSummary class="text-danger small mb-3" />
 
+                    <!-- Email Input -->
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Email</label>
-                        <InputText class="form-control" @bind-Value="Input.Email" placeholder="name@example.com" />
-                        <ValidationMessage For="() => Input.Email" class="text-danger small" />
+                        <label class="form-label small fw-medium text-secondary">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body-tertiary border-end-0 text-secondary">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <InputText class="form-control border-start-0 ps-0" @bind-Value="Input.Email" placeholder="name@example.com" />
+                        </div>
+                        <ValidationMessage For="() => Input.Email" class="text-danger small mt-1" />
                     </div>
 
+                    <!-- Password Input -->
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Password</label>
-                        <InputText type="password" class="form-control" @bind-Value="Input.Password" placeholder="••••••••" />
-                        <ValidationMessage For="() => Input.Password" class="text-danger small" />
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-medium text-secondary mb-0">Password</label>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-body-tertiary border-end-0 text-secondary">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <InputText type="password" class="form-control border-start-0 ps-0" @bind-Value="Input.Password" placeholder="••••••••" />
+                        </div>
+                        <ValidationMessage For="() => Input.Password" class="text-danger small mt-1" />
                     </div>
 
-                    <div class="mb-4 form-check">
-                        <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
-                        <label class="form-check-label small text-secondary" for="rememberMe">Remember me</label>
+                    <!-- Remember Me -->
+                    <div class="mb-4 d-flex justify-content-between align-items-center">
+                        <div class="form-check mb-0">
+                            <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
+                            <label class="form-check-label small text-secondary" for="rememberMe">
+                                Remember me
+                            </label>
+                        </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm">Sign In</button>
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary w-100 py-2.5 fw-semibold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                        <span>Sign In</span>
+                        <i class="bi bi-arrow-right-short fs-5"></i>
+                    </button>
                 </EditForm>
 
-                <div class="mt-4 text-center">
-                    <a href="/auth/resend-verification" class="text-decoration-none small text-muted">Didn't receive verification email?</a>
+                <!-- Resend Verification Link -->
+                <div class="mt-4 pt-2 text-center border-top border-secondary border-opacity-10">
+                    <a href="/auth/resend-verification" class="text-decoration-none small text-secondary hover-underline">
+                        Didn't receive verification email?
+                    </a>
                 </div>
 
             </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-4">
+            <p class="text-secondary small mb-0">&copy; @DateTime.Now.Year Aumo Finance. All rights reserved.</p>
         </div>
 
     </div>
@@ -119,16 +164,18 @@
         }
         else
         {
-            errorMessage = "Invalid login attempt.";
+            errorMessage = "Invalid email or password.";
         }
     }
 
     public class LoginInputModel
     {
-        [Required, EmailAddress]
+        [Required(ErrorMessage = "Email address is required.")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         public string Email { get; set; } = string.Empty;
 
-        [Required, DataType(DataType.Password)]
+        [Required(ErrorMessage = "Password is required.")]
+        [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
 
         public bool RememberMe { get; set; }
