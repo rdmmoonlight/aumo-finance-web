@@ -7,7 +7,7 @@ public partial class SettingsPage : ComponentBase
 {
     [Inject] protected IJSRuntime JS { get; set; } = default!;
 
-    protected bool isDarkMode = false;
+    protected bool isDarkMode = true; // Default samakan dengan tema awal (Dark)
     protected bool enableSystemAlerts = true;
     protected string toastMessage = "Settings saved successfully.";
 
@@ -15,28 +15,38 @@ public partial class SettingsPage : ComponentBase
     {
         if (firstRender)
         {
-            var savedTheme = await JS.InvokeAsync<string?>("localStorage.getItem", "aumo_theme");
-            if (savedTheme != null)
+            try
             {
-                isDarkMode = (savedTheme == "dark");
+                var savedTheme = await JS.InvokeAsync<string?>("localStorage.getItem", "aumo_theme");
+                
+                // Jika null (belum pernah diset), default ke "dark"
+                isDarkMode = string.IsNullOrEmpty(savedTheme) || savedTheme == "dark";
                 StateHasChanged();
+            }
+            catch
+            {
+                // Fallback aman untuk prerendering
+                isDarkMode = true;
             }
         }
     }
 
     protected async Task OnThemeChanged(ChangeEventArgs e)
     {
-        isDarkMode = (bool)(e.Value ?? false);
+        isDarkMode = (bool)(e.Value ?? true);
         var selectedTheme = isDarkMode ? "dark" : "light";
 
-        await JS.InvokeVoidAsync("eval", $@"
-            if (typeof window.setAppTheme === 'function') {{
-                window.setAppTheme('{selectedTheme}');
-            }} else {{
-                document.documentElement.setAttribute('data-bs-theme', '{selectedTheme}');
-                localStorage.setItem('aumo_theme', '{selectedTheme}');
-            }}
-        ");
+        // Panggil fungsi JS setAppTheme secara langsung tanpa eval
+        try
+        {
+            await JS.InvokeVoidAsync("setAppTheme", selectedTheme);
+        }
+        catch
+        {
+            // Fallback jika window.setAppTheme gagal dipanggil
+            await JS.InvokeVoidAsync("document.documentElement.setAttribute", "data-bs-theme", selectedTheme);
+            await JS.InvokeVoidAsync("localStorage.setItem", "aumo_theme", selectedTheme);
+        }
 
         await ShowToast($"Theme changed to {selectedTheme} mode.");
     }
@@ -52,6 +62,14 @@ public partial class SettingsPage : ComponentBase
     {
         toastMessage = message;
         StateHasChanged();
-        await JS.InvokeVoidAsync("aumoToast.show", "settingsToast");
+        
+        try
+        {
+            await JS.InvokeVoidAsync("aumoToast.show", "settingsToast");
+        }
+        catch
+        {
+            // Abaikan jika library toast belum terload
+        }
     }
 }
