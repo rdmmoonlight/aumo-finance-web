@@ -3,6 +3,7 @@
    Color palette + typography overrides
    ========================================== */
 
+/* ---------- Dark Mode (Default) ---------- */
 :root,
 [data-bs-theme="dark"] {
   /* Base surfaces */
@@ -34,7 +35,7 @@
   --bs-link-color: #3B82F6;
   --bs-link-hover-color: #00C2FF;
 
-  /* Custom tokens */
+  /* Custom tokens for direct use */
   --aumo-bg: #0D1117;
   --aumo-surface: #161B22;
   --aumo-primary: #3B82F6;
@@ -50,12 +51,33 @@
   --font-body: "Inter", sans-serif;
 }
 
+/* ---------- Light Mode Overrides ---------- */
+[data-bs-theme="light"] {
+  /* Base surfaces */
+  --bs-body-bg: #F8FAFC;
+  --bs-body-bg-rgb: 248, 250, 252;
+  --bs-tertiary-bg: #FFFFFF;
+  --bs-tertiary-bg-rgb: 255, 255, 255;
+  --bs-secondary-bg: #F1F5F9;
+  --bs-secondary-bg-rgb: 241, 245, 249;
+  --bs-body-color: #0F172A;
+  --bs-body-color-rgb: 15, 23, 42;
+  --bs-secondary-color: #475569;
+  --bs-border-color: #E2E8F0;
+
+  /* Custom tokens */
+  --aumo-bg: #F8FAFC;
+  --aumo-surface: #FFFFFF;
+  --aumo-text: #0F172A;
+  --aumo-text-muted: #64748B;
+}
+
 /* ---------- Typography ---------- */
 
 body {
   font-family: var(--font-body);
-  background-color: var(--bs-body-bg) !important;
-  color: var(--bs-body-color);
+  background-color: var(--aumo-bg) !important;
+  color: var(--aumo-text) !important;
 }
 
 h1, h2, h3, h4, h5, h6,
@@ -83,8 +105,8 @@ table, th, td,
 .dropdown-menu,
 .offcanvas {
   background-color: var(--aumo-surface) !important;
-  border-color: var(--bs-border-color);
-  color: var(--aumo-text);
+  border-color: var(--bs-border-color) !important;
+  color: var(--aumo-text) !important;
 }
 
 .sidebar-icons {
@@ -96,17 +118,13 @@ table, th, td,
   background-color: var(--aumo-surface) !important;
 }
 
-[data-bs-theme="light"] .sidebar-icons {
-  background-color: var(--aumo-bg) !important;
-}
-
 .table {
   --bs-table-bg: var(--aumo-surface);
-  --bs-table-color: var(--bs-body-color);
+  --bs-table-color: var(--aumo-text);
   --bs-table-border-color: var(--bs-border-color);
 }
 
-/* ---------- Form Controls Overrides (Fix Terang/Putih) ---------- */
+/* ---------- Form Controls ---------- */
 
 .form-control,
 .form-select,
@@ -118,7 +136,7 @@ table, th, td,
 
 .form-control::placeholder {
   color: var(--aumo-text-muted) !important;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .form-control:focus,
@@ -129,7 +147,7 @@ table, th, td,
   box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
 }
 
-/* Fix Browser Auto-Fill (Mencegah input berubah putih saat Chrome/Edge isi otomatis) */
+/* Fix Chrome/Edge Browser Auto-Fill Background Override */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -145,16 +163,19 @@ input:-webkit-autofill:active {
 .btn-primary {
   background-color: var(--aumo-primary);
   border-color: var(--aumo-primary);
+  color: #FFFFFF;
 }
 
 .btn-secondary {
   background-color: var(--aumo-secondary);
   border-color: var(--aumo-secondary);
+  color: #FFFFFF;
 }
 
 .btn-success {
   background-color: var(--aumo-success);
   border-color: var(--aumo-success);
+  color: #FFFFFF;
 }
 
 .btn-warning {
@@ -166,6 +187,7 @@ input:-webkit-autofill:active {
 .btn-danger {
   background-color: var(--aumo-error);
   border-color: var(--aumo-error);
+  color: #FFFFFF;
 }
 
 .btn-info {
