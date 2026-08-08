@@ -1,5 +1,4 @@
 @page "/auth/login"
-@layout AuthLayout
 @using System.ComponentModel.DataAnnotations
 @using AumoFinance.Models
 @using Microsoft.AspNetCore.Identity
@@ -10,14 +9,15 @@
 
 <PageTitle>Sign In - Aumo Finance</PageTitle>
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100 py-4">
-    <div class="col-12 col-sm-8 col-md-6 col-lg-4">
-        <div class="card shadow-sm border-0 rounded-3">
-            <div class="card-body p-4">
+<div class="d-flex flex-column justify-content-center align-items-center flex-grow-1 w-100 py-4">
+    <div class="w-100" style="max-width: 400px;">
+        
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-sm-5">
                 
                 <div class="text-center mb-4">
-                    <h3 class="fw-bold">Sign In</h3>
-                    <p class="text-muted small">Aumo Finance Account</p>
+                    <h3 class="fw-bold text-dark">Sign In</h3>
+                    <p class="text-muted small mb-0">Aumo Finance Account</p>
                 </div>
 
                 @if (!string.IsNullOrEmpty(successMessage))
@@ -38,31 +38,32 @@
                     <ValidationSummary class="text-danger small mb-3" />
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Email</label>
+                        <label class="form-label small fw-semibold text-secondary">Email</label>
                         <InputText class="form-control" @bind-Value="Input.Email" placeholder="name@example.com" />
                         <ValidationMessage For="() => Input.Email" class="text-danger small" />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Password</label>
+                        <label class="form-label small fw-semibold text-secondary">Password</label>
                         <InputText type="password" class="form-control" @bind-Value="Input.Password" placeholder="••••••••" />
                         <ValidationMessage For="() => Input.Password" class="text-danger small" />
                     </div>
 
-                    <div class="mb-3 form-check">
+                    <div class="mb-4 form-check">
                         <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
-                        <label class="form-check-label small" for="rememberMe">Remember me</label>
+                        <label class="form-check-label small text-secondary" for="rememberMe">Remember me</label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">Sign In</button>
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm">Sign In</button>
                 </EditForm>
 
                 <div class="mt-4 text-center">
-                    <a href="/auth/resend-verification" class="text-decoration-none small">Didn't receive verification email?</a>
+                    <a href="/auth/resend-verification" class="text-decoration-none small text-muted">Didn't receive verification email?</a>
                 </div>
 
             </div>
         </div>
+
     </div>
 </div>
 
