@@ -29,11 +29,11 @@ public class DashboardControllers : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
-        // 1. Ambil Periode Aktif (Periode yang belum ditutup / !IsClosed)
-        var activePeriod = await _db.Periods
-            .Where(p => p.UserId == userId && !p.IsClosed)
-            .OrderByDescending(p => p.StartDate)
-            .FirstOrDefaultAsync();
+        // 1. Ambil periode yang sedang dipilih di halaman Periods (single source of truth).
+        //    Sebelumnya controller ini memakai logikanya sendiri (periode terbuka terbaru
+        //    berdasarkan StartDate), sehingga bisa menampilkan periode yang berbeda dari
+        //    yang dipilih user di halaman Periods.
+        var activePeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
 
         // 2. Filter Jurnal Berdasarkan Periode Aktif (atau Bulan Ini jika periode tidak ditemukan)
         DateTime startDate = activePeriod?.StartDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
