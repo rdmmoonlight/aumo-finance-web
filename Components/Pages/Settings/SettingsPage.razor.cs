@@ -18,7 +18,7 @@ public partial class SettingsPage : ComponentBase
             try
             {
                 var savedTheme = await JS.InvokeAsync<string?>("localStorage.getItem", "aumo_theme");
-                
+
                 // Jika null (belum pernah diset), default ke "dark"
                 isDarkMode = string.IsNullOrEmpty(savedTheme) || savedTheme == "dark";
                 StateHasChanged();
@@ -62,7 +62,7 @@ public partial class SettingsPage : ComponentBase
     {
         toastMessage = message;
         StateHasChanged();
-        
+
         try
         {
             await JS.InvokeVoidAsync("aumoToast.show", "settingsToast");
