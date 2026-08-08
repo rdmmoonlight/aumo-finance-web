@@ -294,6 +294,21 @@ public class JournalEntryController : ControllerBase
         return Ok(results);
     }
 
+    // ==========================================
+    // 6. GET: /api/mobile/journal-entry/next-reference?journalType=General (Preview Next Number)
+    // ==========================================
+    [HttpGet("next-reference")]
+    public async Task<IActionResult> GetNextReferenceNumber([FromQuery] string journalType = "General")
+    {
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty) return Unauthorized();
+
+        string type = string.IsNullOrWhiteSpace(journalType) ? "General" : journalType;
+        string nextRef = await GenerateReferenceNumberAsync(userId, type);
+
+        return Ok(new { success = true, referenceNumber = nextRef });
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
