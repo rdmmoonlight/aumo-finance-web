@@ -108,8 +108,11 @@ builder.Services.AddRazorComponents()
 builder.Services.AddCascadingAuthenticationState();
 
 // =====================================
-// 6. APPLICATION SERVICES (DI)
+// 6. APPLICATION SERVICES & HEALTH CHECKS
 // =====================================
+builder.Services.AddHealthChecks(); // Fitur Health Check bawaan .NET
+builder.Services.AddHostedService<RenderKeepAliveService>(); // Background Service Keep-Alive
+
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IGuardianService, GuardianService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
@@ -120,7 +123,7 @@ builder.Services.AddScoped<DashboardDataService>();
 builder.Services.AddHttpClient();
 
 // =====================================
-// 7. FORWARDED HEADERS (Railway / Proxy)
+// 7. FORWARDED HEADERS (Railway / Render / Proxy)
 // =====================================
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -172,6 +175,9 @@ app.UseAuthorization();
 // =====================================
 // 10. ROUTES & ENDPOINTS MAPPING
 // =====================================
+// Endpoint ringan untuk UptimeRobot atau Keep-Alive ping
+app.MapHealthChecks("/health");
+
 app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
@@ -184,3 +190,47 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+// =====================================
+// 11. BACKGROUND KEEP-ALIVE CLASS
+// =====================================
+public class RenderKeepAliveService : BackgroundService
+{
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<RenderKeepAliveService> _logger;
+    private readonly IConfiguration _configuration;
+
+    public RenderKeepAliveService(IHttpClientFactory httpClientFactory, ILogger<RenderKeepAliveService> logger, IConfiguration configuration)
+    {
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+        _configuration = configuration;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        // Tunggu 15 detik awal agar aplikasi benar-benar siap
+        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+
+        // Ambil domain dari AppUrl di appsettings atau fallback otomatis
+        string appUrl = _configuration["AppUrl"] ?? "https://aumofinance.onrender.com"; 
+        string healthUrl = $"{appUrl.TrimEnd('/')}/health";
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                var response = await client.GetAsync(healthUrl, stoppingToken);
+                _logger.LogInformation("Render Keep-Alive ping sent to {Url}. Status: {StatusCode}", healthUrl, response.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Render Keep-Alive ping failed: {Message}", ex.Message);
+            }
+
+            // Kirim ping tiap 5 menit sekali (Render sleep setelah 15 menit idle)
+            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+        }
+    }
+}
