@@ -9,10 +9,11 @@
   --bs-body-bg: #0D1117;
   --bs-body-bg-rgb: 13, 17, 23;
   --bs-tertiary-bg: #161B22;
+  --bs-tertiary-bg-rgb: 22, 27, 34;
   --bs-secondary-bg: #161B22;
   --bs-secondary-bg-rgb: 22, 27, 34;
-  --bs-body-color: #FFFFFF; /* Diubah ke putih murni */
-  --bs-body-color-rgb: 255, 255, 255; /* Diubah ke RGB putih murni */
+  --bs-body-color: #FFFFFF;
+  --bs-body-color-rgb: 255, 255, 255;
   --bs-secondary-color: #CBD5E1;
   --bs-border-color: #2A313C;
 
@@ -33,7 +34,7 @@
   --bs-link-color: #3B82F6;
   --bs-link-hover-color: #00C2FF;
 
-  /* Custom tokens for direct use */
+  /* Custom tokens */
   --aumo-bg: #0D1117;
   --aumo-surface: #161B22;
   --aumo-primary: #3B82F6;
@@ -42,7 +43,7 @@
   --aumo-success: #22C55E;
   --aumo-warning: #F59E0B;
   --aumo-error: #EF4444;
-  --aumo-text: #FFFFFF; /* Diubah ke putih murni */
+  --aumo-text: #FFFFFF;
   --aumo-text-muted: #CBD5E1;
 
   --font-heading: "Space Grotesk", sans-serif;
@@ -53,7 +54,7 @@
 
 body {
   font-family: var(--font-body);
-  background-color: var(--bs-body-bg);
+  background-color: var(--bs-body-bg) !important;
   color: var(--bs-body-color);
 }
 
@@ -81,8 +82,9 @@ table, th, td,
 .modal-content,
 .dropdown-menu,
 .offcanvas {
-  background-color: var(--aumo-surface);
+  background-color: var(--aumo-surface) !important;
   border-color: var(--bs-border-color);
+  color: var(--aumo-text);
 }
 
 .sidebar-icons {
@@ -102,6 +104,40 @@ table, th, td,
   --bs-table-bg: var(--aumo-surface);
   --bs-table-color: var(--bs-body-color);
   --bs-table-border-color: var(--bs-border-color);
+}
+
+/* ---------- Form Controls Overrides (Fix Terang/Putih) ---------- */
+
+.form-control,
+.form-select,
+.input-group-text {
+  background-color: var(--aumo-bg) !important;
+  border-color: var(--bs-border-color) !important;
+  color: var(--aumo-text) !important;
+}
+
+.form-control::placeholder {
+  color: var(--aumo-text-muted) !important;
+  opacity: 0.6;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--aumo-bg) !important;
+  border-color: var(--aumo-primary) !important;
+  color: var(--aumo-text) !important;
+  box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Fix Browser Auto-Fill (Mencegah input berubah putih saat Chrome/Edge isi otomatis) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: var(--aumo-text) !important;
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: inset 0 0 20px 20px var(--aumo-bg) !important;
 }
 
 /* ---------- Buttons ---------- */
