@@ -213,7 +213,7 @@ public class RenderKeepAliveService : BackgroundService
         await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
 
         // Ambil domain dari AppUrl di appsettings atau fallback otomatis
-        string appUrl = _configuration["AppUrl"] ?? "https://aumofinance.onrender.com"; 
+        string appUrl = _configuration["AppUrl"] ?? "https://aumofinance.onrender.com";
         string healthUrl = $"{appUrl.TrimEnd('/')}/health";
 
         while (!stoppingToken.IsCancellationRequested)
