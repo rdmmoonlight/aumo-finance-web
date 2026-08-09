@@ -60,7 +60,7 @@ public class AdjustingJournalControllers : ControllerBase
             .Select(j => new
             {
                 j.Id,
-                j.ReferenceNumber,
+                j.TransactionNumber,
                 j.JournalType,
                 j.EntryDate,
                 j.CreatedAt,

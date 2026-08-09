@@ -38,13 +38,13 @@ namespace AumoFinance.Models
     }
 
     // Dipakai oleh JournalEntry/Edit. Mewarisi field yang sama dengan Create,
-    // ditambah Id (entry yang diedit) dan ReferenceNumber (ditampilkan
+    // ditambah Id (entry yang diedit) dan TransactionNumber (ditampilkan
     // read-only, tidak diregenerasi ulang saat entry diedit).
     public class JournalEntryEditViewModel
     {
         public int Id { get; set; }
 
-        public string ReferenceNumber { get; set; } = string.Empty;
+        public string TransactionNumber { get; set; } = string.Empty;
 
         [Required]
         public string JournalType { get; set; } = "General";

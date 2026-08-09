@@ -24,7 +24,7 @@
             {
                 <h2 class="fw-bold text-body-emphasis mb-1">
                     <i class="bi bi-pencil-square me-2 text-warning"></i> Edit Journal Entry
-                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-2">@referenceNumber</span>
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-2">@transactionNumber</span>
                 </h2>
                 <p class="text-secondary mb-0">Update this double-entry transaction for Aumo Finance.</p>
             }
@@ -77,8 +77,8 @@
                     @if (IsEdit)
                     {
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold small">Reference No.</label>
-                            <input type="text" class="form-control bg-body-secondary fw-semibold" value="@referenceNumber" readonly tabindex="-1" />
+                            <label class="form-label fw-semibold small">Transaction No.</label>
+                            <input type="text" class="form-control bg-body-secondary fw-semibold" value="@transactionNumber" readonly tabindex="-1" />
                         </div>
                     }
                     <div class="col-md-3">
@@ -227,7 +227,7 @@
     private List<ChartOfAccount> availableAccounts = new();
     private string journalType = "General";
     private DateTime entryDate = DateTime.Today;
-    private string referenceNumber = string.Empty;
+    private string transactionNumber = string.Empty;
     private string? successMessage;
     private string? lockedMessage;
     private List<string> validationErrors = new();
@@ -273,11 +273,11 @@
             var closedPeriods = await DbContext.Periods.Where(p => p.UserId == UserId && p.IsClosed).ToListAsync();
             if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods))
             {
-                lockedMessage = $"Journal entry {entry.ReferenceNumber} belongs to a closed period and cannot be edited. View it from the Periods page instead.";
+                lockedMessage = $"Journal entry {entry.TransactionNumber} belongs to a closed period and cannot be edited. View it from the Periods page instead.";
                 return;
             }
 
-            referenceNumber = entry.ReferenceNumber;
+            transactionNumber = entry.TransactionNumber;
             journalType = entry.JournalType;
             entryDate = entry.EntryDate;
             lines = entry.Lines
@@ -412,7 +412,7 @@
 
             if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods) || PeriodLock.IsDateLocked(entryDate, closedPeriods))
             {
-                lockedMessage = $"Journal entry {entry.ReferenceNumber} falls within a closed period and cannot be modified.";
+                lockedMessage = $"Journal entry {entry.TransactionNumber} falls within a closed period and cannot be modified.";
                 return;
             }
 
@@ -447,7 +447,7 @@
             var entry = new JournalEntry
             {
                 UserId = UserId,
-                ReferenceNumber = await GenerateReferenceNumberAsync(journalType),
+                TransactionNumber = await GenerateTransactionNumberAsync(journalType),
                 JournalType = journalType,
                 EntryDate = DateTime.SpecifyKind(entryDate, DateTimeKind.Utc),
                 Lines = effectiveLines.Select((l, index) => new JournalEntryLine
@@ -463,19 +463,19 @@
             DbContext.JournalEntries.Add(entry);
             await DbContext.SaveChangesAsync();
 
-            successMessage = $"Journal entry {entry.ReferenceNumber} has been posted.";
+            successMessage = $"Journal entry {entry.TransactionNumber} has been posted.";
             ResetForm();
         }
     }
 
-    private async Task<string> GenerateReferenceNumberAsync(string type)
+    private async Task<string> GenerateTransactionNumberAsync(string type)
     {
         var prefix = type == "Adjusting" ? "AJE" : "GJ";
 
         var lastNumber = await DbContext.JournalEntries
-            .Where(e => e.UserId == UserId && e.ReferenceNumber.StartsWith(prefix + "-"))
+            .Where(e => e.UserId == UserId && e.TransactionNumber.StartsWith(prefix + "-"))
             .OrderByDescending(e => e.Id)
-            .Select(e => e.ReferenceNumber)
+            .Select(e => e.TransactionNumber)
             .FirstOrDefaultAsync();
 
         var nextSeq = 1;

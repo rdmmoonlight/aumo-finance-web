@@ -51,7 +51,7 @@ public class JournalEntryController : ControllerBase
         var result = new
         {
             entry.Id,
-            entry.ReferenceNumber,
+            entry.TransactionNumber,
             entry.JournalType,
             entry.EntryDate,
             entry.CreatedAt,
@@ -117,12 +117,12 @@ public class JournalEntryController : ControllerBase
         }
 
         string journalType = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType;
-        string refNumber = await GenerateReferenceNumberAsync(userId, journalType);
+        string transactionNumber = await GenerateTransactionNumberAsync(userId, journalType);
 
         var entry = new JournalEntry
         {
             UserId = userId,
-            ReferenceNumber = refNumber,
+            TransactionNumber = transactionNumber,
             JournalType = journalType,
             EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc),
             CreatedAt = DateTime.UtcNow,
@@ -142,9 +142,9 @@ public class JournalEntryController : ControllerBase
         return Ok(new
         {
             success = true,
-            message = $"Journal entry {entry.ReferenceNumber} has been posted.",
+            message = $"Journal entry {entry.TransactionNumber} has been posted.",
             entryId = entry.Id,
-            referenceNumber = entry.ReferenceNumber
+            transactionNumber = entry.TransactionNumber
         });
     }
 
@@ -172,7 +172,7 @@ public class JournalEntryController : ControllerBase
 
         if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods) || PeriodLock.IsDateLocked(request.EntryDate, closedPeriods))
         {
-            return BadRequest(new { success = false, message = $"Journal entry {entry.ReferenceNumber} falls within a closed period and cannot be modified." });
+            return BadRequest(new { success = false, message = $"Journal entry {entry.TransactionNumber} falls within a closed period and cannot be modified." });
         }
 
         var effectiveLines = request.Lines
@@ -223,7 +223,7 @@ public class JournalEntryController : ControllerBase
         return Ok(new
         {
             success = true,
-            message = $"Journal entry {entry.ReferenceNumber} updated successfully."
+            message = $"Journal entry {entry.TransactionNumber} updated successfully."
         });
     }
 
@@ -259,7 +259,7 @@ public class JournalEntryController : ControllerBase
         return Ok(new
         {
             success = true,
-            message = $"Journal entry {entry.ReferenceNumber} deleted successfully."
+            message = $"Journal entry {entry.TransactionNumber} deleted successfully."
         });
     }
 
@@ -295,18 +295,18 @@ public class JournalEntryController : ControllerBase
     }
 
     // ==========================================
-    // 6. GET: /api/mobile/journal-entry/next-reference?journalType=General (Preview Next Number)
+    // 6. GET: /api/mobile/journal-entry/next-transaction-number?journalType=General (Preview Next Number)
     // ==========================================
-    [HttpGet("next-reference")]
-    public async Task<IActionResult> GetNextReferenceNumber([FromQuery] string journalType = "General")
+    [HttpGet("next-transaction-number")]
+    public async Task<IActionResult> GetNextTransactionNumber([FromQuery] string journalType = "General")
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
         string type = string.IsNullOrWhiteSpace(journalType) ? "General" : journalType;
-        string nextRef = await GenerateReferenceNumberAsync(userId, type);
+        string nextNumber = await GenerateTransactionNumberAsync(userId, type);
 
-        return Ok(new { success = true, referenceNumber = nextRef });
+        return Ok(new { success = true, transactionNumber = nextNumber });
     }
 
     private Guid GetCurrentUserId()
@@ -315,14 +315,14 @@ public class JournalEntryController : ControllerBase
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
     }
 
-    private async Task<string> GenerateReferenceNumberAsync(Guid userId, string journalType)
+    private async Task<string> GenerateTransactionNumberAsync(Guid userId, string journalType)
     {
         var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
 
         var lastNumber = await _db.JournalEntries
-            .Where(e => e.UserId == userId && e.ReferenceNumber.StartsWith(prefix + "-"))
+            .Where(e => e.UserId == userId && e.TransactionNumber.StartsWith(prefix + "-"))
             .OrderByDescending(e => e.Id)
-            .Select(e => e.ReferenceNumber)
+            .Select(e => e.TransactionNumber)
             .FirstOrDefaultAsync();
 
         var nextSeq = 1;

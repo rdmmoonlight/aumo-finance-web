@@ -204,9 +204,9 @@ public partial class ImportJournalPage : ComponentBase
                 if (!seqCounters.TryGetValue(prefix, out var seq))
                 {
                     var last = await DbContext.JournalEntries
-                        .Where(e => e.UserId == UserId && e.ReferenceNumber.StartsWith(prefix + "-"))
+                        .Where(e => e.UserId == UserId && e.TransactionNumber.StartsWith(prefix + "-"))
                         .OrderByDescending(e => e.Id)
-                        .Select(e => e.ReferenceNumber)
+                        .Select(e => e.TransactionNumber)
                         .FirstOrDefaultAsync();
 
                     seq = 0;
@@ -267,7 +267,7 @@ public partial class ImportJournalPage : ComponentBase
                 var entry = new JournalEntry
                 {
                     UserId = UserId,
-                    ReferenceNumber = $"{prefix}-{seq:D6}",
+                    TransactionNumber = $"{prefix}-{seq:D6}",
                     JournalType = txDto.JournalType,
                     EntryDate = txDto.Date,
                     Lines = entryLines,

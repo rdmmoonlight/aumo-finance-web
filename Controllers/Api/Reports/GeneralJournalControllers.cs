@@ -57,7 +57,7 @@ public class GeneralJournalControllers : ControllerBase
             .Select(j => new
             {
                 j.Id,
-                j.ReferenceNumber,
+                j.TransactionNumber,
                 j.JournalType,
                 j.EntryDate,
                 j.CreatedAt,
@@ -104,7 +104,7 @@ public class GeneralJournalControllers : ControllerBase
         var result = new
         {
             entry.Id,
-            entry.ReferenceNumber,
+            entry.TransactionNumber,
             entry.JournalType,
             entry.EntryDate,
             entry.CreatedAt,
@@ -161,12 +161,12 @@ public class GeneralJournalControllers : ControllerBase
         if (PeriodLock.IsDateLocked(request.EntryDate, closedPeriods))
             return BadRequest(new { success = false, message = "Transaction date falls within a closed accounting period." });
 
-        string refNumber = await GenerateReferenceNumberAsync(userId, request.JournalType);
+        string transactionNumber = await GenerateTransactionNumberAsync(userId, request.JournalType);
 
         var entry = new JournalEntry
         {
             UserId = userId,
-            ReferenceNumber = refNumber,
+            TransactionNumber = transactionNumber,
             JournalType = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType,
             EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc),
             CreatedAt = DateTime.UtcNow,
@@ -186,9 +186,9 @@ public class GeneralJournalControllers : ControllerBase
         return Ok(new
         {
             success = true,
-            message = $"Journal {entry.ReferenceNumber} created successfully.",
+            message = $"Journal {entry.TransactionNumber} created successfully.",
             journalId = entry.Id,
-            referenceNumber = entry.ReferenceNumber
+            transactionNumber = entry.TransactionNumber
         });
     }
 
@@ -246,7 +246,7 @@ public class GeneralJournalControllers : ControllerBase
         return Ok(new
         {
             success = true,
-            message = $"Journal {entry.ReferenceNumber} updated successfully."
+            message = $"Journal {entry.TransactionNumber} updated successfully."
         });
     }
 
@@ -278,7 +278,7 @@ public class GeneralJournalControllers : ControllerBase
         return Ok(new
         {
             success = true,
-            message = $"Journal {entry.ReferenceNumber} deleted successfully."
+            message = $"Journal {entry.TransactionNumber} deleted successfully."
         });
     }
 
@@ -317,14 +317,14 @@ public class GeneralJournalControllers : ControllerBase
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
     }
 
-    private async Task<string> GenerateReferenceNumberAsync(Guid userId, string journalType)
+    private async Task<string> GenerateTransactionNumberAsync(Guid userId, string journalType)
     {
         var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
 
         var lastNumber = await _db.JournalEntries
-            .Where(e => e.UserId == userId && e.ReferenceNumber.StartsWith(prefix + "-"))
+            .Where(e => e.UserId == userId && e.TransactionNumber.StartsWith(prefix + "-"))
             .OrderByDescending(e => e.Id)
-            .Select(e => e.ReferenceNumber)
+            .Select(e => e.TransactionNumber)
             .FirstOrDefaultAsync();
 
         var nextSeq = 1;

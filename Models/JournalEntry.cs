@@ -14,7 +14,7 @@ namespace AumoFinance.Models
 
         [Required]
         [StringLength(30)]
-        public string ReferenceNumber { get; set; } = string.Empty;
+        public string TransactionNumber { get; set; } = string.Empty;
 
         [Required]
         public string JournalType { get; set; } = "General"; // "General" atau "Adjusting"

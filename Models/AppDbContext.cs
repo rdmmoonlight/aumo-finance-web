@@ -57,9 +57,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .HasForeignKey(x => x.JournalEntryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Nomor referensi (GJ-xxxxxx / AJE-xxxxxx) hanya unik DALAM satu
+            // Nomor transaksi (GJ-xxxxxx / AJE-xxxxxx) hanya unik DALAM satu
             // user — setiap user punya penomoran sendiri, mulai dari 1.
-            entity.HasIndex(x => new { x.UserId, x.ReferenceNumber })
+            entity.HasIndex(x => new { x.UserId, x.TransactionNumber })
                 .IsUnique();
         });
 
