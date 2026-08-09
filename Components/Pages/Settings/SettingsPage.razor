@@ -3,8 +3,6 @@
 @rendermode InteractiveServer
 @attribute [Authorize]
 
-@inject IJSRuntime JSRuntime
-
 <PageTitle>Settings</PageTitle>
 
 <div class="container-fluid p-0">
@@ -52,41 +50,3 @@
         </div>
     </div>
 </div>
-
-@code {
-    private bool isDarkMode = true;
-    private bool enableSystemAlerts = true;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            // Ambil tema aktif dari localStorage browser saat halaman pertama kali dimuat
-            try
-            {
-                var currentTheme = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "aumo_theme");
-                isDarkMode = string.IsNullOrEmpty(currentTheme) || currentTheme == "dark";
-                StateHasChanged();
-            }
-            catch
-            {
-                // Fallback jika localStorage tidak dapat diakses
-                isDarkMode = true;
-            }
-        }
-    }
-
-    private async Task OnThemeChanged(ChangeEventArgs e)
-    {
-        isDarkMode = (bool)(e.Value ?? true);
-        var themeName = isDarkMode ? "dark" : "light";
-
-        // Memanggil fungsi setAppTheme JS window yang ada di App.razor
-        await JSRuntime.InvokeVoidAsync("setAppTheme", themeName);
-    }
-
-    private void OnSystemAlertsChanged(ChangeEventArgs e)
-    {
-        enableSystemAlerts = (bool)(e.Value ?? true);
-    }
-}
