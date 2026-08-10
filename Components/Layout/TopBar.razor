@@ -7,18 +7,87 @@
 @inject AuthenticationStateProvider AuthStateProvider
 
 <!-- ========================================== -->
-<!-- TOPBAR CSS & JS                            -->
+<!-- TOPBAR FUTURISTIC ENTERPRISE STYLES        -->
 <!-- ========================================== -->
 <style>
-    /* Spin effect for the Sync indicator */
-    .icon-spin {
-        display: inline-block;
-        animation: spin 1.5s linear infinite;
+    /* Glassmorphism & Neon Border */
+    .topbar-glass {
+        background: rgba(15, 23, 42, 0.75) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
 
-    /* PERBAIKAN CS0103: Gunakan @@keyframes agar tidak dianggap C# code */
+    [data-bs-theme="light"] .topbar-glass {
+        background: rgba(255, 255, 255, 0.85) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Sub-bar Status Strip */
+    .status-strip {
+        background: rgba(10, 15, 28, 0.6) !important;
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    [data-bs-theme="light"] .status-strip {
+        background: rgba(248, 250, 252, 0.9) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Brand Accent Light */
+    .brand-glow {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-family: 'Space Grotesk', sans-serif;
+        letter-spacing: 0.5px;
+    }
+
+    /* Glowing Status Badge */
+    .status-badge {
+        font-family: 'Space Grotesk', monospace;
+        letter-spacing: 0.3px;
+        transition: all 0.2s ease;
+    }
+
+    /* Live Pulsing Dot Indicator */
+    .pulse-dot-green {
+        width: 6px;
+        height: 6px;
+        background-color: #10b981;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px #10b981;
+        animation: pulseGlow 2s infinite;
+    }
+
+    @@keyframes pulseGlow {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* Sync Spin Animation */
+    .icon-spin {
+        display: inline-block;
+        animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
     @@keyframes spin {
         100% { transform: rotate(360deg); }
+    }
+
+    /* Smooth Hover Buttons */
+    .topbar-btn {
+        transition: all 0.2s ease;
+        border-radius: 6px;
+    }
+    .topbar-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #f59e0b !important;
     }
 </style>
 
@@ -51,39 +120,43 @@
     };
 </script>
 
-<header class="navbar navbar-expand border-bottom py-2 bg-body-tertiary" style="min-height: 56px;">
+<!-- HEADER UTAMA (Glassmorphism Navbar) -->
+<header class="navbar navbar-expand topbar-glass py-2 sticky-top" style="min-height: 56px;">
     
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
-        <div class="d-flex align-items-center me-2" style="max-width: 160px;">
-            <span class="fw-semibold text-truncate text-body" style="font-size: 0.8rem;">
-                Aumo Finance
+        <!-- BRAND LOGO WITH GLOW -->
+        <div class="d-flex align-items-center me-2" style="max-width: 180px;">
+            <span class="fw-bold fs-6 brand-glow text-truncate">
+                AUMO<span class="fw-normal text-body opacity-75">FINANCE</span>
             </span>
         </div>
 
-        <!-- Center Section: Quran Verse -->
+        <!-- CENTER SECTION: QURAN VERSE -->
         <div class="d-none d-md-flex flex-column align-items-center justify-content-center flex-grow-1 mx-2 text-center" style="max-width: 800px;">
             <QuranVerse />
         </div>
 
-        <div class="d-flex align-items-center gap-1">
+        <!-- RIGHT SECTION: ACTION CONTROLS -->
+        <div class="d-flex align-items-center gap-2">
             
             <AuthorizeView>
                 <Authorized>
-                    <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
+                    <button class="btn btn-sm topbar-btn text-secondary p-1 px-2 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
                         <i class="bi bi-search" style="font-size: 0.825rem;"></i>
+                        <span class="d-none d-lg-inline text-muted small" style="font-size: 0.725rem;">Command + K</span>
                     </button>
                 </Authorized>
             </AuthorizeView>
 
             <div class="dropdown">
-                <button class="btn btn-sm btn-link text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
+                <button class="btn btn-sm topbar-btn text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
                     <i class="bi bi-three-dots-vertical" style="font-size: 0.875rem;"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem;">
-                    <li><h6 class="dropdown-header py-1" style="font-size: 0.725rem;">Theme Settings</h6></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark</button></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light</button></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-secondary border-opacity-25" style="font-size: 0.8rem; min-width: 150px;">
+                    <li><h6 class="dropdown-header py-1 text-uppercase tracking-wider" style="font-size: 0.65rem;">Theme Interface</h6></li>
+                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark Nebula</button></li>
+                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light Minimal</button></li>
                 </ul>
             </div>
 
@@ -91,22 +164,24 @@
     </div>
 </header>
 
+<!-- SUB-BAR: FINTECH COMMAND STRIP -->
 <AuthorizeView>
     <Authorized>
-        <div class="border-bottom bg-body px-3 py-1 d-flex justify-content-center align-items-center gap-2 shadow-sm text-nowrap" style="min-height: 28px; font-size: 0.75rem;">
+        <div class="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap" style="min-height: 30px; font-size: 0.75rem;">
             
+            <!-- PERIOD STATUS SELECTOR -->
             <div class="dropdown">
-                <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-1 dropdown-toggle shadow-none" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-2 dropdown-toggle shadow-none status-badge" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi @iconClass"></i>
-                    <span class="text-body fw-bold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
+                    <span class="text-body fw-semibold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
                     @if (isViewingClosed)
                     {
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Closed</span>
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace" style="font-size: 0.65rem;">LOCKED</span>
                     }
                 </button>
                 
-                <ul class="dropdown-menu shadow-sm mt-1" style="font-size: 0.75rem; min-width: 180px;">
-                    <li><h6 class="dropdown-header py-1" style="font-size: 0.7rem;">Period Management</h6></li>
+                <ul class="dropdown-menu shadow-lg border-secondary border-opacity-25 mt-1" style="font-size: 0.75rem; min-width: 190px;">
+                    <li><h6 class="dropdown-header py-1 text-uppercase" style="font-size: 0.65rem;">Accounting Period</h6></li>
                     <li>
                         <NavLink class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" href="/periods/create">
                             <i class="bi bi-plus-circle"></i> Open New Period
@@ -115,7 +190,7 @@
                     <li><hr class="dropdown-divider my-1"></li>
                     <li>
                         <NavLink class="dropdown-item py-1 d-flex align-items-center gap-2" href="/periods">
-                            <i class="bi bi-list-ul"></i> View All Periods
+                            <i class="bi bi-list-ul"></i> Manage All Periods
                         </NavLink>
                     </li>
                     @if (hasActivePeriod)
@@ -129,15 +204,21 @@
                 </ul>
             </div>
 
-            <span class="text-secondary opacity-50">|</span>
+            <span class="text-secondary opacity-25">|</span>
 
-            <div class="d-flex align-items-center gap-1">
-                <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1" type="button" title="Guardian: Protected" aria-label="Guardian Status">
+            <!-- SYSTEM TELEMETRY / GUARDIAN & SYNC -->
+            <div class="d-flex align-items-center gap-2 fs-8 font-monospace">
+                <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" title="Guardian Security: Protected & Active" aria-label="Guardian Status">
+                    <span class="pulse-dot-green me-1"></span>
                     <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
+                    <span class="d-none d-sm-inline text-muted" style="font-size: 0.7rem;">PROTECTED</span>
                 </button>
 
-                <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
+                <span class="text-secondary opacity-25">/</span>
+
+                <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
                     <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
+                    <span class="d-none d-sm-inline text-muted" style="font-size: 0.7rem;">SYNCED</span>
                 </button>
             </div>
 
@@ -145,16 +226,17 @@
     </Authorized>
 </AuthorizeView>
 
+<!-- SEARCH MODAL -->
 <AuthorizeView>
     <Authorized>
         <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-top modal-sm">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-body p-2">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-transparent border-0 text-secondary"><i class="bi bi-search"></i></span>
-                            <input type="search" class="form-control border-0 shadow-none" placeholder="Search transactions, accounts..." autofocus>
-                            <button type="button" class="btn-close ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-dialog modal-dialog-top modal-md mt-5">
+                <div class="modal-content topbar-glass border border-secondary border-opacity-25 shadow-lg">
+                    <div class="modal-body p-3">
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-0 text-warning"><i class="bi bi-search"></i></span>
+                            <input type="search" class="form-control bg-transparent border-0 shadow-none text-body" placeholder="Type a command or search accounts, entries..." autofocus>
+                            <button type="button" class="btn-close btn-close-white ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                     </div>
                 </div>
