@@ -51,7 +51,7 @@ builder.Services.AddDataProtection()
 // 3. ASP.NET CORE IDENTITY SETUP
 // =====================================
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
 
@@ -161,9 +161,11 @@ builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddHealthChecks();
 
+
 // Render Keep-Alive
-// Implementation berada di:
+// Implementation:
 // Services/RenderKeepAliveService.cs
+
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
 
@@ -282,13 +284,6 @@ app.UseAuthorization();
 // =====================================
 // 10. HEALTH CHECK
 // =====================================
-//
-// Public lightweight endpoint:
-//
-// GET /health
-//
-// Used by Render Keep-Alive / monitoring.
-//
 
 app.MapHealthChecks("/health");
 
