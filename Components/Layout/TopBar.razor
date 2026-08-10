@@ -1,95 +1,4 @@
-@using System.Security.Claims
-@using AumoFinance.Models
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.EntityFrameworkCore
-
-@inject IDbContextFactory<AppDbContext> DbFactory
-@inject AuthenticationStateProvider AuthStateProvider
-
-<!-- ========================================== -->
-<!-- TOPBAR FUTURISTIC ENTERPRISE STYLES        -->
-<!-- ========================================== -->
-<style>
-    /* Glassmorphism & Neon Border */
-    .topbar-glass {
-        background: rgba(15, 23, 42, 0.75) !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    [data-bs-theme="light"] .topbar-glass {
-        background: rgba(255, 255, 255, 0.85) !important;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Sub-bar Status Strip */
-    .status-strip {
-        background: rgba(10, 15, 28, 0.6) !important;
-        backdrop-filter: blur(8px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    [data-bs-theme="light"] .status-strip {
-        background: rgba(248, 250, 252, 0.9) !important;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-
-    /* Brand Accent Light */
-    .brand-glow {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-family: 'Space Grotesk', sans-serif;
-        letter-spacing: 0.5px;
-    }
-
-    /* Glowing Status Badge */
-    .status-badge {
-        font-family: 'Space Grotesk', monospace;
-        letter-spacing: 0.3px;
-        transition: all 0.2s ease;
-    }
-
-    /* Live Pulsing Dot Indicator */
-    .pulse-dot-green {
-        width: 6px;
-        height: 6px;
-        background-color: #10b981;
-        border-radius: 50%;
-        display: inline-block;
-        box-shadow: 0 0 8px #10b981;
-        animation: pulseGlow 2s infinite;
-    }
-
-    @@keyframes pulseGlow {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-
-    /* Sync Spin Animation */
-    .icon-spin {
-        display: inline-block;
-        animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    }
-
-    @@keyframes spin {
-        100% { transform: rotate(360deg); }
-    }
-
-    /* Smooth Hover Buttons */
-    .topbar-btn {
-        transition: all 0.2s ease;
-        border-radius: 6px;
-    }
-    .topbar-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: #f59e0b !important;
-    }
-</style>
 
 <script>
     window.triggerSyncProcess = function(isSuccess = true, queueTimeMs = 10000) {
@@ -120,26 +29,20 @@
     };
 </script>
 
-<!-- HEADER UTAMA (Glassmorphism Navbar) -->
 <header class="navbar navbar-expand topbar-glass py-2 sticky-top" style="min-height: 56px;">
-    
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100">
         
-        <!-- BRAND LOGO WITH GLOW -->
         <div class="d-flex align-items-center me-2" style="max-width: 180px;">
             <span class="fw-bold fs-6 brand-glow text-truncate">
                 AUMO<span class="fw-normal text-body opacity-75">FINANCE</span>
             </span>
         </div>
 
-        <!-- CENTER SECTION: QURAN VERSE -->
         <div class="d-none d-md-flex flex-column align-items-center justify-content-center flex-grow-1 mx-2 text-center" style="max-width: 800px;">
             <QuranVerse />
         </div>
 
-        <!-- RIGHT SECTION: ACTION CONTROLS -->
         <div class="d-flex align-items-center gap-2">
-            
             <AuthorizeView>
                 <Authorized>
                     <button class="btn btn-sm topbar-btn text-secondary p-1 px-2 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
@@ -159,17 +62,13 @@
                     <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light Minimal</button></li>
                 </ul>
             </div>
-
         </div>
     </div>
 </header>
 
-<!-- SUB-BAR: FINTECH COMMAND STRIP -->
 <AuthorizeView>
     <Authorized>
         <div class="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap" style="min-height: 30px; font-size: 0.75rem;">
-            
-            <!-- PERIOD STATUS SELECTOR -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-2 dropdown-toggle shadow-none status-badge" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi @iconClass"></i>
@@ -206,7 +105,6 @@
 
             <span class="text-secondary opacity-25">|</span>
 
-            <!-- SYSTEM TELEMETRY / GUARDIAN & SYNC -->
             <div class="d-flex align-items-center gap-2 fs-8 font-monospace">
                 <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" title="Guardian Security: Protected & Active" aria-label="Guardian Status">
                     <span class="pulse-dot-green me-1"></span>
@@ -221,12 +119,10 @@
                     <span class="d-none d-sm-inline text-muted" style="font-size: 0.7rem;">SYNCED</span>
                 </button>
             </div>
-
         </div>
     </Authorized>
 </AuthorizeView>
 
-<!-- SEARCH MODAL -->
 <AuthorizeView>
     <Authorized>
         <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
@@ -244,39 +140,3 @@
         </div>
     </Authorized>
 </AuthorizeView>
-
-@code {
-    private string? activePeriodName;
-    private bool hasActivePeriod;
-    private bool isViewingClosed;
-    private string periodText = "No Period Selected";
-    private string iconClass = "bi-calendar-x text-warning";
-
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.Identity != null && user.Identity.IsAuthenticated)
-        {
-            var currentUserIdStr = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (Guid.TryParse(currentUserIdStr, out var currentUserId))
-            {
-                await using var context = await DbFactory.CreateDbContextAsync();
-                var activePeriodObj = await context.Periods
-                    .FirstOrDefaultAsync(p => p.UserId == currentUserId && p.IsSelected);
-
-                if (activePeriodObj != null)
-                {
-                    activePeriodName = activePeriodObj.PeriodName;
-                    hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);
-                    isViewingClosed = activePeriodObj.IsClosed;
-                    periodText = hasActivePeriod ? activePeriodName : "No Period Selected";
-                    iconClass = !hasActivePeriod 
-                        ? "bi-calendar-x text-warning" 
-                        : (isViewingClosed ? "bi-lock-fill text-secondary" : "bi-calendar2-check text-success");
-                }
-            }
-        }
-    }
-}
