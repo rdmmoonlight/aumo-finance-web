@@ -1,6 +1,5 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
-@using AumoFinance.Components.Layout
 
 <!-- ==========================================
      Aumo Finance - Main Layout
@@ -9,36 +8,18 @@
 
 <div class="d-flex flex-column min-vh-100 min-vw-0 aumo-main-shell">
 
-    <!-- TopBar -->
+    <!-- TopBar (Dipanggil dari folder Layout/Components) -->
     <AuthorizeView>
         <Authorized>
-            <TopBar />
+            <AumoFinance.Components.Layout.TopBar />
         </Authorized>
     </AuthorizeView>
 
-    <!-- Shell Utama: Sidebar & Konten Utama -->
+    <!-- Shell Utama: Sidebar & Main Content -->
     <div class="d-flex flex-grow-1 overflow-hidden">
         
-        <!-- SIDEBAR CONTAINER -->
-        <div class="sidebar-wrapper d-flex">
-            <!-- 1. Icon Bar Statis (52px) -->
-            <div class="sidebar-icons d-flex flex-column align-items-center py-3">
-                <a href="" class="icon-btn mb-3 active" title="Home">
-                    <i class="bi bi-house-door fs-5"></i>
-                </a>
-                <a href="counter" class="icon-btn mb-3" title="Counter">
-                    <i class="bi bi-plus-square fs-5"></i>
-                </a>
-                <a href="weather" class="icon-btn mb-3" title="Weather">
-                    <i class="bi bi-cloud-sun fs-5"></i>
-                </a>
-            </div>
-
-            <!-- 2. Flyout Panel -->
-            <div class="sidebar-flyout show p-3 border-end border-secondary">
-                <NavMenu />
-            </div>
-        </div>
+        <!-- SIDEBAR CONTAINER (Memanggil Sidebar.razor) -->
+        <AumoFinance.Components.Layout.Sidebar />
 
         <!-- MAIN CONTENT AREA -->
         <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto d-flex flex-column" role="main">
@@ -52,70 +33,6 @@
 <style>
     body {
         transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    .sidebar-wrapper {
-        position: relative;
-        z-index: 100;
-    }
-
-    /* Static Icon Bar (52px) */
-    .sidebar-icons { 
-        width: 52px; 
-        min-height: 100vh;
-        background-color: #181818; 
-        border-right: 1px solid rgba(255, 255, 255, 0.1);
-        flex-shrink: 0;
-        z-index: 2;
-    }
-
-    .sidebar-icons .icon-btn {
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 0.375rem;
-        color: #b0b0b0 !important;
-        transition: all 0.2s ease;
-        text-decoration: none;
-    }
-
-    .sidebar-icons .icon-btn:hover, 
-    .sidebar-icons .icon-btn.active { 
-        background-color: rgba(255, 255, 255, 0.15) !important; 
-        color: #ffffff !important;
-    }
-
-    /* Compact Flyout Panel */
-    .sidebar-flyout {
-        width: 0;
-        opacity: 0;
-        visibility: hidden;
-        overflow: hidden;
-        min-height: 100vh;
-        background-color: #212529 !important;
-        transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
-        white-space: nowrap;
-        z-index: 1;
-    }
-
-    .sidebar-flyout.show {
-        width: 190px;
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .sidebar-flyout .list-group-item {
-        font-size: 0.85rem;
-    }
-
-    .sidebar-flyout .list-group-item:hover {
-        background-color: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    [data-bs-theme="light"] .sidebar-icons {
-        background-color: #1e2227 !important; 
     }
 
     .content { 
