@@ -1,50 +1,26 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 
-<!-- ==========================================
-     Aumo Finance - Main Layout
-     Cosmic / Nebula Theme
-     ========================================== -->
-
 <div class="d-flex flex-column min-vh-100 min-vw-0 aumo-main-shell">
 
-    <!-- TopBar (Dipanggil dari folder Layout/Components) -->
+    <!-- TOPBAR -->
     <AuthorizeView>
         <Authorized>
-            <AumoFinance.Components.Layout.TopBar />
+            <AumoFinance.Components.Layout.TopBar @rendermode="InteractiveServer" />
         </Authorized>
     </AuthorizeView>
 
-    <!-- Shell Utama: Sidebar & Main Content -->
-    <div class="d-flex flex-grow-1 overflow-hidden">
+    <!-- SHELL UTAMA -->
+    <div class="d-flex flex-grow-1 overflow-hidden position-relative">
         
-        <!-- SIDEBAR CONTAINER (Memanggil Sidebar.razor) -->
-        <AumoFinance.Components.Layout.Sidebar />
+        <!-- SIDEBAR (Memanggil Sidebar.razor) -->
+        <AumoFinance.Components.Layout.Sidebar @rendermode="InteractiveServer" />
 
-        <!-- MAIN CONTENT AREA -->
-        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto d-flex flex-column" role="main">
+        <!-- MAIN CONTENT AREA (Diberi margin-left 60px agar tidak tertutup sidebar absolute) -->
+        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto d-flex flex-column" style="margin-left: 60px;" role="main">
             @Body
         </main>
 
     </div>
 
 </div>
-
-<style>
-    body {
-        transition: background-color 0.3s ease, color 0.3s ease;
-    }
-
-    .content { 
-        transition: background-color 0.3s ease;
-    }
-
-    .fs-7 { font-size: 0.825rem; }
-    .fs-8 { font-size: 0.725rem; }
-
-    @@media (max-width: 767.98px) {
-        #mainContent {
-            padding: 0.75rem 0.5rem !important;
-        }
-    }
-</style>
