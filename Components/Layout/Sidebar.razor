@@ -3,94 +3,109 @@
 @using Microsoft.AspNetCore.Components.Routing
 
 <div class="sidebar-wrapper d-flex">
+    
+    <!-- MAIN ICON DOCK (60px) -->
     <nav id="sidebar-icons" class="sidebar-icons text-white d-flex flex-column align-items-center py-3">
 
+        <!-- BRAND / HOME ICON -->
         <NavLink href="/" Match="NavLinkMatch.All" class="brand-container text-center text-warning text-decoration-none mb-2" title="Aumo Finance Home" @onclick="CloseFlyout">
             <i class="bi bi-house-door-fill fs-5"></i>
         </NavLink>
 
         <hr class="border-secondary opacity-50 my-2 w-75">
 
+        <!-- MENU NAVIGATION LIST -->
         <ul class="nav flex-column align-items-center w-100 flex-grow-1">
+
             <li class="nav-item mb-2">
-                <NavLink href="/dashboard" class="nav-link text-white icon-btn" title="Dashboard" @onclick="CloseFlyout">
+                <NavLink href="/dashboard" class="nav-link icon-btn" title="Dashboard" @onclick="CloseFlyout">
                     <i class="bi bi-columns-gap fs-5"></i>
                 </NavLink>
             </li>
 
+            <!-- MENU AI ASSISTANT -->
             <li class="nav-item mb-2">
-                <NavLink href="/ai-assistant" class="nav-link text-white icon-btn" title="AI Financial Assistant" @onclick="CloseFlyout">
+                <NavLink href="/ai-assistant" class="nav-link icon-btn" title="AI Financial Assistant" @onclick="CloseFlyout">
                     <i class="bi bi-robot fs-5"></i>
                 </NavLink>
             </li>
 
             <li class="nav-item mb-2">
-                <NavLink href="/journal-entry/create" class="nav-link text-white icon-btn" title="Journal Entry" @onclick="CloseFlyout">
+                <NavLink href="/journal-entry/create" class="nav-link icon-btn" title="Journal Entry" @onclick="CloseFlyout">
                     <i class="bi bi-journal-plus fs-5"></i>
                 </NavLink>
             </li>
 
+            <!-- MENU REPORTS (TOGGLE FLYOUT) -->
             <li class="nav-item mb-2">
                 <button type="button" 
                         @onclick="ToggleReportsFlyout" 
-                        class="nav-link text-white icon-btn border-0 bg-transparent @(showReportsFlyout ? "active text-warning" : "")" 
+                        class="nav-link icon-btn border-0 bg-transparent @(showReportsFlyout ? "active" : "")" 
                         title="Reports">
                     <i class="bi bi-folder fs-5"></i>
                 </button>
             </li>
 
             <li class="nav-item mb-2">
-                <NavLink href="/chart-of-accounts" class="nav-link text-white icon-btn" title="Chart of Accounts" @onclick="CloseFlyout">
+                <NavLink href="/chart-of-accounts" class="nav-link icon-btn" title="Chart of Accounts" @onclick="CloseFlyout">
                     <i class="bi bi-diagram-3 fs-5"></i>
                 </NavLink>
             </li>
 
             <li class="nav-item mb-2">
-                <NavLink href="/periods" class="nav-link text-white icon-btn" title="Financial Periods" @onclick="CloseFlyout">
+                <NavLink href="/periods" class="nav-link icon-btn" title="Financial Periods" @onclick="CloseFlyout">
                     <i class="bi bi-calendar3 fs-5"></i>
                 </NavLink>
             </li>
 
+            <!-- MENU DOCUMENTS -->
             <li class="nav-item mb-2">
-                <NavLink href="/documents" class="nav-link text-white icon-btn" title="Economic Documents" @onclick="CloseFlyout">
+                <NavLink href="/documents" class="nav-link icon-btn" title="Economic Documents" @onclick="CloseFlyout">
                     <i class="bi bi-file-earmark-text fs-5"></i>
                 </NavLink>
             </li>
 
             <li class="nav-item mb-2">
-                <NavLink href="/guardian" class="nav-link text-white icon-btn" title="Guardian Security" @onclick="CloseFlyout">
+                <NavLink href="/guardian" class="nav-link icon-btn" title="Guardian Security" @onclick="CloseFlyout">
                     <i class="bi bi-shield-check fs-5"></i>
                 </NavLink>
             </li>
 
             <li class="nav-item mb-2">
-                <NavLink href="/tools" class="nav-link text-white icon-btn" title="Tools" @onclick="CloseFlyout">
+                <NavLink href="/tools" class="nav-link icon-btn" title="Tools" @onclick="CloseFlyout">
                     <i class="bi bi-tools fs-5"></i>
                 </NavLink>
             </li>
+
         </ul>
 
+        <!-- AUTH MENU & PROFILE DROPDOWN WITH STATUS LED -->
         <AuthorizeView>
             <Authorized>
-                <div class="mt-auto dropup">
-                    <button class="nav-link text-white icon-btn border-0 bg-transparent" 
+                <div class="mt-auto dropup position-relative">
+                    <button class="nav-link icon-btn border-0 bg-transparent" 
                             id="userDropdown" 
                             data-bs-toggle="dropdown" 
                             aria-expanded="false" 
                             title="@context.User.Identity?.Name">
                         <i class="bi bi-person-circle fs-5"></i>
                     </button>
+                    <!-- Status LED Micro Glow -->
+                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-dark rounded-circle" style="width: 7px; height: 7px; box-shadow: 0 0 6px #10b981;"></span>
 
                     <ul class="dropdown-menu dropdown-menu-dark shadow ms-2 mb-2 fs-7" aria-labelledby="userDropdown">
                         <li class="dropdown-header text-truncate" style="max-width: 180px;">
                             @(context.User.Identity?.Name ?? "User")
                         </li>
+
                         <li><hr class="dropdown-divider"></li>
+
                         <li>
                             <NavLink class="dropdown-item d-flex align-items-center" href="/settings" @onclick="CloseFlyout">
                                 <i class="bi bi-gear me-2"></i> Settings
                             </NavLink>
                         </li>
+
                         <li>
                             <form action="/auth/logout" method="post" class="d-inline">
                                 <AntiforgeryToken />
@@ -104,7 +119,7 @@
             </Authorized>
             <NotAuthorized>
                 <div class="mt-auto">
-                    <NavLink href="/auth/login" class="nav-link text-white icon-btn" title="Sign In" @onclick="CloseFlyout">
+                    <NavLink href="/auth/login" class="nav-link icon-btn" title="Sign In" @onclick="CloseFlyout">
                         <i class="bi bi-box-arrow-in-right fs-5"></i>
                     </NavLink>
                 </div>
@@ -113,57 +128,75 @@
 
     </nav>
 
+    <!-- HOLOGRAM FLYOUT PANEL (REPORTS) -->
     @if (showReportsFlyout)
     {
         <div id="reports-flyout" class="sidebar-flyout">
-            <div class="p-3 border-bottom border-secondary d-flex justify-content-between align-items-center">
-                <span class="fw-bold small text-uppercase text-warning">
-                    <i class="bi bi-folder-fill me-2"></i> Reports
+
+            <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                <span class="fw-bold small text-uppercase text-warning font-monospace">
+                    <i class="bi bi-folder-fill me-2"></i> Financial Reports
                 </span>
+
                 <button type="button" @onclick="CloseFlyout" class="btn-close btn-close-white btn-sm" aria-label="Close"></button>
             </div>
 
             <div class="list-group list-group-flush p-2 small">
+
                 <NavLink href="/reports/general-journal" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-journal-text me-2"></i> General Journal
                 </NavLink>
+
                 <NavLink href="/reports/general-ledger" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-book me-2"></i> GL (Permanent Accounts)
                 </NavLink>
+
                 <NavLink href="/reports/general-ledger/true" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-book-half me-2"></i> GL (Temporary Accounts)
                 </NavLink>
+
                 <NavLink href="/reports/trial-balance" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-scale me-2"></i> Trial Balance
                 </NavLink>
+
                 <NavLink href="/reports/adjusting-journal" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-pencil-square me-2"></i> Adjusting Journal
                 </NavLink>
+
                 <NavLink href="/reports/trial-balance/true" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-check2-square me-2"></i> Adjusted Trial Balance
                 </NavLink>
+
                 <NavLink href="/reports/worksheet" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-grid-3x3 me-2"></i> Worksheet
                 </NavLink>
+
                 <NavLink href="/reports/income-statement" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-graph-up-arrow me-2"></i> Income Statement
                 </NavLink>
+
                 <NavLink href="/reports/retained-earnings" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-pie-chart me-2"></i> Retained Earnings
                 </NavLink>
+
                 <NavLink href="/reports/statement-of-financial-position" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-bank me-2"></i> Financial Position
                 </NavLink>
+
                 <NavLink href="/reports/closing-journal" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-journal-check me-2"></i> Closing Journal
                 </NavLink>
+
                 <NavLink href="/reports/post-closing-trial-balance" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-card-checklist me-2"></i> Post-Closing TB
                 </NavLink>
+
                 <NavLink href="/reports/cash-flow" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
                     <i class="bi bi-currency-dollar me-2"></i> Cash Flow
                 </NavLink>
+
             </div>
         </div>
     }
+
 </div>
