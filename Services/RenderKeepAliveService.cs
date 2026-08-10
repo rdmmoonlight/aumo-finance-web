@@ -1,4 +1,3 @@
-```csharp
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -130,4 +129,3 @@ public class RenderKeepAliveService : BackgroundService
         );
     }
 }
-```
