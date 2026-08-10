@@ -1,22 +1,27 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 
+<!-- ==========================================
+     Aumo Finance - Main Layout
+     Cosmic / Nebula Theme
+     ========================================== -->
+
 <div class="d-flex flex-column min-vh-100 min-vw-0 aumo-main-shell">
 
-    <!-- TOPBAR -->
+    <!-- TOPBAR (Cukup dipanggil tanpa @rendermode tambahan) -->
     <AuthorizeView>
         <Authorized>
-            <AumoFinance.Components.Layout.TopBar @rendermode="InteractiveServer" />
+            <AumoFinance.Components.Layout.TopBar />
         </Authorized>
     </AuthorizeView>
 
     <!-- SHELL UTAMA -->
     <div class="d-flex flex-grow-1 overflow-hidden position-relative">
         
-        <!-- SIDEBAR (Memanggil Sidebar.razor) -->
-        <AumoFinance.Components.Layout.Sidebar @rendermode="InteractiveServer" />
+        <!-- SIDEBAR (Cukup dipanggil tanpa @rendermode tambahan) -->
+        <AumoFinance.Components.Layout.Sidebar />
 
-        <!-- MAIN CONTENT AREA (Diberi margin-left 60px agar tidak tertutup sidebar absolute) -->
+        <!-- MAIN CONTENT AREA -->
         <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto d-flex flex-column" style="margin-left: 60px;" role="main">
             @Body
         </main>
@@ -24,3 +29,19 @@
     </div>
 
 </div>
+
+<style>
+    body {
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .content { 
+        transition: background-color 0.3s ease;
+    }
+
+    @@media (max-width: 767.98px) {
+        #mainContent {
+            padding: 0.75rem 0.5rem !important;
+        }
+    }
+</style>
