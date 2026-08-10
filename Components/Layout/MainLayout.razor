@@ -6,13 +6,22 @@
      Cosmic / Nebula Theme
      ========================================== -->
 
-<div class="d-flex flex-column flex-grow-1 min-vw-0 aumo-main-shell">
+<!-- Tambahan 'min-vh-100' memastikan background/layout memenuhi tinggi layar 100% -->
+<div class="d-flex flex-column flex-grow-1 min-vh-100 min-vw-0 aumo-main-shell">
 
     <AuthorizeView>
         <Authorized>
             <!-- TopBar hanya muncul jika SUDAH Login -->
             <TopBar />
         </Authorized>
+        <Authorizing>
+            <!-- Opsional: Merender elemen ini saat aplikasi sedang mengecek cookie/sesi -->
+            <!-- Bisa diisi teks atau dibiarkan kosong agar layout tetap stabil -->
+        </Authorizing>
+        <NotAuthorized>
+            <!-- Elemen untuk user yang BELUM Login (Guest) -->
+            <!-- Dibiarkan kosong agar halaman seperti Login/Register hanya menampilkan @Body -->
+        </NotAuthorized>
     </AuthorizeView>
 
     <!-- Main Content Area -->
