@@ -1,0 +1,79 @@
+/* Glassmorphism & Neon Border */
+.topbar-glass {
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+[data-bs-theme="light"] .topbar-glass {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Sub-bar Status Strip */
+.status-strip {
+    background: rgba(10, 15, 28, 0.6) !important;
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+[data-bs-theme="light"] .status-strip {
+    background: rgba(248, 250, 252, 0.9) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Brand Accent Light */
+.brand-glow {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: 0.5px;
+}
+
+/* Glowing Status Badge */
+.status-badge {
+    font-family: 'Space Grotesk', monospace;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+/* Live Pulsing Dot Indicator */
+.pulse-dot-green {
+    width: 6px;
+    height: 6px;
+    background-color: #10b981;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Sync Spin Animation */
+.icon-spin {
+    display: inline-block;
+    animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Smooth Hover Buttons */
+.topbar-btn {
+    transition: all 0.2s ease;
+    border-radius: 6px;
+}
+.topbar-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f59e0b !important;
+}
