@@ -1,101 +1,198 @@
+```css
 /* ==========================================
    Aumo Finance - Theme (Cosmic/Nebula)
    Color palette + typography overrides
    ========================================== */
 
-/* ---------- Dark Mode (Default) ---------- */
+/* ---------- Dark Mode (Default / Nebula) ---------- */
 :root,
 [data-bs-theme="dark"] {
-  /* Base surfaces */
-  --bs-body-bg: #0D1117;
-  --bs-body-bg-rgb: 13, 17, 23;
-  --bs-tertiary-bg: #161B22;
-  --bs-tertiary-bg-rgb: 22, 27, 34;
-  --bs-secondary-bg: #161B22;
-  --bs-secondary-bg-rgb: 22, 27, 34;
-  --bs-body-color: #FFFFFF;
-  --bs-body-color-rgb: 255, 255, 255;
-  --bs-secondary-color: #CBD5E1;
-  --bs-border-color: #2A313C;
+    /* Base surfaces */
+    --bs-body-bg: #0D1117;
+    --bs-body-bg-rgb: 13, 17, 23;
 
-  /* Brand palette */
-  --bs-primary: #3B82F6;
-  --bs-primary-rgb: 59, 130, 246;
-  --bs-secondary: #7C3AED;
-  --bs-secondary-rgb: 124, 58, 237;
-  --bs-success: #22C55E;
-  --bs-success-rgb: 34, 197, 94;
-  --bs-warning: #F59E0B;
-  --bs-warning-rgb: 245, 158, 11;
-  --bs-danger: #EF4444;
-  --bs-danger-rgb: 239, 68, 68;
-  --bs-info: #00C2FF;
-  --bs-info-rgb: 0, 194, 255;
+    --bs-tertiary-bg: #161B22;
+    --bs-tertiary-bg-rgb: 22, 27, 34;
 
-  --bs-link-color: #3B82F6;
-  --bs-link-hover-color: #00C2FF;
+    --bs-secondary-bg: #161B22;
+    --bs-secondary-bg-rgb: 22, 27, 34;
 
-  /* Custom tokens for direct use */
-  --aumo-bg: #0D1117;
-  --aumo-surface: #161B22;
-  --aumo-primary: #3B82F6;
-  --aumo-secondary: #7C3AED;
-  --aumo-accent: #00C2FF;
-  --aumo-success: #22C55E;
-  --aumo-warning: #F59E0B;
-  --aumo-error: #EF4444;
-  --aumo-text: #FFFFFF;
-  --aumo-text-muted: #CBD5E1;
+    --bs-body-color: #FFFFFF;
+    --bs-body-color-rgb: 255, 255, 255;
 
-  --font-heading: "Space Grotesk", sans-serif;
-  --font-body: "Inter", sans-serif;
+    --bs-secondary-color: #CBD5E1;
+    --bs-secondary-color-rgb: 203, 213, 225;
+
+    --bs-border-color: #2A313C;
+
+    /* Brand palette */
+    --bs-primary: #3B82F6;
+    --bs-primary-rgb: 59, 130, 246;
+
+    --bs-secondary: #7C3AED;
+    --bs-secondary-rgb: 124, 58, 237;
+
+    --bs-success: #22C55E;
+    --bs-success-rgb: 34, 197, 94;
+
+    --bs-warning: #F59E0B;
+    --bs-warning-rgb: 245, 158, 11;
+
+    --bs-danger: #EF4444;
+    --bs-danger-rgb: 239, 68, 68;
+
+    --bs-info: #00C2FF;
+    --bs-info-rgb: 0, 194, 255;
+
+    --bs-link-color: #3B82F6;
+    --bs-link-hover-color: #00C2FF;
+
+    /* Aumo / Nebula custom tokens */
+    --aumo-bg: #0D1117;
+    --aumo-surface: #161B22;
+
+    --aumo-primary: #3B82F6;
+    --aumo-secondary: #7C3AED;
+    --aumo-accent: #00C2FF;
+
+    --aumo-success: #22C55E;
+    --aumo-warning: #F59E0B;
+    --aumo-error: #EF4444;
+
+    --aumo-text: #FFFFFF;
+    --aumo-text-muted: #CBD5E1;
+
+    --aumo-border: #2A313C;
+
+    /* Typography */
+    --font-heading: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
 }
 
-/* ---------- Light Mode Overrides ---------- */
+
+/* ---------- Light Mode ---------- */
 [data-bs-theme="light"] {
-  /* Base surfaces */
-  --bs-body-bg: #F8FAFC;
-  --bs-body-bg-rgb: 248, 250, 252;
-  --bs-tertiary-bg: #FFFFFF;
-  --bs-tertiary-bg-rgb: 255, 255, 255;
-  --bs-secondary-bg: #F1F5F9;
-  --bs-secondary-bg-rgb: 241, 245, 249;
-  --bs-body-color: #0F172A;
-  --bs-body-color-rgb: 15, 23, 42;
-  --bs-secondary-color: #475569;
-  --bs-border-color: #E2E8F0;
+    /* Base surfaces */
+    --bs-body-bg: #F8FAFC;
+    --bs-body-bg-rgb: 248, 250, 252;
 
-  /* Custom tokens */
-  --aumo-bg: #F8FAFC;
-  --aumo-surface: #FFFFFF;
-  --aumo-text: #0F172A;
-  --aumo-text-muted: #64748B;
+    --bs-tertiary-bg: #FFFFFF;
+    --bs-tertiary-bg-rgb: 255, 255, 255;
+
+    --bs-secondary-bg: #F1F5F9;
+    --bs-secondary-bg-rgb: 241, 245, 249;
+
+    --bs-body-color: #0F172A;
+    --bs-body-color-rgb: 15, 23, 42;
+
+    --bs-secondary-color: #475569;
+    --bs-secondary-color-rgb: 71, 85, 105;
+
+    --bs-border-color: #E2E8F0;
+
+    /* Brand palette */
+    --bs-primary: #2563EB;
+    --bs-primary-rgb: 37, 99, 235;
+
+    --bs-secondary: #6D28D9;
+    --bs-secondary-rgb: 109, 40, 217;
+
+    --bs-success: #16A34A;
+    --bs-success-rgb: 22, 163, 74;
+
+    --bs-warning: #D97706;
+    --bs-warning-rgb: 217, 119, 6;
+
+    --bs-danger: #DC2626;
+    --bs-danger-rgb: 220, 38, 38;
+
+    --bs-info: #0891B2;
+    --bs-info-rgb: 8, 145, 178;
+
+    --bs-link-color: #2563EB;
+    --bs-link-hover-color: #0891B2;
+
+    /* Aumo custom tokens */
+    --aumo-bg: #F8FAFC;
+    --aumo-surface: #FFFFFF;
+
+    --aumo-primary: #2563EB;
+    --aumo-secondary: #6D28D9;
+    --aumo-accent: #0891B2;
+
+    --aumo-success: #16A34A;
+    --aumo-warning: #D97706;
+    --aumo-error: #DC2626;
+
+    --aumo-text: #0F172A;
+    --aumo-text-muted: #64748B;
+
+    --aumo-border: #E2E8F0;
 }
 
-/* ---------- Typography ---------- */
+
+/* ---------- Global Typography ---------- */
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+}
 
 body {
-  font-family: var(--font-body);
-  background-color: var(--aumo-bg) !important;
-  color: var(--aumo-text) !important;
+    font-family: var(--font-body);
+    background-color: var(--aumo-bg) !important;
+    color: var(--aumo-text) !important;
 }
 
-h1, h2, h3, h4, h5, h6,
-.h1, .h2, .h3, .h4, .h5, .h6,
+
+/* ---------- Headings ---------- */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6,
 .navbar-brand,
 .card-title,
 .dashboard-title,
 .security-score {
-  font-family: var(--font-heading);
+    font-family: var(--font-heading);
 }
 
-table, th, td,
-.form-control, .form-select, .form-label,
+
+/* ---------- Body Typography ---------- */
+
+table,
+th,
+td,
+.form-control,
+.form-select,
+.form-label,
 .list-group-item,
 .nav-link,
 .btn {
-  font-family: var(--font-body);
+    font-family: var(--font-body);
 }
+
+
+/* ---------- Application Shell ---------- */
+
+html,
+body,
+#app {
+    background-color: var(--aumo-bg);
+    color: var(--aumo-text);
+}
+
 
 /* ---------- Surfaces ---------- */
 
@@ -104,108 +201,151 @@ table, th, td,
 .modal-content,
 .dropdown-menu,
 .offcanvas {
-  background-color: var(--aumo-surface) !important;
-  border-color: var(--bs-border-color) !important;
-  color: var(--aumo-text) !important;
+    background-color: var(--aumo-surface) !important;
+    border-color: var(--aumo-border) !important;
+    color: var(--aumo-text) !important;
 }
 
+
+/* ---------- Sidebar ---------- */
+
 .sidebar-icons {
-  background-color: var(--aumo-bg) !important;
-  border-right: 1px solid var(--bs-border-color);
+    background-color: var(--aumo-bg) !important;
+    border-right: 1px solid var(--aumo-border);
 }
 
 .sidebar-flyout {
-  background-color: var(--aumo-surface) !important;
+    background-color: var(--aumo-surface) !important;
+    border-color: var(--aumo-border) !important;
 }
 
+
+/* ---------- Tables ---------- */
+
 .table {
-  --bs-table-bg: var(--aumo-surface);
-  --bs-table-color: var(--aumo-text);
-  --bs-table-border-color: var(--bs-border-color);
+    --bs-table-bg: var(--aumo-surface);
+    --bs-table-color: var(--aumo-text);
+    --bs-table-border-color: var(--aumo-border);
 }
+
 
 /* ---------- Form Controls ---------- */
 
 .form-control,
 .form-select,
 .input-group-text {
-  background-color: var(--aumo-bg) !important;
-  border-color: var(--bs-border-color) !important;
-  color: var(--aumo-text) !important;
+    background-color: var(--aumo-bg) !important;
+    border-color: var(--aumo-border) !important;
+    color: var(--aumo-text) !important;
 }
 
 .form-control::placeholder {
-  color: var(--aumo-text-muted) !important;
-  opacity: 0.7;
+    color: var(--aumo-text-muted) !important;
+    opacity: 0.7;
 }
 
 .form-control:focus,
 .form-select:focus {
-  background-color: var(--aumo-bg) !important;
-  border-color: var(--aumo-primary) !important;
-  color: var(--aumo-text) !important;
-  box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+    background-color: var(--aumo-bg) !important;
+    border-color: var(--aumo-primary) !important;
+    color: var(--aumo-text) !important;
+
+    box-shadow:
+        0 0 0 0.25rem
+        rgba(59, 130, 246, 0.25) !important;
 }
 
-/* Fix Chrome/Edge Browser Auto-Fill Background Override */
+
+/* ---------- Browser Autofill ---------- */
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: var(--aumo-text) !important;
-  transition: background-color 5000s ease-in-out 0s;
-  box-shadow: inset 0 0 20px 20px var(--aumo-bg) !important;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: var(--aumo-text) !important;
+
+    transition:
+        background-color 5000s ease-in-out 0s;
+
+    box-shadow:
+        inset 0 0 20px 20px var(--aumo-bg) !important;
 }
+
 
 /* ---------- Buttons ---------- */
 
 .btn-primary {
-  background-color: var(--aumo-primary);
-  border-color: var(--aumo-primary);
-  color: #FFFFFF;
+    background-color: var(--aumo-primary);
+    border-color: var(--aumo-primary);
+    color: #FFFFFF;
 }
 
 .btn-secondary {
-  background-color: var(--aumo-secondary);
-  border-color: var(--aumo-secondary);
-  color: #FFFFFF;
+    background-color: var(--aumo-secondary);
+    border-color: var(--aumo-secondary);
+    color: #FFFFFF;
 }
 
 .btn-success {
-  background-color: var(--aumo-success);
-  border-color: var(--aumo-success);
-  color: #FFFFFF;
+    background-color: var(--aumo-success);
+    border-color: var(--aumo-success);
+    color: #FFFFFF;
 }
 
 .btn-warning {
-  background-color: var(--aumo-warning);
-  border-color: var(--aumo-warning);
-  color: #0D1117;
+    background-color: var(--aumo-warning);
+    border-color: var(--aumo-warning);
+    color: #0D1117;
 }
 
 .btn-danger {
-  background-color: var(--aumo-error);
-  border-color: var(--aumo-error);
-  color: #FFFFFF;
+    background-color: var(--aumo-error);
+    border-color: var(--aumo-error);
+    color: #FFFFFF;
 }
 
 .btn-info {
-  background-color: var(--aumo-accent);
-  border-color: var(--aumo-accent);
-  color: #0D1117;
+    background-color: var(--aumo-accent);
+    border-color: var(--aumo-accent);
+    color: #0D1117;
 }
+
+
+/* ---------- Muted Text ---------- */
 
 .text-muted,
 .form-floating > .form-control-plaintext::placeholder,
 .form-floating > .form-control::placeholder {
-  color: var(--aumo-text-muted) !important;
+    color: var(--aumo-text-muted) !important;
 }
 
+
+/* ---------- Links ---------- */
+
 a {
-  color: var(--bs-link-color);
+    color: var(--bs-link-color);
 }
 
 a:hover {
-  color: var(--bs-link-hover-color);
+    color: var(--bs-link-hover-color);
 }
+
+
+/* ---------- Nebula Dark Explicit Overrides ---------- */
+
+[data-bs-theme="dark"] body,
+[data-bs-theme="dark"] #app {
+    background-color: #0D1117 !important;
+    color: #FFFFFF !important;
+}
+
+
+/* ---------- Nebula Light Explicit Overrides ---------- */
+
+[data-bs-theme="light"] body,
+[data-bs-theme="light"] #app {
+    background-color: #F8FAFC !important;
+    color: #0F172A !important;
+}
+```

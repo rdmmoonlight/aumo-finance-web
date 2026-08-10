@@ -1,139 +1,322 @@
+```css
+/* ==========================================
+   Aumo Finance - Global Site Styles
+   Cosmic / Nebula Theme Compatible
+   ========================================== */
+
+
+/* ==========================================
+   HTML & BODY
+   ========================================== */
+
 html {
-  font-size: 14px;
-  position: relative;
-  min-height: 100%;
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
 }
 
 body {
-  margin-bottom: 60px;
+    margin: 0;
+    margin-bottom: 60px;
+
+    background-color: var(--aumo-bg) !important;
+    color: var(--aumo-text) !important;
 }
 
-.btn:focus, 
-.btn:active:focus, 
-.btn-link.nav-link:focus, 
-.form-control:focus, 
+
+/* ==========================================
+   APPLICATION ROOT
+   ========================================== */
+
+#app {
+    min-height: 100vh;
+
+    background-color: var(--aumo-bg) !important;
+    color: var(--aumo-text) !important;
+}
+
+
+/* ==========================================
+   FOCUS STATES
+   ========================================== */
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
 .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    box-shadow:
+        0 0 0 0.1rem var(--aumo-bg),
+        0 0 0 0.25rem var(--aumo-primary);
 }
 
-.form-floating > .form-control-plaintext::placeholder, 
+
+/* ==========================================
+   FORM FLOATING PLACEHOLDERS
+   ========================================== */
+
+.form-floating > .form-control-plaintext::placeholder,
 .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+    color: var(--bs-secondary-color);
+    text-align: end;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, 
+.form-floating > .form-control-plaintext:focus::placeholder,
 .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+    text-align: start;
 }
 
-/* =====================================
-   AumoFinance Custom Font & Color Theme
-   ===================================== */
 
-/* Warna Teks Utama & Sub-teks Dashboard */
+/* ==========================================
+   AUMO FINANCE CUSTOM FONT & COLOR THEME
+   ========================================== */
+
+
+/* ---------- Glass Card Text ---------- */
+
 .card.glass-card {
-  color: #f8fafc !important; /* Warna teks utama terang */
+    color: var(--aumo-text) !important;
 }
 
-/* Judul Card & Heading */
-.card.glass-card h4, 
-.card.glass-card h5, 
+
+/* ---------- Glass Card Headings ---------- */
+
+.card.glass-card h4,
+.card.glass-card h5,
 .card.glass-card h6 {
-  color: #ffffff !important;
+    color: var(--aumo-text) !important;
 }
 
-/* Sub-teks & Label Kecil (Ganti abu-abu gelap bawaan Bootstrap) */
+
+/* ---------- Glass Card Secondary Text ---------- */
+
 .card.glass-card .text-secondary,
 .card.glass-card .fs-8 {
-  color: #94a3b8 !important; /* Abu-abu terang netral */
+    color: var(--aumo-text-muted) !important;
 }
 
-/* Header Table & Isinya */
+
+/* ---------- Glass Card Tables ---------- */
+
 .card.glass-card table thead th {
-  color: #64748b !important;
+    color: var(--aumo-text-muted) !important;
 }
 
 .card.glass-card table tbody td {
-  color: #e2e8f0 !important;
+    color: var(--aumo-text) !important;
 }
 
-/* Gaya Khusus Health Circle Score */
+
+/* ---------- Health Circle Score ---------- */
+
 .health-circle .text-body {
-  color: #ffffff !important;
+    color: var(--aumo-text) !important;
 }
 
-/* Animasi Pulse Dot */
+
+/* ==========================================
+   ANIMATION - PULSE DOT
+   ========================================== */
+
 .pulse-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #10b981;
-  border-radius: 50%;
-  display: inline-block;
-  box-shadow: 0 0 8px #10b981;
+    width: 8px;
+    height: 8px;
+
+    background-color: var(--aumo-success);
+
+    border-radius: 50%;
+
+    display: inline-block;
+
+    box-shadow:
+        0 0 8px var(--aumo-success);
 }
 
-/* =====================================
-   SIDEBAR & FLYOUT NAVIGATION STYLES
-   ===================================== */
+
+/* ==========================================
+   SIDEBAR & FLYOUT NAVIGATION
+   ========================================== */
 
 .sidebar-wrapper {
-  position: relative;
-  height: 100vh;
-  z-index: 1040;
+    position: relative;
+
+    height: 100vh;
+
+    z-index: 1040;
 }
 
-/* Navigasi Ikon (Sisi Kiri Utama) */
+
+/* ==========================================
+   MAIN ICON SIDEBAR
+   ========================================== */
+
 .sidebar-icons {
-  width: 60px;
-  min-width: 60px;
-  background-color: #1e293b; /* Dark Slate background */
-  height: 100%;
-  z-index: 1045;
+    width: 60px;
+    min-width: 60px;
+
+    height: 100%;
+
+    background-color: var(--aumo-bg) !important;
+
+    border-right: 1px solid var(--aumo-border);
+
+    z-index: 1045;
 }
+
+
+/* ---------- Sidebar Icon Button ---------- */
 
 .sidebar-icons .icon-btn {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  transition: all 0.2s ease-in-out;
+    width: 44px;
+    height: 44px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    transition:
+        background-color 0.2s ease-in-out,
+        color 0.2s ease-in-out,
+        transform 0.2s ease-in-out;
 }
+
+
+/* ---------- Sidebar Icon Hover / Active ---------- */
 
 .sidebar-icons .icon-btn:hover,
 .sidebar-icons .icon-btn.active {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #f59e0b !important; /* Warning Amber */
+    background-color: rgba(255, 255, 255, 0.10);
+
+    color: var(--aumo-accent) !important;
 }
 
-/* Panel Flyout Reports (Melayang di Samping Ikon Sidebar) */
+
+/* ==========================================
+   SIDEBAR FLYOUT
+   ========================================== */
+
 .sidebar-flyout {
-  position: absolute;
-  top: 0;
-  left: 60px; /* Lebar dari .sidebar-icons */
-  height: 100vh;
-  width: 280px;
-  z-index: 1040;
-  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.4);
-  overflow-y: auto;
-  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    position: absolute;
+
+    top: 0;
+    left: 60px;
+
+    height: 100vh;
+    width: 280px;
+
+    z-index: 1040;
+
+    background-color: var(--aumo-surface) !important;
+
+    border-left: 1px solid var(--aumo-border);
+    border-right: 1px solid var(--aumo-border);
+
+    color: var(--aumo-text) !important;
+
+    box-shadow:
+        4px 0 15px rgba(0, 0, 0, 0.40);
+
+    overflow-y: auto;
+
+    transition:
+        opacity 0.2s ease-in-out,
+        transform 0.2s ease-in-out;
 }
 
-/* Hover effect untuk item di dalam flyout */
+
+/* ==========================================
+   SIDEBAR FLYOUT ITEMS
+   ========================================== */
+
 .sidebar-flyout .list-group-item {
-  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+    background-color: transparent !important;
+
+    border-color: var(--aumo-border) !important;
+
+    color: var(--aumo-text) !important;
+
+    transition:
+        background-color 0.15s ease-in-out,
+        color 0.15s ease-in-out;
 }
+
+
+/* ---------- Flyout Hover / Active ---------- */
 
 .sidebar-flyout .list-group-item:hover,
 .sidebar-flyout .list-group-item.active {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  color: #f59e0b !important;
+    background-color: rgba(255, 255, 255, 0.10) !important;
+
+    color: var(--aumo-accent) !important;
 }
+
+
+/* ==========================================
+   NEBULA DARK MODE
+   ========================================== */
+
+[data-bs-theme="dark"] body,
+[data-bs-theme="dark"] #app {
+    background-color: #0D1117 !important;
+    color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .sidebar-icons {
+    background-color: #0D1117 !important;
+    border-color: #2A313C !important;
+}
+
+[data-bs-theme="dark"] .sidebar-flyout {
+    background-color: #161B22 !important;
+    border-color: #2A313C !important;
+}
+
+
+/* ==========================================
+   NEBULA LIGHT MODE
+   ========================================== */
+
+[data-bs-theme="light"] body,
+[data-bs-theme="light"] #app {
+    background-color: #F8FAFC !important;
+    color: #0F172A !important;
+}
+
+[data-bs-theme="light"] .sidebar-icons {
+    background-color: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+}
+
+[data-bs-theme="light"] .sidebar-flyout {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+}
+
+
+/* ==========================================
+   LIGHT MODE SIDEBAR INTERACTION
+   ========================================== */
+
+[data-bs-theme="light"] .sidebar-icons .icon-btn:hover,
+[data-bs-theme="light"] .sidebar-icons .icon-btn.active {
+    background-color: rgba(15, 23, 42, 0.08);
+
+    color: var(--aumo-primary) !important;
+}
+
+[data-bs-theme="light"] .sidebar-flyout .list-group-item:hover,
+[data-bs-theme="light"] .sidebar-flyout .list-group-item.active {
+    background-color: rgba(15, 23, 42, 0.08) !important;
+
+    color: var(--aumo-primary) !important;
+}
+```
