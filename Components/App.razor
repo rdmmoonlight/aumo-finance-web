@@ -1,127 +1,66 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en-US" data-bs-theme="dark">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <base href="/" />
 
-    <!-- ==========================================
-         Instant Theme Loader
-         MUST execute before any theme-dependent CSS
-         ========================================== -->
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
 
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Aumo Theme Styles -->
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/guardian.css" />
+    <link rel="stylesheet" href="AumoFinance.styles.css" />
+
+    <!-- Instant Theme Loader (Mencegah Layar Kedip Saat Load) -->
     <script>
-        (function () {
-            const savedTheme = localStorage.getItem('aumo_theme');
-
-            const theme =
-                savedTheme === 'light' || savedTheme === 'dark'
-                    ? savedTheme
-                    : 'dark';
-
-            document.documentElement.setAttribute(
-                'data-bs-theme',
-                theme
-            );
+        (function() {
+            const savedTheme = localStorage.getItem('aumo_theme') || 'dark';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
         })();
     </script>
 
-
-    <!-- ==========================================
-         CSS Dependencies
-         ========================================== -->
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
-
-
-    <!-- ==========================================
-         Fonts
-         ========================================== -->
-
-    <link rel="preconnect"
-          href="https://fonts.googleapis.com" />
-
-    <link rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossorigin />
-
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet" />
-
-
-    <!-- ==========================================
-         Aumo Finance Theme
-         ========================================== -->
-
-    <link rel="stylesheet"
-          href="css/theme.css" />
-
-    <link rel="stylesheet"
-          href="css/guardian.css" />
-
-    <!-- Blazor CSS Isolation -->
-    <link rel="stylesheet"
-          href="AumoFinance.styles.css" />
-
-
-    <HeadOutlet />
+    <!-- Aktifkan Interaktivitas untuk Meta Head -->
+    <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
-    <Routes />
+    <!-- Aktifkan Interaktivitas untuk Router Utama -->
+    <Routes @rendermode="InteractiveServer" />
 
-    <!-- ==========================================
-         JavaScript Dependencies
-         ========================================== -->
+    <!-- UI Penanganan Error Blazor -->
+    <div id="blazor-error-ui" class="alert alert-danger fixed-bottom m-3 d-none" role="alert">
+        An unhandled error has occurred.
+        <a href="" class="reload link-primary">Reload</a>
+        <a class="dismiss link-secondary">🗙</a>
+    </div>
 
+    <!-- JS Dependencies -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-
-    <!-- ==========================================
-         Aumo Finance Theme Controller
-         ========================================== -->
-
+    <!-- Global Theme Controller Function (Langsung Didaftarkan ke Window) -->
     <script>
-        window.setAppTheme = function (themeName) {
-            const theme =
-                themeName === 'light'
-                    ? 'light'
-                    : 'dark';
-
-            document.documentElement.setAttribute(
-                'data-bs-theme',
-                theme
-            );
-
-            localStorage.setItem(
-                'aumo_theme',
-                theme
-            );
+        window.setAppTheme = function(themeName) {
+            document.documentElement.setAttribute('data-bs-theme', themeName);
+            localStorage.setItem('aumo_theme', themeName);
         };
     </script>
 
-
-    <!-- ==========================================
-         Aumo Finance Scripts
-         ========================================== -->
-
-    <script src="js/quran-banner.js"></script>
-
-    <script src="js/guardian.js"></script>
-
-
-    <!-- ==========================================
-         Blazor Web App
-         ========================================== -->
-
+    <!-- Framework Blazor Core -->
     <script src="_framework/blazor.web.js"></script>
+
+    <!-- Custom Scripts (Di-load setelah Blazor siap) -->
+    <script src="js/quran-banner.js"></script>
+    <script src="js/guardian.js"></script>
 </body>
 
 </html>
