@@ -1,4 +1,3 @@
-```csharp
 using System.Text;
 using AumoFinance.Components;
 using AumoFinance.Controllers.Api;
@@ -330,4 +329,3 @@ app.MapRazorComponents<App>()
 // =====================================
 
 app.Run();
-```
