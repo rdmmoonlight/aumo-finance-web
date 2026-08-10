@@ -42,8 +42,8 @@ namespace AumoFinance.Components.Layout
                         hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);
                         isViewingClosed = activePeriodObj.IsClosed;
                         periodText = hasActivePeriod ? activePeriodName : "No Period Selected";
-                        iconClass = !hasActivePeriod 
-                            ? "bi-calendar-x text-warning" 
+                        iconClass = !hasActivePeriod
+                            ? "bi-calendar-x text-warning"
                             : (isViewingClosed ? "bi-lock-fill text-secondary" : "bi-calendar2-check text-success");
                     }
                 }
