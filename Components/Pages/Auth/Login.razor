@@ -136,8 +136,9 @@
     [SupplyParameterFromQuery(Name = "infoMessage")]
     private string? QueryInfoMessage { get; set; }
 
+    // HAPUS '= new();' DI SINI UNTUK MEMPERBAIKI ERROR BL0008
     [SupplyParameterFromForm]
-    private LoginInputModel Input { get; set; } = new();
+    private LoginInputModel Input { get; set; } = default!;
 
     private string? successMessage;
     private string? errorMessage;
@@ -145,7 +146,8 @@
 
     protected override void OnInitialized()
     {
-        Input ??= new();
+        // Inisialisasi aman dilakukan di sini
+        Input ??= new LoginInputModel();
 
         successMessage = QuerySuccessMessage ?? QueryMessage;
         errorMessage = QueryErrorMessage;
