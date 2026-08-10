@@ -2,6 +2,7 @@
 @using System.ComponentModel.DataAnnotations
 @using AumoFinance.Models
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Forms
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager Navigation
@@ -9,105 +10,115 @@
 
 <PageTitle>Sign In - Aumo Finance</PageTitle>
 
-<div class="container py-5 my-auto">
-    <div class="row justify-content-center">
-        <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 text-center">
-            
-            <!-- Card menggunakan var(--aumo-surface) bawaan CSS kamu -->
-            <div class="card border rounded-4 text-start p-4 p-md-5 shadow-lg" style="background-color: var(--aumo-surface); border-color: var(--bs-border-color) !important;">
-                <div class="card-body p-0">
-                    
-                    <!-- Icon Badge -->
-                    <div class="text-center mb-3">
-                        <div class="d-inline-block p-3 rounded-circle" style="background-color: rgba(59, 130, 246, 0.15); color: var(--aumo-primary);">
-                            <i class="bi bi-shield-lock-fill display-5 lh-1"></i>
-                        </div>
-                    </div>
-
-                    <!-- Title & Subtitle -->
-                    <div class="text-center mb-4">
-                        <h2 class="fw-bold mb-1 tracking-tight" style="color: var(--aumo-text); font-family: var(--font-heading);">
-                            Sign In
-                        </h2>
-                        <p class="small mb-0" style="color: var(--aumo-text-muted);">
-                            Access your financial dashboard
-                        </p>
-                    </div>
-
-                    <!-- Alert Messages -->
-                    @if (!string.IsNullOrEmpty(successMessage))
-                    {
-                        <div class="alert alert-success py-2 px-3 small rounded-3 mb-3" role="alert">
-                            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
-                        </div>
-                    }
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
-                        </div>
-                    }
-                    @if (!string.IsNullOrEmpty(infoMessage))
-                    {
-                        <div class="alert alert-info py-2 px-3 small rounded-3 mb-3" role="alert">
-                            <i class="bi bi-info-circle-fill me-2"></i>@infoMessage
-                        </div>
-                    }
-
-                    <!-- Login Form -->
-                    <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
-                        <DataAnnotationsValidator />
-                        <ValidationSummary class="text-danger small mb-3" />
-
-                        <!-- Email Input -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium" style="color: var(--aumo-text-muted);">Email Address</label>
-                            <div class="input-group">
-                                <span class="input-group-text border-end-0" style="background-color: var(--aumo-bg); border-color: var(--bs-border-color); color: var(--aumo-text-muted);">
-                                    <i class="bi bi-envelope"></i>
-                                </span>
-                                <InputText class="form-control border-start-0 ps-0 text-white" style="background-color: var(--aumo-bg); border-color: var(--bs-border-color);" @bind-Value="Input.Email" placeholder="name@example.com" />
+<div class="d-flex align-items-center justify-content-center min-vh-100 w-100 py-5" style="background-color: var(--aumo-bg, #0D1117);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 text-start">
+                
+                <!-- Card Container dengan Variable CSS Fallback -->
+                <div class="card border rounded-4 p-4 p-md-5 shadow-lg" 
+                     style="background-color: var(--aumo-surface, #161B22); border-color: var(--bs-border-color, #2A313C) !important;">
+                    <div class="card-body p-0">
+                        
+                        <!-- Icon Badge -->
+                        <div class="text-center mb-3">
+                            <div class="d-inline-block p-3 rounded-circle" style="background-color: rgba(59, 130, 246, 0.15); color: var(--aumo-primary, #3B82F6);">
+                                <i class="bi bi-shield-lock-fill display-5 lh-1"></i>
                             </div>
-                            <ValidationMessage For="() => Input.Email" class="text-danger small mt-1" />
                         </div>
 
-                        <!-- Password Input -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-medium" style="color: var(--aumo-text-muted);">Password</label>
-                            <div class="input-group">
-                                <span class="input-group-text border-end-0" style="background-color: var(--aumo-bg); border-color: var(--bs-border-color); color: var(--aumo-text-muted);">
-                                    <i class="bi bi-lock"></i>
-                                </span>
-                                <InputText type="password" class="form-control border-start-0 ps-0 text-white" style="background-color: var(--aumo-bg); border-color: var(--bs-border-color);" @bind-Value="Input.Password" placeholder="••••••••" />
+                        <!-- Title & Subtitle -->
+                        <div class="text-center mb-4">
+                            <h2 class="fw-bold mb-1 tracking-tight" style="color: var(--aumo-text, #F8FAFC);">
+                                Sign In
+                            </h2>
+                            <p class="small mb-0" style="color: var(--aumo-text-muted, #94A3B8);">
+                                Access your financial dashboard
+                            </p>
+                        </div>
+
+                        <!-- Alert Messages -->
+                        @if (!string.IsNullOrEmpty(successMessage))
+                        {
+                            <div class="alert alert-success py-2 px-3 small rounded-3 mb-3" role="alert">
+                                <i class="bi bi-check-circle-fill me-2"></i>@successMessage
                             </div>
-                            <ValidationMessage For="() => Input.Password" class="text-danger small mt-1" />
+                        }
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>@errorMessage
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(infoMessage))
+                        {
+                            <div class="alert alert-info py-2 px-3 small rounded-3 mb-3" role="alert">
+                                <i class="bi bi-info-circle-fill me-2"></i>@infoMessage
+                            </div>
+                        }
+
+                        <!-- Login Form dengan Antiforgery & SSR Form Handler -->
+                        <EditForm Model="Input" OnValidSubmit="HandleLoginAsync" FormName="LoginForm" method="post">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger small mb-3" />
+
+                            <!-- Email Input -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium" style="color: var(--aumo-text-muted, #94A3B8);">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0" style="background-color: var(--aumo-bg, #0D1117); border-color: var(--bs-border-color, #2A313C); color: var(--aumo-text-muted, #94A3B8);">
+                                        <i class="bi bi-envelope"></i>
+                                    </span>
+                                    <InputText class="form-control border-start-0 ps-0 text-white" 
+                                               style="background-color: var(--aumo-bg, #0D1117); border-color: var(--bs-border-color, #2A313C);" 
+                                               @bind-Value="Input.Email" 
+                                               placeholder="name@example.com" />
+                                </div>
+                                <ValidationMessage For="() => Input.Email" class="text-danger small mt-1" />
+                            </div>
+
+                            <!-- Password Input -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium" style="color: var(--aumo-text-muted, #94A3B8);">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-end-0" style="background-color: var(--aumo-bg, #0D1117); border-color: var(--bs-border-color, #2A313C); color: var(--aumo-text-muted, #94A3B8);">
+                                        <i class="bi bi-lock"></i>
+                                    </span>
+                                    <InputText type="password" 
+                                               class="form-control border-start-0 ps-0 text-white" 
+                                               style="background-color: var(--aumo-bg, #0D1117); border-color: var(--bs-border-color, #2A313C);" 
+                                               @bind-Value="Input.Password" 
+                                               placeholder="••••••••" />
+                                </div>
+                                <ValidationMessage For="() => Input.Password" class="text-danger small mt-1" />
+                            </div>
+
+                            <!-- Remember Me -->
+                            <div class="mb-4 form-check">
+                                <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
+                                <label class="form-check-label small" for="rememberMe" style="color: var(--aumo-text-muted, #94A3B8);">
+                                    Remember me
+                                </label>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-pill fw-medium shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <span>Sign In</span>
+                                <i class="bi bi-arrow-right-short fs-5"></i>
+                            </button>
+                        </EditForm>
+
+                        <!-- Links -->
+                        <div class="mt-4 pt-3 text-center border-top" style="border-color: var(--bs-border-color, #2A313C) !important;">
+                            <a href="/auth/resend-verification" class="text-decoration-none small" style="color: var(--aumo-text-muted, #94A3B8);">
+                                Didn't receive verification email?
+                            </a>
                         </div>
 
-                        <!-- Remember Me -->
-                        <div class="mb-4 form-check">
-                            <InputCheckbox id="rememberMe" class="form-check-input" @bind-Value="Input.RememberMe" />
-                            <label class="form-check-label small" for="rememberMe" style="color: var(--aumo-text-muted);">
-                                Remember me
-                            </label>
-                        </div>
-
-                        <!-- Submit Button -->
-                        <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-pill fw-medium shadow-sm d-flex align-items-center justify-content-center gap-2">
-                            <span>Sign In</span>
-                            <i class="bi bi-arrow-right-short fs-5"></i>
-                        </button>
-                    </EditForm>
-
-                    <!-- Links -->
-                    <div class="mt-4 pt-3 text-center border-top" style="border-color: var(--bs-border-color) !important;">
-                        <a href="/auth/resend-verification" class="text-decoration-none small" style="color: var(--aumo-text-muted);">
-                            Didn't receive verification email?
-                        </a>
                     </div>
-
                 </div>
-            </div>
 
+            </div>
         </div>
     </div>
 </div>
@@ -126,7 +137,7 @@
     private string? QueryInfoMessage { get; set; }
 
     [SupplyParameterFromForm]
-    private LoginInputModel Input { get; set; } = default!;
+    private LoginInputModel Input { get; set; } = new();
 
     private string? successMessage;
     private string? errorMessage;
@@ -143,28 +154,36 @@
 
     private async Task HandleLoginAsync()
     {
-        var result = await SignInManager.PasswordSignInAsync(
-            Input.Email, 
-            Input.Password, 
-            Input.RememberMe, 
-            lockoutOnFailure: true);
+        try
+        {
+            var result = await SignInManager.PasswordSignInAsync(
+                Input.Email, 
+                Input.Password, 
+                Input.RememberMe, 
+                lockoutOnFailure: true);
 
-        if (result.Succeeded)
-        {
-            Logger.LogInformation("User logged in.");
-            Navigation.NavigateTo("/", forceLoad: true);
+            if (result.Succeeded)
+            {
+                Logger.LogInformation("User logged in successfully.");
+                Navigation.NavigateTo("/", forceLoad: true);
+            }
+            else if (result.RequiresTwoFactor)
+            {
+                Navigation.NavigateTo("/auth/login-2fa", forceLoad: true);
+            }
+            else if (result.IsLockedOut)
+            {
+                errorMessage = "This account has been locked out. Please try again later.";
+            }
+            else
+            {
+                errorMessage = "Invalid email or password.";
+            }
         }
-        else if (result.RequiresTwoFactor)
+        catch (Exception ex)
         {
-            Navigation.NavigateTo("/auth/login-2fa");
-        }
-        else if (result.IsLockedOut)
-        {
-            errorMessage = "This account has been locked out. Please try again later.";
-        }
-        else
-        {
-            errorMessage = "Invalid email or password.";
+            Logger.LogError(ex, "Error occurred during login attempt.");
+            errorMessage = "An error occurred while processing your request.";
         }
     }
 
