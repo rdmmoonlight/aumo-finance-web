@@ -126,7 +126,7 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
 // 5. BLAZOR CORE & API CONTROLLERS
 // =====================================
 
-builder.Services.AddControllers(); // Mendaftarkan routing Controller API
+builder.Services.AddControllers();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -143,7 +143,12 @@ builder.Services.AddHealthChecks();
 // Render Keep-Alive Service
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
+// --- EMAIL SERVICES REGISTRATION ---
 builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
+
+// Bridging Microsoft Identity's IEmailSender<TUser> to AumoFinance's IEmailSender
+builder.Services.AddTransient<IEmailSender<ApplicationUser>, IdentityEmailSenderBridge>();
+
 builder.Services.AddScoped<IGuardianService, GuardianService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IJournalImportService, JournalImportService>();
@@ -219,7 +224,7 @@ else
 
 app.UseStaticFiles();
 
-app.UseRouting(); // Memastikan routing internal ASP.NET Core berjalan presisi
+app.UseRouting();
 
 app.UseAntiforgery();
 
@@ -240,10 +245,8 @@ app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager)
     return Results.Redirect("/auth/login");
 });
 
-// Map Controller Endpoints
 app.MapControllers();
 
-// Map Blazor Components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
@@ -253,3 +256,65 @@ app.MapRazorComponents<App>()
 // =====================================
 
 app.Run();
+
+
+// =====================================
+// 12. IDENTITY EMAIL SENDER BRIDGE CLASS
+// =====================================
+
+/// <summary>
+/// Bridge class to map Microsoft Identity's IEmailSender&lt;ApplicationUser&gt; 
+/// to AumoFinance's custom IEmailSender service.
+/// </summary>
+public class IdentityEmailSenderBridge : IEmailSender<ApplicationUser>
+{
+    private readonly IEmailSender _emailSender;
+
+    public IdentityEmailSenderBridge(IEmailSender emailSender)
+    {
+        _emailSender = emailSender;
+    }
+
+    public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
+    {
+        var message = $"""
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>Confirm Your Email</h2>
+                <p>Hello {user.FullName ?? user.UserName},</p>
+                <p>Please confirm your account email by clicking the link below:</p>
+                <p><a href="{confirmationLink}" style="background-color: #0d6efd; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Confirm Email</a></p>
+                <br/>
+                <p>If you did not request this, please ignore this email.</p>
+            </div>
+            """;
+
+        return _emailSender.SendEmailAsync(email, "Confirm your email - Aumo Finance", message);
+    }
+
+    public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
+    {
+        var message = $"""
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>Reset Your Password</h2>
+                <p>Hello {user.FullName ?? user.UserName},</p>
+                <p>You can reset your password by clicking the link below:</p>
+                <p><a href="{resetLink}" style="background-color: #0d6efd; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Reset Password</a></p>
+            </div>
+            """;
+
+        return _emailSender.SendEmailAsync(email, "Reset your password - Aumo Finance", message);
+    }
+
+    public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
+    {
+        var message = $"""
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>Reset Password Code</h2>
+                <p>Hello {user.FullName ?? user.UserName},</p>
+                <p>Your password reset code is: <strong>{resetCode}</strong></p>
+            </div>
+            """;
+
+        return _emailSender.SendEmailAsync(email, "Password Reset Code - Aumo Finance", message);
+    }
+}
