@@ -1,6 +1,7 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Resend;
 
 namespace AumoFinance.Services
 {
@@ -17,7 +18,6 @@ namespace AumoFinance.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage, CancellationToken ct = default)
         {
-            // Read API Key supporting both appsettings.json (Resend:ApiKey) and Render Environment Variables (Resend__ApiKey)
             var apiKey = _configuration["Resend:ApiKey"] ?? _configuration["Resend__ApiKey"];
 
             if (string.IsNullOrEmpty(apiKey) || apiKey.Contains("xxxxxxxxx"))
@@ -28,22 +28,32 @@ namespace AumoFinance.Services
 
             try
             {
-                // Create the Resend client instance using your API key
-                IResend resend = ResendClient.Create(apiKey);
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-                var message = new EmailMessage
+                var payload = new
                 {
-                    From = "Aumo Finance <onboarding@resend.dev>", // Default onboarding sender address for Resend testing
-                    To = toEmail,
-                    Subject = subject,
-                    HtmlBody = htmlMessage
+                    from = "Aumo Finance <onboarding@resend.dev>",
+                    to = new[] { toEmail },
+                    subject = subject,
+                    html = htmlMessage
                 };
 
-                _logger.LogInformation("Sending email to {ToEmail} via Resend API...", toEmail);
+                _logger.LogInformation("Sending email to {ToEmail} via Resend REST API...", toEmail);
 
-                var response = await resend.EmailSendAsync(message, ct);
+                var response = await client.PostAsJsonAsync("https://api.resend.com/emails", payload, ct);
 
-                _logger.LogInformation("Email successfully sent to {ToEmail}. Message ID: {Id}", toEmail, response.Content.Id);
+                if (response.IsSuccessStatusCode)
+                {
+                    var resultText = await response.Content.ReadAsStringAsync(ct);
+                    _logger.LogInformation("Email successfully sent to {ToEmail} via Resend API. Response: {Result}", toEmail, resultText);
+                }
+                else
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync(ct);
+                    _logger.LogError("Failed to send email via Resend API. Response: {Error}", errorBody);
+                    throw new HttpRequestException($"Resend API Error ({response.StatusCode}): {errorBody}");
+                }
             }
             catch (Exception ex)
             {
