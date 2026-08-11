@@ -12,6 +12,7 @@ namespace AumoFinance.Components.Pages.Settings
         [Inject] protected UserManager<ApplicationUser> UserManager { get; set; } = default!;
         [Inject] protected AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
         [Inject] protected NavigationManager Navigation { get; set; } = default!;
+        [Inject] protected IEmailSender<ApplicationUser> EmailSender { get; set; } = default!;
 
         protected ApplicationUser? CurrentUser { get; set; }
         protected bool IsEmailConfirmed => CurrentUser?.EmailConfirmed ?? false;
@@ -22,7 +23,10 @@ namespace AumoFinance.Components.Pages.Settings
         protected bool isDarkMode = true;
         protected bool enableSystemAlerts = true;
         protected bool isSendingEmail = false;
-        protected string toastMessage = "Settings saved successfully.";
+
+        protected string toastMessage = "";
+        protected string? statusAlertMessage;
+        protected string statusAlertClass = "alert-info";
 
         protected override async Task OnInitializedAsync()
         {
@@ -60,7 +64,7 @@ namespace AumoFinance.Components.Pages.Settings
         {
             if (CurrentUser == null || string.IsNullOrEmpty(CurrentUser.Email))
             {
-                await ShowToast("User data not found.");
+                await ShowNotification("User account details not found.", isError: true);
                 return;
             }
 
@@ -75,11 +79,14 @@ namespace AumoFinance.Components.Pages.Settings
                 var verificationUrl = Navigation.ToAbsoluteUri(
                     $"/auth/verify-email?Email={Uri.EscapeDataString(CurrentUser.Email)}&Token={encodedToken}").ToString();
 
-                await ShowToast("Verification email sent.");
+                // Call Microsoft native IEmailSender<TUser>
+                await EmailSender.SendConfirmationLinkAsync(CurrentUser, CurrentUser.Email, verificationUrl);
+
+                await ShowNotification("Verification email sent successfully. Please check your inbox.");
             }
             catch (Exception ex)
             {
-                await ShowToast($"Failed to send verification: {ex.Message}");
+                await ShowNotification($"Failed to send verification email: {ex.Message}", isError: true);
             }
             finally
             {
@@ -102,28 +109,31 @@ namespace AumoFinance.Components.Pages.Settings
                 await JS.InvokeVoidAsync("localStorage.setItem", "aumo_theme", selectedTheme);
             }
 
-            await ShowToast($"Theme changed to {selectedTheme} mode.");
+            await ShowNotification($"Theme updated to {selectedTheme} mode.");
         }
 
         protected async Task OnSystemAlertsChanged(ChangeEventArgs e)
         {
             enableSystemAlerts = e.Value is bool val ? val : Convert.ToBoolean(e.Value);
             var status = enableSystemAlerts ? "enabled" : "disabled";
-            await ShowToast($"System alerts {status}.");
+            await ShowNotification($"System alerts have been {status}.");
         }
 
-        private async Task ShowToast(string message)
+        private async Task ShowNotification(string message, bool isError = false)
         {
             toastMessage = message;
+            statusAlertMessage = message;
+            statusAlertClass = isError ? "alert-danger" : "alert-success";
+
             StateHasChanged();
 
             try
             {
-                await JS.InvokeVoidAsync("aumoToast.show", "settingsToast");
+                await JS.InvokeVoidAsync("eval", "var el = document.getElementById('settingsToast'); if(el) { new bootstrap.Toast(el).show(); }");
             }
             catch
             {
-                // Fallback
+                // Inline alert fallback
             }
         }
     }
