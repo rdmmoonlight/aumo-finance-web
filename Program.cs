@@ -163,9 +163,7 @@ builder.Services.AddHealthChecks();
 
 
 // Render Keep-Alive
-// Implementation:
-// Services/RenderKeepAliveService.cs
-
+// Implementation: Services/RenderKeepAliveService.cs
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
 
@@ -198,6 +196,18 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<
     DashboardDataService
+>();
+
+// --- MARKET SERVICE & HTTP CLIENT SETUP ---
+builder.Services.AddHttpClient("MarketApiClient", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AumoFinance/1.0");
+});
+
+builder.Services.AddScoped<
+    IMarketService,
+    MarketService
 >();
 
 builder.Services.AddHttpClient();
