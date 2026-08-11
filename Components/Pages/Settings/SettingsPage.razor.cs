@@ -7,6 +7,11 @@ namespace AumoFinance.Components.Pages.Settings
 {
     public partial class SettingsPage
     {
+        [Inject] protected IJSRuntime JS { get; set; } = default!;
+        [Inject] protected UserManager<ApplicationUser> UserManager { get; set; } = default!;
+        [Inject] protected AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+        [Inject] protected NavigationManager Navigation { get; set; } = default!;
+
         protected ApplicationUser? CurrentUser { get; set; }
         protected bool IsEmailConfirmed => CurrentUser?.EmailConfirmed ?? false;
         protected string UserEmail => CurrentUser?.Email ?? "N/A";
@@ -15,6 +20,7 @@ namespace AumoFinance.Components.Pages.Settings
 
         protected bool isDarkMode = true;
         protected bool enableSystemAlerts = true;
+        protected bool isSendingEmail = false;
         protected string toastMessage = "Settings saved successfully.";
 
         protected override async Task OnInitializedAsync()
@@ -46,6 +52,37 @@ namespace AumoFinance.Components.Pages.Settings
                 {
                     isDarkMode = true;
                 }
+            }
+        }
+
+        protected async Task ResendVerificationEmail()
+        {
+            if (CurrentUser == null || string.IsNullOrEmpty(CurrentUser.Email))
+            {
+                await ShowToast("User data not found.");
+                return;
+            }
+
+            isSendingEmail = true;
+
+            try
+            {
+                var token = await UserManager.GenerateEmailConfirmationTokenAsync(CurrentUser);
+                var encodedToken = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(
+                    System.Text.Encoding.UTF8.GetBytes(token));
+
+                var verificationUrl = Navigation.ToAbsoluteUri(
+                    $"/auth/verify-email?Email={Uri.EscapeDataString(CurrentUser.Email)}&Token={encodedToken}").ToString();
+
+                await ShowToast($"Verification link created: {verificationUrl}");
+            }
+            catch (Exception ex)
+            {
+                await ShowToast($"Failed to generate verification link: {ex.Message}");
+            }
+            finally
+            {
+                isSendingEmail = false;
             }
         }
 
@@ -85,7 +122,7 @@ namespace AumoFinance.Components.Pages.Settings
             }
             catch
             {
-                // Fallback jika library toast belum terload
+                // Fallback
             }
         }
     }
