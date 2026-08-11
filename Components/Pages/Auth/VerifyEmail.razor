@@ -55,7 +55,21 @@
 
         try
         {
-            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Token));
+            // Clean & Decode Token
+            var rawTokenParam = Uri.UnescapeDataString(Token).Trim();
+            string decodedToken;
+
+            try
+            {
+                var tokenBytes = WebEncoders.Base64UrlDecode(rawTokenParam);
+                decodedToken = Encoding.UTF8.GetString(tokenBytes);
+            }
+            catch
+            {
+                // Fallback jika token yang dikirim adalah raw string/non-Base64Url
+                decodedToken = rawTokenParam;
+            }
+
             var result = await UserManager.ConfirmEmailAsync(user, decodedToken);
 
             if (result.Succeeded)
