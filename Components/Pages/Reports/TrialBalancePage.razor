@@ -154,7 +154,21 @@
                 }
             }
         }
+    }
 
+    // Navigasi antara /reports/trial-balance dan /reports/trial-balance/true
+    // memakai komponen Blazor yang sama (hanya parameter route yang berubah),
+    // sehingga OnInitializedAsync TIDAK terpanggil ulang. OnParametersSetAsync
+    // selalu jalan (termasuk saat load pertama, setelah OnInitializedAsync),
+    // sehingga cukup satu tempat untuk memuat data agar IncludeAdjusting yang
+    // baru benar-benar dipakai.
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
         if (UserId == Guid.Empty)
         {
             noPeriodSelected = true;
@@ -168,6 +182,7 @@
             return;
         }
 
+        noPeriodSelected = false;
         rows = await BuildTrialBalanceRowsAsync(period, IncludeAdjusting);
     }
 
