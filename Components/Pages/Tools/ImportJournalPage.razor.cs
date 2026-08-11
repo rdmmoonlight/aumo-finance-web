@@ -310,10 +310,10 @@ public partial class ImportJournalPage : ComponentBase
             await DbContext.SaveChangesAsync();
 
             successMessage = $"Successfully imported {transactionsImported} journal entries with {accountsCreated} new COA accounts created.";
-            
+
             // Tutup modal secara bersih menggunakan ID yang sesuai
             await JS.InvokeVoidAsync("aumoModal.hide", "indexPreviewModal");
-            
+
             parseResult = null;
             selectedFile = null;
         }
