@@ -7,10 +7,11 @@
 @inject IJSRuntime JS
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 <h3>Settings</h3>
 
-<!-- USER PROFILE SECTION -->
+<!-- ===== USER PROFILE SECTION ===== -->
 <div class="card mb-4">
     <div class="card-header bg-primary text-white">
         <h5 class="mb-0">👤 User Profile</h5>
@@ -30,9 +31,28 @@
 
                     <dt class="col-sm-4">Email Status</dt>
                     <dd class="col-sm-8">
-                        <span class="badge @(IsEmailConfirmed ? "bg-success" : "bg-warning text-dark")">
-                            @(IsEmailConfirmed ? "Confirmed" : "Not Confirmed")
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge @(IsEmailConfirmed ? "bg-success" : "bg-warning text-dark")">
+                                @(IsEmailConfirmed ? "Confirmed" : "Not Confirmed")
+                            </span>
+
+                            @if (!IsEmailConfirmed)
+                            {
+                                <button class="btn btn-sm btn-outline-primary py-0 px-2" 
+                                        @onclick="ResendVerificationEmail" 
+                                        disabled="@isSendingEmail">
+                                    @if (isSendingEmail)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        <span>Sending...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Resend Email</span>
+                                    }
+                                </button>
+                            }
+                        </div>
                     </dd>
 
                     <dt class="col-sm-4">Phone</dt>
@@ -50,7 +70,7 @@
     </div>
 </div>
 
-<!-- SETTINGS SECTION -->
+<!-- ===== SETTINGS SECTION ===== -->
 <div class="card">
     <div class="card-header bg-primary text-white">
         <h5 class="mb-0">⚙️ Preferences</h5>
@@ -86,7 +106,7 @@
 <div class="toast-container position-fixed bottom-0 end-0 p-3">
     <div id="settingsToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header bg-primary text-white">
-            <strong class="me-auto">Settings</strong>
+            <strong class="me-auto">Notification</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
         <div class="toast-body">
@@ -94,3 +114,124 @@
         </div>
     </div>
 </div>
+
+@code {
+    protected ApplicationUser? CurrentUser { get; set; }
+    protected bool IsEmailConfirmed => CurrentUser?.EmailConfirmed ?? false;
+    protected string UserEmail => CurrentUser?.Email ?? "N/A";
+    protected string UserFullName => CurrentUser?.FullName ?? CurrentUser?.UserName ?? "Unknown";
+    protected string UserName => CurrentUser?.UserName ?? "Unknown";
+
+    protected bool isDarkMode = true;
+    protected bool enableSystemAlerts = true;
+    protected bool isSendingEmail = false;
+    protected string toastMessage = "Settings saved successfully.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userId = UserManager.GetUserId(user);
+            if (userId != null)
+            {
+                CurrentUser = await UserManager.FindByIdAsync(userId);
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var savedTheme = await JS.InvokeAsync<string?>("localStorage.getItem", "aumo_theme");
+                isDarkMode = string.IsNullOrEmpty(savedTheme) || savedTheme == "dark";
+                StateHasChanged();
+            }
+            catch
+            {
+                isDarkMode = true;
+            }
+        }
+    }
+
+    protected async Task ResendVerificationEmail()
+    {
+        if (CurrentUser == null || string.IsNullOrEmpty(CurrentUser.Email))
+        {
+            await ShowToast("User data not found.");
+            return;
+        }
+
+        isSendingEmail = true;
+
+        try
+        {
+            // Logika pembuatan token verifikasi email ASP.NET Core Identity
+            var token = await UserManager.GenerateEmailConfirmationTokenAsync(CurrentUser);
+            var encodedToken = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(
+                System.Text.Encoding.UTF8.GetBytes(token));
+
+            // Buat URL verifikasi mengarah ke /auth/verify-email
+            var verificationUrl = Navigation.ToAbsoluteUri(
+                $"/auth/verify-email?Email={Uri.EscapeDataString(CurrentUser.Email)}&Token={encodedToken}").ToString();
+
+            // TODO: Integrasikan dengan Service Pengirim Email (contoh: IEmailSender / EmailService)
+            // await EmailService.SendEmailAsync(CurrentUser.Email, "Confirm your email", $"Please verify: {verificationUrl}");
+
+            await ShowToast($"Verification link created. Check your inbox: {verificationUrl}");
+        }
+        catch (Exception ex)
+        {
+            await ShowToast($"Failed to generate verification link: {ex.Message}");
+        }
+        finally
+        {
+            isSendingEmail = false;
+        }
+    }
+
+    protected async Task OnThemeChanged(ChangeEventArgs e)
+    {
+        isDarkMode = e.Value is bool val ? val : Convert.ToBoolean(e.Value);
+        var selectedTheme = isDarkMode ? "dark" : "light";
+
+        try
+        {
+            await JS.InvokeVoidAsync("setAppTheme", selectedTheme);
+        }
+        catch
+        {
+            await JS.InvokeVoidAsync("document.documentElement.setAttribute", "data-bs-theme", selectedTheme);
+            await JS.InvokeVoidAsync("localStorage.setItem", "aumo_theme", selectedTheme);
+        }
+
+        await ShowToast($"Theme changed to {selectedTheme} mode.");
+    }
+
+    protected async Task OnSystemAlertsChanged(ChangeEventArgs e)
+    {
+        enableSystemAlerts = e.Value is bool val ? val : Convert.ToBoolean(e.Value);
+        var status = enableSystemAlerts ? "enabled" : "disabled";
+        await ShowToast($"System alerts {status}.");
+    }
+
+    private async Task ShowToast(string message)
+    {
+        toastMessage = message;
+        StateHasChanged();
+
+        try
+        {
+            await JS.InvokeVoidAsync("aumoToast.show", "settingsToast");
+        }
+        catch
+        {
+            // Fallback jika library toast belum terload
+        }
+    }
+}
