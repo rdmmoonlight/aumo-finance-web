@@ -133,66 +133,62 @@
     {
         <div id="reports-flyout" class="sidebar-flyout">
 
-            <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
-                <span class="fw-bold small text-uppercase text-warning font-monospace">
-                    <i class="bi bi-folder-fill me-2"></i> Financial Reports
-                </span>
-
+            <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-end align-items-center">
                 <button type="button" @onclick="CloseFlyout" class="btn-close btn-close-white btn-sm" aria-label="Close"></button>
             </div>
 
             <div class="list-group list-group-flush p-2 small">
 
                 <NavLink href="/reports/general-journal" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-journal-text me-2"></i> General Journal
+                    General Journal
                 </NavLink>
 
                 <NavLink href="/reports/general-ledger" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-book me-2"></i> GL (Permanent Accounts)
+                    GL (Permanent Accounts)
                 </NavLink>
 
                 <NavLink href="/reports/general-ledger/true" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-book-half me-2"></i> GL (Temporary Accounts)
+                    GL (Temporary Accounts)
                 </NavLink>
 
                 <NavLink href="/reports/trial-balance" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-scale me-2"></i> Trial Balance
+                    Trial Balance
                 </NavLink>
 
                 <NavLink href="/reports/adjusting-journal" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-pencil-square me-2"></i> Adjusting Journal
+                    Adjusting Journal
                 </NavLink>
 
                 <NavLink href="/reports/trial-balance/true" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-check2-square me-2"></i> Adjusted Trial Balance
+                    Adjusted Trial Balance
                 </NavLink>
 
                 <NavLink href="/reports/worksheet" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-grid-3x3 me-2"></i> Worksheet
+                    Worksheet
                 </NavLink>
 
                 <NavLink href="/reports/income-statement" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-graph-up-arrow me-2"></i> Income Statement
+                    Income Statement
                 </NavLink>
 
                 <NavLink href="/reports/retained-earnings" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-pie-chart me-2"></i> Retained Earnings
+                    Retained Earnings
                 </NavLink>
 
                 <NavLink href="/reports/statement-of-financial-position" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-bank me-2"></i> Financial Position
+                    Financial Position
                 </NavLink>
 
                 <NavLink href="/reports/closing-journal" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-journal-check me-2"></i> Closing Journal
+                    Closing Journal
                 </NavLink>
 
                 <NavLink href="/reports/post-closing-trial-balance" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-card-checklist me-2"></i> Post-Closing TB
+                    Post-Closing TB
                 </NavLink>
 
                 <NavLink href="/reports/cash-flow" class="list-group-item list-group-item-action py-2 px-3 rounded mb-1" @onclick="CloseFlyout">
-                    <i class="bi bi-currency-dollar me-2"></i> Cash Flow
+                    Cash Flow
                 </NavLink>
 
             </div>
