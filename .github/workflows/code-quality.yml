@@ -1,0 +1,45 @@
+name: C# Code Quality & Formatting Check
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write # Diizinkan agar runner dapat melakukan commit/push perbaikan format
+
+jobs:
+  lint-and-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }} # Memastikan ref tepat saat dipicu PR
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      # 1. Jalankan auto-format
+      - name: Auto-Format Code
+        run: dotnet format
+
+      # 2. Commit & Push otomatis (Hanya jalan jika ada perubahan format)
+      # Menggunakan [skip ci] agar tidak memicu loop build di GitHub Actions
+      - name: Commit Formatted Changes
+        id: auto_commit
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-correct code formatting via dotnet format [skip ci]"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
+
+      # 3. Build & Check Code Quality (Strict Warning as Errors)
+      - name: Build & Run Roslyn Analyzers
+        run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
