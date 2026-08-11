@@ -103,24 +103,26 @@ public class TrialBalanceControllers : ControllerBase
 
         var accountIds = accounts.Select(a => a.Id).ToList();
 
+        // Gunakan .Date agar perbandingan tidak terpengaruh jam/menit/Kind,
+        // selaras dengan TrialBalancePage.razor (web).
+        var start = period.StartDate.Date;
+        var end = period.EndDate.Date;
+
         var linesQuery = db.JournalEntryLines
             .Include(l => l.JournalEntry)
-            .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId);
+            .Where(l => accountIds.Contains(l.AccountId)
+                     && l.JournalEntry!.UserId == userId
+                     && l.JournalEntry!.EntryDate.Date >= start
+                     && l.JournalEntry!.EntryDate.Date <= end);
 
         bool includeAdjustingLines = includeAdjusting || reportType == "adjusted" || reportType == "post-closing";
 
-        // Catatan penyeimbang: akun permanen membawa saldo kumulatif (tanpa batas
-        // bawah tanggal), sehingga transaksi periode lalu yang menyentuh akun
-        // permanen (mis. Kas) akan selalu ikut terhitung. Agar Total Debit = Total
-        // Kredit tetap terjaga, jurnal Closing (yang memindahkan saldo akun
-        // temporer periode lalu ke Retained Earnings/akun permanen) WAJIB selalu
-        // disertakan untuk sisi permanen, terlepas dari jenis laporan (unadjusted/
-        // adjusted). Untuk akun temporer, Closing tetap dikecualikan karena
-        // laporan hanya menampilkan aktivitas periode berjalan.
-        var lines = await linesQuery.Where(l =>
-            l.JournalEntry!.JournalType == "General" ||
-            (includeAdjustingLines && l.JournalEntry!.JournalType == "Adjusting") ||
-            l.JournalEntry!.JournalType == "Closing").ToListAsync();
+        // Hanya General (unadjusted) atau General + Adjusting (adjusted/post-closing).
+        // Closing journal tidak pernah dimasukkan — selaras dengan TrialBalancePage.razor (web).
+        var lines = includeAdjustingLines
+            ? await linesQuery.Where(l => l.JournalEntry!.JournalType == "General"
+                                       || l.JournalEntry!.JournalType == "Adjusting").ToListAsync()
+            : await linesQuery.Where(l => l.JournalEntry!.JournalType == "General").ToListAsync();
 
         var rows = new List<TrialBalanceRow>();
         foreach (var account in accounts)
@@ -133,18 +135,15 @@ public class TrialBalanceControllers : ControllerBase
                 continue;
             }
 
-            var accountLines = isPermanent
-                ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate).ToList()
-                : lines.Where(l => l.AccountId == account.Id
-                    && l.JournalEntry!.JournalType != "Closing"
-                    && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
+            var accountLines = lines.Where(l => l.AccountId == account.Id).ToList();
+
+            // Lewati akun yang tidak memiliki transaksi di periode ini
+            if (!accountLines.Any()) continue;
 
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             var netBalance = normalDebit
                 ? accountLines.Sum(l => l.Debit - l.Credit)
                 : accountLines.Sum(l => l.Credit - l.Debit);
-
-            if (!accountLines.Any() && netBalance == 0) continue;
 
             rows.Add(new TrialBalanceRow
             {
