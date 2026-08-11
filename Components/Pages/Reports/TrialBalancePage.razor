@@ -184,9 +184,16 @@
             .Include(l => l.JournalEntry)
             .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId);
 
-        var lines = includeAdjusting
-            ? await linesQuery.Where(l => l.JournalEntry!.JournalType == "General" || l.JournalEntry!.JournalType == "Adjusting").ToListAsync()
-            : await linesQuery.Where(l => l.JournalEntry!.JournalType == "General").ToListAsync();
+        // Akun permanen membawa saldo kumulatif lintas periode, sehingga jurnal
+        // Closing (yang memindahkan saldo akun temporer periode lalu ke
+        // Retained Earnings/akun permanen) WAJIB selalu disertakan untuk sisi
+        // permanen agar Total Debit = Total Kredit tetap terjaga. Akun temporer
+        // tetap mengecualikan Closing karena laporan hanya menampilkan aktivitas
+        // periode berjalan. Logika ini harus selaras dengan TrialBalanceControllers.cs.
+        var lines = await linesQuery.Where(l =>
+            l.JournalEntry!.JournalType == "General" ||
+            (includeAdjusting && l.JournalEntry!.JournalType == "Adjusting") ||
+            l.JournalEntry!.JournalType == "Closing").ToListAsync();
 
         var rows = new List<TrialBalanceRow>();
         foreach (var account in accounts)
@@ -194,7 +201,9 @@
             var isPermanent = AccountClassification.IsPermanent(account.Type);
             var accountLines = isPermanent
                 ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate).ToList()
-                : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
+                : lines.Where(l => l.AccountId == account.Id
+                    && l.JournalEntry!.JournalType != "Closing"
+                    && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
 
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             var netBalance = normalDebit
