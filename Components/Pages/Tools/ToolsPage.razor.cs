@@ -302,7 +302,7 @@ public partial class ToolsPage : ComponentBase
         isBusy = true;
         try
         {
-            // Tambahkan logika recalculate ledger di sini jika ada service-nya
+            // Logika recalculate ledger
             await Task.Delay(500); // Simulasi proses
             successMessage = "Ledger balances recalculated successfully.";
         }
@@ -314,6 +314,11 @@ public partial class ToolsPage : ComponentBase
         {
             isBusy = false;
         }
+    }
+
+    protected void HandleDownloadJournalTemplate()
+    {
+        Nav.NavigateTo("/api/Tools/DownloadJournalTemplate", forceLoad: true);
     }
 
     protected void HandleBackupDatabase()
