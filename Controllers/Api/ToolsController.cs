@@ -12,7 +12,7 @@ public class ToolsController : ControllerBase
     public IActionResult DownloadJournalTemplate()
     {
         using var workbook = new XLWorkbook();
-        
+
         // --- Buat Sheet General Journal (GJ) ---
         var wsGj = workbook.Worksheets.Add("GJ");
         wsGj.Cell(1, 1).Value = "Date";
@@ -38,8 +38,8 @@ public class ToolsController : ControllerBase
         var content = stream.ToArray();
 
         return File(
-            content, 
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+            content,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "JournalImportTemplate.xlsx"
         );
     }
