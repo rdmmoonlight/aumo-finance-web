@@ -180,12 +180,16 @@
 
         var accountIds = accounts.Select(a => a.Id).ToList();
 
+        // Gunakan .Date agar perbandingan tidak terpengaruh jam/menit/Kind
+        var start = period.StartDate.Date;
+        var end = period.EndDate.Date;
+
         var linesQuery = db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Where(l => accountIds.Contains(l.AccountId)
                      && l.JournalEntry!.UserId == userId
-                     && l.JournalEntry!.EntryDate >= period.StartDate
-                     && l.JournalEntry!.EntryDate <= period.EndDate);
+                     && l.JournalEntry!.EntryDate.Date >= start
+                     && l.JournalEntry!.EntryDate.Date <= end);
 
         // Hanya General (unadjusted) atau General + Adjusting (adjusted).
         // Closing journal tidak pernah dimasukkan.
@@ -201,13 +205,13 @@
         {
             var accountLines = lines.Where(l => l.AccountId == account.Id).ToList();
 
+            // Lewati akun yang tidak memiliki transaksi di periode ini
+            if (!accountLines.Any()) continue;
+
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             var netBalance = normalDebit
                 ? accountLines.Sum(l => l.Debit - l.Credit)
                 : accountLines.Sum(l => l.Credit - l.Debit);
-
-            // Lewati akun yang tidak memiliki transaksi di periode ini
-            if (!accountLines.Any()) continue;
 
             rows.Add(new TrialBalanceRow
             {
