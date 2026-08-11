@@ -1,5 +1,6 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MimeKit;
 
@@ -18,20 +19,21 @@ namespace AumoFinance.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage, CancellationToken ct = default)
         {
-            var senderEmail = _configuration["Smtp:User"];
-            var pass = _configuration["Smtp:Pass"];
-            var host = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
+            // Mendukung baik format "Smtp:User" maupun format Environment Variable Render "Smtp__User"
+            var senderEmail = _configuration["Smtp:User"] ?? _configuration["Smtp__User"];
+            var pass = _configuration["Smtp:Pass"] ?? _configuration["Smtp__Pass"];
+            var host = _configuration["Smtp:Host"] ?? _configuration["Smtp__Host"] ?? "smtp.gmail.com";
 
-            // Default ke port 587 jika tidak diisi
-            if (!int.TryParse(_configuration["Smtp:Port"], out int port))
+            var portStr = _configuration["Smtp:Port"] ?? _configuration["Smtp__Port"];
+            if (!int.TryParse(portStr, out int port))
             {
-                port = 587;
+                port = 587; // Default aman ke StartTLS port 587
             }
 
             if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(pass))
             {
-                _logger.LogError("SMTP Credentials (Smtp:User / Smtp:Pass) belum dikonfigurasi di Environment Variables!");
-                return; // Jangan lemparkan exception agar tidak 500
+                _logger.LogError("SMTP credentials missing! Please check Smtp:User (or Smtp__User) and Smtp:Pass in Render Environment Variables.");
+                throw new InvalidOperationException("SMTP credentials are not configured on the server.");
             }
 
             try
@@ -45,25 +47,35 @@ namespace AumoFinance.Services
                 message.Body = bodyBuilder.ToMessageBody();
 
                 using var client = new SmtpClient();
-                client.Timeout = 8000; // 8 detik max
+                
+                // Render network kadang butuh latency ekstra saat jabat tangan (handshake) TLS
+                client.Timeout = 15000; // 15 detik
 
-                // Pilih opsi enkripsi sesuai port
-                var socketOptions = port == 465
-                    ? SecureSocketOptions.SslOnConnect
-                    : SecureSocketOptions.StartTls;
+                // Penanganan enkripsi yang presisi & kompatibel dengan Render
+                SecureSocketOptions socketOptions = port switch
+                {
+                    465 => SecureSocketOptions.SslOnConnect,
+                    587 => SecureSocketOptions.StartTls,
+                    _ => SecureSocketOptions.Auto
+                };
+
+                // Bypass validasi sertifikat lokal jika diperlukan (mencegah SSL handshake error di container Linux Render)
+                client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+
+                _logger.LogInformation("Connecting to SMTP server {Host}:{Port} via {Options}...", host, port, socketOptions);
 
                 await client.ConnectAsync(host, port, socketOptions, ct);
                 await client.AuthenticateAsync(senderEmail, pass, ct);
                 await client.SendAsync(message, ct);
                 await client.DisconnectAsync(true, ct);
 
-                _logger.LogInformation("Email berhasil dikirim ke {ToEmail}", toEmail);
+                _logger.LogInformation("Email successfully sent to {ToEmail}", toEmail);
             }
             catch (Exception ex)
             {
-                // Tangkap SEMUA error SMTP dan catat di Log Railway,
-                // sehingga user UI tidak mendapat Error 500!
-                _logger.LogError(ex, "Gagal mengirim email ke {ToEmail} via SMTP Gmail", toEmail);
+                _logger.LogError(ex, "Failed to send email to {ToEmail} via SMTP {Host}:{Port}", toEmail, host, port);
+                // Throw exception agar API / Controller dapat menangkap pesan error aslinya (misal di Postman)
+                throw;
             }
         }
     }
