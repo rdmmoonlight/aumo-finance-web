@@ -127,7 +127,7 @@
     private bool noPeriodSelected;
     private decimal netTotal;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         if (AuthStateTask != null)
         {
