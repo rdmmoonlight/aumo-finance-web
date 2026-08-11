@@ -1,5 +1,5 @@
-@inject NavigationManager NavManager
-@inject IHttpClientFactory HttpClientFactory
+@using AumoFinance.Services
+@inject IMarketService MarketService
 
 <div class="market-futuristic-card mx-auto mb-4 p-3 rounded-4">
     <div class="card-glass-bg"></div>
@@ -167,7 +167,7 @@
         filter: drop-shadow(0 0 6px #0ea5e9);
     }
 
-    /* PERBAIKAN BUG CS0103: Gunakan @@media agar tidak terbaca sebagai syntax Razor C# */
+    /* CS0103 Fix: Gunakan @@media agar tidak terbaca sebagai syntax Razor C# */
     @@media (min-width: 768px) {
         .border-end-futuristic {
             border-right: 1px solid rgba(255, 255, 255, 0.06);
@@ -199,19 +199,14 @@
         try
         {
             isLoading = true;
-            var client = HttpClientFactory.CreateClient();
-            var baseUrl = NavManager.BaseUri.TrimEnd('/');
-            var requestUrl = $"{baseUrl}/Market/GetMarketData";
+            
+            // Panggil IMarketService langsung tanpa via HTTP Controller
+            marketData = await MarketService.GetMarketDataAsync();
 
-            var response = await client.GetAsync(requestUrl);
-            if (response.IsSuccessStatusCode)
+            if (marketData != null && marketData.Success)
             {
-                marketData = await response.Content.ReadFromJsonAsync<MarketDataResponse>();
-                if (marketData != null && marketData.Success)
-                {
-                    cachedMarketData = marketData;
-                    lastFetchTime = DateTime.Now;
-                }
+                cachedMarketData = marketData;
+                lastFetchTime = DateTime.Now;
             }
         }
         catch (Exception ex)
@@ -225,21 +220,8 @@
         finally
         {
             isLoading = false;
+            // Picu re-render UI secara eksplisit
+            StateHasChanged();
         }
-    }
-
-    public class MarketDataResponse
-    {
-        public bool Success { get; set; }
-        public MarketDetail? Usd { get; set; }
-        public MarketDetail? Ihsg { get; set; }
-        public string? BiRate { get; set; }
-    }
-
-    public class MarketDetail
-    {
-        public double Price { get; set; }
-        public double Percent { get; set; }
-        public bool IsUp { get; set; }
     }
 }
