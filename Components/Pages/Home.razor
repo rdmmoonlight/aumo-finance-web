@@ -6,46 +6,121 @@
 @attribute [Authorize]
 @rendermode InteractiveServer
 
-<PageTitle>Home - Aumo Finance</PageTitle>
+<PageTitle>Aumo Finance</PageTitle>
 
-<div class="container py-5 mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10 col-xl-8 text-center">
-            
-            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary bg-opacity-75 p-4 p-md-5 backdrop-blur">
-                <div class="card-body p-0">
-                    
-                    <!-- Main Application Icon -->
-                    <div class="mb-3 text-warning d-inline-block p-3 rounded-circle bg-warning-subtle bg-opacity-50">
-                        <i class="bi bi-shield-lock-fill display-4 lh-1"></i>
-                    </div>
-
-                    <!-- Blazor Market Widget Component -->
-                    <div class="d-block mb-4">
-                        <MarketWidget />
-                    </div>
-
-                    <!-- Title & Description -->
-                    <h1 class="fw-bold text-body-emphasis mb-3 tracking-tight">
-                        Financial & Accounting System
-                    </h1>
-                    <p class="lead text-secondary mb-4 mx-auto style-description" style="max-width: 620px; font-size: 1.05rem;">
-                        An integrated financial and accounting information system. Manage your full accounting cycle—from general journal entries to trial balance—with precision, discipline, and absolute accuracy.
-                    </p>
-
-                    <!-- Quick Navigation Actions -->
-                    <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <NavLink href="/Dashboard" class="btn btn-primary px-4 py-2 rounded-pill fw-medium">
-                            <i class="bi bi-speedometer2 me-1"></i> Go to Dashboard
-                        </NavLink>
-                        <NavLink href="/Journal" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-medium">
-                            <i class="bi bi-journal-text me-1"></i> General Journal
-                        </NavLink>
-                    </div>
-
-                </div>
-            </div>
-
+<div class="nebula-viewport d-flex align-items-center justify-content-center min-vh-100 p-3 p-md-4">
+    <!-- Ambient Nebula Glass Card -->
+    <div class="nebula-card p-4 p-md-5">
+        
+        <!-- Live Market Widget Wrapper -->
+        <div class="market-widget-wrapper mb-4">
+            <MarketWidget />
         </div>
+
+        <!-- Clean & Minimalist Content (Tanpa Header Besar) -->
+        <div class="text-center content-body">
+            <p class="description-text mb-4">
+                @DescriptionText
+            </p>
+
+            <!-- Futuristic Navigation Actions -->
+            <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+                <NavLink href="/Dashboard" class="btn-nebula btn-nebula-primary">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    <span>Dashboard</span>
+                </NavLink>
+
+                <NavLink href="/Journal" class="btn-nebula btn-nebula-secondary">
+                    <i class="bi bi-journal-text me-2"></i>
+                    <span>General Journal</span>
+                </NavLink>
+            </div>
+        </div>
+
     </div>
 </div>
+
+<style>
+    /* Scope Styling: Deep Nebula Futuristic Theme */
+    .nebula-viewport {
+        background: radial-gradient(circle at 50% 30%, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.95) 70%),
+                    radial-gradient(circle at 80% 80%, rgba(76, 29, 149, 0.25) 0%, transparent 50%),
+                    radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 40%);
+        background-color: #0b0f19;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .nebula-card {
+        max-width: 720px;
+        width: 100%;
+        background: rgba(17, 24, 39, 0.55);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .market-widget-wrapper {
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 0.75rem;
+    }
+
+    .description-text {
+        color: rgba(226, 232, 240, 0.85);
+        font-size: 1rem;
+        line-height: 1.6;
+        font-weight: 400;
+        letter-spacing: 0.015em;
+        max-width: 580px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Buttons Style */
+    .btn-nebula {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.625rem 1.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        letter-spacing: 0.025em;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-nebula-primary {
+        color: #ffffff;
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(124, 58, 237, 0.8) 100%);
+        border: 1px solid rgba(165, 180, 252, 0.3);
+        box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-nebula-primary:hover {
+        color: #ffffff;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        transform: translateY(-1px);
+    }
+
+    .btn-nebula-secondary {
+        color: rgba(226, 232, 240, 0.9);
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-nebula-secondary:hover {
+        color: #ffffff;
+        background: rgba(51, 65, 85, 0.8);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-1px);
+    }
+</style>
