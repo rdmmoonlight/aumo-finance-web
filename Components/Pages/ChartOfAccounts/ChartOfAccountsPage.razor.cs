@@ -66,8 +66,7 @@ public partial class ChartOfAccountsPage : ComponentBase
 
         var accountIds = loaded.Select(a => a.Id).ToList();
 
-        var currentPeriod = await DbContext.Periods
-            .FirstOrDefaultAsync(p => p.UserId == UserId && p.IsSelected);
+        var currentPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(DbContext, UserId);
 
         if (currentPeriod == null)
         {
