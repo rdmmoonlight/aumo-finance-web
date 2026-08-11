@@ -17,31 +17,33 @@ namespace AumoFinance.Services
 
         public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage, CancellationToken ct = default)
         {
-            // Mengambil API Key dari Environment Variables Render (Resend__ApiKey) atau appsettings.json (Resend:ApiKey)
+            // Read API Key supporting both appsettings.json (Resend:ApiKey) and Render Environment Variables (Resend__ApiKey)
             var apiKey = _configuration["Resend:ApiKey"] ?? _configuration["Resend__ApiKey"];
 
-            if (string.IsNullOrEmpty(apiKey) || apiKey.StartsWith("re_xxxxxxxxx"))
+            if (string.IsNullOrEmpty(apiKey) || apiKey.Contains("xxxxxxxxx"))
             {
-                _logger.LogError("Resend API Key is missing or invalid!");
-                throw new InvalidOperationException("Please replace 're_xxxxxxxxx' with your real Resend API Key in Environment Variables.");
+                _logger.LogError("Resend API Key is missing or invalid in environment variables!");
+                throw new InvalidOperationException("Resend API Key is not configured on the server.");
             }
 
             try
             {
-                // Inisialisasi ResendClient menggunakan API Key kamu
+                // Create the Resend client instance using your API key
                 IResend resend = ResendClient.Create(apiKey);
 
-                var message = new EmailMessage()
+                var message = new EmailMessage
                 {
-                    From = "Aumo Finance <onboarding@resend.dev>", // Domain bawaan Resend untuk testing
+                    From = "Aumo Finance <onboarding@resend.dev>", // Default onboarding sender address for Resend testing
                     To = toEmail,
                     Subject = subject,
                     HtmlBody = htmlMessage
                 };
 
-                var resp = await resend.EmailSendAsync(message, ct);
+                _logger.LogInformation("Sending email to {ToEmail} via Resend API...", toEmail);
 
-                _logger.LogInformation("Email successfully sent to {ToEmail} via Resend. Message ID: {Id}", toEmail, resp.Content.Id);
+                var response = await resend.EmailSendAsync(message, ct);
+
+                _logger.LogInformation("Email successfully sent to {ToEmail}. Message ID: {Id}", toEmail, response.Content.Id);
             }
             catch (Exception ex)
             {
