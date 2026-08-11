@@ -107,25 +107,20 @@ public class TrialBalanceControllers : ControllerBase
             .Include(l => l.JournalEntry)
             .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId);
 
-        List<JournalEntryLine> lines;
-        if (reportType == "post-closing")
-        {
-            lines = await linesQuery.Where(l =>
-                l.JournalEntry!.JournalType == "General" ||
-                l.JournalEntry!.JournalType == "Adjusting" ||
-                l.JournalEntry!.JournalType == "Closing").ToListAsync();
-        }
-        else if (includeAdjusting || reportType == "adjusted")
-        {
-            lines = await linesQuery.Where(l =>
-                l.JournalEntry!.JournalType == "General" ||
-                l.JournalEntry!.JournalType == "Adjusting").ToListAsync();
-        }
-        else
-        {
-            lines = await linesQuery.Where(l =>
-                l.JournalEntry!.JournalType == "General").ToListAsync();
-        }
+        bool includeAdjustingLines = includeAdjusting || reportType == "adjusted" || reportType == "post-closing";
+
+        // Catatan penyeimbang: akun permanen membawa saldo kumulatif (tanpa batas
+        // bawah tanggal), sehingga transaksi periode lalu yang menyentuh akun
+        // permanen (mis. Kas) akan selalu ikut terhitung. Agar Total Debit = Total
+        // Kredit tetap terjaga, jurnal Closing (yang memindahkan saldo akun
+        // temporer periode lalu ke Retained Earnings/akun permanen) WAJIB selalu
+        // disertakan untuk sisi permanen, terlepas dari jenis laporan (unadjusted/
+        // adjusted). Untuk akun temporer, Closing tetap dikecualikan karena
+        // laporan hanya menampilkan aktivitas periode berjalan.
+        var lines = await linesQuery.Where(l =>
+            l.JournalEntry!.JournalType == "General" ||
+            (includeAdjustingLines && l.JournalEntry!.JournalType == "Adjusting") ||
+            l.JournalEntry!.JournalType == "Closing").ToListAsync();
 
         var rows = new List<TrialBalanceRow>();
         foreach (var account in accounts)
@@ -140,7 +135,9 @@ public class TrialBalanceControllers : ControllerBase
 
             var accountLines = isPermanent
                 ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate).ToList()
-                : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
+                : lines.Where(l => l.AccountId == account.Id
+                    && l.JournalEntry!.JournalType != "Closing"
+                    && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
 
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             var netBalance = normalDebit
