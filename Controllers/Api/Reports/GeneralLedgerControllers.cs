@@ -93,13 +93,12 @@ public class GeneralLedgerControllers : ControllerBase
 
         foreach (var account in accounts)
         {
-            var isPermanent = AccountClassification.IsPermanent(account.Type);
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             decimal running = 0;
 
-            var accountLines = isPermanent
-                ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate)
-                : lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate);
+            var accountLines = lines.Where(l => l.AccountId == account.Id
+                && l.JournalEntry!.EntryDate >= period.StartDate
+                && l.JournalEntry!.EntryDate <= period.EndDate);
 
             var ledgerLines = new List<LedgerLineApiResponse>();
             foreach (var line in accountLines)
