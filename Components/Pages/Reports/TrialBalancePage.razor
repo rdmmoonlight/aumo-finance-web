@@ -182,31 +182,32 @@
 
         var linesQuery = db.JournalEntryLines
             .Include(l => l.JournalEntry)
-            .Where(l => accountIds.Contains(l.AccountId) && l.JournalEntry!.UserId == userId);
+            .Where(l => accountIds.Contains(l.AccountId)
+                     && l.JournalEntry!.UserId == userId
+                     && l.JournalEntry!.EntryDate >= period.StartDate
+                     && l.JournalEntry!.EntryDate <= period.EndDate);
 
-        // Trial Balance (unadjusted): hanya jurnal "General". Adjusted Trial
-        // Balance: "General" + "Adjusting". Jurnal Closing TIDAK PERNAH
-        // dihitung pada kedua varian TB ini, karena TB disusun sebelum proses
-        // closing dijalankan.
+        // Hanya General (unadjusted) atau General + Adjusting (adjusted).
+        // Closing journal tidak pernah dimasukkan.
         var lines = includeAdjusting
-            ? await linesQuery.Where(l => l.JournalEntry!.JournalType == "General" || l.JournalEntry!.JournalType == "Adjusting").ToListAsync()
-            : await linesQuery.Where(l => l.JournalEntry!.JournalType == "General").ToListAsync();
+            ? await linesQuery.Where(l => l.JournalEntry!.JournalType == "General"
+                                       || l.JournalEntry!.JournalType == "Adjusting")
+                              .ToListAsync()
+            : await linesQuery.Where(l => l.JournalEntry!.JournalType == "General")
+                              .ToListAsync();
 
         var rows = new List<TrialBalanceRow>();
         foreach (var account in accounts)
         {
-            var isPermanent = AccountClassification.IsPermanent(account.Type);
-            var accountLines = isPermanent
-                ? lines.Where(l => l.AccountId == account.Id && l.JournalEntry!.EntryDate <= period.EndDate).ToList()
-                : lines.Where(l => l.AccountId == account.Id
-                    && l.JournalEntry!.EntryDate >= period.StartDate && l.JournalEntry!.EntryDate <= period.EndDate).ToList();
+            var accountLines = lines.Where(l => l.AccountId == account.Id).ToList();
 
             var normalDebit = AccountClassification.NormalBalanceIsDebit(account.Type);
             var netBalance = normalDebit
                 ? accountLines.Sum(l => l.Debit - l.Credit)
                 : accountLines.Sum(l => l.Credit - l.Debit);
 
-            if (!accountLines.Any() && netBalance == 0) continue;
+            // Lewati akun yang tidak memiliki transaksi di periode ini
+            if (!accountLines.Any()) continue;
 
             rows.Add(new TrialBalanceRow
             {
