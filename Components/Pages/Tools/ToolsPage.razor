@@ -61,9 +61,9 @@
                             <li>Rows sharing the same <strong>Date</strong> will be grouped as a single entry.</li>
                             <li><strong>Ref</strong> corresponds to Chart of Accounts (COA) numbers. Missing accounts will be created automatically.</li>
                         </ul>
-                        <a href="/api/Tools/DownloadJournalTemplate" class="btn btn-sm btn-outline-success rounded-3">
+                        <button type="button" class="btn btn-sm btn-outline-success rounded-3" @onclick="HandleDownloadJournalTemplate">
                             <i class="bi bi-download me-1"></i> Download Template (.xlsx)
-                        </a>
+                        </button>
                     </div>
 
                     <!-- Upload & Preview Form -->
@@ -209,7 +209,15 @@
                 <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success rounded-3 px-4 fw-semibold shadow-sm"
                         disabled="@(parseResult == null || !parseResult.Transactions.Any() || isBusy)" @onclick="HandleConfirmImport">
-                    <i class="bi bi-check2-all me-1"></i> Import Data
+                    @if (isBusy)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check2-all me-1"></i>
+                    }
+                    Import Data
                 </button>
             </div>
         </div>
