@@ -45,7 +45,7 @@ namespace AumoFinance.Services
                 message.Body = bodyBuilder.ToMessageBody();
 
                 using var client = new SmtpClient();
-                
+
                 // Tambah timeout menjadi 30 detik untuk mengantisipasi jaringan Render free tier
                 client.Timeout = 30000;
 
