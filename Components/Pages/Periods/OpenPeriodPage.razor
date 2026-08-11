@@ -1,0 +1,461 @@
+@page "/periods/create"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Security.Claims
+@using AumoFinance.Models
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>Open New Period</PageTitle>
+
+<div class="container-fluid py-4 px-4" style="max-width: 900px;">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-body-emphasis mb-1">
+                <i class="bi bi-calendar-plus me-2 text-primary"></i> Open New Period
+            </h2>
+            <p class="text-secondary mb-0">
+                Start a new monthly accounting cycle. The opening balance entry is posted
+                on day 1 of the period and will appear at the top of the General Journal.
+            </p>
+        </div>
+        <a href="/periods" class="btn btn-outline-secondary fw-semibold shadow-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back
+        </a>
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm py-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @if (UserId == Guid.Empty)
+    {
+        <div class="text-center py-5 text-secondary">
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div> Memuat data...
+        </div>
+    }
+    else
+    {
+        <EditForm Model="model" OnValidSubmit="HandleSubmit">
+            <DataAnnotationsValidator />
+
+            <!-- Period Month/Year -->
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-3">
+                <div class="card-header bg-transparent border-bottom py-3 px-4">
+                    <h5 class="mb-0 fw-bold text-body-emphasis">Period</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Month</label>
+                            <select class="form-select" @bind="model.Month">
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    <option value="@m">@System.Globalization.CultureInfo.GetCultureInfo("en-US").DateTimeFormat.GetMonthName(m)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Year</label>
+                            <input type="number" class="form-control" @bind="model.Year" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Setup Mode -->
+            <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-3">
+                <div class="card-header bg-transparent border-bottom py-3 px-4">
+                    <h5 class="mb-0 fw-bold text-body-emphasis">Permanent Accounts Setup</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="btn-group w-100 mb-3" role="group">
+                        <input type="radio" class="btn-check" name="setupMode" id="modeLoad" autocomplete="off"
+                               checked="@(model.SetupMode == OpenPeriodViewModel.ModeLoadExisting)"
+                               disabled="@(!model.HasExistingPermanentAccounts)"
+                               @onchange="() => model.SetupMode = OpenPeriodViewModel.ModeLoadExisting" />
+                        <label class="btn btn-outline-primary" for="modeLoad">
+                            <i class="bi bi-arrow-repeat me-1"></i> Use Existing Accounts
+                        </label>
+
+                        <input type="radio" class="btn-check" name="setupMode" id="modeNew" autocomplete="off"
+                               checked="@(model.SetupMode == OpenPeriodViewModel.ModeCreateNew)"
+                               @onchange="() => model.SetupMode = OpenPeriodViewModel.ModeCreateNew" />
+                        <label class="btn btn-outline-primary" for="modeNew">
+                            <i class="bi bi-plus-circle me-1"></i> Register New Accounts
+                        </label>
+                    </div>
+
+                    @if (!model.HasExistingPermanentAccounts)
+                    {
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="bi bi-info-circle me-1"></i> No existing Cash/Bank &amp; Retained Earnings accounts found yet — this looks like your first period, so new accounts are required.
+                        </div>
+                    }
+
+                    @if (model.SetupMode == OpenPeriodViewModel.ModeLoadExisting)
+                    {
+                        <p class="text-secondary small mb-3">
+                            Balances carry forward automatically from the ledger — no opening journal entry is posted.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Cash Account</label>
+                                <select class="form-select" @bind="model.CashAccountId">
+                                    @foreach (var a in model.AvailableCashAndBankAccounts)
+                                    {
+                                        <option value="@a.Id">@a.DisplayLabel</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Bank Account</label>
+                                <select class="form-select" @bind="model.BankAccountId">
+                                    @foreach (var a in model.AvailableCashAndBankAccounts)
+                                    {
+                                        <option value="@a.Id">@a.DisplayLabel</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Retained Earnings Account</label>
+                                <select class="form-select" @bind="model.RetainedEarningsAccountId">
+                                    @foreach (var a in model.AvailableRetainedEarningsAccounts)
+                                    {
+                                        <option value="@a.Id">@a.DisplayLabel</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-secondary small mb-3">
+                            An opening balance journal entry (General) will be posted on
+                            <strong>@(new DateTime(model.Year, model.Month, 1).ToString("dd MMMM yyyy"))</strong>,
+                            debiting Cash &amp; Bank and crediting Retained Earnings.
+                        </p>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Cash Ref #</label>
+                                <input class="form-control" @bind="model.CashAccountCode" placeholder="101" />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Cash Account Name</label>
+                                <input class="form-control" @bind="model.CashAccountName" placeholder="Cash on Hand" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Cash Opening Balance</label>
+                                <input type="number" class="form-control" @bind="model.CashBalance" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Bank Ref #</label>
+                                <input class="form-control" @bind="model.BankAccountCode" placeholder="102" />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-semibold">Bank Account Name</label>
+                                <input class="form-control" @bind="model.BankAccountName" placeholder="Bank Account" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Bank Opening Balance</label>
+                                <input type="number" class="form-control" @bind="model.BankBalance" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold">Retained Earnings Ref #</label>
+                                <input class="form-control" @bind="model.RetainedEarningsAccountCode" placeholder="301" />
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label fw-semibold">Retained Earnings Account Name</label>
+                                <input class="form-control" @bind="model.RetainedEarningsAccountName" placeholder="Retained Earnings" />
+                            </div>
+                        </div>
+                        <div class="alert alert-secondary py-2 small mb-0">
+                            Opening credit to Retained Earnings will be: <strong>@((model.CashBalance ?? 0) + (model.BankBalance ?? 0)).ToString("N0")</strong>
+                        </div>
+                    }
+
+                    @if (model.PermanentAccounts.Any())
+                    {
+                        <hr class="my-3" />
+                        <p class="fw-semibold small text-secondary mb-2">Existing permanent accounts (for reference):</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var a in model.PermanentAccounts)
+                            {
+                                <span class="badge bg-body-secondary text-body border px-2 py-1">@a.DisplayLabel</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="/periods" class="btn btn-outline-secondary fw-semibold">Cancel</a>
+                <button type="submit" class="btn btn-primary fw-semibold shadow-sm" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    <i class="bi bi-check-lg me-1"></i> Open Period
+                </button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Guid UserId;
+    private OpenPeriodViewModel model = new();
+    private string? errorMessage;
+    private bool isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedId))
+            {
+                UserId = parsedId;
+                model.Month = DateTime.Today.Month;
+                model.Year = DateTime.Today.Year;
+                await PopulateReferenceDataAsync();
+                return;
+            }
+        }
+
+        Nav.NavigateTo("/Account/Login", true);
+    }
+
+    private async Task PopulateReferenceDataAsync()
+    {
+        var accounts = await DbContext.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == UserId)
+            .OrderBy(a => a.ReferenceNumber)
+            .ToListAsync();
+
+        model.PermanentAccounts = accounts
+            .Where(a => a.Type == "Assets" || a.Type == "Liabilities" || a.Type == "Equity")
+            .ToList();
+
+        model.AvailableCashAndBankAccounts = accounts.Where(a => a.Role == "CashAndEquivalents").ToList();
+        model.AvailableRetainedEarningsAccounts = accounts.Where(a => a.Role == "RetainedEarnings").ToList();
+        model.HasExistingPermanentAccounts = model.AvailableCashAndBankAccounts.Any() && model.AvailableRetainedEarningsAccounts.Any();
+
+        model.SetupMode = model.HasExistingPermanentAccounts
+            ? OpenPeriodViewModel.ModeLoadExisting
+            : OpenPeriodViewModel.ModeCreateNew;
+
+        if (model.HasExistingPermanentAccounts)
+        {
+            model.CashAccountId ??= model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
+            model.BankAccountId ??= model.AvailableCashAndBankAccounts.Skip(1).FirstOrDefault()?.Id
+                                    ?? model.AvailableCashAndBankAccounts.FirstOrDefault()?.Id;
+            model.RetainedEarningsAccountId ??= model.AvailableRetainedEarningsAccounts.FirstOrDefault()?.Id;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        errorMessage = null;
+
+        if (model.Month < 1 || model.Month > 12)
+        {
+            errorMessage = "Please select a valid month.";
+            return;
+        }
+        if (model.Year < 2000 || model.Year > 2100)
+        {
+            errorMessage = "Please provide a valid year.";
+            return;
+        }
+
+        var startDate = DateTime.SpecifyKind(new DateTime(model.Year, model.Month, 1), DateTimeKind.Utc);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+        var periodName = startDate.ToString("MMMM yyyy");
+
+        var periodExists = await DbContext.Periods.AnyAsync(p => p.UserId == UserId && p.StartDate == startDate);
+        if (periodExists)
+        {
+            errorMessage = $"Period {periodName} already exists.";
+            return;
+        }
+
+        var isLoadExisting = model.SetupMode == OpenPeriodViewModel.ModeLoadExisting;
+
+        if (isLoadExisting)
+        {
+            if (model.CashAccountId == null || model.BankAccountId == null || model.RetainedEarningsAccountId == null)
+            {
+                errorMessage = "Please select the Cash, Bank, and Retained Earnings accounts to carry forward.";
+                return;
+            }
+            if (model.CashAccountId == model.BankAccountId)
+            {
+                errorMessage = "Cash Account and Bank Account cannot be the same account.";
+                return;
+            }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(model.CashAccountCode) || string.IsNullOrWhiteSpace(model.CashAccountName) ||
+                string.IsNullOrWhiteSpace(model.BankAccountCode) || string.IsNullOrWhiteSpace(model.BankAccountName) ||
+                string.IsNullOrWhiteSpace(model.RetainedEarningsAccountCode) || string.IsNullOrWhiteSpace(model.RetainedEarningsAccountName))
+            {
+                errorMessage = "Please complete all new account fields (reference code & name).";
+                return;
+            }
+        }
+
+        isSubmitting = true;
+        using var transaction = await DbContext.Database.BeginTransactionAsync();
+        try
+        {
+            if (isLoadExisting)
+            {
+                var cashAccount = await DbContext.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.CashAccountId && a.UserId == UserId);
+                var bankAccount = await DbContext.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.BankAccountId && a.UserId == UserId);
+                var retainedAccount = await DbContext.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == model.RetainedEarningsAccountId && a.UserId == UserId);
+
+                if (cashAccount == null || bankAccount == null || retainedAccount == null)
+                {
+                    await transaction.RollbackAsync();
+                    errorMessage = "One or more selected accounts could not be found.";
+                    return;
+                }
+
+                DbContext.Periods.Add(new Period
+                {
+                    UserId = UserId,
+                    PeriodName = periodName,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    IsClosed = false
+                });
+                await DbContext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                Nav.NavigateTo("/periods");
+            }
+            else
+            {
+                var existingCodes = await DbContext.ChartOfAccounts
+                    .Where(a => a.UserId == UserId
+                             && (a.ReferenceNumber.ToString() == model.CashAccountCode
+                             || a.ReferenceNumber.ToString() == model.BankAccountCode
+                             || a.ReferenceNumber.ToString() == model.RetainedEarningsAccountCode))
+                    .Select(a => a.ReferenceNumber)
+                    .ToListAsync();
+
+                if (existingCodes.Any())
+                {
+                    await transaction.RollbackAsync();
+                    errorMessage = "One or more account reference numbers are already in use in your Chart of Accounts.";
+                    return;
+                }
+
+                var cashAccount = new ChartOfAccount { UserId = UserId, ReferenceNumber = int.Parse(model.CashAccountCode!), AccountName = model.CashAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
+                var bankAccount = new ChartOfAccount { UserId = UserId, ReferenceNumber = int.Parse(model.BankAccountCode!), AccountName = model.BankAccountName!, Type = "Assets", Role = "CashAndEquivalents", IsActive = true };
+                var retainedAccount = new ChartOfAccount { UserId = UserId, ReferenceNumber = int.Parse(model.RetainedEarningsAccountCode!), AccountName = model.RetainedEarningsAccountName!, Type = "Equity", Role = "RetainedEarnings", IsActive = true };
+
+                DbContext.ChartOfAccounts.AddRange(cashAccount, bankAccount, retainedAccount);
+                await DbContext.SaveChangesAsync();
+
+                DbContext.Periods.Add(new Period
+                {
+                    UserId = UserId,
+                    PeriodName = periodName,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    IsClosed = false
+                });
+                await DbContext.SaveChangesAsync();
+
+                var cashBalance = model.CashBalance ?? 0;
+                var bankBalance = model.BankBalance ?? 0;
+                var totalOpeningBalance = cashBalance + bankBalance;
+
+                // Hanya posting jurnal pembuka bila ada saldo awal. Tanggal entry
+                // = tanggal 1 periode, sehingga selalu tampil paling atas di
+                // General Journal (diurutkan berdasarkan EntryDate).
+                if (totalOpeningBalance != 0)
+                {
+                    var transactionNumber = await GenerateTransactionNumberAsync(UserId, "General");
+
+                    var journalEntry = new JournalEntry
+                    {
+                        UserId = UserId,
+                        TransactionNumber = transactionNumber,
+                        JournalType = "General",
+                        EntryDate = startDate,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    DbContext.JournalEntries.Add(journalEntry);
+                    await DbContext.SaveChangesAsync();
+
+                    var lines = new List<JournalEntryLine>();
+                    int order = 0;
+                    if (cashBalance != 0)
+                    {
+                        lines.Add(new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = cashAccount.Id, Debit = cashBalance, Credit = 0, LineDescription = "Opening balance", LineOrder = order++ });
+                    }
+                    if (bankBalance != 0)
+                    {
+                        lines.Add(new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = bankAccount.Id, Debit = bankBalance, Credit = 0, LineDescription = "Opening balance", LineOrder = order++ });
+                    }
+                    lines.Add(new JournalEntryLine { JournalEntryId = journalEntry.Id, AccountId = retainedAccount.Id, Debit = 0, Credit = totalOpeningBalance, LineDescription = "Opening balance", LineOrder = order++ });
+
+                    DbContext.JournalEntryLines.AddRange(lines);
+                    await DbContext.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
+                Nav.NavigateTo("/periods");
+            }
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            errorMessage = $"Transaction failed: {ex.InnerException?.Message ?? ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task<string> GenerateTransactionNumberAsync(Guid userId, string journalType)
+    {
+        var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
+
+        var lastNumber = await DbContext.JournalEntries
+            .Where(e => e.UserId == userId && e.TransactionNumber.StartsWith(prefix + "-"))
+            .OrderByDescending(e => e.Id)
+            .Select(e => e.TransactionNumber)
+            .FirstOrDefaultAsync();
+
+        var nextSeq = 1;
+        if (lastNumber != null)
+        {
+            var parts = lastNumber.Split('-');
+            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
+            {
+                nextSeq = lastSeq + 1;
+            }
+        }
+
+        return $"{prefix}-{nextSeq:D6}";
+    }
+}
