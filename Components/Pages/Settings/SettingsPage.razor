@@ -3,11 +3,70 @@
 @rendermode InteractiveServer
 @attribute [Authorize]
 
+@using Microsoft.AspNetCore.Identity
+@using AumoFinance.Models
+
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthStateProvider
+
 <PageTitle>Settings</PageTitle>
 
 <div class="container-fluid p-0">
     <h2 class="mb-4 fw-bold">Application Settings</h2>
 
+    <!-- ===== USER PROFILE PANEL (NEW) ===== -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card p-4 shadow-sm border-0 rounded-4">
+                <h5 class="card-title mb-4 fw-bold">
+                    <i class="bi bi-person-circle me-2 text-info"></i>User Profile
+                </h5>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Full Name</dt>
+                            <dd class="col-sm-7">@UserFullName</dd>
+
+                            <dt class="col-sm-5">Username</dt>
+                            <dd class="col-sm-7">@UserName</dd>
+
+                            <dt class="col-sm-5">Email</dt>
+                            <dd class="col-sm-7">
+                                <span class="d-flex align-items-center">
+                                    @UserEmail
+                                    <span class="badge ms-2 @(IsEmailConfirmed ? "bg-success" : "bg-warning text-dark")">
+                                        @(IsEmailConfirmed ? "✅" : "❌")
+                                    </span>
+                                </span>
+                            </dd>
+
+                            <dt class="col-sm-5">Phone</dt>
+                            <dd class="col-sm-7">@(CurrentUser?.PhoneNumber ?? "N/A")</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">2FA Status</dt>
+                            <dd class="col-sm-7">
+                                <span class="badge @(CurrentUser?.TwoFactorEnabled == true ? "bg-success" : "bg-secondary")">
+                                    @(CurrentUser?.TwoFactorEnabled == true ? "✅ Enabled" : "❌ Disabled")
+                                </span>
+                            </dd>
+                            <dt class="col-sm-5">Account Status</dt>
+                            <dd class="col-sm-7">
+                                <span class="badge @(CurrentUser?.LockoutEnd <= DateTimeOffset.UtcNow ? "bg-success" : "bg-danger")">
+                                    @(CurrentUser?.LockoutEnd <= DateTimeOffset.UtcNow ? "Active" : "Locked")
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== EXISTING PANELS (UNCHANGED) ===== -->
     <div class="row">
         <!-- Panel 1: Appearance & Theme -->
         <div class="col-md-6 mb-4">
@@ -50,3 +109,50 @@
         </div>
     </div>
 </div>
+
+@code {
+    protected ApplicationUser? CurrentUser { get; set; }
+    protected bool IsEmailConfirmed => CurrentUser?.EmailConfirmed ?? false;
+    protected string UserEmail => CurrentUser?.Email ?? "N/A";
+    protected string UserFullName => CurrentUser?.FullName ?? CurrentUser?.UserName ?? "Unknown";
+    protected string UserName => CurrentUser?.UserName ?? "Unknown";
+
+    protected bool isDarkMode = true;
+    protected bool enableSystemAlerts = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var userId = UserManager.GetUserId(user);
+            if (userId != null)
+            {
+                CurrentUser = await UserManager.FindByIdAsync(userId);
+            }
+        }
+    }
+
+    protected async Task OnThemeChanged(ChangeEventArgs e)
+    {
+        isDarkMode = (bool)e.Value!;
+        var selectedTheme = isDarkMode ? "dark" : "light";
+
+        try
+        {
+            await JS.InvokeVoidAsync("setAppTheme", selectedTheme);
+        }
+        catch
+        {
+            await JS.InvokeVoidAsync("document.documentElement.setAttribute", "data-bs-theme", selectedTheme);
+            await JS.InvokeVoidAsync("localStorage.setItem", "aumo_theme", selectedTheme);
+        }
+    }
+
+    protected async Task OnSystemAlertsChanged(ChangeEventArgs e)
+    {
+        enableSystemAlerts = (bool)e.Value!;
+    }
+}
