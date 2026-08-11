@@ -10,7 +10,7 @@
 
 <h3>Settings</h3>
 
-<!-- ===== USER PROFILE SECTION ===== -->
+<!-- USER PROFILE SECTION -->
 <div class="card mb-4">
     <div class="card-header bg-primary text-white">
         <h5 class="mb-0">👤 User Profile</h5>
@@ -50,7 +50,7 @@
     </div>
 </div>
 
-<!-- ===== SETTINGS SECTION ===== -->
+<!-- SETTINGS SECTION -->
 <div class="card">
     <div class="card-header bg-primary text-white">
         <h5 class="mb-0">⚙️ Preferences</h5>
@@ -61,9 +61,9 @@
             <label class="form-label d-block">Theme</label>
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="themeToggle"
-                       checked="@Settings.IsDarkMode" @onchange="OnThemeChanged" />
+                       checked="@isDarkMode" @onchange="OnThemeChanged" />
                 <label class="form-check-label" for="themeToggle">
-                    @(Settings.IsDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode")
+                    @(isDarkMode ? "🌙 Dark Mode" : "☀️ Light Mode")
                 </label>
             </div>
         </div>
@@ -73,9 +73,9 @@
             <label class="form-label d-block">System Alerts</label>
             <div class="form-check form-switch">
                 <input class="form-check-input" type="checkbox" id="alertsToggle"
-                       checked="@Settings.EnableSystemAlerts" @onchange="OnSystemAlertsChanged" />
+                       checked="@enableSystemAlerts" @onchange="OnSystemAlertsChanged" />
                 <label class="form-check-label" for="alertsToggle">
-                    @(Settings.EnableSystemAlerts ? "Enabled" : "Disabled")
+                    @(enableSystemAlerts ? "Enabled" : "Disabled")
                 </label>
             </div>
         </div>
@@ -94,87 +94,3 @@
         </div>
     </div>
 </div>
-
-@code {
-    protected ApplicationUser? CurrentUser { get; set; }
-    protected SettingsViewModel Settings { get; set; } = new();
-
-    protected bool IsEmailConfirmed => CurrentUser?.EmailConfirmed ?? false;
-    protected string UserEmail => CurrentUser?.Email ?? "N/A";
-    protected string UserFullName => CurrentUser?.FullName ?? CurrentUser?.UserName ?? "Unknown";
-    protected string UserName => CurrentUser?.UserName ?? "Unknown";
-
-    protected string toastMessage = "Settings saved successfully.";
-
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.Identity?.IsAuthenticated == true)
-        {
-            var userId = UserManager.GetUserId(user);
-            if (userId != null)
-            {
-                CurrentUser = await UserManager.FindByIdAsync(userId);
-            }
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            try
-            {
-                var savedTheme = await JS.InvokeAsync<string?>("localStorage.getItem", "aumo_theme");
-                Settings.IsDarkMode = string.IsNullOrEmpty(savedTheme) || savedTheme == "dark";
-                StateHasChanged();
-            }
-            catch
-            {
-                Settings.IsDarkMode = true;
-            }
-        }
-    }
-
-    protected async Task OnThemeChanged(ChangeEventArgs e)
-    {
-        Settings.IsDarkMode = e.Value is bool val ? val : Convert.ToBoolean(e.Value);
-        var selectedTheme = Settings.IsDarkMode ? "dark" : "light";
-
-        try
-        {
-            await JS.InvokeVoidAsync("setAppTheme", selectedTheme);
-        }
-        catch
-        {
-            await JS.InvokeVoidAsync("document.documentElement.setAttribute", "data-bs-theme", selectedTheme);
-            await JS.InvokeVoidAsync("localStorage.setItem", "aumo_theme", selectedTheme);
-        }
-
-        await ShowToast($"Theme changed to {selectedTheme} mode.");
-    }
-
-    protected async Task OnSystemAlertsChanged(ChangeEventArgs e)
-    {
-        Settings.EnableSystemAlerts = e.Value is bool val ? val : Convert.ToBoolean(e.Value);
-        var status = Settings.EnableSystemAlerts ? "enabled" : "disabled";
-        await ShowToast($"System alerts {status}.");
-    }
-
-    private async Task ShowToast(string message)
-    {
-        toastMessage = message;
-        StateHasChanged();
-
-        try
-        {
-            await JS.InvokeVoidAsync("aumoToast.show", "settingsToast");
-        }
-        catch
-        {
-            // Fallback jika JS Toast library belum ter-load
-        }
-    }
-}
