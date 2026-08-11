@@ -47,7 +47,7 @@ namespace AumoFinance.Services
                 message.Body = bodyBuilder.ToMessageBody();
 
                 using var client = new SmtpClient();
-                
+
                 // Render network kadang butuh latency ekstra saat jabat tangan (handshake) TLS
                 client.Timeout = 15000; // 15 detik
 
