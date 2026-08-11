@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
 using Microsoft.AspNetCore.Identity;
 using AumoFinance.Models;
@@ -74,11 +75,11 @@ namespace AumoFinance.Components.Pages.Settings
                 var verificationUrl = Navigation.ToAbsoluteUri(
                     $"/auth/verify-email?Email={Uri.EscapeDataString(CurrentUser.Email)}&Token={encodedToken}").ToString();
 
-                await ShowToast($"Verification link created: {verificationUrl}");
+                await ShowToast("Verification email sent.");
             }
             catch (Exception ex)
             {
-                await ShowToast($"Failed to generate verification link: {ex.Message}");
+                await ShowToast($"Failed to send verification: {ex.Message}");
             }
             finally
             {
