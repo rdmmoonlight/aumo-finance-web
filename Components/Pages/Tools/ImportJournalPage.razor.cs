@@ -19,7 +19,7 @@ public partial class ImportJournalPage : ComponentBase
     [Inject] protected AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
 
-    protected static readonly CultureInfo Idr = new("id-ID");
+    protected static readonly CultureInfo Idr = new("en-US");
     protected Guid UserId { get; private set; }
 
     protected const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
@@ -45,7 +45,7 @@ public partial class ImportJournalPage : ComponentBase
             }
         }
 
-        Nav.NavigateTo("/Account/Login", true);
+        Nav.NavigateTo("/auth/login", true);
     }
 
     protected void OnFileSelected(InputFileChangeEventArgs e)
@@ -57,28 +57,57 @@ public partial class ImportJournalPage : ComponentBase
 
     protected async Task HandlePreview()
     {
-        if (selectedFile == null || UserId == Guid.Empty) return;
+        if (selectedFile == null || UserId == Guid.Empty)
+        {
+            errorMessage = "Please select an Excel file first.";
+            return;
+        }
 
         errorMessage = null;
+        successMessage = null;
         isBusy = true;
+
         try
         {
-            using var stream = new MemoryStream();
-            await using (var uploadStream = selectedFile.OpenReadStream(MaxFileSizeBytes))
+            // Kopi fileStream ke MemoryStream secara aman
+            using var memoryStream = new MemoryStream();
+            await using (var fileStream = selectedFile.OpenReadStream(MaxFileSizeBytes))
             {
-                await uploadStream.CopyToAsync(stream);
+                await fileStream.CopyToAsync(memoryStream);
             }
-            stream.Position = 0;
 
-            var result = await ParseJournalExcelAsync(stream);
+            memoryStream.Position = 0;
+
+            if (memoryStream.Length == 0)
+            {
+                errorMessage = "The uploaded file is empty.";
+                return;
+            }
+
+            var result = await ParseJournalExcelAsync(memoryStream);
             if (!result.IsSuccess)
             {
                 errorMessage = result.Message;
                 return;
             }
 
+            if (result.Transactions == null || !result.Transactions.Any())
+            {
+                errorMessage = "No valid transactions found in 'GJ' or 'AJ' sheets. Please verify your template format.";
+                return;
+            }
+
             parseResult = result;
-            await JS.InvokeVoidAsync("aumoModal.show", "previewModal");
+
+            // Paksa UI me-render ulang data preview sebelum memanggil JavaScript Modal
+            StateHasChanged();
+
+            // Panggil modal dengan ID 'indexPreviewModal' yang sesuai dengan .razor
+            await JS.InvokeVoidAsync("aumoModal.show", "indexPreviewModal");
+        }
+        catch (JSException jsEx)
+        {
+            errorMessage = $"JavaScript Interop error: {jsEx.Message}";
         }
         catch (Exception ex)
         {
@@ -87,6 +116,7 @@ public partial class ImportJournalPage : ComponentBase
         finally
         {
             isBusy = false;
+            StateHasChanged();
         }
     }
 
@@ -280,7 +310,10 @@ public partial class ImportJournalPage : ComponentBase
             await DbContext.SaveChangesAsync();
 
             successMessage = $"Successfully imported {transactionsImported} journal entries with {accountsCreated} new COA accounts created.";
-            await JS.InvokeVoidAsync("aumoModal.hide", "previewModal");
+            
+            // Tutup modal secara bersih menggunakan ID yang sesuai
+            await JS.InvokeVoidAsync("aumoModal.hide", "indexPreviewModal");
+            
             parseResult = null;
             selectedFile = null;
         }
@@ -291,6 +324,7 @@ public partial class ImportJournalPage : ComponentBase
         finally
         {
             isBusy = false;
+            StateHasChanged();
         }
     }
 }
