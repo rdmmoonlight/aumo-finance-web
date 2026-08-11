@@ -143,8 +143,8 @@ builder.Services.AddHealthChecks();
 // Render Keep-Alive Service
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
-// --- EMAIL SERVICES REGISTRATION ---
-builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
+// --- EMAIL SERVICES REGISTRATION (RESEND API) ---
+builder.Services.AddTransient<IEmailSender, ResendEmailSender>();
 
 // Bridging Microsoft Identity's IEmailSender<TUser> to AumoFinance's IEmailSender
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, IdentityEmailSenderBridge>();
