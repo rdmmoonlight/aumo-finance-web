@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 
-namespace AumoFinance.Pages;
+namespace AumoFinance.Components.Pages.Home;
 
 public partial class Home : ComponentBase
 {
