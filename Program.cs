@@ -77,69 +77,48 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 
 // =====================================
-// 4. AUTHENTICATION
-// Cookie, JWT & OAuth
+// 4. AUTHENTICATION (Cookie, JWT & OAuth)
 // =====================================
 
 var authBuilder = builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme =
-        IdentityConstants.ApplicationScheme;
-
-    options.DefaultSignInScheme =
-        IdentityConstants.ExternalScheme;
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
 })
-.AddJwtBearer(
-    JwtBearerDefaults.AuthenticationScheme,
-    options =>
+.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters =
-            new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
 
-                ValidIssuer = AuthController.JwtIssuer,
-                ValidAudience = AuthController.JwtIssuer,
+        ValidIssuer = AuthController.JwtIssuer,
+        ValidAudience = AuthController.JwtIssuer,
 
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(
-                            AuthController.JwtSecretKey
-                        )
-                    )
-            };
-    });
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(AuthController.JwtSecretKey)
+        )
+    };
+});
 
 
-// =====================================
-// GOOGLE OAUTH
-// Optional Configuration
-// =====================================
-
-var googleClientId =
-    builder.Configuration["Authentication:Google:ClientId"]
+// --- GOOGLE OAUTH CONFIGURATION ---
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
     ?? builder.Configuration["Google:ClientId"];
 
-var googleClientSecret =
-    builder.Configuration["Authentication:Google:ClientSecret"]
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
     ?? builder.Configuration["Google:ClientSecret"];
 
-if (!string.IsNullOrWhiteSpace(googleClientId) &&
-    !string.IsNullOrWhiteSpace(googleClientSecret))
+if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
 {
-    authBuilder.AddGoogle(
-        GoogleDefaults.AuthenticationScheme,
-        options =>
-        {
-            options.ClientId = googleClientId;
-            options.ClientSecret = googleClientSecret;
-
-            options.SignInScheme =
-                IdentityConstants.ExternalScheme;
-        });
+    authBuilder.AddGoogle(GoogleDefaults.AuthenticationScheme, options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+        options.SignInScheme = IdentityConstants.ExternalScheme;
+    });
 }
 
 
@@ -147,7 +126,7 @@ if (!string.IsNullOrWhiteSpace(googleClientId) &&
 // 5. BLAZOR CORE & API CONTROLLERS
 // =====================================
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(); // Mendaftarkan routing Controller API
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -161,42 +140,16 @@ builder.Services.AddCascadingAuthenticationState();
 
 builder.Services.AddHealthChecks();
 
-
-// Render Keep-Alive
-// Implementation: Services/RenderKeepAliveService.cs
+// Render Keep-Alive Service
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
-
-builder.Services.AddTransient<
-    IEmailSender,
-    MailKitEmailSender
->();
-
-builder.Services.AddScoped<
-    IGuardianService,
-    GuardianService
->();
-
-builder.Services.AddHttpClient<
-    IAiService,
-    AiService
->();
-
-builder.Services.AddScoped<
-    IJournalImportService,
-    JournalImportService
->();
-
+builder.Services.AddTransient<IEmailSender, MailKitEmailSender>();
+builder.Services.AddScoped<IGuardianService, GuardianService>();
+builder.Services.AddHttpClient<IAiService, AiService>();
+builder.Services.AddScoped<IJournalImportService, JournalImportService>();
 builder.Services.AddMemoryCache();
-
-builder.Services.AddScoped<
-    ICloudStorageService,
-    CloudinaryService
->();
-
-builder.Services.AddScoped<
-    DashboardDataService
->();
+builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
+builder.Services.AddScoped<DashboardDataService>();
 
 // --- MARKET SERVICE & HTTP CLIENT SETUP ---
 builder.Services.AddHttpClient("MarketApiClient", client =>
@@ -205,29 +158,20 @@ builder.Services.AddHttpClient("MarketApiClient", client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AumoFinance/1.0");
 });
 
-builder.Services.AddScoped<
-    IMarketService,
-    MarketService
->();
-
+builder.Services.AddScoped<IMarketService, MarketService>();
 builder.Services.AddHttpClient();
 
 
 // =====================================
-// 7. FORWARDED HEADERS
-// Railway / Render / Proxy
+// 7. FORWARDED HEADERS (Render / Reverse Proxy)
 // =====================================
 
-builder.Services.Configure<ForwardedHeadersOptions>(
-    options =>
-    {
-        options.ForwardedHeaders =
-            ForwardedHeaders.XForwardedFor |
-            ForwardedHeaders.XForwardedProto;
-
-        options.KnownIPNetworks.Clear();
-        options.KnownProxies.Clear();
-    });
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 
 // =====================================
@@ -247,22 +191,13 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        var context =
-            services.GetRequiredService<AppDbContext>();
-
+        var context = services.GetRequiredService<AppDbContext>();
         context.Database.Migrate();
     }
     catch (Exception ex)
     {
-        var logger =
-            services.GetRequiredService<
-                ILogger<Program>
-            >();
-
-        logger.LogError(
-            ex,
-            "Failed to run automatic database migration."
-        );
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Failed to run automatic database migration.");
     }
 }
 
@@ -284,6 +219,8 @@ else
 
 app.UseStaticFiles();
 
+app.UseRouting(); // Memastikan routing internal ASP.NET Core berjalan presisi
+
 app.UseAntiforgery();
 
 app.UseAuthentication();
@@ -292,45 +229,27 @@ app.UseAuthorization();
 
 
 // =====================================
-// 10. HEALTH CHECK
+// 10. ENDPOINTS & MAP CONTROLLERS
 // =====================================
 
 app.MapHealthChecks("/health");
 
+app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
+{
+    await signInManager.SignOutAsync();
+    return Results.Redirect("/auth/login");
+});
 
-// =====================================
-// 11. AUTH LOGOUT
-// =====================================
-
-app.MapPost(
-    "/auth/logout",
-    async (
-        SignInManager<ApplicationUser> signInManager
-    ) =>
-    {
-        await signInManager.SignOutAsync();
-
-        return Results.Redirect("/auth/login");
-    });
-
-
-// =====================================
-// 12. API CONTROLLERS
-// =====================================
-
+// Map Controller Endpoints
 app.MapControllers();
 
-
-// =====================================
-// 13. BLAZOR RAZOR COMPONENTS
-// =====================================
-
+// Map Blazor Components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 
 // =====================================
-// 14. RUN
+// 11. RUN APPLICATION
 // =====================================
 
 app.Run();
