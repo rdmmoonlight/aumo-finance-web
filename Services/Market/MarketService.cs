@@ -19,7 +19,7 @@ namespace AumoFinance.Services
             try
             {
                 var client = _httpClientFactory.CreateClient("MarketApiClient");
-                
+
                 // Set User-Agent wajib agar tidak ter-block oleh server target
                 client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AumoFinance/1.0");
 
@@ -33,7 +33,7 @@ namespace AumoFinance.Services
                 response.Usd = await usdTask;
                 response.Ihsg = await ihsgTask;
                 response.BiRate = await biRateTask;
-                
+
                 // Berhasil jika setidaknya salah satu data indikator pasar utama berhasil diambil
                 response.Success = response.Usd != null || response.Ihsg != null || !string.IsNullOrEmpty(response.BiRate);
             }
@@ -55,7 +55,7 @@ namespace AumoFinance.Services
             {
                 var url = "https://open.er-api.com/v6/latest/USD";
                 var res = await client.GetAsync(url);
-                
+
                 if (res.IsSuccessStatusCode)
                 {
                     using var stream = await res.Content.ReadAsStreamAsync();
@@ -103,7 +103,7 @@ namespace AumoFinance.Services
                         .GetProperty("result")[0];
 
                     var meta = result.GetProperty("meta");
-                    
+
                     double currentPrice = meta.GetProperty("regularMarketPrice").GetDouble();
                     double previousClose = meta.GetProperty("chartPreviousClose").GetDouble();
 
@@ -136,14 +136,14 @@ namespace AumoFinance.Services
                 // URL Resmi Bank Indonesia
                 var url = "https://www.bi.go.id/id/default.aspx";
                 var res = await client.GetAsync(url);
-                
+
                 if (res.IsSuccessStatusCode)
                 {
                     var htmlContent = await res.Content.ReadAsStringAsync();
 
                     // Pattern RegEx untuk mencari Teks BI-Rate di HTML BI (contoh pattern: "BI-Rate</span>...<span>5,75%")
                     var match = Regex.Match(htmlContent, @"BI-Rate[\s\S]*?(\d{1,2}[,\.]\d{2})%", RegexOptions.IgnoreCase);
-                    
+
                     if (match.Success)
                     {
                         var rateValue = match.Groups[1].Value.Replace(',', '.');
