@@ -140,6 +140,30 @@ window.aumoTheme = {
 
 
 // ==========================================
+// Device Local Timestamp Helper
+// ==========================================
+//
+// Dipakai untuk mencatat CreatedAt jurnal berdasarkan waktu
+// lokal PERANGKAT saat input, bukan waktu server saat data
+// disimpan ke database.
+//
+
+window.aumoTime = {
+
+    /**
+     * Ambil waktu lokal perangkat saat ini sebagai string
+     * "YYYY-MM-DDTHH:mm:ss" (tanpa konversi timezone apapun,
+     * murni jam dinding perangkat).
+     */
+    getLocalTimestamp: function () {
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+};
+
+
+// ==========================================
 // Initial Theme Restoration
 // ==========================================
 

@@ -9,6 +9,7 @@
 @using AumoFinance.Models
 @inject AppDbContext DbContext
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
 
 <div class="container-fluid">
     <!-- Page Header -->
@@ -102,11 +103,19 @@
                                                         </span>
                                                     }
 
-                                                    <a href="/JournalEntry/Edit/@entry.Id"
-                                                       class="btn btn-sm btn-dark text-warning border border-secondary shadow-sm mt-1 py-0 px-1 @(editMode ? "" : "d-none")" 
-                                                       title="Edit entri ini">
-                                                        <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
-                                                    </a>
+                                                    <div class="d-flex gap-1 mt-1 @(editMode ? "" : "d-none")">
+                                                        <a href="/JournalEntry/Edit/@entry.Id"
+                                                           class="btn btn-sm btn-dark text-warning border border-secondary shadow-sm py-0 px-1"
+                                                           title="Edit entri ini">
+                                                            <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                                                        </a>
+                                                        <button type="button"
+                                                                class="btn btn-sm btn-dark text-danger border border-secondary shadow-sm py-0 px-1"
+                                                                title="Hapus entri ini"
+                                                                @onclick="() => DeleteEntry(entry)">
+                                                            <i class="bi bi-trash-fill" style="font-size: 0.75rem;"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             }
                                         </td>
@@ -212,4 +221,31 @@
     }
 
     private void ToggleEditMode() => editMode = !editMode;
+
+    private async Task DeleteEntry(JournalEntry entry)
+    {
+        var closedPeriods = await DbContext.Periods
+            .Where(p => p.UserId == UserId && p.IsClosed)
+            .ToListAsync();
+
+        if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods))
+        {
+            await JS.InvokeVoidAsync("alert", $"Jurnal {entry.TransactionNumber} berada pada periode yang sudah ditutup dan tidak dapat dihapus.");
+            return;
+        }
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Hapus jurnal {entry.TransactionNumber}? Tindakan ini tidak dapat dibatalkan.");
+        if (!confirmed) return;
+
+        var tracked = await DbContext.JournalEntries
+            .FirstOrDefaultAsync(j => j.Id == entry.Id && j.UserId == UserId);
+
+        if (tracked == null) return;
+
+        DbContext.JournalEntries.Remove(tracked);
+        await DbContext.SaveChangesAsync();
+
+        entries.Remove(entry);
+        StateHasChanged();
+    }
 }
