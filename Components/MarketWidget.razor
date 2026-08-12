@@ -25,9 +25,7 @@
                         <span class="style-label text-uppercase">USD / IDR</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-glow">
-                            Rp @marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
-                        </span>
+                        <span class="fw-bold style-value text-glow text-nowrap">Rp@(marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
                         <span class="badge badge-futuristic @(marketData.Usd?.IsUp == true ? "badge-up" : "badge-down")">
                             <i class="bi @(marketData.Usd?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
                             @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
@@ -44,9 +42,7 @@
                         <span class="style-label text-uppercase">IDX Composite</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-glow">
-                            @marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))
-                        </span>
+                        <span class="fw-bold style-value text-glow text-nowrap">@marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))</span>
                         <span class="badge badge-futuristic @(marketData.Ihsg?.IsUp == true ? "badge-up" : "badge-down")">
                             <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
                             @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
@@ -63,9 +59,7 @@
                         <span class="style-label text-uppercase">BI-Rate</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-info-glow">
-                            @marketData.BiRate
-                        </span>
+                        <span class="fw-bold style-value text-info-glow text-nowrap">@marketData.BiRate</span>
                     </div>
                 </div>
             </div>
@@ -110,6 +104,7 @@
     .style-value {
         font-size: 0.98rem;
         letter-spacing: -0.01em;
+        white-space: nowrap;
     }
 
     .indicator-dot {
@@ -140,6 +135,7 @@
         padding: 0.25em 0.6em;
         border-radius: 20px;
         letter-spacing: 0.02em;
+        white-space: nowrap;
     }
 
     .badge-up {
