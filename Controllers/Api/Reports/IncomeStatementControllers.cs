@@ -42,21 +42,39 @@ public class IncomeStatementControllers : ControllerBase
                 hasPeriodSelected = false,
                 message = "No accounting period selected.",
                 selectedPeriodName = (string?)null,
-                asOfDate = (DateTime?)null,
-                incomeStatement = (object?)null
+                revenueAccounts = Array.Empty<object>(),
+                expenseAccounts = Array.Empty<object>()
             });
         }
 
         var rows = await TrialBalanceControllers.BuildTrialBalanceRowsAsync(_db, userId, period, includeAdjusting: true);
         var statementData = BuildIncomeStatement(rows, period);
 
+        // Kontrak response harus flat (field-field di root), selaras dengan pola
+        // TrialBalanceControllers/WorksheetControllers, dan nama field harus sama
+        // persis dengan IncomeStatementReportApiResponse di sisi Android
+        // (revenueAccounts/totalRevenue/expenseAccounts/totalExpenses/netIncome),
+        // ditambah otherIncomeAccounts/otherExpenseAccounts/operatingIncome yang
+        // sebelumnya tidak pernah dikirim sama sekali.
+        // Sebelumnya di-nest di bawah properti "incomeStatement" dengan nama field
+        // berbeda (revenues, operatingExpenses, totalOperatingExpenses), sehingga
+        // Android selalu mendapat daftar akun kosong dan total Rp 0.
         return Ok(new
         {
             success = true,
             hasPeriodSelected = true,
             selectedPeriodName = period.PeriodName,
-            asOfDate = period.EndDate,
-            incomeStatement = statementData
+            asOfDate = statementData.AsOfDate,
+            revenueAccounts = statementData.Revenues,
+            totalRevenue = statementData.TotalRevenue,
+            expenseAccounts = statementData.OperatingExpenses,
+            totalExpenses = statementData.TotalOperatingExpenses,
+            operatingIncome = statementData.OperatingIncome,
+            otherIncomeAccounts = statementData.OtherIncome,
+            otherExpenseAccounts = statementData.OtherExpenses,
+            totalOtherIncome = statementData.TotalOtherIncome,
+            totalOtherExpenses = statementData.TotalOtherExpenses,
+            netIncome = statementData.NetIncome
         });
     }
 
