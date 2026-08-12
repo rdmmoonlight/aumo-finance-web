@@ -19,16 +19,16 @@
             
             <!-- USD / IDR -->
             <div class="col-12 col-md-4 border-end-futuristic">
-                <div class="d-flex flex-column align-items-center justify-content-center px-2">
+                <div class="d-flex flex-column align-items-center justify-content-center px-1">
                     <div class="d-flex align-items-center gap-1 mb-1">
                         <span class="indicator-dot @(marketData.Usd?.IsUp == true ? "dot-up" : "dot-down")"></span>
                         <span class="style-label text-uppercase">USD / IDR</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-glow text-nowrap">Rp@(marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
-                        <span class="badge badge-futuristic @(marketData.Usd?.IsUp == true ? "badge-up" : "badge-down")">
+                    <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                        <span class="fw-bold style-value text-glow text-nowrap">Rp. @(marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
+                        <span class="badge badge-futuristic @(marketData.Usd?.IsUp == true ? "badge-up" : "badge-down") text-nowrap">
                             <i class="bi @(marketData.Usd?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
-                            @(marketData.Usd?.IsUp == true ? "+" : "")@marketData.Usd?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
+                            @(marketData.Usd?.IsUp == true ? "+" : "")@(marketData.Usd?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID")))%
                         </span>
                     </div>
                 </div>
@@ -36,16 +36,16 @@
 
             <!-- IHSG (IDX COMPOSITE) -->
             <div class="col-12 col-md-4 border-end-futuristic">
-                <div class="d-flex flex-column align-items-center justify-content-center px-2">
+                <div class="d-flex flex-column align-items-center justify-content-center px-1">
                     <div class="d-flex align-items-center gap-1 mb-1">
                         <span class="indicator-dot @(marketData.Ihsg?.IsUp == true ? "dot-up" : "dot-down")"></span>
                         <span class="style-label text-uppercase">IDX Composite</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-glow text-nowrap">@marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID"))</span>
-                        <span class="badge badge-futuristic @(marketData.Ihsg?.IsUp == true ? "badge-up" : "badge-down")">
+                    <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                        <span class="fw-bold style-value text-glow text-nowrap">@(marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
+                        <span class="badge badge-futuristic @(marketData.Ihsg?.IsUp == true ? "badge-up" : "badge-down") text-nowrap">
                             <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
-                            @(marketData.Ihsg?.IsUp == true ? "+" : "")@marketData.Ihsg?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID"))%
+                            @(marketData.Ihsg?.IsUp == true ? "+" : "")@(marketData.Ihsg?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID")))%
                         </span>
                     </div>
                 </div>
@@ -53,13 +53,13 @@
 
             <!-- BI-RATE -->
             <div class="col-12 col-md-4">
-                <div class="d-flex flex-column align-items-center justify-content-center px-2">
+                <div class="d-flex flex-column align-items-center justify-content-center px-1">
                     <div class="d-flex align-items-center gap-1 mb-1">
                         <span class="indicator-dot dot-info"></span>
                         <span class="style-label text-uppercase">BI-Rate</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-info-glow text-nowrap">@marketData.BiRate</span>
+                        <span class="fw-bold style-value text-info-glow text-nowrap">@(marketData.BiRate)</span>
                     </div>
                 </div>
             </div>
@@ -79,7 +79,7 @@
 <style>
     .market-futuristic-card {
         position: relative;
-        max-width: 650px;
+        max-width: 720px;
         background: rgba(18, 24, 38, 0.45);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
@@ -102,7 +102,7 @@
     }
 
     .style-value {
-        font-size: 0.98rem;
+        font-size: 0.95rem;
         letter-spacing: -0.01em;
         white-space: nowrap;
     }
@@ -112,6 +112,7 @@
         height: 6px;
         border-radius: 50%;
         display: inline-block;
+        flex-shrink: 0;
     }
 
     .dot-up {
@@ -132,10 +133,13 @@
     .badge-futuristic {
         font-size: 0.675rem;
         font-weight: 600;
-        padding: 0.25em 0.6em;
+        padding: 0.25em 0.5em;
         border-radius: 20px;
         letter-spacing: 0.02em;
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 1px;
     }
 
     .badge-up {
@@ -166,7 +170,14 @@
     /* CS0103 Fix: Gunakan @@media agar tidak terbaca sebagai syntax Razor C# */
     @@media (min-width: 768px) {
         .border-end-futuristic {
-            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    }
+
+    @@media (max-width: 767.98px) {
+        .border-end-futuristic {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.75rem;
         }
     }
 </style>
@@ -195,8 +206,6 @@
         try
         {
             isLoading = true;
-            
-            // Panggil IMarketService langsung tanpa via HTTP Controller
             marketData = await MarketService.GetMarketDataAsync();
 
             if (marketData != null && marketData.Success)
@@ -216,7 +225,6 @@
         finally
         {
             isLoading = false;
-            // Picu re-render UI secara eksplisit
             StateHasChanged();
         }
     }
