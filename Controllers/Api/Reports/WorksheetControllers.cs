@@ -42,7 +42,7 @@ public class WorksheetControllers : ControllerBase
                 hasPeriodSelected = false,
                 message = "No accounting period selected.",
                 selectedPeriodName = (string?)null,
-                worksheet = (object?)null
+                rows = Array.Empty<object>()
             });
         }
 
@@ -118,35 +118,46 @@ public class WorksheetControllers : ControllerBase
 
         decimal netIncome = totalIncomeStatementCredit - totalIncomeStatementDebit;
 
+        // Kontrak response harus flat (rows/totals di root), selaras dengan pola
+        // TrialBalanceControllers/GeneralLedgerControllers, dan nama field harus
+        // sama persis dengan WorksheetRowDto/WorksheetTotalsDto di sisi Android
+        // (tbDebit/tbCredit/adjDebit/adjCredit/adjTbDebit/adjTbCredit/isDebit/isCredit/bsDebit/bsCredit).
+        // Sebelumnya di-nest di bawah properti "worksheet" dengan nama field berbeda,
+        // sehingga deserialisasi di Android selalu menghasilkan rows kosong.
         return Ok(new
         {
             success = true,
             hasPeriodSelected = true,
             selectedPeriodName = period.PeriodName,
-            worksheet = new
+            rows = worksheetRows.Select(r => new
             {
-                rows = worksheetRows,
-                totals = new
-                {
-                    unadjustedDebit = totalUnadjustedDebit,
-                    unadjustedCredit = totalUnadjustedCredit,
-                    adjustmentDebit = totalAdjustmentDebit,
-                    adjustmentCredit = totalAdjustmentCredit,
-                    adjustedDebit = totalAdjustedDebit,
-                    adjustedCredit = totalAdjustedCredit,
-                    incomeStatementDebit = totalIncomeStatementDebit,
-                    incomeStatementCredit = totalIncomeStatementCredit,
-                    financialPositionDebit = totalFinancialPositionDebit,
-                    financialPositionCredit = totalFinancialPositionCredit
-                },
-                netIncome = netIncome,
-                postPlugTotals = new
-                {
-                    incomeStatementDebit = totalIncomeStatementDebit + (netIncome >= 0 ? netIncome : 0),
-                    incomeStatementCredit = totalIncomeStatementCredit + (netIncome < 0 ? -netIncome : 0),
-                    financialPositionDebit = totalFinancialPositionDebit + (netIncome < 0 ? -netIncome : 0),
-                    financialPositionCredit = totalFinancialPositionCredit + (netIncome >= 0 ? netIncome : 0)
-                }
+                accountId = r.AccountId,
+                referenceNumber = r.ReferenceNumber,
+                accountName = r.AccountName,
+                tbDebit = r.UnadjustedDebit,
+                tbCredit = r.UnadjustedCredit,
+                adjDebit = r.AdjustmentDebit,
+                adjCredit = r.AdjustmentCredit,
+                adjTbDebit = r.AdjustedDebit,
+                adjTbCredit = r.AdjustedCredit,
+                isDebit = r.IncomeStatementDebit,
+                isCredit = r.IncomeStatementCredit,
+                bsDebit = r.FinancialPositionDebit,
+                bsCredit = r.FinancialPositionCredit
+            }),
+            totals = new
+            {
+                tbDebit = totalUnadjustedDebit,
+                tbCredit = totalUnadjustedCredit,
+                adjDebit = totalAdjustmentDebit,
+                adjCredit = totalAdjustmentCredit,
+                adjTbDebit = totalAdjustedDebit,
+                adjTbCredit = totalAdjustedCredit,
+                isDebit = totalIncomeStatementDebit,
+                isCredit = totalIncomeStatementCredit,
+                bsDebit = totalFinancialPositionDebit,
+                bsCredit = totalFinancialPositionCredit,
+                netIncome = netIncome
             }
         });
     }
