@@ -169,8 +169,7 @@ public class GeneralJournalControllers : ControllerBase
             TransactionNumber = transactionNumber,
             JournalType = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType,
             EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc),
-            // CreatedAt sengaja tidak di-set — kolom database punya
-            // default now() dan mengisinya otomatis saat baris di-insert.
+            CreatedAt = DateTime.UtcNow,
             Lines = validLines.Select((l, index) => new JournalEntryLine
             {
                 AccountId = l.AccountId,

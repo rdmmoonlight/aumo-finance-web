@@ -444,15 +444,15 @@
 
             if (validationErrors.Any()) return;
 
+            var deviceLocalNow = await GetDeviceLocalTimestampAsync();
+
             var entry = new JournalEntry
             {
                 UserId = UserId,
                 TransactionNumber = await GenerateTransactionNumberAsync(journalType),
                 JournalType = journalType,
                 EntryDate = DateTime.SpecifyKind(entryDate, DateTimeKind.Utc),
-                // CreatedAt sengaja tidak di-set di sini — kolom database
-                // punya default now() dan akan mengisinya otomatis saat
-                // baris disimpan.
+                CreatedAt = deviceLocalNow,
                 Lines = effectiveLines.Select((l, index) => new JournalEntryLine
                 {
                     AccountId = l.AccountId,
@@ -469,6 +469,28 @@
             successMessage = $"Journal entry {entry.TransactionNumber} has been posted.";
             ResetForm();
         }
+    }
+
+    private async Task<DateTime> GetDeviceLocalTimestampAsync()
+    {
+        // Waktu jurnal dicatat (CreatedAt) wajib mengikuti jam dinding
+        // perangkat pengguna saat input, bukan jam server saat data
+        // baru tersimpan ke database — karena itu diambil lewat JS
+        // interop (browser), bukan DateTime.UtcNow di server.
+        try
+        {
+            var localTimestamp = await JS.InvokeAsync<string>("aumoTime.getLocalTimestamp");
+            if (DateTime.TryParse(localTimestamp, out var localNow))
+            {
+                return DateTime.SpecifyKind(localNow, DateTimeKind.Utc);
+            }
+        }
+        catch
+        {
+            // Jika JS interop gagal (mis. prerender), gunakan waktu server sebagai cadangan.
+        }
+
+        return DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
     }
 
     private async Task<string> GenerateTransactionNumberAsync(string type)

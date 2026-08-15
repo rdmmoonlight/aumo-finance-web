@@ -20,16 +20,14 @@ namespace AumoFinance.Models
         [StringLength(50)]
         public string JournalType { get; set; } = "General"; // "General" atau "Adjusting"
 
-        // Tanggal transaksi — diisi manual oleh user lewat date picker.
-        // Hanya tanggal (tanpa jam) yang relevan di sini.
         [Required]
         public DateTime EntryDate { get; set; }
 
-        // Waktu pencatatan — diisi otomatis oleh database (kolom
-        // "timestamp with time zone" dengan default now()) saat baris
-        // dimasukkan. Jangan di-set dari kode aplikasi; biarkan default
-        // CLR (kosong) agar EF Core tidak mengirim nilai ini di INSERT
-        // dan server database yang mengisinya, lengkap tanggal + jam.
+        // Waktu pencatatan — diisi otomatis oleh sistem berdasarkan jam
+        // dinding PERANGKAT pengguna saat entri diinput (bukan jam
+        // server saat baris tersimpan ke database). Web: diambil lewat
+        // JS interop (aumoTime.getLocalTimestamp). Mobile: dikirim oleh
+        // client Android (DateTime.Now perangkat) di field CreatedAt.
         public DateTime CreatedAt { get; set; }
 
         public List<JournalEntryLine> Lines { get; set; } = new();
