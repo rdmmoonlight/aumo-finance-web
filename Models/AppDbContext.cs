@@ -61,6 +61,14 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
             // user — setiap user punya penomoran sendiri, mulai dari 1.
             entity.HasIndex(x => new { x.UserId, x.TransactionNumber })
                 .IsUnique();
+
+            // CreatedAt diisi otomatis oleh database (default now()) saat
+            // baris di-insert — bukan oleh aplikasi. ValueGeneratedOnAdd()
+            // membuat EF Core mengabaikan nilai ini saat INSERT sehingga
+            // Postgres yang mengisinya, lengkap tanggal + jam.
+            entity.Property(x => x.CreatedAt)
+                .HasDefaultValueSql("now()")
+                .ValueGeneratedOnAdd();
         });
 
         builder.Entity<JournalEntryLine>(entity =>

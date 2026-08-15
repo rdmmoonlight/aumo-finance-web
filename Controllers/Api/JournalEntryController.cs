@@ -119,19 +119,14 @@ public class JournalEntryController : ControllerBase
         string journalType = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType;
         string transactionNumber = await GenerateTransactionNumberAsync(userId, journalType);
 
-        // CreatedAt wajib mengikuti jam dinding perangkat pengguna saat
-        // input (dikirim oleh Android via DateTime.Now), bukan jam server.
-        // Fallback ke waktu server hanya jika client lama belum mengirim
-        // field ini (nilai default/kosong).
-        var deviceCreatedAt = request.CreatedAt == default ? DateTime.UtcNow : request.CreatedAt;
-
         var entry = new JournalEntry
         {
             UserId = userId,
             TransactionNumber = transactionNumber,
             JournalType = journalType,
             EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc),
-            CreatedAt = DateTime.SpecifyKind(deviceCreatedAt, DateTimeKind.Utc),
+            // CreatedAt sengaja tidak di-set — kolom database punya
+            // default now() dan mengisinya otomatis saat baris di-insert.
             Lines = effectiveLines.Select((l, index) => new JournalEntryLine
             {
                 AccountId = l.AccountId,
@@ -350,10 +345,8 @@ public class CreateJournalEntryRequest
     public string JournalType { get; set; } = "General";
     public DateTime EntryDate { get; set; } = DateTime.Today;
 
-    // Waktu lokal perangkat saat entri dibuat (dikirim oleh client).
-    // Hanya dipakai di endpoint Create — Edit tidak memiliki field ini
-    // sama sekali, sehingga CreatedAt tidak pernah berubah saat diedit.
-    public DateTime CreatedAt { get; set; }
+    // CreatedAt tidak lagi dikirim oleh client — kolom database yang
+    // mengisinya otomatis (default now()) saat baris di-insert.
     public List<JournalEntryLineRequest> Lines { get; set; } = new();
 }
 
