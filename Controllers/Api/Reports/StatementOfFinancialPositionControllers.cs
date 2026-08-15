@@ -41,20 +41,41 @@ public class StatementOfFinancialPositionControllers : ControllerBase
                 hasPeriodSelected = false,
                 message = "No accounting period selected.",
                 selectedPeriodName = (string?)null,
-                asOfDate = (DateTime?)null,
-                balanceSheet = (object?)null
+                assetAccounts = new List<object>(),
+                totalAssets = 0m,
+                liabilityAccounts = new List<object>(),
+                totalLiabilities = 0m,
+                equityAccounts = new List<object>(),
+                totalEquity = 0m,
+                totalLiabilitiesAndEquity = 0m,
+                isBalanced = true
             });
         }
 
         var balanceSheetData = await BuildSofpAsync(_db, userId, period, isPostClosing);
+
+        // Response is flattened to match the Android StatementOfFinancialPositionReportApiResponse
+        // DTO exactly (top-level fields), instead of nesting under a "balanceSheet" object with
+        // different field names — same pattern fix as Worksheet/Income Statement/Retained Earnings.
+        // Retained Earnings (ending) is appended to equityAccounts since Android has no separate field for it.
+        var equityAccountsWithRe = balanceSheetData.EquityExcludingRetainedEarnings
+            .Select(e => new { accountId = 0, referenceNumber = e.ReferenceNumber, accountName = e.AccountName, amount = e.Amount })
+            .Append(new { accountId = 0, referenceNumber = 0, accountName = "Retained Earnings", amount = balanceSheetData.RetainedEarningsEnding })
+            .ToList();
 
         return Ok(new
         {
             success = true,
             hasPeriodSelected = true,
             selectedPeriodName = period.PeriodName,
-            asOfDate = period.EndDate,
-            balanceSheet = balanceSheetData
+            assetAccounts = balanceSheetData.Assets.Select(a => new { accountId = 0, referenceNumber = a.ReferenceNumber, accountName = a.AccountName, amount = a.Amount }),
+            totalAssets = balanceSheetData.TotalAssets,
+            liabilityAccounts = balanceSheetData.Liabilities.Select(l => new { accountId = 0, referenceNumber = l.ReferenceNumber, accountName = l.AccountName, amount = l.Amount }),
+            totalLiabilities = balanceSheetData.TotalLiabilities,
+            equityAccounts = equityAccountsWithRe,
+            totalEquity = balanceSheetData.TotalEquity,
+            totalLiabilitiesAndEquity = balanceSheetData.TotalLiabilitiesAndEquity,
+            isBalanced = balanceSheetData.IsBalanced
         });
     }
 

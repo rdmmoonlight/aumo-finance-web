@@ -39,18 +39,27 @@ public class RetainedEarningsControllers : ControllerBase
                 hasPeriodSelected = false,
                 message = "No accounting period selected.",
                 selectedPeriodName = (string?)null,
-                retainedEarnings = (object?)null
+                beginningRetainedEarnings = 0m,
+                netIncome = 0m,
+                dividendsOrDraws = 0m,
+                endingRetainedEarnings = 0m
             });
         }
 
         var statementData = await BuildRetainedEarningsAsync(_db, userId, period);
 
+        // Response is flattened to match the Android RetainedEarningsReportApiResponse DTO
+        // exactly (top-level fields), instead of nesting under a "retainedEarnings" object
+        // with different field names — same pattern fix as Worksheet/Income Statement.
         return Ok(new
         {
             success = true,
             hasPeriodSelected = true,
             selectedPeriodName = period.PeriodName,
-            retainedEarnings = statementData
+            beginningRetainedEarnings = statementData.BeginningBalance,
+            netIncome = statementData.NetIncome,
+            dividendsOrDraws = statementData.Dividends,
+            endingRetainedEarnings = statementData.EndingBalance
         });
     }
 
