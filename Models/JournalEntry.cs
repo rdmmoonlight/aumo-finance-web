@@ -17,12 +17,14 @@ namespace AumoFinance.Models
         public string TransactionNumber { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(50)]
         public string JournalType { get; set; } = "General"; // "General" atau "Adjusting"
 
         [Required]
         public DateTime EntryDate { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        // Menggunakan DateTime.Now (atau biarkan diisi otomatis oleh database/request)
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public List<JournalEntryLine> Lines { get; set; } = new();
 
