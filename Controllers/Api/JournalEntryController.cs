@@ -55,6 +55,7 @@ public class JournalEntryController : ControllerBase
             entry.JournalType,
             entry.EntryDate,
             entry.CreatedAt,
+            entry.UpdatedAt,
             isLocked,
             lines = entry.Lines.OrderBy(l => l.LineOrder).Select(l => new
             {
@@ -212,6 +213,13 @@ public class JournalEntryController : ControllerBase
         entry.JournalType = string.IsNullOrWhiteSpace(request.JournalType) ? entry.JournalType : request.JournalType;
         entry.EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc);
 
+        // UpdatedAt wajib mengikuti jam dinding perangkat pengguna saat
+        // edit disimpan (pola sama dengan CreatedAt di Create), bukan jam
+        // server. Fallback ke waktu server hanya untuk client lama yang
+        // belum mengirim field ini.
+        var deviceUpdatedAt = request.UpdatedAt == default ? DateTime.UtcNow : request.UpdatedAt;
+        entry.UpdatedAt = DateTime.SpecifyKind(deviceUpdatedAt, DateTimeKind.Utc);
+
         _db.JournalEntryLines.RemoveRange(entry.Lines);
 
         entry.Lines = effectiveLines.Select((l, index) => new JournalEntryLine
@@ -361,6 +369,9 @@ public class UpdateJournalEntryRequest
 {
     public string JournalType { get; set; } = "General";
     public DateTime EntryDate { get; set; } = DateTime.Today;
+
+    // Waktu lokal perangkat saat edit disimpan (dikirim oleh client).
+    public DateTime UpdatedAt { get; set; }
     public List<JournalEntryLineRequest> Lines { get; set; } = new();
 }
 

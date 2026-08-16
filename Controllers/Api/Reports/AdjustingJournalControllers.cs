@@ -64,6 +64,7 @@ public class AdjustingJournalControllers : ControllerBase
                 j.JournalType,
                 j.EntryDate,
                 j.CreatedAt,
+                j.UpdatedAt,
                 lines = j.Lines.OrderBy(l => l.LineOrder).Select(l => new
                 {
                     l.Id,

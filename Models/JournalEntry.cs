@@ -30,6 +30,12 @@ namespace AumoFinance.Models
         // client Android (DateTime.Now perangkat) di field CreatedAt.
         public DateTime CreatedAt { get; set; }
 
+        // Waktu terakhir entri ini diedit — diisi otomatis dengan pola yang
+        // sama seperti CreatedAt (jam dinding perangkat saat edit disimpan,
+        // bukan jam server). Null selama entri belum pernah diedit sejak
+        // dibuat (baru EntryDate + CreatedAt yang terisi).
+        public DateTime? UpdatedAt { get; set; }
+
         public List<JournalEntryLine> Lines { get; set; } = new();
 
         public decimal TotalDebit => Lines.Sum(l => l.Debit);

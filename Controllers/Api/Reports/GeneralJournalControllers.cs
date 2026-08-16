@@ -61,6 +61,7 @@ public class GeneralJournalControllers : ControllerBase
                 j.JournalType,
                 j.EntryDate,
                 j.CreatedAt,
+                j.UpdatedAt,
                 lines = j.Lines.OrderBy(l => l.LineOrder).Select(l => new
                 {
                     l.Id,
@@ -108,6 +109,7 @@ public class GeneralJournalControllers : ControllerBase
             entry.JournalType,
             entry.EntryDate,
             entry.CreatedAt,
+            entry.UpdatedAt,
             lines = entry.Lines.OrderBy(l => l.LineOrder).Select(l => new
             {
                 l.Id,
@@ -232,6 +234,7 @@ public class GeneralJournalControllers : ControllerBase
 
         entry.EntryDate = DateTime.SpecifyKind(request.EntryDate, DateTimeKind.Utc);
         entry.JournalType = string.IsNullOrWhiteSpace(request.JournalType) ? entry.JournalType : request.JournalType;
+        entry.UpdatedAt = DateTime.UtcNow;
         entry.Lines = validLines.Select((l, index) => new JournalEntryLine
         {
             AccountId = l.AccountId,

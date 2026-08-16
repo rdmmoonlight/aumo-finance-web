@@ -99,6 +99,12 @@
                                                             @entry.CreatedAt.ToString("dd-MM-yyyy HH:mm:ss")
                                                         </span>
                                                     }
+                                                    @if (entry.UpdatedAt.HasValue)
+                                                    {
+                                                        <span class="text-info" style="font-size: 0.70rem;" title="Tanggal &amp; Waktu Terakhir Diedit">
+                                                            <i class="bi bi-pencil-square"></i> @entry.UpdatedAt.Value.ToString("dd-MM-yyyy HH:mm:ss")
+                                                        </span>
+                                                    }
                                                 </div>
                                             }
                                         </td>
