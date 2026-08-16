@@ -41,8 +41,15 @@ public class CashFlowControllers : ControllerBase
                 hasPeriodSelected = false,
                 message = "No accounting period selected.",
                 selectedPeriodName = (string?)null,
-                asOfDate = (DateTime?)null,
-                cashFlowStatement = (object?)null
+                operatingActivities = new List<CashFlowLineApiResponse>(),
+                netCashFromOperating = 0m,
+                investingActivities = new List<CashFlowLineApiResponse>(),
+                netCashFromInvesting = 0m,
+                financingActivities = new List<CashFlowLineApiResponse>(),
+                netCashFromFinancing = 0m,
+                netChangeInCash = 0m,
+                beginningCash = 0m,
+                endingCash = 0m
             });
         }
 
@@ -112,24 +119,24 @@ public class CashFlowControllers : ControllerBase
         decimal netChangeInCash = netOperating + netInvesting + netFinancing;
         decimal beginningCash = endingCash - netChangeInCash;
 
+        // Response is flattened to match the Android StatementOfCashFlowsReportApiResponse
+        // DTO exactly (top-level fields, netCashFromX names), instead of nesting under a
+        // "cashFlowStatement" object with different field names — same pattern fix as
+        // Worksheet/Income Statement/Retained Earnings/Statement of Financial Position.
         return Ok(new
         {
             success = true,
             hasPeriodSelected = true,
             selectedPeriodName = period.PeriodName,
-            asOfDate = period.EndDate,
-            cashFlowStatement = new
-            {
-                operatingActivities = operatingActivities,
-                netOperating = netOperating,
-                investingActivities = investingActivities,
-                netInvesting = netInvesting,
-                financingActivities = financingActivities,
-                netFinancing = netFinancing,
-                netChangeInCash = netChangeInCash,
-                beginningCash = beginningCash,
-                endingCash = endingCash
-            }
+            operatingActivities = operatingActivities,
+            netCashFromOperating = netOperating,
+            investingActivities = investingActivities,
+            netCashFromInvesting = netInvesting,
+            financingActivities = financingActivities,
+            netCashFromFinancing = netFinancing,
+            netChangeInCash = netChangeInCash,
+            beginningCash = beginningCash,
+            endingCash = endingCash
         });
     }
 

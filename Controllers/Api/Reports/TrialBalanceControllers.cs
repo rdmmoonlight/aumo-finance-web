@@ -67,6 +67,44 @@ public class TrialBalanceControllers : ControllerBase
         bool includeAdjusting = normalizedType == "adjusted" || normalizedType == "post-closing";
         var rows = await BuildTrialBalanceRowsAsync(_db, userId, period, includeAdjusting, normalizedType);
 
+        if (normalizedType == "post-closing")
+        {
+            // Post-closing balances must reflect the effect of closing entries even
+            // though "Closing" journal lines are never actually persisted to the
+            // ledger (ClosingJournalControllers only computes a preview). Retained
+            // Earnings is the only permanent account closing entries touch, so its
+            // balance here must be overridden with the same computed ending balance
+            // used by the Retained Earnings statement and Statement of Financial
+            // Position — otherwise Debit never equals Credit post-closing.
+            var re = await RetainedEarningsControllers.BuildRetainedEarningsAsync(_db, userId, period);
+            var reRow = rows.Find(r => r.Role == "RetainedEarnings");
+
+            if (reRow != null)
+            {
+                reRow.NetBalance = re.EndingBalance;
+            }
+            else if (re.EndingBalance != 0)
+            {
+                var reAccount = await _db.ChartOfAccounts
+                    .FirstOrDefaultAsync(a => a.UserId == userId && a.IsActive && a.Role == "RetainedEarnings");
+
+                if (reAccount != null)
+                {
+                    rows.Add(new TrialBalanceRow
+                    {
+                        AccountId = reAccount.Id,
+                        ReferenceNumber = reAccount.ReferenceNumber,
+                        AccountName = reAccount.AccountName,
+                        Type = reAccount.Type,
+                        Role = reAccount.Role,
+                        NormalBalanceIsDebit = false,
+                        NetBalance = re.EndingBalance
+                    });
+                    rows.Sort((a, b) => a.ReferenceNumber.CompareTo(b.ReferenceNumber));
+                }
+            }
+        }
+
         decimal totalDebit = rows.Sum(r => r.Debit);
         decimal totalCredit = rows.Sum(r => r.Credit);
         bool isBalanced = Math.Round(totalDebit - totalCredit, 2) == 0;
