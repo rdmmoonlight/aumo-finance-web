@@ -18,10 +18,12 @@ namespace AumoFinance.Controllers.Api.Reports;
 public class GeneralJournalControllers : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ITransactionNumberService _transactionNumberService;
 
-    public GeneralJournalControllers(AppDbContext db)
+    public GeneralJournalControllers(AppDbContext db, ITransactionNumberService transactionNumberService)
     {
         _db = db;
+        _transactionNumberService = transactionNumberService;
     }
 
     // ==========================================
@@ -163,7 +165,8 @@ public class GeneralJournalControllers : ControllerBase
         if (PeriodLock.IsDateLocked(request.EntryDate, closedPeriods))
             return BadRequest(new { success = false, message = "Transaction date falls within a closed accounting period." });
 
-        string transactionNumber = await GenerateTransactionNumberAsync(userId, request.JournalType);
+        string journalTypeForNumber = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType;
+        string transactionNumber = await _transactionNumberService.GenerateAsync(userId, journalTypeForNumber, request.EntryDate);
 
         var entry = new JournalEntry
         {
@@ -320,28 +323,6 @@ public class GeneralJournalControllers : ControllerBase
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
     }
 
-    private async Task<string> GenerateTransactionNumberAsync(Guid userId, string journalType)
-    {
-        var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
-
-        var lastNumber = await _db.JournalEntries
-            .Where(e => e.UserId == userId && e.TransactionNumber.StartsWith(prefix + "-"))
-            .OrderByDescending(e => e.Id)
-            .Select(e => e.TransactionNumber)
-            .FirstOrDefaultAsync();
-
-        var nextSeq = 1;
-        if (lastNumber != null)
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
-            {
-                nextSeq = lastSeq + 1;
-            }
-        }
-
-        return $"{prefix}-{nextSeq:D6}";
-    }
 }
 
 public class CreateJournalEntryApiRequest

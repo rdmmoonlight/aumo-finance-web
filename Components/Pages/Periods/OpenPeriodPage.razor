@@ -6,6 +6,7 @@
 @using AumoFinance.Models
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
+@inject AumoFinance.Services.ITransactionNumberService TxNumberService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Nav
 
@@ -392,7 +393,7 @@
                 // General Journal (diurutkan berdasarkan EntryDate).
                 if (totalOpeningBalance != 0)
                 {
-                    var transactionNumber = await GenerateTransactionNumberAsync(UserId, "General");
+                    var transactionNumber = await TxNumberService.GenerateAsync(UserId, "General", startDate);
 
                     var journalEntry = new JournalEntry
                     {
@@ -436,26 +437,4 @@
         }
     }
 
-    private async Task<string> GenerateTransactionNumberAsync(Guid userId, string journalType)
-    {
-        var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
-
-        var lastNumber = await DbContext.JournalEntries
-            .Where(e => e.UserId == userId && e.TransactionNumber.StartsWith(prefix + "-"))
-            .OrderByDescending(e => e.Id)
-            .Select(e => e.TransactionNumber)
-            .FirstOrDefaultAsync();
-
-        var nextSeq = 1;
-        if (lastNumber != null)
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
-            {
-                nextSeq = lastSeq + 1;
-            }
-        }
-
-        return $"{prefix}-{nextSeq:D6}";
-    }
 }

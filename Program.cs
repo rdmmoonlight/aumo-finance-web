@@ -152,6 +152,7 @@ builder.Services.AddTransient<IEmailSender<ApplicationUser>, IdentityEmailSender
 builder.Services.AddScoped<IGuardianService, GuardianService>();
 builder.Services.AddHttpClient<IAiService, AiService>();
 builder.Services.AddScoped<IJournalImportService, JournalImportService>();
+builder.Services.AddScoped<ITransactionNumberService, TransactionNumberService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
 builder.Services.AddScoped<DashboardDataService>();

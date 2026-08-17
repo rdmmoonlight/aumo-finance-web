@@ -68,7 +68,7 @@
                                 <option value="">-- None --</option>
                                 @foreach (var je in journalEntries)
                                 {
-                                    <option value="@je.Id">@je.TransactionNumber &ndash; @je.EntryDate.ToString("dd MMM yyyy")</option>
+                                    <option value="@je.Id">@TransactionNumberFormatter.ToDisplay(je.TransactionNumber) &ndash; @je.EntryDate.ToString("dd MMM yyyy")</option>
                                 }
                             </InputSelect>
                         </div>

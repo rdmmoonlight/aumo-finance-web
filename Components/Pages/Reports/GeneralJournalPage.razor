@@ -236,11 +236,11 @@
 
         if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods))
         {
-            await JS.InvokeVoidAsync("alert", $"Jurnal {entry.TransactionNumber} berada pada periode yang sudah ditutup dan tidak dapat dihapus.");
+            await JS.InvokeVoidAsync("alert", $"Jurnal {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)} berada pada periode yang sudah ditutup dan tidak dapat dihapus.");
             return;
         }
 
-        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Hapus jurnal {entry.TransactionNumber}? Tindakan ini tidak dapat dibatalkan.");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Hapus jurnal {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)}? Tindakan ini tidak dapat dibatalkan.");
         if (!confirmed) return;
 
         var tracked = await DbContext.JournalEntries

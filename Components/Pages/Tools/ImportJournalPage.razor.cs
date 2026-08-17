@@ -15,6 +15,7 @@ namespace AumoFinance.Components.Pages.Tools;
 public partial class ImportJournalPage : ComponentBase
 {
     [Inject] protected AppDbContext DbContext { get; set; } = default!;
+    [Inject] protected ITransactionNumberService TxNumberService { get; set; } = default!;
     [Inject] protected IJSRuntime JS { get; set; } = default!;
     [Inject] protected AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
@@ -228,32 +229,6 @@ public partial class ImportJournalPage : ComponentBase
             int accountsCreated = 0;
             int transactionsImported = 0;
 
-            var seqCounters = new Dictionary<string, int>();
-            async Task<int> NextSeqAsync(string prefix)
-            {
-                if (!seqCounters.TryGetValue(prefix, out var seq))
-                {
-                    var last = await DbContext.JournalEntries
-                        .Where(e => e.UserId == UserId && e.TransactionNumber.StartsWith(prefix + "-"))
-                        .OrderByDescending(e => e.Id)
-                        .Select(e => e.TransactionNumber)
-                        .FirstOrDefaultAsync();
-
-                    seq = 0;
-                    if (last != null)
-                    {
-                        var parts = last.Split('-');
-                        if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
-                        {
-                            seq = lastSeq;
-                        }
-                    }
-                }
-                seq += 1;
-                seqCounters[prefix] = seq;
-                return seq;
-            }
-
             foreach (var txDto in parseResult.Transactions)
             {
                 var entryLines = new List<JournalEntryLine>();
@@ -291,13 +266,12 @@ public partial class ImportJournalPage : ComponentBase
                     });
                 }
 
-                var prefix = txDto.JournalType == "Adjusting" ? "AJE" : "GJ";
-                var seq = await NextSeqAsync(prefix);
+                var transactionNumber = await TxNumberService.GenerateAsync(UserId, txDto.JournalType, txDto.Date);
 
                 var entry = new JournalEntry
                 {
                     UserId = UserId,
-                    TransactionNumber = $"{prefix}-{seq:D6}",
+                    TransactionNumber = transactionNumber,
                     JournalType = txDto.JournalType,
                     EntryDate = txDto.Date,
                     Lines = entryLines,

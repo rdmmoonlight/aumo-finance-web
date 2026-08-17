@@ -24,6 +24,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
 
+    public DbSet<TransactionCounter> TransactionCounters => Set<TransactionCounter>();
+
     public DbSet<Period> Periods => Set<Period>();
 
     // Economic Document Repository (BARU)
@@ -57,9 +59,19 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .HasForeignKey(x => x.JournalEntryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Nomor transaksi (GJ-xxxxxx / AJE-xxxxxx) hanya unik DALAM satu
-            // user — setiap user punya penomoran sendiri, mulai dari 1.
+            // Nomor transaksi (GJ26080001 / AJ26080001, format
+            // PREFIX+YYMM+SEQUENCE 4 digit) hanya unik DALAM satu user —
+            // setiap user punya penomoran sendiri.
             entity.HasIndex(x => new { x.UserId, x.TransactionNumber })
+                .IsUnique();
+        });
+
+        builder.Entity<TransactionCounter>(entity =>
+        {
+            // Satu counter per user per (prefix + periode). Unique constraint
+            // ini yang membuat UPSERT atomik di TransactionNumberService aman
+            // terhadap concurrent request — lihat ON CONFLICT (UserId, CounterKey).
+            entity.HasIndex(x => new { x.UserId, x.CounterKey })
                 .IsUnique();
         });
 

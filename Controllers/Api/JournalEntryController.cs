@@ -18,10 +18,12 @@ namespace AumoFinance.Controllers.Api;
 public class JournalEntryController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly ITransactionNumberService _transactionNumberService;
 
-    public JournalEntryController(AppDbContext db)
+    public JournalEntryController(AppDbContext db, ITransactionNumberService transactionNumberService)
     {
         _db = db;
+        _transactionNumberService = transactionNumberService;
     }
 
     // ==========================================
@@ -118,7 +120,7 @@ public class JournalEntryController : ControllerBase
         }
 
         string journalType = string.IsNullOrWhiteSpace(request.JournalType) ? "General" : request.JournalType;
-        string transactionNumber = await GenerateTransactionNumberAsync(userId, journalType);
+        string transactionNumber = await _transactionNumberService.GenerateAsync(userId, journalType, request.EntryDate);
 
         // CreatedAt wajib mengikuti jam dinding perangkat pengguna saat
         // input (dikirim oleh Android via DateTime.Now), bukan jam server.
@@ -312,13 +314,20 @@ public class JournalEntryController : ControllerBase
     // 6. GET: /api/mobile/journal-entry/next-transaction-number?journalType=General (Preview Next Number)
     // ==========================================
     [HttpGet("next-transaction-number")]
-    public async Task<IActionResult> GetNextTransactionNumber([FromQuery] string journalType = "General")
+    public async Task<IActionResult> GetNextTransactionNumber([FromQuery] string journalType = "General", [FromQuery] DateTime? entryDate = null)
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
         string type = string.IsNullOrWhiteSpace(journalType) ? "General" : journalType;
-        string nextNumber = await GenerateTransactionNumberAsync(userId, type);
+
+        // Catatan: endpoint ini benar-benar MENGONSUMSI sequence (bukan
+        // hanya melihat), karena satu-satunya sumber angka sekarang adalah
+        // counter atomik di database — tidak ada cara "mengintip" tanpa
+        // menaikkannya. Gap yang tercipta bila client memanggil ini lalu
+        // tidak jadi posting adalah perilaku yang sama seperti sebelumnya,
+        // dan diperbolehkan sesuai aturan sequence gap.
+        string nextNumber = await _transactionNumberService.GenerateAsync(userId, type, entryDate ?? DateTime.Today);
 
         return Ok(new { success = true, transactionNumber = nextNumber });
     }
@@ -327,29 +336,6 @@ public class JournalEntryController : ControllerBase
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
-    }
-
-    private async Task<string> GenerateTransactionNumberAsync(Guid userId, string journalType)
-    {
-        var prefix = journalType == "Adjusting" ? "AJE" : "GJ";
-
-        var lastNumber = await _db.JournalEntries
-            .Where(e => e.UserId == userId && e.TransactionNumber.StartsWith(prefix + "-"))
-            .OrderByDescending(e => e.Id)
-            .Select(e => e.TransactionNumber)
-            .FirstOrDefaultAsync();
-
-        var nextSeq = 1;
-        if (lastNumber != null)
-        {
-            var parts = lastNumber.Split('-');
-            if (parts.Length == 2 && int.TryParse(parts[1], out var lastSeq))
-            {
-                nextSeq = lastSeq + 1;
-            }
-        }
-
-        return $"{prefix}-{nextSeq:D6}";
     }
 }
 
