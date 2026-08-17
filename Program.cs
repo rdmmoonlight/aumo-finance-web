@@ -221,6 +221,39 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
+
+    // Sebelumnya production tidak punya exception handler sama sekali,
+    // jadi error tak tertangani di controller (mis. kolom/tabel belum
+    // dimigrasikan) menghasilkan body 500 KOSONG. Mobile/web yang
+    // mem-parse body itu sebagai JSON lalu crash dengan
+    // "JsonException: ExpectedJsonTokens ... LineNumber: 0" — pesan yang
+    // membingungkan dan menyembunyikan error aslinya. Middleware ini
+    // memastikan setiap 500 tak tertangani tetap mengirim JSON yang bisa
+    // dibaca, plus tercatat di log server untuk didiagnosis.
+    app.Use(async (context, next) =>
+    {
+        try
+        {
+            await next();
+        }
+        catch (Exception ex)
+        {
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Unhandled exception on {Path}", context.Request.Path);
+
+            if (!context.Response.HasStarted)
+            {
+                context.Response.Clear();
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    success = false,
+                    message = "Terjadi kesalahan di server. Coba lagi beberapa saat lagi."
+                });
+            }
+        }
+    });
 }
 
 app.UseStaticFiles();
