@@ -50,5 +50,21 @@ namespace AumoFinance.Services
 
             return $"{counterKey}{nextSeq:D4}";
         }
+
+        public async Task<string> PeekNextAsync(Guid userId, string journalType, DateTime entryDate)
+        {
+            string prefix = journalType == "Adjusting" ? "AJ" : "GJ";
+            string counterKey = $"{prefix}{entryDate:yyMM}";
+
+            // Hanya membaca, tidak menaikkan LastSequence — kalau counter
+            // belum ada, perkiraan berikutnya adalah 0001.
+            var current = await _db.TransactionCounters
+                .Where(c => c.UserId == userId && c.CounterKey == counterKey)
+                .Select(c => (int?)c.LastSequence)
+                .FirstOrDefaultAsync();
+
+            var previewSeq = (current ?? 0) + 1;
+            return $"{counterKey}{previewSeq:D4}";
+        }
     }
 }

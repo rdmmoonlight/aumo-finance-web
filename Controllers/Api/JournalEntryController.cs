@@ -321,13 +321,10 @@ public class JournalEntryController : ControllerBase
 
         string type = string.IsNullOrWhiteSpace(journalType) ? "General" : journalType;
 
-        // Catatan: endpoint ini benar-benar MENGONSUMSI sequence (bukan
-        // hanya melihat), karena satu-satunya sumber angka sekarang adalah
-        // counter atomik di database — tidak ada cara "mengintip" tanpa
-        // menaikkannya. Gap yang tercipta bila client memanggil ini lalu
-        // tidak jadi posting adalah perilaku yang sama seperti sebelumnya,
-        // dan diperbolehkan sesuai aturan sequence gap.
-        string nextNumber = await _transactionNumberService.GenerateAsync(userId, type, entryDate ?? DateTime.Today);
+        // Preview saja — TIDAK mengonsumsi sequence. Nomor final diambil
+        // ulang secara atomik lewat GenerateAsync saat entry benar-benar
+        // di-submit (lihat Create di atas).
+        string nextNumber = await _transactionNumberService.PeekNextAsync(userId, type, entryDate ?? DateTime.Today);
 
         return Ok(new { success = true, transactionNumber = nextNumber });
     }

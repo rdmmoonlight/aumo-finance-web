@@ -12,5 +12,13 @@ namespace AumoFinance.Services
         // sistem — supaya nomor tetap konsisten dengan periode jurnalnya.
         // Sequence reset ke 0001 setiap bulan, per user, per jenis jurnal.
         Task<string> GenerateAsync(Guid userId, string journalType, DateTime entryDate);
+
+        // Menampilkan perkiraan nomor transaksi berikutnya TANPA
+        // menaikkan/mengonsumsi sequence — dipakai murni untuk preview di
+        // form (mis. saat halaman dibuka atau jenis jurnal diganti).
+        // Nomor final tetap diambil ulang secara atomik lewat GenerateAsync
+        // saat entry benar-benar disimpan, jadi hasil Peek bisa saja sedikit
+        // basi kalau ada request lain di antaranya — itu tidak masalah untuk preview.
+        Task<string> PeekNextAsync(Guid userId, string journalType, DateTime entryDate);
     }
 }
