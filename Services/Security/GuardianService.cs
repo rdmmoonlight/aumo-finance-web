@@ -13,7 +13,6 @@ public class GuardianService : IGuardianService
         _context = context;
     }
 
-
     public async Task CreateLoginActivityAsync(
         Guid userId,
         string activityType,
@@ -37,10 +36,8 @@ public class GuardianService : IGuardianService
         };
 
         _context.LoginActivities.Add(activity);
-
         await _context.SaveChangesAsync();
     }
-
 
     public async Task CreateSessionAsync(
         Guid userId,
@@ -50,7 +47,33 @@ public class GuardianService : IGuardianService
         string country,
         string refreshTokenHash)
     {
-        var session = new UserSession
+        // 1. Ambil semua sesi aktif milik user, urutkan dari yang terbaru
+        var activeSessions = await _context.UserSessions
+            .Where(x => x.UserId == userId && x.IsActive)
+            .OrderByDescending(x => x.LastActivityAt)
+            .ToListAsync();
+
+        // 2. Jika sudah mencapai atau melebihi 5, nonaktifkan sesi-sesi terlama
+        // (Kita ambil mulai dari index ke-4 ke bawah, karena index 0-4 adalah 5 sesi terbaru)
+        if (activeSessions.Count >= 5)
+        {
+            var sessionsToRevoke = activeSessions.Skip(4).ToList(); // Sisa sesi di luar 5 teratas
+            foreach (var oldSession in sessionsToRevoke)
+            {
+                oldSession.IsActive = false;
+                oldSession.IsCurrent = false;
+                oldSession.RevokedAt = DateTime.UtcNow;
+            }
+        }
+
+        // Opsional: Set IsCurrent = false untuk sesi lain yang masih aktif (jika ingin menandai hanya session baru ini yang current)
+        foreach (var session in activeSessions.Where(x => x.IsCurrent))
+        {
+            session.IsCurrent = false;
+        }
+
+        // 3. Buat sesi baru
+        var newSession = new UserSession
         {
             Id = Guid.NewGuid(),
             UserId = userId,
@@ -65,11 +88,10 @@ public class GuardianService : IGuardianService
             LastActivityAt = DateTime.UtcNow
         };
 
-        _context.UserSessions.Add(session);
+        _context.UserSessions.Add(newSession);
 
         await _context.SaveChangesAsync();
     }
-
 
     public async Task<List<UserSession>> GetActiveSessionsAsync(Guid userId)
     {
@@ -81,7 +103,6 @@ public class GuardianService : IGuardianService
             .ToListAsync();
     }
 
-
     public async Task RevokeSessionAsync(
         Guid sessionId,
         Guid userId)
@@ -92,21 +113,17 @@ public class GuardianService : IGuardianService
                 x.Id == sessionId &&
                 x.UserId == userId);
 
-
         if (session == null)
         {
             return;
         }
 
-
         session.IsActive = false;
         session.IsCurrent = false;
         session.RevokedAt = DateTime.UtcNow;
 
-
         await _context.SaveChangesAsync();
     }
-
 
     public async Task RevokeAllSessionsAsync(Guid userId)
     {
@@ -128,7 +145,6 @@ public class GuardianService : IGuardianService
 
         await _context.SaveChangesAsync();
     }
-
 
     public async Task<List<LoginActivity>> GetLoginActivitiesAsync(
         Guid userId)
