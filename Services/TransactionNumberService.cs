@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using System.Threading.Tasks;
 using AumoFinance.Models;
 using Microsoft.EntityFrameworkCore;
@@ -31,13 +32,38 @@ namespace AumoFinance.Services
             // (dua user, atau dua tab yang sama) tidak akan pernah mendapat
             // sequence yang sama. Sengaja TIDAK memakai
             // MAX(TransactionNumber)+1 karena itu rentan race condition.
-            var nextSeq = await _db.Database.SqlQuery<int>($@"
+            //
+            // Dieksekusi lewat ADO.NET langsung (bukan Database.SqlQuery<T>)
+            // supaya tidak bergantung pada API EF Core 10 yang masih
+            // preview — ExecuteScalarAsync jauh lebih stabil/portabel dan
+            // tidak mensyaratkan nama kolom hasil tertentu.
+            var connection = _db.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
+            using var command = connection.CreateCommand();
+            command.CommandText = @"
                 INSERT INTO ""TransactionCounters"" (""UserId"", ""CounterKey"", ""LastSequence"")
-                VALUES ({userId}, {counterKey}, 1)
+                VALUES (@userId, @counterKey, 1)
                 ON CONFLICT (""UserId"", ""CounterKey"")
                 DO UPDATE SET ""LastSequence"" = ""TransactionCounters"".""LastSequence"" + 1
-                RETURNING ""LastSequence"" AS ""Value""
-            ").SingleAsync();
+                RETURNING ""LastSequence"";";
+
+            var userIdParam = command.CreateParameter();
+            userIdParam.ParameterName = "userId";
+            userIdParam.Value = userId;
+            command.Parameters.Add(userIdParam);
+
+            var counterKeyParam = command.CreateParameter();
+            counterKeyParam.ParameterName = "counterKey";
+            counterKeyParam.Value = counterKey;
+            command.Parameters.Add(counterKeyParam);
+
+            var rawResult = await command.ExecuteScalarAsync()
+                ?? throw new InvalidOperationException($"Transaction counter upsert for {counterKey} returned no result.");
+            int nextSeq = Convert.ToInt32(rawResult);
 
             if (nextSeq > 9999)
             {
