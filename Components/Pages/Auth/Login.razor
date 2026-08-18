@@ -174,16 +174,8 @@
                 var user = await UserManager.FindByEmailAsync(Input.Email);
                 if (user != null)
                 {
-                    // Konversi aman string user.Id ke Guid
-                    Guid userIdGuid = Guid.Empty;
-                    if (!string.IsNullOrEmpty(user.Id))
-                    {
-                        Guid.TryParse(user.Id, out userIdGuid);
-                    }
-                    if (userIdGuid == Guid.Empty)
-                    {
-                        userIdGuid = Guid.NewGuid();
-                    }
+                   
+                Guid userIdGuid = user.Id != Guid.Empty ? user.Id : Guid.NewGuid();
 
                     await GuardianService.CreateSessionAsync(
                         userId: userIdGuid,
