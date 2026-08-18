@@ -60,10 +60,16 @@ public class DashboardControllers : ControllerBase
             accountId = a.Id,
             referenceNumber = a.ReferenceNumber,
             accountName = a.AccountName,
-            balance = journalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit)
+            balance = journalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
+            // Tidak ada field khusus Kas vs Bank di ChartOfAccount, jadi dipisah
+            // via nama akun — pola yang sama dipakai CashFlowControllers untuk
+            // membedakan "Bank Loan" dari akun lain berdasarkan AccountName.
+            isBank = a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase)
         }).ToList();
 
         var totalCashBalance = cashAndBankBreakdown.Sum(a => a.balance);
+        var cashOnlyAccounts = cashAndBankBreakdown.Where(a => !a.isBank).ToList();
+        var bankOnlyAccounts = cashAndBankBreakdown.Where(a => a.isBank).ToList();
 
         // 4. Hitung Total Pendapatan (Type == "OperatingIncome")
         var incomeAccountIds = await _db.ChartOfAccounts
@@ -124,7 +130,10 @@ public class DashboardControllers : ControllerBase
             totalRevenue = totalIncome,
             totalExpenses = totalExpense,
             netIncome = netIncome,
-            cashAndBankAccounts = cashAndBankBreakdown,
+            cashAccounts = cashOnlyAccounts.Select(a => new { accountId = a.accountId, referenceNumber = a.referenceNumber, accountName = a.accountName, balance = a.balance }),
+            totalCashOnHand = cashOnlyAccounts.Sum(a => a.balance),
+            bankAccounts = bankOnlyAccounts.Select(a => new { accountId = a.accountId, referenceNumber = a.referenceNumber, accountName = a.accountName, balance = a.balance }),
+            totalBankBalance = bankOnlyAccounts.Sum(a => a.balance),
             recentEntries = Array.Empty<object>()
         });
     }
