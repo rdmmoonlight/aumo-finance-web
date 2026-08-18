@@ -15,14 +15,14 @@
         </Authorized>
     </AuthorizeView>
 
-    <!-- SHELL UTAMA -->
-    <div class="d-flex flex-grow-1 overflow-hidden position-relative">
+    <!-- SHELL UTAMA (Hapus overflow-hidden agar sticky sidebar berfungsi sempurna) -->
+    <div class="d-flex flex-grow-1 position-relative">
         
-        <!-- SIDEBAR -->
+        <!-- SIDEBAR (Sticky di sebelah kiri) -->
         <AumoFinance.Components.Layout.Sidebar />
 
-        <!-- MAIN CONTENT AREA -->
-        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 overflow-auto d-flex flex-column" style="margin-left: 60px;" role="main">
+        <!-- MAIN CONTENT AREA (Hapus margin-left: 60px dan overflow-auto) -->
+        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 d-flex flex-column" role="main">
             @Body
         </main>
 
