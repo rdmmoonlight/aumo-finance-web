@@ -171,12 +171,14 @@
             {
                 Logger.LogInformation("User logged in successfully.");
 
-                // Catat sesi aktif dan aktivitas login melalui GuardianService
                 var user = await UserManager.FindByEmailAsync(Input.Email);
                 if (user != null)
                 {
+                    // Konversi aman user.Id (string) ke Guid jika diperlukan oleh GuardianService
+                    Guid userIdGuid = Guid.TryParse(user.Id, out var parsedGuid) ? parsedGuid : Guid.NewGuid();
+
                     await GuardianService.CreateSessionAsync(
-                        userId: user.Id,
+                        userId: userIdGuid,
                         deviceName: "Web Browser",
                         browser: "Unknown",
                         ipAddress: "127.0.0.1",
@@ -185,7 +187,7 @@
                     );
 
                     await GuardianService.CreateLoginActivityAsync(
-                        userId: user.Id,
+                        userId: userIdGuid,
                         activityType: "Login",
                         device: "Web Browser",
                         browser: "Unknown",
@@ -212,8 +214,9 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error occurred during login attempt.");
-            errorMessage = "An error occurred while processing your request.";
+            Logger.LogError(ex, "Error occurred during login attempt: {Message}", ex.Message);
+            // Tampilkan detail error asli sementara ke UI untuk memudahkan pengecekan
+            errorMessage = $"Error: {ex.Message} {(ex.InnerException != null ? "-> " + ex.InnerException.Message : "")}";
         }
     }
 
