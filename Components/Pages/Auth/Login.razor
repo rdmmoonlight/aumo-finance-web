@@ -1,10 +1,13 @@
 @page "/auth/login"
 @using System.ComponentModel.DataAnnotations
 @using AumoFinance.Models
+@using AumoFinance.Services.Security
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Forms
 
 @inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject IGuardianService GuardianService
 @inject NavigationManager Navigation
 @inject ILogger<Login> Logger
 
@@ -72,6 +75,7 @@
                                     <InputText class="form-control border-start-0 ps-0 text-white" 
                                                style="background-color: var(--aumo-bg, #0D1117); border-color: var(--bs-border-color, #2A313C);" 
                                                @bind-Value="Input.Email" 
+                                               autocomplete="username"
                                                placeholder="name@example.com" />
                                 </div>
                                 <ValidationMessage For="() => Input.Email" class="text-danger small mt-1" />
@@ -88,6 +92,7 @@
                                                class="form-control border-start-0 ps-0 text-white" 
                                                style="background-color: var(--aumo-bg, #0D1117); border-color: var(--bs-border-color, #2A313C);" 
                                                @bind-Value="Input.Password" 
+                                               autocomplete="current-password"
                                                placeholder="••••••••" />
                                 </div>
                                 <ValidationMessage For="() => Input.Password" class="text-danger small mt-1" />
@@ -136,7 +141,6 @@
     [SupplyParameterFromQuery(Name = "infoMessage")]
     private string? QueryInfoMessage { get; set; }
 
-    // HAPUS '= new();' DI SINI UNTUK MEMPERBAIKI ERROR BL0008
     [SupplyParameterFromForm]
     private LoginInputModel Input { get; set; } = default!;
 
@@ -146,7 +150,6 @@
 
     protected override void OnInitialized()
     {
-        // Inisialisasi aman dilakukan di sini
         Input ??= new LoginInputModel();
 
         successMessage = QuerySuccessMessage ?? QueryMessage;
@@ -167,6 +170,31 @@
             if (result.Succeeded)
             {
                 Logger.LogInformation("User logged in successfully.");
+
+                // Catat sesi aktif dan aktivitas login melalui GuardianService
+                var user = await UserManager.FindByEmailAsync(Input.Email);
+                if (user != null)
+                {
+                    await GuardianService.CreateSessionAsync(
+                        userId: user.Id,
+                        deviceName: "Web Browser",
+                        browser: "Unknown",
+                        ipAddress: "127.0.0.1",
+                        country: "Unknown",
+                        refreshTokenHash: "N/A"
+                    );
+
+                    await GuardianService.CreateLoginActivityAsync(
+                        userId: user.Id,
+                        activityType: "Login",
+                        device: "Web Browser",
+                        browser: "Unknown",
+                        ipAddress: "127.0.0.1",
+                        country: "Unknown",
+                        isSuccess: true
+                    );
+                }
+
                 Navigation.NavigateTo("/", forceLoad: true);
             }
             else if (result.RequiresTwoFactor)
