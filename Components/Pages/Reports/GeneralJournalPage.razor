@@ -31,20 +31,6 @@
         </div>
     </div>
 
-    @if (selectedPeriod != null)
-    {
-        <div class="alert alert-secondary bg-dark text-muted border-secondary shadow-sm py-2 px-3 small d-flex align-items-center gap-2 rounded-3 mb-4">
-            <i class="bi bi-eye-fill fs-5 text-warning"></i>
-            <span>Showing Period: <strong>@selectedPeriod.PeriodName</strong></span>
-            @if (selectedPeriod.IsClosed)
-            {
-                <span class="badge bg-secondary bg-opacity-25 border border-secondary ms-auto text-muted">
-                    <i class="bi bi-lock-fill me-1"></i>Closed
-                </span>
-            }
-        </div>
-    }
-
     <!-- General Journal Table Card -->
     <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
         <div class="card-body p-0">
@@ -71,7 +57,7 @@
                                 var entry = entries[e];
                                 var allLines = entry.Lines.OrderBy(l => l.LineOrder).ToList();
 
-                                var currentDateStr = entry.EntryDate.ToString("dd-MM-yyyy");
+                                var currentDateStr = entry.EntryDate.ToString("MM-dd-yyyy");
                                 var showDate = (currentDateStr != lastDate);
                                 if (showDate) { lastDate = currentDateStr; dateGroupIndex++; }
 
@@ -89,7 +75,7 @@
                                             {
                                                 <div>
                                                     <span class="badge bg-secondary bg-opacity-25 border border-secondary text-white fw-bold px-2 py-1">
-                                                        @entry.EntryDate.ToString("dd-MM-yyyy")
+                                                        @entry.EntryDate.ToString("MM-dd-yyyy")
                                                     </span>
                                                 </div>
                                             }
@@ -98,26 +84,26 @@
                                                 <div class="d-flex flex-column align-items-start mt-1">
                                                     @if (entry.CreatedAt != default)
                                                     {
-                                                        <span class="text-muted" style="font-size: 0.70rem;" title="Tanggal &amp; Waktu Input">
-                                                            @entry.CreatedAt.ToString("dd-MM-yyyy HH:mm:ss")
+                                                        <span class="text-muted" style="font-size: 0.70rem;" title="Entry Date &amp; Time">
+                                                            @entry.CreatedAt.ToString("MM-dd-yyyy HH:mm:ss")
                                                         </span>
                                                     }
                                                     @if (entry.UpdatedAt.HasValue)
                                                     {
-                                                        <span class="text-info" style="font-size: 0.70rem;" title="Tanggal &amp; Waktu Terakhir Diedit">
-                                                            <i class="bi bi-pencil-square"></i> @entry.UpdatedAt.Value.ToString("dd-MM-yyyy HH:mm:ss")
+                                                        <span class="text-info" style="font-size: 0.70rem;" title="Last Edited Date &amp; Time">
+                                                            <i class="bi bi-pencil-square"></i> @entry.UpdatedAt.Value.ToString("MM-dd-yyyy HH:mm:ss")
                                                         </span>
                                                     }
 
                                                     <div class="d-flex gap-1 mt-1 @(editMode ? "" : "d-none")">
                                                         <a href="/JournalEntry/Edit/@entry.Id"
                                                            class="btn btn-sm btn-dark text-warning border border-secondary shadow-sm py-0 px-1"
-                                                           title="Edit entri ini">
+                                                           title="Edit this entry">
                                                             <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
                                                         </a>
                                                         <button type="button"
                                                                 class="btn btn-sm btn-dark text-danger border border-secondary shadow-sm py-0 px-1"
-                                                                title="Hapus entri ini"
+                                                                title="Delete this entry"
                                                                 @onclick="() => DeleteEntry(entry)">
                                                             <i class="bi bi-trash-fill" style="font-size: 0.75rem;"></i>
                                                         </button>
@@ -236,11 +222,11 @@
 
         if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods))
         {
-            await JS.InvokeVoidAsync("alert", $"Jurnal {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)} berada pada periode yang sudah ditutup dan tidak dapat dihapus.");
+            await JS.InvokeVoidAsync("alert", $"Journal entry {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)} belongs to a closed period and cannot be deleted.");
             return;
         }
 
-        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Hapus jurnal {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)}? Tindakan ini tidak dapat dibatalkan.");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete journal entry {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)}? This action cannot be undone.");
         if (!confirmed) return;
 
         var tracked = await DbContext.JournalEntries
