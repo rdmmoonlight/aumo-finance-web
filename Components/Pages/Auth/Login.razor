@@ -174,8 +174,16 @@
                 var user = await UserManager.FindByEmailAsync(Input.Email);
                 if (user != null)
                 {
-                    // Konversi aman user.Id (string) ke Guid jika diperlukan oleh GuardianService
-                    Guid userIdGuid = Guid.TryParse(user.Id, out var parsedGuid) ? parsedGuid : Guid.NewGuid();
+                    // Perbaikan konversi Guid yang aman dari string user.Id
+                    Guid userIdGuid = Guid.Empty;
+                    if (!string.IsNullOrEmpty(user.Id))
+                    {
+                        Guid.TryParse(user.Id, out userIdGuid);
+                    }
+                    if (userIdGuid == Guid.Empty)
+                    {
+                        userIdGuid = Guid.NewGuid();
+                    }
 
                     await GuardianService.CreateSessionAsync(
                         userId: userIdGuid,
@@ -215,7 +223,6 @@
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error occurred during login attempt: {Message}", ex.Message);
-            // Tampilkan detail error asli sementara ke UI untuk memudahkan pengecekan
             errorMessage = $"Error: {ex.Message} {(ex.InnerException != null ? "-> " + ex.InnerException.Message : "")}";
         }
     }
