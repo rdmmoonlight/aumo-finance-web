@@ -80,14 +80,43 @@ public class DashboardControllers : ControllerBase
         // 6. Hitung Laba Bersih
         var netIncome = totalIncome - totalExpense;
 
+        // 7. Hitung Total Liabilities & Equity (Type == "Liabilities" / "Equity")
+        var liabilityAccountIds = await _db.ChartOfAccounts
+            .Where(a => a.UserId == userId && a.IsActive && a.Type == "Liabilities")
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var totalLiabilities = journalLines
+            .Where(l => liabilityAccountIds.Contains(l.AccountId))
+            .Sum(l => l.Credit - l.Debit);
+
+        var equityAccountIds = await _db.ChartOfAccounts
+            .Where(a => a.UserId == userId && a.IsActive && a.Type == "Equity")
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var totalEquity = journalLines
+            .Where(l => equityAccountIds.Contains(l.AccountId))
+            .Sum(l => l.Credit - l.Debit);
+
+        // Response is flattened to match the Android DashboardApiResponse DTO exactly
+        // (selectedPeriodName, totalAssets, totalRevenue, totalExpenses, etc.) instead
+        // of using different field names (periodName, totalCash, income, expense) —
+        // same root cause as the earlier Worksheet/Income Statement/Retained Earnings
+        // bugs: the mobile app always deserialized empty/default values.
         return Ok(new
         {
             success = true,
-            periodName = activePeriod?.PeriodName ?? "Periode Berjalan",
-            totalCash = totalCashBalance,
-            income = totalIncome,
-            expense = totalExpense,
-            netIncome = netIncome
+            hasPeriodSelected = activePeriod != null,
+            selectedPeriodName = activePeriod?.PeriodName,
+            isPeriodClosed = activePeriod?.IsClosed ?? false,
+            totalAssets = totalCashBalance,
+            totalLiabilities = totalLiabilities,
+            totalEquity = totalEquity,
+            totalRevenue = totalIncome,
+            totalExpenses = totalExpense,
+            netIncome = netIncome,
+            recentEntries = Array.Empty<object>()
         });
     }
 
