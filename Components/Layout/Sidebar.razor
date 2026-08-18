@@ -198,22 +198,7 @@
 
 </div>
 
-@code {
-    private bool showReportsFlyout = false;
-
-    private void ToggleReportsFlyout()
-    {
-        showReportsFlyout = !showReportsFlyout;
-    }
-
-    private void CloseFlyout()
-    {
-        showReportsFlyout = false;
-    }
-}
-
 <style>
-    /* STICKY CONTAINER & NEON WHITE BORDER EFEK */
     .sidebar-sticky-neon {
         position: sticky;
         top: 0;
@@ -227,14 +212,12 @@
             0 0 24px rgba(255, 255, 255, 0.3);
     }
 
-    /* DOCK IKON UTAMA (65px) */
     .sidebar-icons {
         width: 65px;
         height: 100vh;
         background-color: #161b22;
     }
 
-    /* HOLOGRAM FLYOUT PANEL */
     .sidebar-flyout {
         width: 230px;
         height: 100vh;
@@ -247,7 +230,6 @@
             6px 0 16px rgba(255, 255, 255, 0.15);
     }
 
-    /* TOMBOL IKON NAVIGASI */
     .icon-btn {
         color: #8b949e;
         padding: 0.5rem;
@@ -265,7 +247,6 @@
         box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
     }
 
-    /* DIVIDER EFEK NEON PUTIH */
     .hr-glow-white {
         border: none !important;
         height: 1px !important;
@@ -275,7 +256,6 @@
                     0 0 12px rgba(255, 255, 255, 0.4) !important;
     }
 
-    /* FLYOUT ITEM LINK HOVER */
     .sidebar-flyout .list-group-item {
         background-color: transparent;
         color: #c9d1d9;
