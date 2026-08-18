@@ -53,26 +53,27 @@ public class GuardianService : IGuardianService
             .OrderByDescending(x => x.LastActivityAt)
             .ToListAsync();
 
-        // 2. Jika sudah mencapai atau melebihi 5, nonaktifkan sesi-sesi terlama
-        // (Kita ambil mulai dari index ke-4 ke bawah, karena index 0-4 adalah 5 sesi terbaru)
-        if (activeSessions.Count >= 5)
+        // 2. Batasi hanya 4 sesi teratas yang dipertahankan. 
+        // Sesi ke-5 ke bawah (yang paling lama) akan otomatis di-revoke agar 
+        // saat sesi baru ditambahkan, totalnya pas menjadi maksimal 5 sesi aktif.
+        var sessionsToKeep = activeSessions.Take(4).ToList();
+        var sessionsToRevoke = activeSessions.Skip(4).ToList();
+
+        foreach (var oldSession in sessionsToRevoke)
         {
-            var sessionsToRevoke = activeSessions.Skip(4).ToList(); // Sisa sesi di luar 5 teratas
-            foreach (var oldSession in sessionsToRevoke)
-            {
-                oldSession.IsActive = false;
-                oldSession.IsCurrent = false;
-                oldSession.RevokedAt = DateTime.UtcNow;
-            }
+            oldSession.IsActive = false;
+            oldSession.IsCurrent = false;
+            oldSession.RevokedAt = DateTime.UtcNow;
         }
 
-        // Opsional: Set IsCurrent = false untuk sesi lain yang masih aktif (jika ingin menandai hanya session baru ini yang current)
-        foreach (var session in activeSessions.Where(x => x.IsCurrent))
+        // 3. Pastikan semua sesi aktif yang tersisa di-set IsCurrent = false 
+        // karena sesi saat ini yang baru akan menjadi 'current'.
+        foreach (var session in activeSessions)
         {
             session.IsCurrent = false;
         }
 
-        // 3. Buat sesi baru
+        // 4. Buat sesi baru
         var newSession = new UserSession
         {
             Id = Guid.NewGuid(),
