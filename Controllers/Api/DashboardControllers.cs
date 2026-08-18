@@ -47,15 +47,23 @@ public class DashboardControllers : ControllerBase
                      && l.JournalEntry.EntryDate <= endDate)
             .ToListAsync();
 
-        // 3. Hitung Kas & Bank (Role == "CashAndEquivalents")
-        var cashAccountIds = await _db.ChartOfAccounts
+        // 3. Hitung Kas & Bank (Role == "CashAndEquivalents"), termasuk rincian per akun
+        //    untuk kotak saldo Cash & Bank di dashboard.
+        var cashAndBankAccounts = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Role == "CashAndEquivalents")
-            .Select(a => a.Id)
+            .OrderBy(a => a.ReferenceNumber)
+            .Select(a => new { a.Id, a.ReferenceNumber, a.AccountName })
             .ToListAsync();
 
-        var totalCashBalance = journalLines
-            .Where(l => cashAccountIds.Contains(l.AccountId))
-            .Sum(l => l.Debit - l.Credit);
+        var cashAndBankBreakdown = cashAndBankAccounts.Select(a => new
+        {
+            accountId = a.Id,
+            referenceNumber = a.ReferenceNumber,
+            accountName = a.AccountName,
+            balance = journalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit)
+        }).ToList();
+
+        var totalCashBalance = cashAndBankBreakdown.Sum(a => a.balance);
 
         // 4. Hitung Total Pendapatan (Type == "OperatingIncome")
         var incomeAccountIds = await _db.ChartOfAccounts
@@ -116,6 +124,7 @@ public class DashboardControllers : ControllerBase
             totalRevenue = totalIncome,
             totalExpenses = totalExpense,
             netIncome = netIncome,
+            cashAndBankAccounts = cashAndBankBreakdown,
             recentEntries = Array.Empty<object>()
         });
     }
