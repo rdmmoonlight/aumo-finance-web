@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.JSInterop;
 
+// Alias untuk mengatasi bentrok nama namespace JournalEntry dengan model JournalEntry
+using JournalEntryEntity = AumoFinance.Models.JournalEntry;
+
 namespace AumoFinance.Components.Pages.Tools;
 
 public partial class ToolsPage : ComponentBase
@@ -20,7 +23,7 @@ public partial class ToolsPage : ComponentBase
     [Inject] protected AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
     [Inject] protected NavigationManager Nav { get; set; } = default!;
 
-    protected static readonly CultureInfo Idr = new("en-US");
+    protected static readonly CultureInfo Idr = new("id-ID");
     protected Guid UserId { get; private set; }
 
     protected const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
@@ -238,12 +241,13 @@ public partial class ToolsPage : ComponentBase
 
                 var transactionNumber = await TxNumberService.GenerateAsync(UserId, txDto.JournalType, txDto.Date);
 
-                var entry = new JournalEntry
+                // Menggunakan alias JournalEntryEntity untuk membuat objek model
+                var entry = new JournalEntryEntity
                 {
                     UserId = UserId,
                     TransactionNumber = transactionNumber,
                     JournalType = txDto.JournalType,
-                    EntryDate = txDto.Date,
+                    EntryDate = DateTime.SpecifyKind(txDto.Date, DateTimeKind.Utc),
                     Lines = entryLines,
                 };
 
