@@ -96,16 +96,40 @@ public partial class Index : ComponentBase
         }
         else
         {
-            ResetForm();
+            await ResetFormAsync();
         }
     }
 
-    protected void ResetForm()
+    protected async Task ResetFormAsync()
     {
         journalType = "General";
         entryDate = DateTime.Today;
         lines = new List<LineItem> { new LineItem(), new LineItem() };
         validationErrors.Clear();
+        await RefreshTransactionNumberPreviewAsync();
+    }
+
+    protected async Task OnJournalTypeChanged(ChangeEventArgs e)
+    {
+        journalType = e.Value?.ToString() ?? "General";
+        await RefreshTransactionNumberPreviewAsync();
+    }
+
+    protected async Task OnEntryDateChanged(ChangeEventArgs e)
+    {
+        entryDate = DateTime.TryParse((string?)e.Value, out var dt) ? dt : DateTime.Today;
+        await RefreshTransactionNumberPreviewAsync();
+    }
+
+    // Nomor transaksi pada mode Create adalah perkiraan (preview) dan
+    // baru benar-benar dikonsumsi/dikunci saat entry disimpan lewat
+    // TxNumberService.GenerateAsync di HandleSubmit. Tidak berlaku untuk
+    // mode Edit karena nomornya sudah final sejak entry dibuat.
+    protected async Task RefreshTransactionNumberPreviewAsync()
+    {
+        if (IsEdit || UserId == Guid.Empty) return;
+        transactionNumber = TransactionNumberFormatter.ToDisplay(
+            await TxNumberService.PeekNextAsync(UserId, journalType, entryDate));
     }
 
     protected void AddLine() => lines.Add(new LineItem());
@@ -154,6 +178,35 @@ public partial class Index : ComponentBase
     {
         line.LineDescription = text;
         line.ShowSuggestions = false;
+    }
+
+    // Debit/Credit ditampilkan sebagai teks berformat ribuan (mis. 100.000)
+    // alih-alih <input type="number">, karena input number memperlakukan
+    // "." sebagai desimal sehingga "100.000" terbaca 100. Nilai asli tetap
+    // disimpan sebagai decimal; parsing hanya mengambil digitnya.
+    protected void OnDebitInput(LineItem line, string? value)
+    {
+        line.Debit = ParseAmount(value);
+    }
+
+    protected void OnCreditInput(LineItem line, string? value)
+    {
+        line.Credit = ParseAmount(value);
+    }
+
+    protected static decimal? ParseAmount(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var digitsOnly = new string(value.Where(char.IsDigit).ToArray());
+        if (digitsOnly.Length == 0) return null;
+        return decimal.Parse(digitsOnly, CultureInfo.InvariantCulture);
+    }
+
+    protected static string FormatAmount(decimal? value)
+    {
+        return value.HasValue && value.Value != 0
+            ? value.Value.ToString("N0", CultureInfo)
+            : string.Empty;
     }
 
     protected async Task<List<string>> SearchDescriptionsAsync(string q)
@@ -272,7 +325,7 @@ public partial class Index : ComponentBase
             await DbContext.SaveChangesAsync();
 
             successMessage = $"Journal entry {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)} has been posted.";
-            ResetForm();
+            await ResetFormAsync();
         }
     }
 
