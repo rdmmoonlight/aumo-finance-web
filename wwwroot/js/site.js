@@ -164,6 +164,46 @@ window.aumoTime = {
 
 
 // ==========================================
+// Date Picker Helper
+// ==========================================
+//
+// Input tanggal asli (<input type="date">) disembunyikan dan
+// hanya dipakai sebagai kalender native. Teks yang tampil ke user
+// selalu diformat dd/MM/yyyy dari sisi Blazor, supaya formatnya
+// konsisten di semua browser (format tampilan input type="date"
+// bawaan browser tidak bisa dipaksa lewat CSS/HTML).
+//
+window.aumoDate = {
+
+    /**
+     * Buka kalender native dari input type="date" tersembunyi.
+     *
+     * @param {string} elementId
+     */
+    showPicker: function (elementId) {
+        const el = document.getElementById(elementId);
+
+        if (!el) {
+            console.warn(`[aumoDate] Element with ID '${elementId}' not found.`);
+            return;
+        }
+
+        if (typeof el.showPicker === 'function') {
+            try {
+                el.showPicker();
+                return;
+            } catch (error) {
+                // Fallback di bawah kalau showPicker() ditolak browser
+            }
+        }
+
+        el.focus();
+        el.click();
+    }
+};
+
+
+// ==========================================
 // Initial Theme Restoration
 // ==========================================
 

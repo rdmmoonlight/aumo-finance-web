@@ -121,6 +121,11 @@ public partial class Index : ComponentBase
         await RefreshTransactionNumberPreviewAsync();
     }
 
+    protected async Task OpenDatePickerAsync()
+    {
+        await JS.InvokeVoidAsync("aumoDate.showPicker", "entryDatePicker");
+    }
+
     // Nomor transaksi pada mode Create adalah perkiraan (preview) dan
     // baru benar-benar dikonsumsi/dikunci saat entry disimpan lewat
     // TxNumberService.GenerateAsync di HandleSubmit. Tidak berlaku untuk
