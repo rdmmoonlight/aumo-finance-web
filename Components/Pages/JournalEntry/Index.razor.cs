@@ -1,15 +1,25 @@
 using System.Globalization;
 using System.Security.Claims;
 using AumoFinance.Models;
+using AumoFinance.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.JSInterop;
 
+// Alias untuk menghindari bentrok nama namespace JournalEntry dan class model
+using JournalEntryEntity = AumoFinance.Models.JournalEntry;
+
 namespace AumoFinance.Components.Pages.JournalEntry;
 
-public partial class Index
+public partial class Index : ComponentBase
 {
+    [Inject] protected AppDbContext DbContext { get; set; } = default!;
+    [Inject] protected ITransactionNumberService TxNumberService { get; set; } = default!;
+    [Inject] protected NavigationManager Nav { get; set; } = default!;
+    [Inject] protected IJSRuntime JS { get; set; } = default!;
+    [Inject] protected AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
     [Parameter] public int? EntryId { get; set; }
     public Guid UserId { get; set; }
 
@@ -241,7 +251,7 @@ public partial class Index
 
             var deviceLocalNow = await GetDeviceLocalTimestampAsync();
 
-            var entry = new JournalEntry
+            var entry = new JournalEntryEntity
             {
                 UserId = UserId,
                 TransactionNumber = await TxNumberService.GenerateAsync(UserId, journalType, entryDate),
