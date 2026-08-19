@@ -1,309 +1,210 @@
-using System.Globalization;
-using System.Security.Claims;
-using AumoFinance.Models;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.JSInterop;
-// Alias untuk menghindari bentrok dengan namespace AumoFinance.Components.Pages.JournalEntry
-using JournalEntryEntity = AumoFinance.Models.JournalEntry;
+@page "/JournalEntry/Create"
+@page "/JournalEntry/Edit/{EntryId:int}"
+@page "/journal-entry/create"
+@page "/journal-entry/edit/{EntryId:int}"
+@namespace AumoFinance.Components.Pages.JournalEntry
+@using System.Globalization
+@using AumoFinance.Models
+@rendermode InteractiveServer
+@attribute [Authorize]
 
-namespace AumoFinance.Components.Pages.JournalEntry;
+<PageTitle>@(IsEdit ? "Edit Journal Entry" : "Create Journal Entry")</PageTitle>
 
-public partial class Index
-{
-    [Parameter] public int? EntryId { get; set; }
-    public Guid UserId { get; set; }
+<div class="container-fluid py-4 px-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            @if (IsEdit)
+            {
+                <h2 class="fw-bold text-body-emphasis mb-1">
+                    <i class="bi bi-pencil-square me-2 text-warning"></i> Edit Journal Entry
+                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle ms-2">@transactionNumber</span>
+                </h2>
+                <p class="text-secondary mb-0">Update this double-entry transaction for Aumo Finance.</p>
+            }
+            else
+            {
+                <h2 class="fw-bold text-body-emphasis mb-1"><i class="bi bi-journal-plus me-2 text-warning"></i> Create Journal Entry</h2>
+                <p class="text-secondary mb-0">Record double-entry financial transactions or adjusting entries for Aumo Finance.</p>
+            }
+        </div>
+        <div>
+            <a href="/reports/general-journal" class="btn btn-outline-secondary shadow-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back to Journal
+            </a>
+        </div>
+    </div>
 
-    protected static readonly CultureInfo CultureInfo = new("id-ID");
-
-    protected bool IsEdit => EntryId.HasValue;
-
-    protected List<LineItem> lines = new();
-    protected List<ChartOfAccount> availableAccounts = new();
-    protected string journalType = "General";
-    protected DateTime entryDate = DateTime.Today;
-    protected string transactionNumber = string.Empty;
-    protected string? successMessage;
-    protected string? lockedMessage;
-    protected List<string> validationErrors = new();
-
-    protected decimal TotalDebit => lines.Sum(l => l.Debit ?? 0);
-    protected decimal TotalCredit => lines.Sum(l => l.Credit ?? 0);
-    protected bool IsBalanced => TotalDebit > 0 && TotalCredit > 0 && TotalDebit == TotalCredit;
-
-    protected override async Task OnInitializedAsync()
+    @if (successMessage != null)
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
+        <div class="alert alert-success shadow-sm py-2">
+            <i class="bi bi-check-circle-fill me-2"></i>@successMessage
+        </div>
+    }
 
-        if (user.Identity?.IsAuthenticated == true)
-        {
-            var claim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (Guid.TryParse(claim, out var parsedId))
-            {
-                UserId = parsedId;
-            }
-        }
-
-        if (UserId == Guid.Empty)
-        {
-            Nav.NavigateTo("/auth/login", true);
-            return;
-        }
-
-        availableAccounts = await ActiveAccountsAsync();
-
-        if (IsEdit)
-        {
-            var entry = await DbContext.JournalEntries
-                .Include(j => j.Lines)
-                .FirstOrDefaultAsync(j => j.Id == EntryId!.Value && j.UserId == UserId);
-
-            if (entry == null)
-            {
-                lockedMessage = "Journal entry not found.";
-                return;
-            }
-
-            var closedPeriods = await DbContext.Periods.Where(p => p.UserId == UserId && p.IsClosed).ToListAsync();
-            if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods))
-            {
-                lockedMessage = $"Journal entry {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)} belongs to a closed period and cannot be edited. View it from the Periods page instead.";
-                return;
-            }
-
-            transactionNumber = TransactionNumberFormatter.ToDisplay(entry.TransactionNumber);
-            journalType = entry.JournalType;
-            entryDate = entry.EntryDate;
-            lines = entry.Lines
-                .OrderBy(l => l.LineOrder)
-                .Select(l => new LineItem
+    @if (validationErrors.Any())
+    {
+        <div class="alert alert-danger shadow-sm py-2">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <ul class="mb-0 small fw-semibold">
+                @foreach (var error in validationErrors)
                 {
-                    AccountId = l.AccountId,
-                    LineDescription = l.LineDescription,
-                    Debit = l.Debit == 0 ? null : l.Debit,
-                    Credit = l.Credit == 0 ? null : l.Credit
-                }).ToList();
-        }
-        else
-        {
-            ResetForm();
-        }
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
     }
 
-    protected void ResetForm()
+    @if (lockedMessage != null)
     {
-        journalType = "General";
-        entryDate = DateTime.Today;
-        lines = new List<LineItem> { new LineItem(), new LineItem() };
-        validationErrors.Clear();
+        <div class="alert alert-warning shadow-sm py-2">
+            <i class="bi bi-lock-fill me-2"></i>@lockedMessage
+            <a href="/reports/general-journal" class="alert-link ms-1">Back to General Journal</a>
+        </div>
     }
-
-    protected void AddLine() => lines.Add(new LineItem());
-
-    protected async Task RemoveLine(LineItem line)
+    else
     {
-        if (lines.Count <= 2)
-        {
-            await JS.InvokeVoidAsync("alert", "A journal entry must have at least two line items (Debit & Credit).");
-            return;
-        }
-        lines.Remove(line);
-    }
+        <!-- Transaction Header Metadata -->
+        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    @if (IsEdit)
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Transaction No.</label>
+                            <input type="text" class="form-control bg-body-secondary fw-semibold" value="@transactionNumber" readonly tabindex="-1" />
+                        </div>
+                    }
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Journal Type</label>
+                        <select class="form-select fw-semibold" @bind="journalType">
+                            <option value="General">General Journal (GJ)</option>
+                            <option value="Adjusting">Adjusting Entry (AJ)</option>
+                        </select>
+                    </div>
 
-    protected void OnDescriptionInput(LineItem line, string? value)
-    {
-        line.LineDescription = value;
-        line.SearchVersion++;
-        var myVersion = line.SearchVersion;
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold small">Transaction Date</label>
+                        <input type="date" lang="id-ID" class="form-control" required
+                               value="@entryDate.ToString("yyyy-MM-dd")"
+                               @onchange="@(e => entryDate = DateTime.TryParse((string?)e.Value, out var dt) ? dt : DateTime.Today)" />
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        var query = value?.Trim() ?? "";
-        if (query.Length < 2)
-        {
-            line.ShowSuggestions = false;
-            line.Suggestions.Clear();
-            return;
-        }
+        <!-- Journal Lines Table -->
+        <div class="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4">
+            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3 px-4">
+                <h5 class="mb-0 fw-bold text-body-emphasis"><i class="bi bi-list-task me-2 text-warning"></i> Journal Lines</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" @onclick="AddLine">
+                    <i class="bi bi-plus-lg me-1"></i> Add Line
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 10%;" class="ps-4">Ref No.</th>
+                                <th style="width: 25%;">Account Name</th>
+                                <th style="width: 25%;">Description</th>
+                                <th style="width: 15%;" class="text-end">Debit</th>
+                                <th style="width: 15%;" class="text-end">Credit</th>
+                                <th style="width: 10%;" class="text-center pe-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            @foreach (var line in lines)
+                            {
+                                var accountRef = availableAccounts.FirstOrDefault(a => a.Id == line.AccountId)?.ReferenceNumber;
+                                <tr>
+                                    <td class="ps-4">
+                                        <input type="text" class="form-control text-center bg-body-secondary" readonly tabindex="-1"
+                                               placeholder="---" value="@(accountRef?.ToString() ?? "")" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select" @bind="line.AccountId">
+                                            <option value="0" disabled>Select Account...</option>
+                                            @foreach (var acc in availableAccounts)
+                                            {
+                                                <option value="@acc.Id">@acc.AccountName</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="position-relative">
+                                        <input type="text" class="form-control" placeholder="Note..." autocomplete="off"
+                                               value="@line.LineDescription"
+                                               @oninput="@(e => OnDescriptionInput(line, (string?)e.Value))" />
+                                        @if (line.ShowSuggestions && line.Suggestions.Any())
+                                        {
+                                            <div class="list-group shadow-sm" style="position:absolute; z-index:1060; top:100%; left:0; width:100%; max-height:220px; overflow-y:auto;">
+                                                @foreach (var suggestion in line.Suggestions)
+                                                {
+                                                    <button type="button" class="list-group-item list-group-item-action small py-1"
+                                                            @onmousedown="@(() => SelectSuggestion(line, suggestion))" @onmousedown:preventDefault="true">
+                                                        @suggestion
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <input type="number" step="any" class="form-control text-end" placeholder="0"
+                                               @bind="line.Debit" @bind:event="oninput" />
+                                    </td>
+                                    <td>
+                                        <input type="number" step="any" class="form-control text-end" placeholder="0"
+                                               @bind="line.Credit" @bind:event="oninput" />
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveLine(line)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light border-top fw-bold">
+                            <tr>
+                                <td colspan="3" class="text-end py-3">Total Balance:</td>
+                                <td class="text-end text-success fs-6 py-3">@TotalDebit.ToString("N0", CultureInfo)</td>
+                                <td class="text-end text-danger fs-6 py-3">@TotalCredit.ToString("N0", CultureInfo)</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end pb-3 border-bottom-0">Status:</td>
+                                <td colspan="2" class="text-center pb-3 border-bottom-0">
+                                    @if (IsBalanced)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2"><i class="bi bi-check-circle me-1"></i> Balanced</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2"><i class="bi bi-exclamation-triangle me-1"></i> Unbalanced (@Math.Abs(TotalDebit - TotalCredit).ToString("N0", CultureInfo))</span>
+                                    }
+                                </td>
+                                <td class="border-bottom-0"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-        _ = DebouncedSearchAsync(line, query, myVersion);
-    }
-
-    protected async Task DebouncedSearchAsync(LineItem line, string query, int myVersion)
-    {
-        await Task.Delay(250);
-        if (line.SearchVersion != myVersion) return;
-
-        var results = await SearchDescriptionsAsync(query);
-        if (line.SearchVersion != myVersion) return;
-
-        line.Suggestions = results;
-        line.ShowSuggestions = results.Any();
-        StateHasChanged();
-    }
-
-    protected void SelectSuggestion(LineItem line, string text)
-    {
-        line.LineDescription = text;
-        line.ShowSuggestions = false;
-    }
-
-    protected async Task<List<string>> SearchDescriptionsAsync(string q)
-    {
-        var keyword = q.Trim();
-        return await DbContext.JournalEntryLines
-            .Include(l => l.JournalEntry)
-            .Where(l => l.JournalEntry!.UserId == UserId
-                     && l.LineDescription != null && l.LineDescription != ""
-                     && EF.Functions.ILike(l.LineDescription, $"%{keyword}%"))
-            .GroupBy(l => l.LineDescription)
-            .OrderByDescending(g => g.Count())
-            .ThenByDescending(g => g.Max(l => l.Id))
-            .Select(g => g.Key!)
-            .Take(8)
-            .ToListAsync();
-    }
-
-    protected async Task HandleSubmit()
-    {
-        validationErrors.Clear();
-        successMessage = null;
-
-        var effectiveLines = lines
-            .Where(l => l.AccountId != 0 && ((l.Debit ?? 0) != 0 || (l.Credit ?? 0) != 0))
-            .ToList();
-
-        if (effectiveLines.Count < 2)
-        {
-            validationErrors.Add("A journal entry must have at least two line items.");
-        }
-
-        var totalDebit = effectiveLines.Sum(l => l.Debit ?? 0);
-        var totalCredit = effectiveLines.Sum(l => l.Credit ?? 0);
-        if (totalDebit != totalCredit || totalDebit == 0)
-        {
-            validationErrors.Add("Total debit must equal total credit before posting.");
-        }
-
-        var validAccountIds = (await DbContext.ChartOfAccounts
-            .Where(a => a.IsActive && a.UserId == UserId).Select(a => a.Id).ToListAsync()).ToHashSet();
-        if (effectiveLines.Any(l => !validAccountIds.Contains(l.AccountId)))
-        {
-            validationErrors.Add("One or more selected accounts are invalid or inactive.");
-        }
-
-        var closedPeriods = await DbContext.Periods.Where(p => p.UserId == UserId && p.IsClosed).ToListAsync();
-
-        if (IsEdit)
-        {
-            var entry = await DbContext.JournalEntries
-                .Include(j => j.Lines)
-                .FirstOrDefaultAsync(j => j.Id == EntryId!.Value && j.UserId == UserId);
-
-            if (entry == null)
+        <!-- Form Action Controls -->
+        <div class="d-flex justify-content-end gap-2">
+            @if (IsEdit)
             {
-                lockedMessage = "Journal entry not found.";
-                return;
+                <a href="/reports/general-journal" class="btn btn-outline-secondary px-4">Cancel</a>
             }
-
-            if (PeriodLock.IsDateLocked(entry.EntryDate, closedPeriods) || PeriodLock.IsDateLocked(entryDate, closedPeriods))
+            else
             {
-                lockedMessage = $"Journal entry {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)} falls within a closed period and cannot be modified.";
-                return;
+                <button type="button" class="btn btn-outline-secondary px-4" @onclick="ResetForm">Reset Form</button>
             }
-
-            if (validationErrors.Any()) return;
-
-            entry.JournalType = journalType;
-            entry.EntryDate = DateTime.SpecifyKind(entryDate, DateTimeKind.Utc);
-            entry.UpdatedAt = await GetDeviceLocalTimestampAsync();
-
-            DbContext.JournalEntryLines.RemoveRange(entry.Lines);
-            entry.Lines = effectiveLines.Select((l, index) => new JournalEntryLine
-            {
-                JournalEntryId = entry.Id,
-                AccountId = l.AccountId,
-                LineDescription = l.LineDescription,
-                Debit = l.Debit ?? 0,
-                Credit = l.Credit ?? 0,
-                LineOrder = index
-            }).ToList();
-
-            await DbContext.SaveChangesAsync();
-            Nav.NavigateTo("/reports/general-journal");
-        }
-        else
-        {
-            if (PeriodLock.IsDateLocked(entryDate, closedPeriods))
-            {
-                validationErrors.Add("This date falls within a closed period. Choose a date in an open period.");
-            }
-
-            if (validationErrors.Any()) return;
-
-            var deviceLocalNow = await GetDeviceLocalTimestampAsync();
-
-            // Menggunakan alias JournalEntryEntity untuk membuat objek model
-            var entry = new JournalEntryEntity
-            {
-                UserId = UserId,
-                TransactionNumber = await TxNumberService.GenerateAsync(UserId, journalType, entryDate),
-                JournalType = journalType,
-                EntryDate = DateTime.SpecifyKind(entryDate, DateTimeKind.Utc),
-                CreatedAt = deviceLocalNow,
-                Lines = effectiveLines.Select((l, index) => new JournalEntryLine
-                {
-                    AccountId = l.AccountId,
-                    LineDescription = l.LineDescription,
-                    Debit = l.Debit ?? 0,
-                    Credit = l.Credit ?? 0,
-                    LineOrder = index
-                }).ToList()
-            };
-
-            DbContext.JournalEntries.Add(entry);
-            await DbContext.SaveChangesAsync();
-
-            successMessage = $"Journal entry {TransactionNumberFormatter.ToDisplay(entry.TransactionNumber)} has been posted.";
-            ResetForm();
-        }
+            <button type="button" class="btn btn-primary fw-semibold px-4 shadow-sm" disabled="@(!IsBalanced)" @onclick="HandleSubmit">
+                <i class="bi bi-save me-1"></i> @(IsEdit ? "Save Changes" : "Post Journal Entry")
+            </button>
+        </div>
     }
-
-    protected async Task<DateTime> GetDeviceLocalTimestampAsync()
-    {
-        try
-        {
-            var localTimestamp = await JS.InvokeAsync<string>("aumoTime.getLocalTimestamp");
-            if (DateTime.TryParse(localTimestamp, out var localNow))
-            {
-                return DateTime.SpecifyKind(localNow, DateTimeKind.Utc);
-            }
-        }
-        catch
-        {
-            // Fallback
-        }
-
-        return DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
-    }
-
-    protected async Task<List<ChartOfAccount>> ActiveAccountsAsync()
-    {
-        return await DbContext.ChartOfAccounts
-            .Where(a => a.IsActive && a.UserId == UserId)
-            .OrderBy(a => a.ReferenceNumber)
-            .ToListAsync();
-    }
-
-    public class LineItem
-    {
-        public int AccountId { get; set; }
-        public string? LineDescription { get; set; }
-        public decimal? Debit { get; set; }
-        public decimal? Credit { get; set; }
-
-        public List<string> Suggestions { get; set; } = new();
-        public bool ShowSuggestions { get; set; }
-        public int SearchVersion { get; set; }
-    }
-}
+</div>
