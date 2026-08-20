@@ -44,11 +44,11 @@ public partial class Index
             .Include(j => j.Lines)
                 .ThenInclude(l => l.Account)
             .Where(j => j.UserId == UserId
-                     && j.EntryDate >= selectedPeriod.StartDate 
+                     && j.EntryDate >= selectedPeriod.StartDate
                      && j.EntryDate <= selectedPeriod.EndDate)
-            .OrderBy(j => j.EntryDate)    
-            .ThenBy(j => j.CreatedAt)     
-            .ThenBy(j => j.Id)             
+            .OrderBy(j => j.EntryDate)
+            .ThenBy(j => j.CreatedAt)
+            .ThenBy(j => j.Id)
             .ToListAsync();
     }
 

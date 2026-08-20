@@ -44,7 +44,7 @@ public partial class Index
                 .ThenInclude(l => l.Account)
             .Where(j => j.UserId == UserId
                      && j.JournalType == "Adjusting"
-                     && j.EntryDate >= selectedPeriod.StartDate 
+                     && j.EntryDate >= selectedPeriod.StartDate
                      && j.EntryDate <= selectedPeriod.EndDate)
             .OrderBy(j => j.EntryDate)
             .ThenBy(j => j.CreatedAt)
