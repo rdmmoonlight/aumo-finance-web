@@ -5,6 +5,7 @@ namespace AumoFinance.Components.Layout
     public partial class Sidebar
     {
         private bool showReportsFlyout = false;
+        private bool isExpanded = false;
 
         private void ToggleReportsFlyout()
         {
@@ -14,6 +15,11 @@ namespace AumoFinance.Components.Layout
         private void CloseFlyout()
         {
             showReportsFlyout = false;
+        }
+
+        private void ToggleExpand()
+        {
+            isExpanded = !isExpanded;
         }
     }
 }
