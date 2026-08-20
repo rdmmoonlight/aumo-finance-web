@@ -32,8 +32,17 @@
     width: 220px;
 }
 
-.sidebar-icons.expanded .icon-btn {
-    justify-content: flex-start !important;
+/* KONSISTENSI IKON SIKAP CENTER KETIKA COLLAPSED */
+.icon-center {
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* TEKS PADA MENU NAVIGATION */
+.nav-text {
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 /* FLOATING EXPAND TOGGLE BUTTON ON EDGE */
