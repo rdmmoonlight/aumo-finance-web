@@ -1,0 +1,80 @@
+/* STICKY CONTAINER UTAMA */
+.sidebar-sticky-neon {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    max-height: 100vh;
+    align-self: flex-start;
+    z-index: 1030;
+    flex-shrink: 0;
+}
+
+/* KOTAK DOCK UNGU DENGAN FULL WHITE NEON BORDER (360 DERAJAT) */
+.sidebar-icons {
+    width: 65px;
+    height: 100vh;
+    background-color: #1a1625;
+    border: 2px solid #ffffff;
+    border-radius: 8px;
+    box-shadow: 
+        0 0 5px #ffffff,
+        0 0 15px #ffffff,
+        0 0 30px #ffffff;
+}
+
+/* HOLOGRAM FLYOUT PANEL WITH MATCHING NEON BORDER */
+.sidebar-flyout {
+    width: 230px;
+    height: 100vh;
+    overflow-y: auto;
+    background-color: rgba(26, 22, 37, 0.95);
+    backdrop-filter: blur(8px);
+    margin-left: 6px;
+    border: 2px solid #ffffff;
+    border-radius: 8px;
+    box-shadow: 
+        0 0 5px #ffffff,
+        0 0 12px rgba(255, 255, 255, 0.6);
+}
+
+/* TOMBOL IKON NAVIGASI */
+.icon-btn {
+    color: #b3a5d0;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.icon-btn:hover, 
+.icon-btn.active {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+/* DIVIDER NEON PUTIH DI DALAM KOTAK */
+.hr-glow-white {
+    border: none !important;
+    height: 1px !important;
+    background-color: #ffffff !important;
+    opacity: 0.9 !important;
+    box-shadow: 0 0 6px #ffffff, 0 0 12px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* FLYOUT ITEM LINK */
+.sidebar-flyout .list-group-item {
+    background-color: transparent;
+    color: #d8ceee;
+    border: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-flyout .list-group-item:hover,
+.sidebar-flyout .list-group-item.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
