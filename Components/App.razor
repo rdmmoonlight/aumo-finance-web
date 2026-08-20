@@ -21,6 +21,9 @@
     <link rel="stylesheet" href="/css/theme/topbar.css" />
     <link rel="stylesheet" href="/css/theme/sidebar.css" />
 
+    <!-- BLAZOR CSS ISOLATION (STANDAR MODERN .NET 10 / NET 9) -->
+    <link rel="stylesheet" href="AumoFinance.styles.css" />
+
     <!-- Instant Theme Loader (Mencegah Layar Kedip Saat Load) -->
     <script>
         (function() {
@@ -29,12 +32,12 @@
         })();
     </script>
 
-    <!-- Aktifkan Interaktivitas untuk Meta Head -->
+    <!-- HeadOutlet untuk Interaktivitas SSR/InteractiveServer di .NET 10 -->
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
-    <Routes />
+    <Routes @rendermode="InteractiveServer" />
 
     <!-- UI Penanganan Error Blazor -->
     <div id="blazor-error-ui" class="alert alert-danger fixed-bottom m-3 d-none" role="alert">
@@ -46,10 +49,10 @@
     <!-- JS Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Global Site Script (Menyediakan window.aumoModal & window.aumoTheme) -->
+    <!-- Global Site Script -->
     <script src="js/site.js"></script>
 
-    <!-- Global Theme Controller Function (Fallback) -->
+    <!-- Global Theme Controller Function -->
     <script>
         window.setAppTheme = function(themeName) {
             document.documentElement.setAttribute('data-bs-theme', themeName);
@@ -57,7 +60,7 @@
         };
     </script>
 
-    <!-- Framework Blazor Core -->
+    <!-- Framework Blazor Core Engine .NET 10 -->
     <script src="_framework/blazor.web.js"></script>
 
     <!-- Custom Scripts Tambahan -->
