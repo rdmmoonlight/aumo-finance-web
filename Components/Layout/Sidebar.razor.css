@@ -27,22 +27,27 @@
     transition: width 0.3s ease-in-out;
 }
 
-/* STATE SAAT EXPANDED */
-.sidebar-icons.expanded {
-    width: 220px;
-}
-
-/* KONSISTENSI IKON SIKAP CENTER KETIKA COLLAPSED */
+/* KONSISTENSI IKON DI TENGAH DOCK */
 .icon-center {
     width: 24px;
     text-align: center;
     flex-shrink: 0;
 }
 
-/* TEKS PADA MENU NAVIGATION */
-.nav-text {
+/* TULISAN/TEKS DIHILANGKAN SAAT SIDEBAR TERTUTUP */
+.sidebar-icons .nav-text {
+    display: none;
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+/* STATE SAAT EXPANDED (LEBAR DITAMBAH & TEKS DIMUNCULKAN) */
+.sidebar-icons.expanded {
+    width: 220px;
+}
+
+.sidebar-icons.expanded .nav-text {
+    display: inline-block;
 }
 
 /* FLOATING EXPAND TOGGLE BUTTON ON EDGE */
