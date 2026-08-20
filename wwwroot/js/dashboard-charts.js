@@ -14,13 +14,12 @@ window.aumoCharts = window.aumoCharts || { trend: null, doughnut: null };
 
 function initCommandPalette() {
     const cmdModalEl = document.getElementById('commandPaletteModal');
-    if (cmdModalEl && typeof bootstrap !== 'undefined' && !cmdModalEl.dataset.aumoBound) {
+    if (cmdModalEl && typeof window.aumoUI !== 'undefined' && !cmdModalEl.dataset.aumoBound) {
         cmdModalEl.dataset.aumoBound = 'true';
-        const cmdModal = new bootstrap.Modal(cmdModalEl);
         document.addEventListener('keydown', function (e) {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
-                cmdModal.show();
+                window.aumoUI.modal.show(cmdModalEl.id);
             }
         });
     }

@@ -129,7 +129,7 @@ namespace AumoFinance.Components.Pages.Settings
 
             try
             {
-                await JS.InvokeVoidAsync("eval", "var el = document.getElementById('settingsToast'); if(el) { new bootstrap.Toast(el).show(); }");
+                await JS.InvokeVoidAsync("eval", "if (window.aumoUI) { window.aumoUI.toast.show('settingsToast'); }");
             }
             catch
             {

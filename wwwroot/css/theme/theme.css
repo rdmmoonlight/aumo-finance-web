@@ -1,6 +1,6 @@
 /* =========================================================
    AUMO FINANCE — COSMIC / NEBULA THEME
-   Bootstrap 5 compatible
+   Selaras dengan Aumo Custom CSS Framework
    Dark + Light mode
    ========================================================= */
 
@@ -12,7 +12,7 @@
 :root,
 [data-bs-theme="dark"] {
 
-    /* ---------- Bootstrap Core Surfaces ---------- */
+    /* ---------- Core Surfaces ---------- */
 
     --bs-body-bg: #0D1117;
     --bs-body-bg-rgb: 13, 17, 23;
@@ -39,7 +39,7 @@
     --bs-border-color-translucent: rgba(148, 163, 184, 0.18);
 
 
-    /* ---------- Bootstrap Brand Colors ---------- */
+    /* ---------- Brand Colors ---------- */
 
     --bs-primary: #3B82F6;
     --bs-primary-rgb: 59, 130, 246;
@@ -60,7 +60,7 @@
     --bs-info-rgb: 0, 194, 255;
 
 
-    /* ---------- Bootstrap Links ---------- */
+    /* ---------- Links ---------- */
 
     --bs-link-color: #60A5FA;
     --bs-link-hover-color: #00C2FF;
@@ -69,7 +69,7 @@
     --bs-link-hover-color-rgb: 0, 194, 255;
 
 
-    /* ---------- Bootstrap Focus ---------- */
+    /* ---------- Focus ---------- */
 
     --bs-focus-ring-color: rgba(59, 130, 246, 0.25);
 
@@ -118,7 +118,7 @@
 
 [data-bs-theme="light"] {
 
-    /* ---------- Bootstrap Core Surfaces ---------- */
+    /* ---------- Core Surfaces ---------- */
 
     --bs-body-bg: #F8FAFC;
     --bs-body-bg-rgb: 248, 250, 252;
@@ -296,7 +296,7 @@ td,
 
 
 /* =========================================================
-   6. BOOTSTRAP CARDS
+   6. CARD OVERRIDES
    ========================================================= */
 
 .card {
@@ -720,7 +720,7 @@ a:hover {
 
 
 /* =========================================================
-   22. BOOTSTRAP LIGHT/DARK UTILITIES NORMALIZATION
+   22. LIGHT/DARK UTILITIES NORMALIZATION
    ========================================================= */
 
 [data-bs-theme="dark"] .bg-light {

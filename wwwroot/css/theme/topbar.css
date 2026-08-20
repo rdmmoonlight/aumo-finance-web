@@ -1,4 +1,4 @@
-/* Solid TopBar Background (Dengan !important tegas untuk menimpa Bootstrap) */
+/* Solid TopBar Background (Dengan !important tegas untuk menimpa gaya default) */
 .topbar-solid {
     background-color: #0f172a !important;
     backdrop-filter: none !important;

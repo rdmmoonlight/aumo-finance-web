@@ -30,4 +30,4 @@ To maintain the highest level of financial integrity, economic rationality, and 
 * **Frontend & UI:** 
   * Blazor Interactive Components (`.razor`)
   * MudBlazor / Radzen Components
-  * Bootstrap 5 & Bootstrap Icons
+  * Aumo Custom CSS Framework (`wwwroot/css/framework/`) — tanpa dependensi framework CSS pihak ketiga

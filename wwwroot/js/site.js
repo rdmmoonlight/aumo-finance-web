@@ -5,71 +5,43 @@
 
 
 // ==========================================
-// Bootstrap Modal Helper
+// Aumo Modal Helper
 // ==========================================
 //
-// Helper ini digunakan oleh komponen Blazor
-// untuk membuka dan menutup Bootstrap Modal
-// secara terprogram tanpa reload halaman.
+// Helper ini digunakan oleh komponen Blazor untuk membuka dan
+// menutup modal secara terprogram tanpa reload halaman. Logika
+// tampil/sembunyi modal ditangani oleh js/aumo-ui.js (buatan
+// sendiri, tanpa dependensi Bootstrap).
 //
 
 window.aumoModal = {
 
     /**
-     * Show Bootstrap modal.
+     * Show modal.
      *
      * @param {string} elementId
      */
     show: function (elementId) {
-        const element = document.getElementById(elementId);
-
-        if (!element) {
-            console.warn(`[aumoModal] Element with ID '${elementId}' not found.`);
+        if (typeof window.aumoUI === 'undefined') {
+            console.error('[aumoModal] aumo-ui.js is not loaded.');
             return;
         }
 
-        if (typeof bootstrap === 'undefined') {
-            console.error('[aumoModal] Bootstrap JS library is not loaded.');
-            return;
-        }
-
-        const instance = bootstrap.Modal.getOrCreateInstance(element);
-        instance.show();
+        window.aumoUI.modal.show(elementId);
     },
 
     /**
-     * Hide Bootstrap modal.
+     * Hide modal.
      *
      * @param {string} elementId
      */
     hide: function (elementId) {
-        const element = document.getElementById(elementId);
-
-        if (!element) {
-            console.warn(`[aumoModal] Element with ID '${elementId}' not found.`);
+        if (typeof window.aumoUI === 'undefined') {
+            console.error('[aumoModal] aumo-ui.js is not loaded.');
             return;
         }
 
-        if (typeof bootstrap === 'undefined') {
-            console.error('[aumoModal] Bootstrap JS library is not loaded.');
-            return;
-        }
-
-        const instance = bootstrap.Modal.getInstance(element) || bootstrap.Modal.getOrCreateInstance(element);
-        if (instance) {
-            instance.hide();
-        }
-
-        // Cleanup tambahan untuk memastikan backdrop gelap terhapus jika tersisa
-        setTimeout(() => {
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            if (backdrops.length > 0 && !document.querySelector('.modal.show')) {
-                backdrops.forEach(b => b.remove());
-                document.body.classList.remove('modal-open');
-                document.body.style.removeProperty('overflow');
-                document.body.style.removeProperty('padding-right');
-            }
-        }, 150);
+        window.aumoUI.modal.hide(elementId);
     }
 };
 
