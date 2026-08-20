@@ -10,17 +10,23 @@
     flex-shrink: 0;
 }
 
-/* KOTAK DOCK UNGU DENGAN NEON GLOW BORDER */
+/* KOTAK DOCK UNGU DENGAN WHITE NEON GLOW SUNGGUHAN */
 .sidebar-icons {
     width: 65px;
     height: 100vh;
     background-color: #1a1625;
     border: 2px solid #ffffff !important;
     border-radius: 8px;
+    
+    /* MULTI-LAYER WHITE NEON GLOW (INSIDE & OUTSIDE) */
     box-shadow: 
+        0 0 2px #ffffff,
         0 0 5px #ffffff,
-        0 0 15px rgba(255, 255, 255, 0.8),
-        0 0 30px rgba(255, 255, 255, 0.4) !important;
+        0 0 10px #ffffff,
+        0 0 20px rgba(255, 255, 255, 0.9),
+        0 0 35px rgba(255, 255, 255, 0.6),
+        inset 0 0 8px rgba(255, 255, 255, 0.5) !important;
+        
     transition: width 0.3s ease-in-out;
 }
 
@@ -29,22 +35,26 @@
     width: 220px;
 }
 
-/* HOLOGRAM FLYOUT PANEL WITH MATCHING NEON BORDER */
+/* HOLOGRAM FLYOUT PANEL DENGAN MATCHING WHITE NEON GLOW */
 .sidebar-flyout {
     width: 230px;
     height: 100vh;
     overflow-y: auto;
     background-color: rgba(26, 22, 37, 0.95);
     backdrop-filter: blur(8px);
-    margin-left: 6px;
+    margin-left: 8px;
     border: 2px solid #ffffff !important;
     border-radius: 8px;
+    
     box-shadow: 
+        0 0 2px #ffffff,
         0 0 5px #ffffff,
-        0 0 12px rgba(255, 255, 255, 0.6) !important;
+        0 0 12px rgba(255, 255, 255, 0.9),
+        0 0 25px rgba(255, 255, 255, 0.5),
+        inset 0 0 6px rgba(255, 255, 255, 0.4) !important;
 }
 
-/* TOMBOL IKON NAVIGASI */
+/* TOMBOL IKON NAVIGASI DENGAN EFEK HOVER NEON GLOW */
 .icon-btn {
     color: #b3a5d0;
     padding: 0.5rem;
@@ -58,20 +68,26 @@
 
 .icon-btn:hover, 
 .icon-btn.active {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.18);
+    
+    /* GLOW ON HOVER */
+    box-shadow: 
+        0 0 4px #ffffff,
+        0 0 10px rgba(255, 255, 255, 0.8) !important;
+    text-shadow: 0 0 5px #ffffff;
 }
 
-/* DIVIDER NEON PUTIH */
+/* DIVIDER NEON PUTIH PIJAR */
 .hr-glow-white {
     border: none !important;
     height: 2px !important;
     background-color: #ffffff !important;
     opacity: 1 !important;
     box-shadow: 
-        0 0 6px #ffffff, 
-        0 0 12px rgba(255, 255, 255, 0.8) !important;
+        0 0 4px #ffffff, 
+        0 0 8px #ffffff,
+        0 0 15px rgba(255, 255, 255, 0.9) !important;
 }
 
 /* FLYOUT ITEM LINK */
@@ -79,11 +95,12 @@
     background-color: transparent;
     color: #d8ceee;
     border: none;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sidebar-flyout .list-group-item:hover,
 .sidebar-flyout .list-group-item.active {
     background-color: rgba(255, 255, 255, 0.15);
     color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
