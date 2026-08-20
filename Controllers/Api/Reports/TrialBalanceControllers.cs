@@ -142,7 +142,7 @@ public class TrialBalanceControllers : ControllerBase
         var accountIds = accounts.Select(a => a.Id).ToList();
 
         // Gunakan .Date agar perbandingan tidak terpengaruh jam/menit/Kind,
-        // selaras dengan TrialBalancePage.razor (web).
+        // selaras dengan TrialBalance/Index.razor (web).
         var start = period.StartDate.Date;
         var end = period.EndDate.Date;
 
@@ -156,7 +156,7 @@ public class TrialBalanceControllers : ControllerBase
         bool includeAdjustingLines = includeAdjusting || reportType == "adjusted" || reportType == "post-closing";
 
         // Hanya General (unadjusted) atau General + Adjusting (adjusted/post-closing).
-        // Closing journal tidak pernah dimasukkan — selaras dengan TrialBalancePage.razor (web).
+        // Closing journal tidak pernah dimasukkan — selaras dengan TrialBalance/Index.razor (web).
         var lines = includeAdjustingLines
             ? await linesQuery.Where(l => l.JournalEntry!.JournalType == "General"
                                        || l.JournalEntry!.JournalType == "Adjusting").ToListAsync()
