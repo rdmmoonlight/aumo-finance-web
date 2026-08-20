@@ -7,9 +7,9 @@
         <div class="sidebar-wrapper d-flex sidebar-sticky-neon">
             
             <!-- MAIN ICON DOCK / EXPANDED SIDEBAR -->
-            <nav id="sidebar-icons" class="sidebar-icons text-white d-flex flex-column align-items-center py-3 position-relative @(isExpanded ? "expanded" : "")">
+            <nav id="sidebar-icons" class="sidebar-icons text-white d-flex flex-column py-3 position-relative @(isExpanded ? "expanded" : "")">
 
-                <!-- FLOATING EXPAND/COLLAPSE TOGGLE (DI PINGGIR BORDER BOX) -->
+                <!-- FLOATING EXPAND TOGGLE (PADA BORDER PINGGIR KANAN) -->
                 <button type="button" 
                         class="btn-expand-edge" 
                         @onclick="ToggleExpand" 
@@ -18,8 +18,8 @@
                 </button>
 
                 <!-- BRAND / HOME ICON -->
-                <NavLink href="/" Match="NavLinkMatch.All" class="brand-container text-center text-warning text-decoration-none d-flex align-items-center justify-content-center gap-2 mb-2 w-100" title="Aumo Finance Home" @onclick="CloseFlyout">
-                    <i class="bi bi-house-door-fill fs-5"></i>
+                <NavLink href="/" Match="NavLinkMatch.All" class="brand-container text-warning text-decoration-none d-flex align-items-center gap-3 px-3 mb-2 w-100" title="Aumo Finance Home" @onclick="CloseFlyout">
+                    <i class="bi bi-house-door-fill fs-5 icon-center"></i>
                     @if (isExpanded)
                     {
                         <span class="fw-bold text-white fs-6 text-truncate">Aumo Finance</span>
@@ -27,77 +27,85 @@
                 </NavLink>
 
                 <!-- GLOWING WHITE DIVIDER -->
-                <hr class="hr-glow-white my-2 w-75">
+                <div class="d-flex justify-content-center w-100">
+                    <hr class="hr-glow-white my-2 w-75">
+                </div>
 
                 <!-- MENU NAVIGATION LIST -->
-                <ul class="nav flex-column align-items-center w-100 flex-grow-1 px-2">
+                <ul class="nav flex-column w-100 flex-grow-1 px-2">
 
+                    <!-- DASHBOARD -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/dashboard" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="Dashboard" @onclick="CloseFlyout">
-                            <i class="bi bi-columns-gap fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Dashboard</span> }
+                        <NavLink href="/dashboard" class="nav-link icon-btn d-flex align-items-center gap-3" title="Dashboard" @onclick="CloseFlyout">
+                            <i class="bi bi-columns-gap fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Dashboard</span> }
                         </NavLink>
                     </li>
 
-                    <!-- MENU AI ASSISTANT -->
+                    <!-- AI ASSISTANT -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/ai-assistant" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="AI Financial Assistant" @onclick="CloseFlyout">
-                            <i class="bi bi-robot fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">AI Assistant</span> }
+                        <NavLink href="/ai-assistant" class="nav-link icon-btn d-flex align-items-center gap-3" title="AI Financial Assistant" @onclick="CloseFlyout">
+                            <i class="bi bi-robot fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">AI Assistant</span> }
                         </NavLink>
                     </li>
 
+                    <!-- JOURNAL ENTRY -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/journal-entry/create" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="Journal Entry" @onclick="CloseFlyout">
-                            <i class="bi bi-journal-plus fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Journal Entry</span> }
+                        <NavLink href="/journal-entry/create" class="nav-link icon-btn d-flex align-items-center gap-3" title="Journal Entry" @onclick="CloseFlyout">
+                            <i class="bi bi-journal-plus fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Journal Entry</span> }
                         </NavLink>
                     </li>
 
-                    <!-- MENU REPORTS (TOGGLE FLYOUT) -->
+                    <!-- REPORTS (FLYOUT TOGGLE) -->
                     <li class="nav-item mb-2 w-100">
                         <button type="button" 
                                 @onclick="ToggleReportsFlyout" 
-                                class="nav-link icon-btn border-0 bg-transparent d-flex align-items-center justify-content-center gap-3 w-100 @(showReportsFlyout ? "active" : "")" 
+                                class="nav-link icon-btn border-0 bg-transparent d-flex align-items-center gap-3 w-100 @(showReportsFlyout ? "active" : "")" 
                                 title="Reports">
-                            <i class="bi bi-folder fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Reports</span> }
+                            <i class="bi bi-folder fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Reports</span> }
                         </button>
                     </li>
 
+                    <!-- CHART OF ACCOUNTS -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/chart-of-accounts" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="Chart of Accounts" @onclick="CloseFlyout">
-                            <i class="bi bi-diagram-3 fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Chart of Accounts</span> }
+                        <NavLink href="/chart-of-accounts" class="nav-link icon-btn d-flex align-items-center gap-3" title="Chart of Accounts" @onclick="CloseFlyout">
+                            <i class="bi bi-diagram-3 fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Chart of Accounts</span> }
                         </NavLink>
                     </li>
 
+                    <!-- FINANCIAL PERIODS -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/periods" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="Financial Periods" @onclick="CloseFlyout">
-                            <i class="bi bi-calendar3 fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Financial Periods</span> }
+                        <NavLink href="/periods" class="nav-link icon-btn d-flex align-items-center gap-3" title="Financial Periods" @onclick="CloseFlyout">
+                            <i class="bi bi-calendar3 fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Financial Periods</span> }
                         </NavLink>
                     </li>
 
-                    <!-- MENU DOCUMENTS -->
+                    <!-- ECONOMIC DOCUMENTS -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/documents" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="Economic Documents" @onclick="CloseFlyout">
-                            <i class="bi bi-file-earmark-text fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Documents</span> }
+                        <NavLink href="/documents" class="nav-link icon-btn d-flex align-items-center gap-3" title="Economic Documents" @onclick="CloseFlyout">
+                            <i class="bi bi-file-earmark-text fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Documents</span> }
                         </NavLink>
                     </li>
 
+                    <!-- GUARDIAN SECURITY -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/guardian" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="Guardian Security" @onclick="CloseFlyout">
-                            <i class="bi bi-shield-check fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Guardian</span> }
+                        <NavLink href="/guardian" class="nav-link icon-btn d-flex align-items-center gap-3" title="Guardian Security" @onclick="CloseFlyout">
+                            <i class="bi bi-shield-check fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Guardian</span> }
                         </NavLink>
                     </li>
 
+                    <!-- TOOLS -->
                     <li class="nav-item mb-2 w-100">
-                        <NavLink href="/tools" class="nav-link icon-btn d-flex align-items-center justify-content-center gap-3" title="Tools" @onclick="CloseFlyout">
-                            <i class="bi bi-tools fs-5"></i>
-                            @if (isExpanded) { <span class="text-truncate">Tools</span> }
+                        <NavLink href="/tools" class="nav-link icon-btn d-flex align-items-center gap-3" title="Tools" @onclick="CloseFlyout">
+                            <i class="bi bi-tools fs-5 icon-center"></i>
+                            @if (isExpanded) { <span class="nav-text text-truncate">Tools</span> }
                         </NavLink>
                     </li>
 
@@ -105,19 +113,19 @@
 
                 <!-- AUTH MENU & PROFILE DROPDOWN -->
                 <div class="mt-auto dropup position-relative w-100 px-2">
-                    <button class="nav-link icon-btn border-0 bg-transparent d-flex align-items-center justify-content-center gap-3 w-100" 
+                    <button class="nav-link icon-btn border-0 bg-transparent d-flex align-items-center gap-3 w-100" 
                             id="userDropdown" 
                             data-bs-toggle="dropdown" 
                             aria-expanded="false" 
                             title="@context.User.Identity?.Name">
-                        <i class="bi bi-person-circle fs-5"></i>
+                        <i class="bi bi-person-circle fs-5 icon-center"></i>
                         @if (isExpanded)
                         {
-                            <span class="text-truncate" style="max-width: 120px;">@(context.User.Identity?.Name ?? "User")</span>
+                            <span class="nav-text text-truncate" style="max-width: 130px;">@(context.User.Identity?.Name ?? "User")</span>
                         }
                     </button>
                     
-                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-dark rounded-circle" style="width: 7px; height: 7px; box-shadow: 0 0 6px #10b981; right: 10px !important;"></span>
+                    <span class="position-absolute bottom-0 p-1 bg-success border border-dark rounded-circle" style="width: 7px; height: 7px; box-shadow: 0 0 6px #10b981; left: 28px !important;"></span>
 
                     <ul class="dropdown-menu dropdown-menu-dark shadow ms-2 mb-2 fs-7" aria-labelledby="userDropdown">
                         <li class="dropdown-header text-truncate" style="max-width: 180px;">
@@ -150,7 +158,8 @@
             {
                 <div id="reports-flyout" class="sidebar-flyout">
 
-                    <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-end align-items-center">
+                    <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold text-white small">Financial Reports</span>
                         <button type="button" @onclick="CloseFlyout" class="btn-close btn-close-white btn-sm" aria-label="Close"></button>
                     </div>
 
