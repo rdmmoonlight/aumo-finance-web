@@ -146,41 +146,16 @@
 
 /* =========================================================
    NAVIGATION TEXT
+   -----------------------------------------------------------
+   The show/hide-on-expand rule for .nav-text lives in the
+   GLOBAL stylesheet (wwwroot/css/site.css), not here.
+   Reason: several .nav-text spans are rendered as child
+   content of the framework's <NavLink> component (a different
+   assembly). Blazor's scoped-CSS attribute did not reliably
+   attach to that child content in this project, so the rule
+   silently failed for every NavLink item. A global ID selector
+   (#sidebar-icons.expanded .nav-text) has no such dependency.
    ========================================================= */
-
-.nav-text {
-    display: inline-block !important;
-
-    min-width: 0;
-    max-width: 0;
-
-    overflow: hidden;
-
-    font-size: .9rem;
-    font-weight: 500;
-    line-height: 1.2;
-
-    white-space: nowrap;
-    text-overflow: ellipsis;
-
-    opacity: 0;
-    transform: translateX(-5px);
-
-    transition:
-        max-width .25s ease,
-        opacity .2s ease,
-        transform .2s ease;
-}
-
-
-/* Show text when expanded */
-
-.sidebar-icons.expanded .nav-text {
-    max-width: 160px !important;
-
-    opacity: 1 !important;
-    transform: translateX(0) !important;
-}
 
 
 /* =========================================================
@@ -307,11 +282,6 @@
     padding-right: 0;
 }
 
-.sidebar-icons:not(.expanded) .icon-btn .nav-text,
-.sidebar-icons:not(.expanded) .brand-container .nav-text {
-    max-width: 0 !important;
-    opacity: 0 !important;
-}
 
 
 /* =========================================================
@@ -856,7 +826,6 @@
     .icon-btn,
     .sidebar-icon,
     .brand-container,
-    .nav-text,
     .report-link,
     .flyout-close {
         transition: none;
