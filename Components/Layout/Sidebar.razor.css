@@ -1,145 +1,250 @@
-/* STICKY CONTAINER UTAMA */
+/* =========================================================
+   SIDEBAR CONTAINER
+   ========================================================= */
+
 .sidebar-sticky-neon {
-    position: -webkit-sticky;
     position: sticky;
     top: 0;
     height: 100vh;
     max-height: 100vh;
     align-self: flex-start;
-    z-index: 1030;
     flex-shrink: 0;
+    z-index: 1030;
 }
 
-/* KOTAK DOCK UNGU DENGAN WHITE NEON GLOW */
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
 .sidebar-icons {
     width: 65px;
     height: 100vh;
-    background-color: #1a1625;
-    border: 2px solid #ffffff !important;
+    background: #1a1625;
+    border: 2px solid #fff !important;
     border-radius: 8px;
-    box-shadow: 
-        0 0 2px #ffffff,
-        0 0 5px #ffffff,
-        0 0 10px #ffffff,
-        0 0 20px rgba(255, 255, 255, 0.9),
-        0 0 35px rgba(255, 255, 255, 0.6),
-        inset 0 0 8px rgba(255, 255, 255, 0.5) !important;
-    transition: width 0.3s ease-in-out;
+    box-shadow:
+        0 0 2px #fff,
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 20px rgba(255,255,255,.9),
+        0 0 35px rgba(255,255,255,.6),
+        inset 0 0 8px rgba(255,255,255,.5) !important;
+    transition: width .3s ease-in-out;
 }
 
-/* KONSISTENSI IKON DI TENGAH DOCK */
+.sidebar-icons.expanded {
+    width: 220px;
+}
+
+
+/* =========================================================
+   ICON ALIGNMENT
+   ========================================================= */
+
 .icon-center {
     width: 24px;
+    min-width: 24px;
     text-align: center;
     flex-shrink: 0;
 }
 
-/* TULISAN/TEKS DIHILANGKAN SAAT SIDEBAR TERTUTUP */
+
+/* =========================================================
+   NAVIGATION TEXT
+   ========================================================= */
+
 .sidebar-icons .nav-text {
     display: none;
-    font-size: 0.9rem;
+    font-size: .9rem;
     font-weight: 500;
-}
-
-/* STATE SAAT EXPANDED (LEBAR DITAMBAH & TEKS DIMUNCULKAN) */
-.sidebar-icons.expanded {
-    width: 220px;
 }
 
 .sidebar-icons.expanded .nav-text {
     display: inline-block;
 }
 
-/* FLOATING EXPAND TOGGLE BUTTON ON EDGE */
+
+/* =========================================================
+   EXPAND BUTTON
+   ========================================================= */
+
 .btn-expand-edge {
     position: absolute;
     top: 18px;
     right: -12px;
     width: 24px;
     height: 24px;
-    background-color: #1a1625;
-    border: 1.5px solid #ffffff;
-    border-radius: 50%;
-    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    color: #fff;
+    background: #1a1625;
+    border: 1.5px solid #fff;
+    border-radius: 50%;
     cursor: pointer;
     z-index: 10;
-    font-size: 0.75rem;
-    box-shadow: 
-        0 0 4px #ffffff,
-        0 0 8px rgba(255, 255, 255, 0.8);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    font-size: .75rem;
+    box-shadow:
+        0 0 4px #fff,
+        0 0 8px rgba(255,255,255,.8);
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
 }
 
 .btn-expand-edge:hover {
     transform: scale(1.15);
-    box-shadow: 
-        0 0 6px #ffffff,
-        0 0 14px #ffffff;
+    box-shadow:
+        0 0 6px #fff,
+        0 0 14px #fff;
 }
 
-/* HOLOGRAM FLYOUT PANEL WITH MATCHING NEON BORDER */
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+.brand-container {
+    min-height: 38px;
+}
+
+
+/* =========================================================
+   NAVIGATION BUTTON
+   ========================================================= */
+
+.icon-btn {
+    padding: .5rem;
+    color: #b3a5d0;
+    border-radius: .375rem;
+    white-space: nowrap;
+    transition:
+        color .2s ease,
+        background-color .2s ease,
+        box-shadow .2s ease;
+}
+
+.icon-btn:hover,
+.icon-btn.active {
+    color: #fff !important;
+    background: rgba(255,255,255,.18);
+    box-shadow:
+        0 0 4px #fff,
+        0 0 10px rgba(255,255,255,.8) !important;
+    text-shadow: 0 0 5px #fff;
+}
+
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.hr-glow-white {
+    height: 2px !important;
+    margin: .5rem 0;
+    border: 0 !important;
+    background: #fff !important;
+    opacity: 1 !important;
+    box-shadow:
+        0 0 4px #fff,
+        0 0 8px #fff,
+        0 0 15px rgba(255,255,255,.9) !important;
+}
+
+
+/* =========================================================
+   USER STATUS
+   ========================================================= */
+
+.user-status-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 28px;
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    background: #10b981;
+    border: 1px solid #1a1625;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #10b981;
+}
+
+
+/* =========================================================
+   REPORTS FLYOUT
+   ========================================================= */
+
 .sidebar-flyout {
     width: 230px;
     height: 100vh;
-    overflow-y: auto;
-    background-color: rgba(26, 22, 37, 0.95);
-    backdrop-filter: blur(8px);
     margin-left: 8px;
-    border: 2px solid #ffffff !important;
+    overflow-y: auto;
+    background: rgba(26,22,37,.95);
+    backdrop-filter: blur(8px);
+    border: 2px solid #fff !important;
     border-radius: 8px;
-    box-shadow: 
-        0 0 2px #ffffff,
-        0 0 5px #ffffff,
-        0 0 12px rgba(255, 255, 255, 0.9),
-        0 0 25px rgba(255, 255, 255, 0.5),
-        inset 0 0 6px rgba(255, 255, 255, 0.4) !important;
+    box-shadow:
+        0 0 2px #fff,
+        0 0 5px #fff,
+        0 0 12px rgba(255,255,255,.9),
+        0 0 25px rgba(255,255,255,.5),
+        inset 0 0 6px rgba(255,255,255,.4) !important;
 }
 
-/* TOMBOL IKON NAVIGASI */
-.icon-btn {
-    color: #b3a5d0;
-    padding: 0.5rem;
-    border-radius: 0.375rem;
-    transition: all 0.2s ease-in-out;
-    white-space: nowrap;
+
+/* =========================================================
+   FLYOUT HEADER
+   ========================================================= */
+
+.flyout-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem;
+    border-bottom: 1px solid rgba(108,117,125,.25);
 }
 
-.icon-btn:hover, 
-.icon-btn.active {
-    color: #ffffff !important;
-    background-color: rgba(255, 255, 255, 0.18);
-    box-shadow: 
-        0 0 4px #ffffff,
-        0 0 10px rgba(255, 255, 255, 0.8) !important;
-    text-shadow: 0 0 5px #ffffff;
-}
 
-/* DIVIDER NEON PUTIH */
-.hr-glow-white {
-    border: none !important;
-    height: 2px !important;
-    background-color: #ffffff !important;
-    opacity: 1 !important;
-    box-shadow: 
-        0 0 4px #ffffff, 
-        0 0 8px #ffffff,
-        0 0 15px rgba(255, 255, 255, 0.9) !important;
-}
+/* =========================================================
+   REPORT LINKS
+   ========================================================= */
 
-/* FLYOUT ITEM LINK */
 .sidebar-flyout .list-group-item {
-    background-color: transparent;
+    padding: .5rem .75rem;
+    margin-bottom: .25rem;
     color: #d8ceee;
-    border: none;
-    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    background: transparent;
+    border: 0;
+    border-radius: .375rem;
+    transition:
+        color .2s ease,
+        background-color .2s ease,
+        box-shadow .2s ease;
 }
 
 .sidebar-flyout .list-group-item:hover,
 .sidebar-flyout .list-group-item.active {
-    background-color: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    color: #fff;
+    background: rgba(255,255,255,.15);
+    box-shadow: 0 0 8px rgba(255,255,255,.5);
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.sidebar-flyout::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-flyout::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.35);
+    border-radius: 10px;
+}
+
+.sidebar-flyout::-webkit-scrollbar-track {
+    background: transparent;
 }
