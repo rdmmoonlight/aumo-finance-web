@@ -1,5 +1,11 @@
-using IncomeStatementReport = AumoFinance.Components.Pages.Reports.IncomeStatement.Index;
+using System.Globalization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
+using AumoFinance.Models;
 
+using IncomeStatementReport = AumoFinance.Components.Pages.Reports.IncomeStatement.Index;
 using TrialBalanceReport = AumoFinance.Components.Pages.Reports.TrialBalance.Index;
 
 namespace AumoFinance.Components.Pages.Reports.StatementOfCashFlows;

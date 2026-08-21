@@ -1,3 +1,10 @@
+using System.Globalization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
+using AumoFinance.Models;
+
 using SofpReport = AumoFinance.Components.Pages.Reports.StatementOfFinancialPosition.Index;
 
 namespace AumoFinance.Components.Pages.Reports.PostClosingTrialBalance;

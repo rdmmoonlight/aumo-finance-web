@@ -1,3 +1,11 @@
+using System.Globalization;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.EntityFrameworkCore;
+using AumoFinance.Models;
+using JournalEntryEntity = AumoFinance.Models.JournalEntry;
+
 namespace AumoFinance.Components.Pages.Reports.GeneralJournal;
 
 public partial class Index
@@ -9,7 +17,7 @@ public partial class Index
     private Task<AuthenticationState>? AuthStateTask { get; set; }
 
     private Guid UserId { get; set; }
-    private List<JournalEntry> entries = new();
+    private List<JournalEntryEntity> entries = new();
     private Period? selectedPeriod;
     private bool editMode;
 
@@ -36,7 +44,7 @@ public partial class Index
 
         if (selectedPeriod == null)
         {
-            entries = new List<JournalEntry>();
+            entries = new List<JournalEntryEntity>();
             return;
         }
 
@@ -54,7 +62,7 @@ public partial class Index
 
     private void ToggleEditMode() => editMode = !editMode;
 
-    private async Task DeleteEntry(JournalEntry entry)
+    private async Task DeleteEntry(JournalEntryEntity entry)
     {
         var closedPeriods = await DbContext.Periods
             .Where(p => p.UserId == UserId && p.IsClosed)
