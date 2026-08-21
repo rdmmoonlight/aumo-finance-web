@@ -2,7 +2,7 @@ using IncomeStatementReport = AumoFinance.Components.Pages.Reports.IncomeStateme
 
 using TrialBalanceReport = AumoFinance.Components.Pages.Reports.TrialBalance.Index;
 
-namespace AumoFinance.Components.Pages.Reports.CashFlowStatement;
+namespace AumoFinance.Components.Pages.Reports.StatementOfCashFlows;
 
 public partial class Index
 {

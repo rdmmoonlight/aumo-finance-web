@@ -1,4 +1,4 @@
-@page "/reports/trial-balance"
+@page "/reports/trial-balance/true"
 @rendermode InteractiveServer
 @attribute [Authorize]
 
@@ -26,12 +26,15 @@
     {
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h2 class="mb-1"><i class="bi bi-list-columns me-2 text-info"></i> Trial Balance</h2>
-                <p class="text-muted mb-0">Balances of each active account from the General Journal, formatted into Debit/Credit prior to preparing financial statements.</p>
+                <h2 class="mb-1"><i class="bi bi-list-columns me-2 text-info"></i> Adjusted Trial Balance</h2>
+                <p class="text-muted mb-0">Account balances after reflecting adjusting entries — the foundation for preparing the Income Statement and Balance Sheet.</p>
             </div>
-            <div>
-                <a href="/reports/general-ledger" class="btn btn-outline-secondary">
-                    <i class="bi bi-book me-1"></i> General Ledger
+            <div class="d-flex gap-2">
+                <a href="/reports/trial-balance" class="btn btn-outline-secondary">
+                    <i class="bi bi-list-columns me-1"></i> Trial Balance
+                </a>
+                <a href="/reports/adjusting-journal" class="btn btn-outline-secondary">
+                    <i class="bi bi-journal-medical me-1"></i> Adjusting Journal
                 </a>
             </div>
         </div>
@@ -84,14 +87,14 @@
 
         @if (rows.Any())
         {
-            <div class="alert @(IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 border-@(IsBalanced ? "success" : "danger") mt-3 mb-0 py-2 small">
+            <div class="alert @(IsBalanced ? "alert-success" : "alert-danger") bg-opacity-10 mt-3 mb-0 py-2 small">
                 @if (IsBalanced)
                 {
-                    <i class="bi bi-check-circle-fill me-1"></i> Total Debit = Total Credit. The trial balance is balanced.
+                    <i class="bi bi-check-circle-fill me-1"></i> Total Debit = Total Credit. The adjusted trial balance is balanced.
                 }
                 else
                 {
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i> The trial balance is unbalanced. Please review your journal entries.
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> The adjusted trial balance is unbalanced. Please review your adjusting journal entries.
                 }
             </div>
         }

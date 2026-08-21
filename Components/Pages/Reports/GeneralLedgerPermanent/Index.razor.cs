@@ -1,4 +1,4 @@
-namespace AumoFinance.Components.Pages.Reports.GeneralLedger;
+namespace AumoFinance.Components.Pages.Reports.GeneralLedgerPermanent;
 
 public partial class Index
 {
@@ -8,12 +8,9 @@ public partial class Index
     [CascadingParameter]
     private Task<AuthenticationState>? AuthStateTask { get; set; }
 
-    [Parameter] public bool IsTemporary { get; set; }
-
     private Guid UserId { get; set; }
     private List<LedgerAccountViewModel> ledgers = new();
     private bool noPeriodSelected;
-    private decimal netTotal;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -45,16 +42,7 @@ public partial class Index
             return;
         }
 
-        Func<string, bool> typeFilter = IsTemporary
-            ? AccountClassification.IsTemporary
-            : AccountClassification.IsPermanent;
-
-        ledgers = await BuildLedgersAsync(period, typeFilter);
-
-        if (IsTemporary)
-        {
-            netTotal = ledgers.Sum(l => l.NormalBalanceIsDebit ? -l.EndingBalance : l.EndingBalance);
-        }
+        ledgers = await BuildLedgersAsync(period, AccountClassification.IsPermanent);
     }
 
     private async Task<List<LedgerAccountViewModel>> BuildLedgersAsync(Period period, Func<string, bool> typeFilter)

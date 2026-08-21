@@ -1,5 +1,4 @@
 @page "/reports/general-ledger"
-@page "/reports/general-ledger/{IsTemporary:bool}"
 @rendermode InteractiveServer
 @attribute [Authorize]
 
@@ -27,16 +26,8 @@
     {
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                @if (IsTemporary)
-                {
-                    <h2 class="mb-1"><i class="bi bi-calculator me-2 text-success"></i> General Ledger (Temporary Accounts)</h2>
-                    <p class="text-muted mb-0">Nominal (temporary) accounts — Operating Income, Operating Expenses, Other Income, Other Expenses. Closed to Equity at period end; posted from the same General Journal entries.</p>
-                }
-                else
-                {
-                    <h2 class="mb-1"><i class="bi bi-book me-2 text-info"></i> General Ledger</h2>
-                    <p class="text-muted mb-0">Permanent (real) accounts — Assets, Liabilities, Equity. Every line is posted from the General Journal via the account's Chart of Accounts reference number.</p>
-                }
+                <h2 class="mb-1"><i class="bi bi-book me-2 text-info"></i> General Ledger</h2>
+                <p class="text-muted mb-0">Permanent (real) accounts — Assets, Liabilities, Equity. Every line is posted from the General Journal via the account's Chart of Accounts reference number.</p>
             </div>
             <div>
                 <a href="/reports/general-journal" class="btn btn-outline-secondary">
@@ -48,17 +39,7 @@
         @if (!ledgers.Any())
         {
             <div class="alert alert-secondary bg-dark text-muted border-secondary">
-                No @(IsTemporary ? "temporary" : "permanent") accounts found in the Chart of Accounts.
-            </div>
-        }
-
-        @if (IsTemporary && ledgers.Any())
-        {
-            <div class="card bg-dark border-secondary text-white shadow-sm mb-4">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold text-warning">Net Income / (Loss) before closing</span>
-                    <span class="fw-bold fs-5 @(netTotal >= 0 ? "text-success" : "text-danger")">@netTotal.ToString("N0", Idr)</span>
-                </div>
+                No permanent accounts found in the Chart of Accounts.
             </div>
         }
 

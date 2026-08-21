@@ -8,10 +8,7 @@ public partial class Index
     [CascadingParameter]
     private Task<AuthenticationState>? AuthStateTask { get; set; }
 
-    [Parameter] public bool IncludeAdjusting { get; set; }
-
     private Guid UserId { get; set; }
-    private string Title => IncludeAdjusting ? "Adjusted Trial Balance" : "Trial Balance";
 
     private List<TrialBalanceRow> rows = new();
     private bool noPeriodSelected;
@@ -36,16 +33,7 @@ public partial class Index
                 }
             }
         }
-    }
 
-    // Navigasi antara /reports/trial-balance dan /reports/trial-balance/true
-    // memakai komponen Blazor yang sama (hanya parameter route yang berubah),
-    // sehingga OnInitializedAsync TIDAK terpanggil ulang. OnParametersSetAsync
-    // selalu jalan (termasuk saat load pertama, setelah OnInitializedAsync),
-    // sehingga cukup satu tempat untuk memuat data agar IncludeAdjusting yang
-    // baru benar-benar dipakai.
-    protected override async Task OnParametersSetAsync()
-    {
         await LoadDataAsync();
     }
 
@@ -65,7 +53,7 @@ public partial class Index
         }
 
         noPeriodSelected = false;
-        rows = await BuildTrialBalanceRowsAsync(period, IncludeAdjusting);
+        rows = await BuildTrialBalanceRowsAsync(period, includeAdjusting: false);
     }
 
     public static async Task<List<TrialBalanceRow>> BuildTrialBalanceRowsAsync(AppDbContext db, Guid userId, Period period, bool includeAdjusting)
