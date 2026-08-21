@@ -1,4 +1,24 @@
 /* =========================================================
+   AUMO FINANCE — SIDEBAR STYLES
+   -----------------------------------------------------------
+   Single global stylesheet for the whole sidebar (nav, brand,
+   flyout, user menu). Kept here in wwwroot instead of a
+   Blazor-scoped .razor.css file on purpose: several elements
+   inside the sidebar are rendered as child content of the
+   framework's <NavLink> component, and Blazor's scoped-CSS
+   attribute did not reliably reach that content in this
+   project. A plain global stylesheet has no such dependency.
+
+   NOTE: .nav-item, .dropdown-item, .dropdown-header, and
+   .dropdown-divider are also used outside the sidebar (TopBar,
+   Guardian tabs) with different styling from
+   wwwroot/css/framework/08-navigation.css and theme.css. Every
+   rule for those class names below is scoped under
+   ".sidebar-wrapper" so it cannot leak into those other pages.
+   ========================================================= */
+
+
+/* =========================================================
    SIDEBAR CONTAINER
    ========================================================= */
 
@@ -145,17 +165,39 @@
 
 
 /* =========================================================
-   NAVIGATION TEXT
-   -----------------------------------------------------------
-   The show/hide-on-expand rule for .nav-text lives in the
-   GLOBAL stylesheet (wwwroot/css/site.css), not here.
-   Reason: several .nav-text spans are rendered as child
-   content of the framework's <NavLink> component (a different
-   assembly). Blazor's scoped-CSS attribute did not reliably
-   attach to that child content in this project, so the rule
-   silently failed for every NavLink item. A global ID selector
-   (#sidebar-icons.expanded .nav-text) has no such dependency.
+   NAVIGATION TEXT (expand/collapse)
    ========================================================= */
+
+#sidebar-icons .nav-text {
+    display: inline-block !important;
+
+    min-width: 0;
+    max-width: 0;
+
+    overflow: hidden;
+
+    font-size: .9rem;
+    font-weight: 500;
+    line-height: 1.2;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    opacity: 0;
+    transform: translateX(-5px);
+
+    transition:
+        max-width .25s ease,
+        opacity .2s ease,
+        transform .2s ease;
+}
+
+#sidebar-icons.expanded .nav-text {
+    max-width: 160px !important;
+
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+}
 
 
 /* =========================================================
@@ -211,7 +253,7 @@
     overflow-x: hidden;
 }
 
-.sidebar-nav .nav-item {
+.sidebar-wrapper .nav-item {
     width: 100%;
     margin: 0 0 5px;
 }
@@ -281,7 +323,6 @@
     padding-left: 0;
     padding-right: 0;
 }
-
 
 
 /* =========================================================
@@ -502,10 +543,11 @@
 
 
 /* =========================================================
-   DROPDOWN HEADER
+   DROPDOWN HEADER / ITEM / DIVIDER
+   (scoped under .sidebar-wrapper — see note at top of file)
    ========================================================= */
 
-.dropdown-header {
+.sidebar-wrapper .dropdown-header {
     padding: 8px 10px;
 
     color: #fff;
@@ -518,12 +560,7 @@
     text-overflow: ellipsis;
 }
 
-
-/* =========================================================
-   DROPDOWN DIVIDER
-   ========================================================= */
-
-.dropdown-divider {
+.sidebar-wrapper .dropdown-divider {
     height: 1px;
 
     margin: 5px 0;
@@ -531,12 +568,7 @@
     background: rgba(255,255,255,.12);
 }
 
-
-/* =========================================================
-   DROPDOWN ITEM
-   ========================================================= */
-
-.dropdown-item {
+.sidebar-wrapper .dropdown-item {
     display: flex;
     align-items: center;
 
@@ -564,17 +596,17 @@
         background-color .2s ease;
 }
 
-.dropdown-item:hover {
+.sidebar-wrapper .dropdown-item:hover {
     color: #fff;
 
     background: rgba(255,255,255,.12);
 }
 
-.dropdown-danger {
+.sidebar-wrapper .dropdown-danger {
     color: #f87171;
 }
 
-.dropdown-danger:hover {
+.sidebar-wrapper .dropdown-danger:hover {
     color: #fff;
 
     background: rgba(239,68,68,.14);
@@ -827,7 +859,8 @@
     .sidebar-icon,
     .brand-container,
     .report-link,
-    .flyout-close {
+    .flyout-close,
+    #sidebar-icons .nav-text {
         transition: none;
     }
 
