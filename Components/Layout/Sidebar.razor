@@ -13,9 +13,24 @@
                 <button type="button"
                         class="btn-expand-edge"
                         @onclick="ToggleExpand"
-                        title="@(isExpanded ? "Collapse Sidebar" : "Expand Sidebar")">
-                    <i class="bi @(isExpanded ? "bi-chevron-left" : "bi-chevron-right")"></i>
+                        title="@(isExpanded ? "Collapse Sidebar" : "Expand Sidebar")"
+                        aria-label="@(isExpanded ? "Collapse Sidebar" : "Expand Sidebar")">
+
+                    @if (isExpanded)
+                    {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m15 18-6-6 6-6" />
+                        </svg>
+                    }
+                    else
+                    {
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m9 18 6-6-6-6" />
+                        </svg>
+                    }
+
                 </button>
+
 
                 <!-- BRAND -->
                 <NavLink href="/"
@@ -23,110 +38,239 @@
                          class="brand-container text-warning text-decoration-none d-flex align-items-center gap-3 px-3 mb-2 w-100"
                          title="Aumo Finance Home"
                          @onclick="CloseFlyout">
-                    <i class="bi bi-house fs-5 icon-center"></i>
+
+                    <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 10.5 12 3l9 7.5" />
+                        <path d="M5 9.5V21h14V9.5" />
+                        <path d="M9 21v-6h6v6" />
+                    </svg>
+
                     <span class="nav-text fw-semibold text-white text-truncate">
                         Aumo Finance
                     </span>
+
                 </NavLink>
 
+
+                <!-- DIVIDER -->
                 <div class="d-flex justify-content-center w-100">
                     <hr class="hr-glow-white my-2 w-75">
                 </div>
 
+
                 <!-- MAIN NAVIGATION -->
                 <ul class="nav flex-column flex-grow-1 w-100 px-2">
 
+                    <!-- DASHBOARD -->
                     <li class="nav-item mb-2">
                         <NavLink href="/dashboard"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="Dashboard"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-speedometer2 fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Dashboard</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="3" width="7" height="7" rx="1" />
+                                <rect x="14" y="3" width="7" height="7" rx="1" />
+                                <rect x="3" y="14" width="7" height="7" rx="1" />
+                                <rect x="14" y="14" width="7" height="7" rx="1" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Dashboard
+                            </span>
+
                         </NavLink>
                     </li>
 
+
+                    <!-- AI ASSISTANT -->
                     <li class="nav-item mb-2">
                         <NavLink href="/ai-assistant"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="AI Financial Assistant"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-stars fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">AI Assistant</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3v3" />
+                                <path d="M12 18v3" />
+                                <path d="M3 12h3" />
+                                <path d="M18 12h3" />
+                                <path d="m5.6 5.6 2.1 2.1" />
+                                <path d="m16.3 16.3 2.1 2.1" />
+                                <path d="m18.4 5.6-2.1 2.1" />
+                                <path d="m7.7 16.3-2.1 2.1" />
+                                <circle cx="12" cy="12" r="4" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                AI Assistant
+                            </span>
+
                         </NavLink>
                     </li>
 
+
+                    <!-- JOURNAL ENTRY -->
                     <li class="nav-item mb-2">
                         <NavLink href="/journal-entry/create"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="Journal Entry"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-journal-text fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Journal Entry</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z" />
+                                <path d="M7 20V7a3 3 0 0 1 3-3" />
+                                <path d="M12 9h5" />
+                                <path d="M12 13h5" />
+                                <path d="M12 17h3" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Journal Entry
+                            </span>
+
                         </NavLink>
                     </li>
 
+
+                    <!-- REPORTS -->
                     <li class="nav-item mb-2">
                         <button type="button"
                                 class="nav-link icon-btn border-0 bg-transparent d-flex align-items-center gap-3 w-100 @(showReportsFlyout ? "active" : "")"
                                 @onclick="ToggleReportsFlyout"
                                 title="Reports">
-                            <i class="bi bi-bar-chart-line fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Reports</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M4 19V5" />
+                                <path d="M4 19h17" />
+                                <path d="m7 15 4-4 3 2 5-6" />
+                                <path d="M19 7h-4" />
+                                <path d="M19 7v4" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Reports
+                            </span>
+
                         </button>
                     </li>
 
+
+                    <!-- CHART OF ACCOUNTS -->
                     <li class="nav-item mb-2">
                         <NavLink href="/chart-of-accounts"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="Chart of Accounts"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-diagram-3 fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Chart of Accounts</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="9" y="3" width="6" height="5" rx="1" />
+                                <rect x="3" y="16" width="6" height="5" rx="1" />
+                                <rect x="15" y="16" width="6" height="5" rx="1" />
+                                <path d="M12 8v4" />
+                                <path d="M6 16v-4h12v4" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Chart of Accounts
+                            </span>
+
                         </NavLink>
                     </li>
 
+
+                    <!-- FINANCIAL PERIODS -->
                     <li class="nav-item mb-2">
                         <NavLink href="/periods"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="Financial Periods"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-calendar3 fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Financial Periods</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="5" width="18" height="16" rx="2" />
+                                <path d="M16 3v4" />
+                                <path d="M8 3v4" />
+                                <path d="M3 10h18" />
+                                <path d="M8 14h.01" />
+                                <path d="M12 14h.01" />
+                                <path d="M16 14h.01" />
+                                <path d="M8 18h.01" />
+                                <path d="M12 18h.01" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Financial Periods
+                            </span>
+
                         </NavLink>
                     </li>
 
+
+                    <!-- DOCUMENTS -->
                     <li class="nav-item mb-2">
                         <NavLink href="/documents"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="Economic Documents"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-file-earmark fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Documents</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M6 3h9l4 4v14H6z" />
+                                <path d="M14 3v5h5" />
+                                <path d="M9 13h6" />
+                                <path d="M9 17h6" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Documents
+                            </span>
+
                         </NavLink>
                     </li>
 
+
+                    <!-- GUARDIAN -->
                     <li class="nav-item mb-2">
                         <NavLink href="/guardian"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="Guardian Security"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-shield-check fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Guardian</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3 20 6v6c0 5-3.3 8-8 10-4.7-2-8-5-8-10V6z" />
+                                <path d="m8.5 12 2.3 2.3 4.7-5" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Guardian
+                            </span>
+
                         </NavLink>
                     </li>
 
+
+                    <!-- TOOLS -->
                     <li class="nav-item mb-2">
                         <NavLink href="/tools"
                                  class="nav-link icon-btn d-flex align-items-center gap-3"
                                  title="Tools"
                                  @onclick="CloseFlyout">
-                            <i class="bi bi-sliders fs-5 icon-center"></i>
-                            <span class="nav-text text-truncate">Tools</span>
+
+                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3v18" />
+                                <path d="M3 12h18" />
+                                <path d="M5 5h14v14H5z" />
+                                <path d="M8 8h8v8H8z" />
+                            </svg>
+
+                            <span class="nav-text text-truncate">
+                                Tools
+                            </span>
+
                         </NavLink>
                     </li>
 
                 </ul>
+
 
                 <!-- USER MENU -->
                 <div class="mt-auto dropup position-relative w-100 px-2">
@@ -137,11 +281,15 @@
                             aria-expanded="false"
                             title="@context.User.Identity?.Name">
 
-                        <i class="bi bi-person fs-5 icon-center"></i>
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="8" r="4" />
+                            <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
+                        </svg>
 
                         <span class="nav-text text-truncate" style="max-width:130px;">
                             @(context.User.Identity?.Name ?? "User")
                         </span>
+
                     </button>
 
                     <span class="user-status-indicator"></span>
@@ -161,7 +309,12 @@
                             <NavLink href="/settings"
                                      class="dropdown-item d-flex align-items-center"
                                      @onclick="CloseFlyout">
-                                <i class="bi bi-gear me-2"></i>
+
+                                <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.4 1.4-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-2v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.4-1.4.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.4-1.4.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V7h2v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.4 1.4-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v2h-.2a1.7 1.7 0 0 0-1.6 1Z" />
+                                </svg>
+
                                 Settings
                             </NavLink>
                         </li>
@@ -172,7 +325,13 @@
 
                                 <button type="submit"
                                         class="dropdown-item d-flex align-items-center text-danger border-0 bg-transparent w-100">
-                                    <i class="bi bi-box-arrow-right me-2"></i>
+
+                                    <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M10 17l5-5-5-5" />
+                                        <path d="M15 12H3" />
+                                        <path d="M21 4v16" />
+                                    </svg>
+
                                     Sign Out
                                 </button>
                             </form>
@@ -182,6 +341,7 @@
                 </div>
 
             </nav>
+
 
             <!-- REPORTS FLYOUT -->
             @if (showReportsFlyout)
