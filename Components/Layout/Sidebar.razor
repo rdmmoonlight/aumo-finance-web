@@ -4,12 +4,15 @@
 
 <AuthorizeView>
     <Authorized>
-        <div class="sidebar-wrapper sidebar-sticky-neon d-flex">
+        <div class="sidebar-wrapper sidebar-sticky-neon">
 
             <nav id="sidebar-icons"
-                 class="sidebar-icons text-white d-flex flex-column py-3 position-relative @(isExpanded ? "expanded" : "")">
+                 class="sidebar-icons @(isExpanded ? "expanded" : "")">
 
-                <!-- EXPAND / COLLAPSE -->
+                <!-- =====================================================
+                     EXPAND / COLLAPSE
+                     ===================================================== -->
+
                 <button type="button"
                         class="btn-expand-edge"
                         @onclick="ToggleExpand"
@@ -32,50 +35,64 @@
                 </button>
 
 
-                <!-- BRAND -->
+                <!-- =====================================================
+                     BRAND
+                     ===================================================== -->
+
                 <NavLink href="/"
                          Match="NavLinkMatch.All"
-                         class="brand-container text-warning text-decoration-none d-flex align-items-center gap-3 px-3 mb-2 w-100"
+                         class="brand-container"
                          title="Aumo Finance Home"
                          @onclick="CloseFlyout">
 
-                    <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg class="sidebar-icon"
+                         viewBox="0 0 24 24"
+                         aria-hidden="true">
                         <path d="M3 10.5 12 3l9 7.5" />
                         <path d="M5 9.5V21h14V9.5" />
                         <path d="M9 21v-6h6v6" />
                     </svg>
 
-                    <span class="nav-text fw-semibold text-white text-truncate">
+                    <span class="nav-text">
                         Aumo Finance
                     </span>
 
                 </NavLink>
 
 
-                <!-- DIVIDER -->
-                <div class="d-flex justify-content-center w-100">
-                    <hr class="hr-glow-white my-2 w-75">
+                <!-- =====================================================
+                     DIVIDER
+                     ===================================================== -->
+
+                <div class="sidebar-divider">
+                    <hr class="hr-glow-white">
                 </div>
 
 
-                <!-- MAIN NAVIGATION -->
-                <ul class="nav flex-column flex-grow-1 w-100 px-2">
+                <!-- =====================================================
+                     MAIN NAVIGATION
+                     ===================================================== -->
+
+                <ul class="sidebar-nav">
 
                     <!-- DASHBOARD -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/dashboard"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="Dashboard"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <rect x="3" y="3" width="7" height="7" rx="1" />
                                 <rect x="14" y="3" width="7" height="7" rx="1" />
                                 <rect x="3" y="14" width="7" height="7" rx="1" />
                                 <rect x="14" y="14" width="7" height="7" rx="1" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Dashboard
                             </span>
 
@@ -84,13 +101,16 @@
 
 
                     <!-- AI ASSISTANT -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/ai-assistant"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="AI Financial Assistant"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <path d="M12 3v3" />
                                 <path d="M12 18v3" />
                                 <path d="M3 12h3" />
@@ -102,7 +122,7 @@
                                 <circle cx="12" cy="12" r="4" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 AI Assistant
                             </span>
 
@@ -111,13 +131,16 @@
 
 
                     <!-- JOURNAL ENTRY -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/journal-entry/create"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="Journal Entry"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z" />
                                 <path d="M7 20V7a3 3 0 0 1 3-3" />
                                 <path d="M12 9h5" />
@@ -125,7 +148,7 @@
                                 <path d="M12 17h3" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Journal Entry
                             </span>
 
@@ -134,13 +157,17 @@
 
 
                     <!-- REPORTS -->
-                    <li class="nav-item mb-2">
-                        <button type="button"
-                                class="nav-link icon-btn border-0 bg-transparent d-flex align-items-center gap-3 w-100 @(showReportsFlyout ? "active" : "")"
-                                @onclick="ToggleReportsFlyout"
-                                title="Reports">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <li class="nav-item">
+                        <button type="button"
+                                class="nav-link icon-btn @(showReportsFlyout ? "active" : "")"
+                                @onclick="ToggleReportsFlyout"
+                                title="Reports"
+                                aria-expanded="@showReportsFlyout">
+
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <path d="M4 19V5" />
                                 <path d="M4 19h17" />
                                 <path d="m7 15 4-4 3 2 5-6" />
@@ -148,7 +175,7 @@
                                 <path d="M19 7v4" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Reports
                             </span>
 
@@ -157,13 +184,16 @@
 
 
                     <!-- CHART OF ACCOUNTS -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/chart-of-accounts"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="Chart of Accounts"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <rect x="9" y="3" width="6" height="5" rx="1" />
                                 <rect x="3" y="16" width="6" height="5" rx="1" />
                                 <rect x="15" y="16" width="6" height="5" rx="1" />
@@ -171,7 +201,7 @@
                                 <path d="M6 16v-4h12v4" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Chart of Accounts
                             </span>
 
@@ -180,13 +210,16 @@
 
 
                     <!-- FINANCIAL PERIODS -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/periods"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="Financial Periods"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <rect x="3" y="5" width="18" height="16" rx="2" />
                                 <path d="M16 3v4" />
                                 <path d="M8 3v4" />
@@ -198,7 +231,7 @@
                                 <path d="M12 18h.01" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Financial Periods
                             </span>
 
@@ -207,20 +240,23 @@
 
 
                     <!-- DOCUMENTS -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/documents"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="Economic Documents"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <path d="M6 3h9l4 4v14H6z" />
                                 <path d="M14 3v5h5" />
                                 <path d="M9 13h6" />
                                 <path d="M9 17h6" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Documents
                             </span>
 
@@ -229,18 +265,21 @@
 
 
                     <!-- GUARDIAN -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/guardian"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="Guardian Security"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <path d="M12 3 20 6v6c0 5-3.3 8-8 10-4.7-2-8-5-8-10V6z" />
                                 <path d="m8.5 12 2.3 2.3 4.7-5" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Guardian
                             </span>
 
@@ -249,20 +288,23 @@
 
 
                     <!-- TOOLS -->
-                    <li class="nav-item mb-2">
+
+                    <li class="nav-item">
                         <NavLink href="/tools"
-                                 class="nav-link icon-btn d-flex align-items-center gap-3"
+                                 class="nav-link icon-btn"
                                  title="Tools"
                                  @onclick="CloseFlyout">
 
-                            <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <svg class="sidebar-icon"
+                                 viewBox="0 0 24 24"
+                                 aria-hidden="true">
                                 <path d="M12 3v18" />
                                 <path d="M3 12h18" />
                                 <path d="M5 5h14v14H5z" />
                                 <path d="M8 8h8v8H8z" />
                             </svg>
 
-                            <span class="nav-text text-truncate">
+                            <span class="nav-text">
                                 Tools
                             </span>
 
@@ -272,21 +314,27 @@
                 </ul>
 
 
-                <!-- USER MENU -->
-                <div class="mt-auto dropup position-relative w-100 px-2">
+                <!-- =====================================================
+                     USER MENU
+                     ===================================================== -->
+
+                <div class="user-menu">
 
                     <button id="userDropdown"
-                            class="nav-link icon-btn border-0 bg-transparent d-flex align-items-center gap-3 w-100"
+                            type="button"
+                            class="nav-link icon-btn"
                             data-bs-toggle="dropdown"
                             aria-expanded="false"
                             title="@context.User.Identity?.Name">
 
-                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg class="sidebar-icon"
+                             viewBox="0 0 24 24"
+                             aria-hidden="true">
                             <circle cx="12" cy="8" r="4" />
                             <path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" />
                         </svg>
 
-                        <span class="nav-text text-truncate" style="max-width:130px;">
+                        <span class="nav-text user-name">
                             @(context.User.Identity?.Name ?? "User")
                         </span>
 
@@ -294,155 +342,177 @@
 
                     <span class="user-status-indicator"></span>
 
-                    <ul class="dropdown-menu dropdown-menu-dark shadow ms-2 mb-2 fs-7"
+
+                    <ul class="user-dropdown"
                         aria-labelledby="userDropdown">
 
-                        <li class="dropdown-header text-truncate" style="max-width:180px;">
+                        <li class="dropdown-header">
                             @(context.User.Identity?.Name ?? "User")
                         </li>
 
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
+                        <li class="dropdown-divider"></li>
 
                         <li>
                             <NavLink href="/settings"
-                                     class="dropdown-item d-flex align-items-center"
+                                     class="dropdown-item"
                                      @onclick="CloseFlyout">
 
-                                <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <svg class="dropdown-icon"
+                                     viewBox="0 0 24 24"
+                                     aria-hidden="true">
                                     <circle cx="12" cy="12" r="3" />
                                     <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.4 1.4-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-2v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1-1.4-1.4.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H7v-2h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.4-1.4.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6V7h2v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.4 1.4-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v2h-.2a1.7 1.7 0 0 0-1.6 1Z" />
                                 </svg>
 
-                                Settings
+                                <span>Settings</span>
+
                             </NavLink>
                         </li>
 
                         <li>
                             <form action="/auth/logout" method="post">
+
                                 <AntiforgeryToken />
 
                                 <button type="submit"
-                                        class="dropdown-item d-flex align-items-center text-danger border-0 bg-transparent w-100">
+                                        class="dropdown-item dropdown-danger">
 
-                                    <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <svg class="dropdown-icon"
+                                         viewBox="0 0 24 24"
+                                         aria-hidden="true">
                                         <path d="M10 17l5-5-5-5" />
                                         <path d="M15 12H3" />
                                         <path d="M21 4v16" />
                                     </svg>
 
-                                    Sign Out
+                                    <span>Sign Out</span>
+
                                 </button>
+
                             </form>
                         </li>
 
                     </ul>
+
                 </div>
 
             </nav>
 
 
-            <!-- REPORTS FLYOUT -->
+            <!-- =====================================================
+                 REPORTS FLYOUT
+                 ===================================================== -->
+
             @if (showReportsFlyout)
             {
-                <div id="reports-flyout" class="sidebar-flyout">
+                <div id="reports-flyout"
+                     class="sidebar-flyout">
 
                     <div class="flyout-header">
-                        <span class="fw-semibold text-white small">
+
+                        <span class="flyout-title">
                             Financial Reports
                         </span>
 
                         <button type="button"
-                                class="btn-close btn-close-white btn-sm"
+                                class="flyout-close"
                                 @onclick="CloseFlyout"
                                 aria-label="Close">
+
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m6 6 12 12" />
+                                <path d="m18 6-12 12" />
+                            </svg>
+
                         </button>
+
                     </div>
 
-                    <div class="list-group list-group-flush p-2 small">
+
+                    <div class="reports-list">
 
                         <NavLink href="/reports/general-journal"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             General Journal
                         </NavLink>
 
                         <NavLink href="/reports/general-ledger"
                                  Match="NavLinkMatch.All"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             GL (Permanent Accounts)
                         </NavLink>
 
                         <NavLink href="/reports/general-ledger/true"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             GL (Temporary Accounts)
                         </NavLink>
 
                         <NavLink href="/reports/trial-balance"
                                  Match="NavLinkMatch.All"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Trial Balance
                         </NavLink>
 
                         <NavLink href="/reports/adjusting-journal"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Adjusting Journal
                         </NavLink>
 
                         <NavLink href="/reports/trial-balance/true"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Adjusted Trial Balance
                         </NavLink>
 
                         <NavLink href="/reports/worksheet"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Worksheet
                         </NavLink>
 
                         <NavLink href="/reports/income-statement"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Income Statement
                         </NavLink>
 
                         <NavLink href="/reports/retained-earnings"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Retained Earnings
                         </NavLink>
 
                         <NavLink href="/reports/statement-of-financial-position"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Financial Position
                         </NavLink>
 
                         <NavLink href="/reports/closing-journal"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Closing Journal
                         </NavLink>
 
                         <NavLink href="/reports/post-closing-trial-balance"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Post-Closing TB
                         </NavLink>
 
                         <NavLink href="/reports/cash-flow"
-                                 class="list-group-item list-group-item-action"
+                                 class="report-link"
                                  @onclick="CloseFlyout">
                             Cash Flow
                         </NavLink>
 
                     </div>
+
                 </div>
             }
 
