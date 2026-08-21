@@ -1,6 +1,6 @@
-/* =========================================================
-   SIDEBAR CONTAINER
-   ========================================================= */
+ /* =========================================================
+    SIDEBAR CONTAINER
+    ========================================================= */
 
 .sidebar-sticky-neon {
     position: sticky;
@@ -21,16 +21,20 @@
     width: 65px;
     height: 100vh;
     background: #1a1625;
-    border: 2px solid #fff !important;
+    border: 2px solid #fff;
     border-radius: 8px;
+
     box-shadow:
         0 0 2px #fff,
         0 0 5px #fff,
         0 0 10px #fff,
         0 0 20px rgba(255,255,255,.9),
         0 0 35px rgba(255,255,255,.6),
-        inset 0 0 8px rgba(255,255,255,.5) !important;
-    transition: width .3s ease-in-out;
+        inset 0 0 8px rgba(255,255,255,.5);
+
+    transition:
+        width .3s ease-in-out,
+        box-shadow .3s ease-in-out;
 }
 
 .sidebar-icons.expanded {
@@ -39,14 +43,37 @@
 
 
 /* =========================================================
-   ICON ALIGNMENT
+   SVG ICON SYSTEM
    ========================================================= */
 
+.sidebar-icon {
+    width: 21px;
+    height: 21px;
+    min-width: 21px;
+    flex: 0 0 21px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    transition:
+        color .2s ease,
+        filter .2s ease,
+        transform .2s ease;
+}
+
+
+/* Consistent icon positioning */
+
 .icon-center {
-    width: 24px;
-    min-width: 24px;
-    text-align: center;
-    flex-shrink: 0;
+    width: 21px;
+    min-width: 21px;
+    flex: 0 0 21px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 
@@ -56,49 +83,19 @@
 
 .sidebar-icons .nav-text {
     display: none;
+    min-width: 0;
+    overflow: hidden;
+
     font-size: .9rem;
     font-weight: 500;
+    line-height: 1.2;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .sidebar-icons.expanded .nav-text {
     display: inline-block;
-}
-
-
-/* =========================================================
-   EXPAND BUTTON
-   ========================================================= */
-
-.btn-expand-edge {
-    position: absolute;
-    top: 18px;
-    right: -12px;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    color: #fff;
-    background: #1a1625;
-    border: 1.5px solid #fff;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 10;
-    font-size: .75rem;
-    box-shadow:
-        0 0 4px #fff,
-        0 0 8px rgba(255,255,255,.8);
-    transition:
-        transform .2s ease,
-        box-shadow .2s ease;
-}
-
-.btn-expand-edge:hover {
-    transform: scale(1.15);
-    box-shadow:
-        0 0 6px #fff,
-        0 0 14px #fff;
 }
 
 
@@ -108,6 +105,72 @@
 
 .brand-container {
     min-height: 38px;
+    color: #ffc107;
+}
+
+.brand-container .sidebar-icon {
+    color: #ffc107;
+}
+
+.brand-container:hover .sidebar-icon {
+    filter:
+        drop-shadow(0 0 3px rgba(255,193,7,.9))
+        drop-shadow(0 0 7px rgba(255,193,7,.55));
+}
+
+
+/* =========================================================
+   EXPAND / COLLAPSE BUTTON
+   ========================================================= */
+
+.btn-expand-edge {
+    position: absolute;
+    top: 18px;
+    right: -12px;
+
+    width: 24px;
+    height: 24px;
+    padding: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #fff;
+    background: #1a1625;
+
+    border: 1.5px solid #fff;
+    border-radius: 50%;
+
+    cursor: pointer;
+    z-index: 10;
+
+    box-shadow:
+        0 0 4px #fff,
+        0 0 8px rgba(255,255,255,.8);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.btn-expand-edge:hover {
+    transform: scale(1.15);
+
+    box-shadow:
+        0 0 6px #fff,
+        0 0 14px #fff;
+}
+
+.btn-expand-edge svg {
+    width: 14px;
+    height: 14px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 
@@ -116,24 +179,56 @@
    ========================================================= */
 
 .icon-btn {
+    min-height: 38px;
     padding: .5rem;
+
+    display: flex;
+    align-items: center;
+
     color: #b3a5d0;
     border-radius: .375rem;
+
     white-space: nowrap;
+
     transition:
         color .2s ease,
         background-color .2s ease,
         box-shadow .2s ease;
 }
 
+
+/* Hover / Active */
+
 .icon-btn:hover,
 .icon-btn.active {
     color: #fff !important;
-    background: rgba(255,255,255,.18);
+    background: rgba(255,255,255,.14);
+
     box-shadow:
-        0 0 4px #fff,
-        0 0 10px rgba(255,255,255,.8) !important;
-    text-shadow: 0 0 5px #fff;
+        0 0 4px rgba(255,255,255,.9),
+        0 0 10px rgba(255,255,255,.65);
+
+    text-shadow:
+        0 0 5px rgba(255,255,255,.8);
+}
+
+
+/* SVG glow */
+
+.icon-btn:hover .sidebar-icon,
+.icon-btn.active .sidebar-icon {
+    color: #fff;
+
+    filter:
+        drop-shadow(0 0 3px #fff)
+        drop-shadow(0 0 7px rgba(255,255,255,.75));
+}
+
+
+/* Subtle icon movement */
+
+.icon-btn:hover .sidebar-icon {
+    transform: translateX(1px);
 }
 
 
@@ -142,15 +237,18 @@
    ========================================================= */
 
 .hr-glow-white {
-    height: 2px !important;
+    width: 75%;
+    height: 2px;
     margin: .5rem 0;
-    border: 0 !important;
-    background: #fff !important;
-    opacity: 1 !important;
+
+    border: 0;
+    background: #fff;
+    opacity: 1;
+
     box-shadow:
         0 0 4px #fff,
         0 0 8px #fff,
-        0 0 15px rgba(255,255,255,.9) !important;
+        0 0 15px rgba(255,255,255,.9);
 }
 
 
@@ -162,13 +260,35 @@
     position: absolute;
     bottom: 0;
     left: 28px;
+
     width: 7px;
     height: 7px;
     padding: 0;
+
     background: #10b981;
     border: 1px solid #1a1625;
     border-radius: 50%;
-    box-shadow: 0 0 6px #10b981;
+
+    box-shadow:
+        0 0 4px #10b981,
+        0 0 8px rgba(16,185,129,.8);
+}
+
+
+/* =========================================================
+   DROPDOWN ICON
+   ========================================================= */
+
+.dropdown-icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 
@@ -180,17 +300,21 @@
     width: 230px;
     height: 100vh;
     margin-left: 8px;
+
     overflow-y: auto;
+
     background: rgba(26,22,37,.95);
     backdrop-filter: blur(8px);
-    border: 2px solid #fff !important;
+
+    border: 2px solid #fff;
     border-radius: 8px;
+
     box-shadow:
         0 0 2px #fff,
         0 0 5px #fff,
         0 0 12px rgba(255,255,255,.9),
         0 0 25px rgba(255,255,255,.5),
-        inset 0 0 6px rgba(255,255,255,.4) !important;
+        inset 0 0 6px rgba(255,255,255,.4);
 }
 
 
@@ -199,11 +323,14 @@
    ========================================================= */
 
 .flyout-header {
+    min-height: 46px;
+    padding: .75rem;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: .75rem;
-    border-bottom: 1px solid rgba(108,117,125,.25);
+
+    border-bottom: 1px solid rgba(255,255,255,.12);
 }
 
 
@@ -214,10 +341,13 @@
 .sidebar-flyout .list-group-item {
     padding: .5rem .75rem;
     margin-bottom: .25rem;
+
     color: #d8ceee;
     background: transparent;
+
     border: 0;
     border-radius: .375rem;
+
     transition:
         color .2s ease,
         background-color .2s ease,
@@ -227,8 +357,11 @@
 .sidebar-flyout .list-group-item:hover,
 .sidebar-flyout .list-group-item.active {
     color: #fff;
-    background: rgba(255,255,255,.15);
-    box-shadow: 0 0 8px rgba(255,255,255,.5);
+    background: rgba(255,255,255,.14);
+
+    box-shadow:
+        0 0 5px rgba(255,255,255,.35),
+        0 0 10px rgba(255,255,255,.2);
 }
 
 
@@ -245,6 +378,24 @@
     border-radius: 10px;
 }
 
+.sidebar-flyout::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,.55);
+}
+
 .sidebar-flyout::-webkit-scrollbar-track {
     background: transparent;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-icons,
+    .btn-expand-edge,
+    .icon-btn,
+    .sidebar-icon {
+        transition: none;
+    }
 }
