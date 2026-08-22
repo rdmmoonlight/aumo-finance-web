@@ -11,14 +11,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-    <!-- Aumo Theme Styles -->
-    <link rel="stylesheet" href="/css/guardian.css" />
-    <link rel="stylesheet" href="/css/theme.css" />
+    <!-- Grid / Reset CSS Dasar (Wajib agar Layout Home & Sidebar sejajar/Flexbox berjalan) -->
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
 
-    <!-- BLAZOR CSS ISOLATION (STANDAR MODERN .NET 10 / NET 9) -->
+    <!-- Custom App Theme Styles -->
+    <link rel="stylesheet" href="css/guardian.css" />
+    <link rel="stylesheet" href="css/theme.css" />
+
+    <!-- BLAZOR CSS ISOLATION (Memuat Sidebar.razor.css & komponen terisolasi lainnya) -->
     <link rel="stylesheet" href="AumoFinance.styles.css" />
 
-    <!-- Instant Theme Loader (Mencegah Layar Kedip Saat Load) -->
+    <!-- Instant Theme Loader -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('aumo_theme') || 'dark';
@@ -26,7 +29,6 @@
         })();
     </script>
 
-    <!-- HeadOutlet untuk Interaktivitas SSR/InteractiveServer di .NET 10 -->
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
@@ -40,13 +42,10 @@
         <a class="dismiss link-secondary">🗙</a>
     </div>
 
-    <!-- Aumo Custom UI Interactions (menggantikan bootstrap.bundle.min.js) -->
+    <!-- Custom UI Script -->
     <script src="js/aumo-ui.js"></script>
-
-    <!-- Global Site Script -->
     <script src="js/site.js"></script>
 
-    <!-- Global Theme Controller Function -->
     <script>
         window.setAppTheme = function(themeName) {
             document.documentElement.setAttribute('data-bs-theme', themeName);
@@ -54,10 +53,7 @@
         };
     </script>
 
-    <!-- Framework Blazor Core Engine .NET 10 -->
     <script src="_framework/blazor.web.js"></script>
-
-    <!-- Custom Scripts Tambahan -->
     <script src="js/quran-banner.js"></script>
     <script src="js/guardian.js"></script>
 </body>
