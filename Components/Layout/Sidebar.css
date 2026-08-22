@@ -1,0 +1,755 @@
+/* =========================================================
+   AUMO FINANCE — SIDEBAR STYLES (MATTE THEME)
+   ========================================================= */
+
+/* =========================================================
+   SIDEBAR CONTAINER
+   ========================================================= */
+
+.sidebar-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+
+    display: flex;
+    align-self: flex-start;
+
+    width: auto;
+    height: 100vh;
+    max-height: 100vh;
+    flex-shrink: 0;
+
+    padding: 12px 0 12px 12px;
+}
+
+.sidebar-sticky-neon {
+    position: sticky;
+    top: 0;
+}
+
+
+/* =========================================================
+   SIDEBAR (MATTE BACKGROUND & FLAT BORDER)
+   ========================================================= */
+
+.sidebar-icons {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    width: 65px;
+    min-width: 65px;
+    height: calc(100vh - 24px);
+    min-height: calc(100vh - 24px);
+
+    padding: 12px 0;
+
+    overflow: visible;
+
+    /* Matte Dark Theme */
+    background: #18191c;
+    border: 1px solid #2d3036;
+    border-radius: 8px;
+
+    color: #e2e8f0;
+
+    /* Menghilangkan efek neon glowing glow-shadow */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    z-index: 1045;
+
+    transition: width .25s ease;
+}
+
+.sidebar-icons.expanded {
+    width: 240px;
+}
+
+[data-bs-theme="light"] .sidebar-icons {
+    background: #ffffff !important;
+    border-color: #e2e8f0 !important;
+    color: #1e293b !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+
+/* =========================================================
+   SVG ICON SYSTEM
+   ========================================================= */
+
+.sidebar-icon {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+
+    flex: 0 0 20px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+
+    transition: color .2s ease, transform .2s ease;
+}
+
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+.brand-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    width: 100%;
+    min-height: 40px;
+
+    padding: 0 16px;
+    margin-bottom: 8px;
+
+    gap: 12px;
+
+    color: #f59e0b;
+    font-weight: 600;
+    text-decoration: none;
+
+    white-space: nowrap;
+    overflow: hidden;
+
+    transition: color .2s ease;
+}
+
+.brand-container .sidebar-icon {
+    color: #f59e0b;
+}
+
+.brand-container:hover {
+    color: #fbbf24;
+}
+
+
+/* =========================================================
+   NAVIGATION TEXT
+   ========================================================= */
+
+#sidebar-icons .nav-text {
+    display: inline-block !important;
+
+    min-width: 0;
+    max-width: 0;
+
+    overflow: hidden;
+
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: left;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    opacity: 0;
+    transform: translateX(-4px);
+
+    transition: max-width .2s ease, opacity .2s ease, transform .2s ease;
+}
+
+#sidebar-icons.expanded .nav-text {
+    max-width: 160px !important;
+
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+}
+
+
+/* =========================================================
+   DIVIDER
+   ========================================================= */
+
+.sidebar-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    padding: 0 12px;
+}
+
+.hr-glow-white {
+    width: 100%;
+    height: 1px;
+
+    margin: 8px 0;
+
+    border: 0;
+
+    /* Plain matte divider */
+    background: #2d3036;
+
+    opacity: 1;
+    box-shadow: none;
+}
+
+[data-bs-theme="light"] .hr-glow-white {
+    background: #e2e8f0;
+}
+
+
+/* =========================================================
+   MAIN NAVIGATION
+   ========================================================= */
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+
+    flex: 1 1 auto;
+
+    margin: 0;
+    padding: 4px 8px 0;
+
+    list-style: none;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sidebar-wrapper .nav-item {
+    width: 100%;
+    margin: 0 0 4px;
+}
+
+
+/* =========================================================
+   NAVIGATION BUTTON / LINK
+   ========================================================= */
+
+.icon-btn {
+    position: relative;
+
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+
+    width: 100% !important;
+    height: auto !important;
+    min-height: 38px;
+
+    padding: 8px 12px;
+
+    gap: 12px;
+
+    color: #94a3b8;
+
+    background: transparent;
+
+    border: 0;
+    border-radius: 6px;
+
+    font: inherit;
+    text-decoration: none;
+
+    white-space: nowrap;
+    overflow: hidden;
+
+    cursor: pointer;
+
+    transition: color .15s ease, background-color .15s ease;
+}
+
+[data-bs-theme="light"] .icon-btn {
+    color: #64748b !important;
+}
+
+.icon-btn .sidebar-icon {
+    flex: 0 0 20px;
+}
+
+.sidebar-icons:not(.expanded) .icon-btn,
+.sidebar-icons:not(.expanded) .brand-container {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+
+/* =========================================================
+   NAVIGATION HOVER / ACTIVE (MATTE STYLE)
+   ========================================================= */
+
+.icon-btn:hover {
+    color: #f1f5f9;
+    background: #25282e;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+[data-bs-theme="light"] .icon-btn:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+}
+
+/* Active State */
+.icon-btn.active {
+    background: #2a2e37;
+    color: #f59e0b;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+.icon-btn.active::before {
+    content: '';
+
+    position: absolute;
+    left: 0;
+    top: 15%;
+
+    height: 70%;
+    width: 3px;
+
+    background: #f59e0b;
+    border-radius: 0 2px 2px 0;
+    box-shadow: none;
+}
+
+.icon-btn:hover .sidebar-icon,
+.icon-btn.active .sidebar-icon {
+    filter: none;
+}
+
+
+/* =========================================================
+   EXPAND / COLLAPSE BUTTON
+   ========================================================= */
+
+.btn-expand-edge {
+    position: absolute;
+
+    top: 24px;
+    right: -10px;
+
+    z-index: 1046;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 20px;
+    height: 20px;
+
+    padding: 0;
+
+    color: #94a3b8;
+    background: #25282e;
+
+    border: 1px solid #3b3f47;
+    border-radius: 50%;
+
+    cursor: pointer;
+
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+
+    transition: color .2s ease, background-color .2s ease;
+}
+
+.btn-expand-edge:hover {
+    color: #ffffff;
+    background: #3b3f47;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-expand-edge svg {
+    width: 12px;
+    height: 12px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* =========================================================
+   USER MENU
+   ========================================================= */
+
+.user-menu {
+    position: relative;
+
+    width: 100%;
+
+    margin-top: auto;
+    padding: 8px;
+}
+
+.user-name {
+    max-width: 130px;
+}
+
+.user-status-indicator {
+    position: absolute;
+
+    left: 24px;
+    bottom: 10px;
+
+    width: 6px;
+    height: 6px;
+
+    padding: 0;
+
+    background: #10b981;
+
+    border: 1px solid #18191c;
+    border-radius: 50%;
+
+    box-shadow: none;
+}
+
+
+/* =========================================================
+   USER DROPDOWN
+   ========================================================= */
+
+.user-dropdown {
+    position: absolute;
+
+    left: calc(100% + 8px);
+    bottom: 0;
+
+    z-index: 1050;
+
+    display: none;
+
+    width: 190px;
+
+    margin: 0;
+    padding: 6px;
+
+    list-style: none;
+
+    background: #25282e;
+
+    border: 1px solid #3b3f47;
+    border-radius: 6px;
+
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.user-dropdown.show {
+    display: block;
+}
+
+
+/* =========================================================
+   DROPDOWN HEADER / ITEM / DIVIDER
+   ========================================================= */
+
+.sidebar-wrapper .dropdown-header {
+    padding: 6px 10px;
+
+    color: #e2e8f0;
+
+    font-size: .75rem;
+    font-weight: 600;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-wrapper .dropdown-divider {
+    height: 1px;
+
+    margin: 4px 0;
+
+    background: #3b3f47;
+}
+
+.sidebar-wrapper .dropdown-item {
+    display: flex;
+    align-items: center;
+
+    width: 100%;
+
+    padding: 6px 10px;
+
+    gap: 8px;
+
+    color: #cbd5e1;
+
+    background: transparent;
+
+    border: 0;
+    border-radius: 4px;
+
+    font-size: .825rem;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: color .15s ease, background-color .15s ease;
+}
+
+.sidebar-wrapper .dropdown-item:hover {
+    color: #ffffff;
+
+    background: #32363e;
+}
+
+.sidebar-wrapper .dropdown-danger {
+    color: #f87171;
+}
+
+.sidebar-wrapper .dropdown-danger:hover {
+    color: #ffffff;
+
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.dropdown-icon {
+    width: 16px;
+    height: 16px;
+
+    flex: 0 0 16px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* =========================================================
+   REPORTS DROPDOWN (DOWNWARD IN-FLOW)
+   ========================================================= */
+
+.sidebar-flyout {
+    position: relative;
+
+    width: 100%;
+    max-height: 280px;
+
+    margin: 4px 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    background-color: #212429;
+
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+
+    border: 1px solid #2d3036;
+    border-radius: 6px;
+
+    color: #e2e8f0;
+
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+
+    animation: flyoutSlide .2s ease;
+}
+
+@keyframes flyoutSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+[data-bs-theme="light"] .sidebar-flyout {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+}
+
+
+/* =========================================================
+   FLYOUT HEADER
+   ========================================================= */
+
+.flyout-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    min-height: 36px;
+
+    padding: 6px 10px;
+
+    border-bottom: 1px solid #2d3036;
+}
+
+.flyout-title {
+    color: #94a3b8;
+
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+
+/* =========================================================
+   FLYOUT CLOSE BUTTON
+   ========================================================= */
+
+.flyout-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 22px;
+    height: 22px;
+
+    padding: 0;
+
+    color: #94a3b8;
+
+    background: transparent;
+
+    border: 0;
+    border-radius: 4px;
+
+    cursor: pointer;
+
+    transition: color .15s ease, background-color .15s ease;
+}
+
+.flyout-close:hover {
+    color: #ffffff;
+    background: #2d3036;
+    box-shadow: none;
+}
+
+.flyout-close svg {
+    width: 14px;
+    height: 14px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+
+/* =========================================================
+   REPORT LIST
+   ========================================================= */
+
+.reports-list {
+    display: flex;
+    flex-direction: column;
+
+    padding: 4px;
+}
+
+.report-link {
+    display: block;
+
+    width: 100%;
+
+    padding: 6px 10px;
+    margin-bottom: 2px;
+
+    color: #cbd5e1;
+
+    background: transparent;
+
+    border-radius: 4px;
+
+    font-size: .8rem;
+    line-height: 1.3;
+
+    text-decoration: none;
+
+    transition: color .15s ease, background-color .15s ease;
+}
+
+.report-link:hover,
+.report-link.active {
+    color: #ffffff;
+
+    background: #2d3036;
+
+    box-shadow: none;
+}
+
+[data-bs-theme="light"] .report-link {
+    color: #475569;
+}
+
+[data-bs-theme="light"] .report-link:hover,
+[data-bs-theme="light"] .report-link.active {
+    color: #0f172a;
+    background: #e2e8f0;
+}
+
+
+/* =========================================================
+   SCROLLBARS
+   ========================================================= */
+
+.sidebar-nav::-webkit-scrollbar,
+.sidebar-flyout::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track,
+.sidebar-flyout::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb,
+.sidebar-flyout::-webkit-scrollbar-thumb {
+    background: #3b3f47;
+
+    border-radius: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover,
+.sidebar-flyout::-webkit-scrollbar-thumb:hover {
+    background: #4b505a;
+}
+
+.sidebar-nav,
+.sidebar-flyout {
+    scrollbar-width: thin;
+    scrollbar-color: #3b3f47 transparent;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-icons,
+    .btn-expand-edge,
+    .icon-btn,
+    .sidebar-icon,
+    .brand-container,
+    .report-link,
+    .flyout-close,
+    #sidebar-icons .nav-text {
+        transition: none;
+    }
+
+    .sidebar-flyout {
+        animation: none;
+    }
+}
