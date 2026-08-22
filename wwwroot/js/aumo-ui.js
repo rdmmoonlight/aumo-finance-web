@@ -3,13 +3,7 @@
 // ==========================================================
 //
 // Menggantikan bootstrap.bundle.min.js sepenuhnya. Modul ini
-// menangani perilaku modal, dropdown, dan toast yang sebelumnya
-// disediakan oleh JavaScript Bootstrap, ditulis sendiri tanpa
-// dependensi ke framework pihak ketiga.
-//
-// Atribut data-* (data-bs-toggle, data-bs-target, data-bs-dismiss)
-// dipertahankan pada markup HTML hanya sebagai nama atribut biasa
-// yang dibaca oleh skrip ini — bukan bagian dari library Bootstrap.
+// menangani perilaku modal, dropdown, toast, dan sync status.
 //
 
 (function () {
@@ -60,8 +54,7 @@
         }
     }
 
-    // Public API — dipakai dari Blazor (JS interop) menggantikan
-    // pemanggilan bootstrap.Modal sebelumnya.
+    // Public API — dipanggil dari Blazor (JS interop / Inline Events)
     window.aumoUI = {
         modal: {
             show: function (elementId) {
@@ -84,8 +77,38 @@
                     el.classList.remove("show");
                 }
             }
+        },
+        // Integrasi Sync Status Handler
+        triggerSync: function (isSuccess = true, queueTimeMs = 10000) {
+            const syncBtn = document.getElementById('syncBtn');
+            const syncIcon = document.getElementById('syncIcon');
+
+            if (!syncBtn || !syncIcon) return;
+
+            syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
+            syncBtn.style.color = '#d97706';
+            syncBtn.title = "Syncing: In queue (10 seconds)...";
+            syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
+
+            setTimeout(() => {
+                syncIcon.classList.remove('icon-spin');
+                syncBtn.style.color = '';
+
+                if (isSuccess) {
+                    syncBtn.classList.add('text-info');
+                    syncBtn.title = "Sync: Saved to Database";
+                    syncIcon.className = "bi bi-cloud-check";
+                } else {
+                    syncBtn.classList.add('text-danger');
+                    syncBtn.title = "Sync: Error saving data!";
+                    syncIcon.className = "bi bi-cloud-slash";
+                }
+            }, queueTimeMs);
         }
     };
+
+    // Backward compatibility alias (agar pemanggilan window.triggerSyncProcess lama tidak error)
+    window.triggerSyncProcess = window.aumoUI.triggerSync;
 
     document.addEventListener("click", function (event) {
         var toggleEl = event.target.closest("[data-bs-toggle]");
