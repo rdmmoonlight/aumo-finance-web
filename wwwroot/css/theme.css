@@ -770,3 +770,94 @@ a:hover {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--aumo-text-muted);
 }
+
+
+/* ==========================================
+   BLAZOR ERROR BANNER
+   (replaces Bootstrap's alert/fixed-bottom/d-none utility classes)
+   ========================================== */
+
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1080;
+
+    margin: 1rem;
+    padding: 0.75rem 1rem;
+
+    color: #7f1d1d;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+
+    font-size: 0.9rem;
+
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,.25);
+}
+
+#blazor-error-ui .reload,
+#blazor-error-ui .dismiss {
+    margin-left: 0.5rem;
+
+    color: #b91c1c;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+#blazor-error-ui .dismiss {
+    text-decoration: none;
+}
+
+
+/* ==========================================
+   GENERIC BUTTON
+   (small self-hosted replacement for Bootstrap's .btn/.btn-primary/
+   .btn-secondary, used on simple status/auth-style pages)
+   ========================================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0.5rem 1.25rem;
+
+    border: 1px solid transparent;
+    border-radius: 8px;
+
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    line-height: 1.2;
+
+    cursor: pointer;
+
+    transition:
+        color .15s ease,
+        background-color .15s ease,
+        border-color .15s ease;
+}
+
+.btn-primary {
+    color: #ffffff;
+    background: var(--aumo-primary);
+    border-color: var(--aumo-primary);
+}
+
+.btn-primary:hover {
+    color: #ffffff;
+    filter: brightness(1.1);
+}
+
+.btn-secondary {
+    color: var(--aumo-text);
+    background: var(--aumo-surface-raised);
+    border-color: var(--aumo-border);
+}
+
+.btn-secondary:hover {
+    background: var(--aumo-surface-hover);
+}

@@ -1,33 +1,42 @@
 @using AumoFinance.Services
 @inject IMarketService MarketService
 
-<div class="market-futuristic-card mx-auto mb-4 p-3 rounded-4">
+<div class="market-futuristic-card">
     <div class="card-glass-bg"></div>
-    
+
     @if (isLoading)
     {
         <!-- State: Loading Futuristic -->
-        <div class="d-flex justify-content-center align-items-center py-2 gap-2 text-secondary position-relative z-1">
-            <div class="spinner-border spinner-border-sm text-info spinner-glow" role="status"></div>
-            <span class="small fw-medium style-loading-text text-light-50">Syncing live market data...</span>
+        <div class="market-state market-state-loading">
+            <div class="spinner-glow" role="status"></div>
+            <span class="style-loading-text">Syncing live market data...</span>
         </div>
     }
     else if (marketData != null && marketData.Success)
     {
         <!-- State: Success (Futuristic Grid Layout) -->
-        <div class="row align-items-center g-3 text-center justify-content-center position-relative z-1">
-            
+        <div class="market-grid">
+
             <!-- USD / IDR -->
-            <div class="col-12 col-md-4 border-end-futuristic">
-                <div class="d-flex flex-column align-items-center justify-content-center px-1">
-                    <div class="d-flex align-items-center gap-1 mb-1">
+            <div class="market-col market-col-border">
+                <div class="market-col-inner">
+                    <div class="market-col-header">
                         <span class="indicator-dot @(marketData.Usd?.IsUp == true ? "dot-up" : "dot-down")"></span>
-                        <span class="style-label text-uppercase">USD / IDR</span>
+                        <span class="style-label">USD / IDR</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
-                        <span class="fw-bold style-value text-glow text-nowrap">Rp. @(marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
-                        <span class="badge badge-futuristic @(marketData.Usd?.IsUp == true ? "badge-up" : "badge-down") text-nowrap">
-                            <i class="bi @(marketData.Usd?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
+                    <div class="market-col-value-row">
+                        <span class="style-value text-glow">Rp. @(marketData.Usd?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
+                        <span class="badge-futuristic @(marketData.Usd?.IsUp == true ? "badge-up" : "badge-down")">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                @if (marketData.Usd?.IsUp == true)
+                                {
+                                    <path d="M12 5l0 14" /> <path d="M18 11l-6 -6" /> <path d="M6 11l6 -6" />
+                                }
+                                else
+                                {
+                                    <path d="M12 5l0 14" /> <path d="M18 13l-6 6" /> <path d="M6 13l6 6" />
+                                }
+                            </svg>
                             @(marketData.Usd?.IsUp == true ? "+" : "")@(marketData.Usd?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID")))%
                         </span>
                     </div>
@@ -35,16 +44,25 @@
             </div>
 
             <!-- IHSG (IDX COMPOSITE) -->
-            <div class="col-12 col-md-4 border-end-futuristic">
-                <div class="d-flex flex-column align-items-center justify-content-center px-1">
-                    <div class="d-flex align-items-center gap-1 mb-1">
+            <div class="market-col market-col-border">
+                <div class="market-col-inner">
+                    <div class="market-col-header">
                         <span class="indicator-dot @(marketData.Ihsg?.IsUp == true ? "dot-up" : "dot-down")"></span>
-                        <span class="style-label text-uppercase">IDX Composite</span>
+                        <span class="style-label">IDX Composite</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
-                        <span class="fw-bold style-value text-glow text-nowrap">@(marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
-                        <span class="badge badge-futuristic @(marketData.Ihsg?.IsUp == true ? "badge-up" : "badge-down") text-nowrap">
-                            <i class="bi @(marketData.Ihsg?.IsUp == true ? "bi-arrow-up-short" : "bi-arrow-down-short")"></i>
+                    <div class="market-col-value-row">
+                        <span class="style-value text-glow">@(marketData.Ihsg?.Price.ToString("N2", new System.Globalization.CultureInfo("id-ID")))</span>
+                        <span class="badge-futuristic @(marketData.Ihsg?.IsUp == true ? "badge-up" : "badge-down")">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                @if (marketData.Ihsg?.IsUp == true)
+                                {
+                                    <path d="M12 5l0 14" /> <path d="M18 11l-6 -6" /> <path d="M6 11l6 -6" />
+                                }
+                                else
+                                {
+                                    <path d="M12 5l0 14" /> <path d="M18 13l-6 6" /> <path d="M6 13l6 6" />
+                                }
+                            </svg>
                             @(marketData.Ihsg?.IsUp == true ? "+" : "")@(marketData.Ihsg?.Percent.ToString("F2", new System.Globalization.CultureInfo("id-ID")))%
                         </span>
                     </div>
@@ -52,14 +70,14 @@
             </div>
 
             <!-- BI-RATE -->
-            <div class="col-12 col-md-4">
-                <div class="d-flex flex-column align-items-center justify-content-center px-1">
-                    <div class="d-flex align-items-center gap-1 mb-1">
+            <div class="market-col">
+                <div class="market-col-inner">
+                    <div class="market-col-header">
                         <span class="indicator-dot dot-info"></span>
-                        <span class="style-label text-uppercase">BI-Rate</span>
+                        <span class="style-label">BI-Rate</span>
                     </div>
-                    <div class="d-flex align-items-center justify-content-center gap-2">
-                        <span class="fw-bold style-value text-info-glow text-nowrap">@(marketData.BiRate)</span>
+                    <div class="market-col-value-row">
+                        <span class="style-value text-info-glow">@(marketData.BiRate)</span>
                     </div>
                 </div>
             </div>
@@ -69,8 +87,11 @@
     else
     {
         <!-- State: Error / Fallback -->
-        <div class="d-flex align-items-center justify-content-center text-muted small py-1 gap-2 position-relative z-1">
-            <i class="bi bi-exclamation-triangle text-warning-glow"></i>
+        <div class="market-state market-state-error">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="text-warning-glow">
+                <path d="M12 9v2m0 4v.01" />
+                <path d="M5.07 19h13.86a2 2 0 0 0 1.75 -2.98l-6.93 -12a2 2 0 0 0 -3.48 0l-6.93 12a2 2 0 0 0 1.75 2.98z" />
+            </svg>
             <span class="style-loading-text">Market indicators temporarily offline.</span>
         </div>
     }
@@ -79,11 +100,17 @@
 <style>
     .market-futuristic-card {
         position: relative;
+
         max-width: 720px;
+        margin: 0 auto 1.5rem;
+
+        padding: 1rem;
+
         background: rgba(18, 24, 38, 0.45);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
         overflow: hidden;
         transition: all 0.3s ease;
@@ -94,15 +121,105 @@
         box-shadow: 0 8px 32px 0 rgba(14, 165, 233, 0.15);
     }
 
+    .market-state {
+        position: relative;
+        z-index: 1;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        color: #94a3b8;
+    }
+
+    .market-state-loading {
+        padding: 0.5rem 0;
+
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .market-state-error {
+        padding: 0.25rem 0;
+
+        font-size: 0.8rem;
+    }
+
+    .market-state-error svg,
+    .market-state-loading svg {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .market-grid {
+        position: relative;
+        z-index: 1;
+
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+
+        gap: 0.75rem;
+
+        text-align: center;
+    }
+
+    .market-col {
+        flex: 1 1 100%;
+    }
+
+    @@media (min-width: 768px) {
+        .market-col {
+            flex: 1 1 0;
+        }
+    }
+
+    .market-col-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0 0.25rem;
+    }
+
+    .market-col-header {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+
+        margin-bottom: 0.25rem;
+    }
+
+    .market-col-value-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+
+        gap: 0.5rem;
+    }
+
     .style-label {
         font-size: 0.65rem;
         letter-spacing: 0.1em;
         font-weight: 700;
+        text-transform: uppercase;
         color: rgba(148, 163, 184, 0.8);
     }
 
     .style-value {
         font-size: 0.95rem;
+        font-weight: 700;
         letter-spacing: -0.01em;
         white-space: nowrap;
     }
@@ -131,15 +248,30 @@
     }
 
     .badge-futuristic {
-        font-size: 0.675rem;
-        font-weight: 600;
-        padding: 0.25em 0.5em;
-        border-radius: 20px;
-        letter-spacing: 0.02em;
-        white-space: nowrap;
         display: inline-flex;
         align-items: center;
         gap: 1px;
+
+        padding: 0.25em 0.5em;
+
+        font-size: 0.675rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+
+        border-radius: 20px;
+    }
+
+    .badge-futuristic svg {
+        width: 13px;
+        height: 13px;
+        flex: 0 0 13px;
+
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 
     .badge-up {
@@ -163,19 +295,40 @@
         text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
     }
 
+    .text-warning-glow {
+        color: #f59e0b;
+        filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
+    }
+
     .spinner-glow {
+        width: 14px;
+        height: 14px;
+        flex: 0 0 14px;
+
+        border: 2px solid rgba(56, 189, 248, 0.25);
+        border-top-color: #38bdf8;
+        border-radius: 50%;
+
         filter: drop-shadow(0 0 6px #0ea5e9);
+
+        animation: market-spin 0.8s linear infinite;
+    }
+
+    @@keyframes market-spin {
+        100% {
+            transform: rotate(360deg);
+        }
     }
 
     /* CS0103 Fix: Gunakan @@media agar tidak terbaca sebagai syntax Razor C# */
     @@media (min-width: 768px) {
-        .border-end-futuristic {
+        .market-col-border {
             border-right: 1px solid rgba(255, 255, 255, 0.08);
         }
     }
 
     @@media (max-width: 767.98px) {
-        .border-end-futuristic {
+        .market-col-border {
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             padding-bottom: 0.75rem;
         }

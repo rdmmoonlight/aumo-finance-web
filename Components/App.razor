@@ -15,8 +15,9 @@
     <link rel="stylesheet" href="css/guardian.css" />
     <link rel="stylesheet" href="css/theme.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/topbar.css" />
 
-    <!-- BLAZOR CSS ISOLATION (Memuat komponen terisolasi lainnya, mis. TopBar.razor.css) -->
+    <!-- BLAZOR CSS ISOLATION (komponen scoped lain, jika ada) -->
     <link rel="stylesheet" href="AumoFinance.styles.css" />
 
     <!-- Instant Theme Loader -->
@@ -34,10 +35,10 @@
     <Routes @rendermode="InteractiveServer" />
 
     <!-- UI Penanganan Error Blazor -->
-    <div id="blazor-error-ui" class="alert alert-danger fixed-bottom m-3 d-none" role="alert">
+    <div id="blazor-error-ui" role="alert">
         An unhandled error has occurred.
-        <a href="" class="reload link-primary">Reload</a>
-        <a class="dismiss link-secondary">🗙</a>
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
     </div>
 
     <!-- Custom UI Script -->

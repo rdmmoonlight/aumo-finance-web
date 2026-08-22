@@ -3,13 +3,17 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
                 <NotAuthorized>
-                    <div class="container text-center mt-5 py-5">
-                        <div class="card shadow-sm border-0 rounded-4 max-w-md mx-auto p-4">
-                            <i class="bi bi-shield-lock text-warning display-4 mb-3"></i>
-                            <h3 class="fw-bold">Access Denied</h3>
+                    <div class="status-page">
+                        <div class="status-card">
+                            <svg class="status-icon text-warning" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
+                                <path d="M12 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                                <path d="M12 12l0 2.5" />
+                            </svg>
+                            <h3>Access Denied</h3>
                             <p class="text-secondary">You must sign in to access this page.</p>
-                            <div class="mt-3">
-                                <a href="/auth/login" class="btn btn-primary px-4 fw-semibold">Sign In</a>
+                            <div class="status-actions">
+                                <a href="/auth/login" class="btn btn-primary">Sign In</a>
                             </div>
                         </div>
                     </div>
@@ -20,13 +24,16 @@
         <NotFound>
             <PageTitle>Not Found - Aumo Finance</PageTitle>
             <LayoutView Layout="@typeof(Layout.MainLayout)">
-                <div class="container text-center mt-5 py-5">
-                    <div class="card shadow-sm border-0 rounded-4 max-w-md mx-auto p-4">
-                        <i class="bi bi-exclamation-triangle text-danger display-4 mb-3"></i>
-                        <h3 class="fw-bold">Page Not Found</h3>
+                <div class="status-page">
+                    <div class="status-card">
+                        <svg class="status-icon text-danger" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 9v2m0 4v.01" />
+                            <path d="M5.07 19h13.86a2 2 0 0 0 1.75 -2.98l-6.93 -12a2 2 0 0 0 -3.48 0l-6.93 12a2 2 0 0 0 1.75 2.98z" />
+                        </svg>
+                        <h3>Page Not Found</h3>
                         <p class="text-secondary">The page you requested could not be found.</p>
-                        <div class="mt-3">
-                            <a href="/" class="btn btn-secondary px-4 fw-semibold">Return to Home</a>
+                        <div class="status-actions">
+                            <a href="/" class="btn btn-secondary">Return to Home</a>
                         </div>
                     </div>
                 </div>
@@ -34,3 +41,61 @@
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+
+<style>
+    .status-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 70vh;
+
+        padding: 2rem 1rem;
+
+        text-align: center;
+    }
+
+    .status-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        max-width: 420px;
+        width: 100%;
+
+        padding: 2rem;
+
+        background: var(--aumo-surface);
+        border: 1px solid var(--aumo-border);
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    }
+
+    .status-icon {
+        width: 40px;
+        height: 40px;
+
+        margin-bottom: 0.75rem;
+
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .status-card h3 {
+        margin-bottom: 0.5rem;
+
+        color: var(--aumo-text-strong);
+        font-weight: 700;
+    }
+
+    .status-card p {
+        margin-bottom: 0;
+    }
+
+    .status-actions {
+        margin-top: 1rem;
+    }
+</style>

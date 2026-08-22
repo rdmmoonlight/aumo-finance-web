@@ -20,7 +20,7 @@ namespace AumoFinance.Components.Layout
         private bool hasActivePeriod;
         private bool isViewingClosed;
         private string periodText = "No Period Selected";
-        private string iconClass = "bi-calendar-x text-warning";
+        private string periodIconState = "none";
 
         protected override async Task OnInitializedAsync()
         {
@@ -42,9 +42,9 @@ namespace AumoFinance.Components.Layout
                         hasActivePeriod = !string.IsNullOrEmpty(activePeriodName);
                         isViewingClosed = activePeriodObj.IsClosed;
                         periodText = hasActivePeriod ? activePeriodName : "No Period Selected";
-                        iconClass = !hasActivePeriod
-                            ? "bi-calendar-x text-warning"
-                            : (isViewingClosed ? "bi-lock-fill text-secondary" : "bi-calendar2-check text-success");
+                        periodIconState = !hasActivePeriod
+                            ? "none"
+                            : (isViewingClosed ? "locked" : "open");
                     }
                 }
             }

@@ -85,23 +85,28 @@
 
             if (!syncBtn || !syncIcon) return;
 
-            syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
+            var ICONS = {
+                spin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.933 13.041a8 8 0 1 1 -9.925 -8.788c3.899 -1 7.935 1.007 9.425 4.747" /><path d="M20 4v5h-5" /></svg>',
+                check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15a4 4 0 0 1 -1.5 -7.708a5 5 0 0 1 9.207 -3.06a4.5 4.5 0 0 1 2.5 8.181" /><path d="M9.5 14.5l5 -5" /><path d="M9.5 9.5l5 5" /></svg>',
+                error: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15a4 4 0 0 1 -1.5 -7.708a5 5 0 0 1 9.207 -3.06a4.5 4.5 0 0 1 2.5 8.181" /><path d="M12 10l0 4" /><path d="M12 17l.01 0" /></svg>'
+            };
+
             syncBtn.style.color = '#d97706';
             syncBtn.title = "Syncing: In queue (10 seconds)...";
-            syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
+            syncIcon.innerHTML = ICONS.spin;
+            syncIcon.classList.add('icon-spin');
 
             setTimeout(() => {
                 syncIcon.classList.remove('icon-spin');
-                syncBtn.style.color = '';
 
                 if (isSuccess) {
-                    syncBtn.classList.add('text-info');
+                    syncBtn.style.color = 'var(--aumo-accent)';
                     syncBtn.title = "Sync: Saved to Database";
-                    syncIcon.className = "bi bi-cloud-check";
+                    syncIcon.innerHTML = ICONS.check;
                 } else {
-                    syncBtn.classList.add('text-danger');
+                    syncBtn.style.color = 'var(--aumo-error)';
                     syncBtn.title = "Sync: Error saving data!";
-                    syncIcon.className = "bi bi-cloud-slash";
+                    syncIcon.innerHTML = ICONS.error;
                 }
             }, queueTimeMs);
         }

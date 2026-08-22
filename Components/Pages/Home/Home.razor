@@ -8,30 +8,41 @@
 
 <PageTitle>Aumo Finance</PageTitle>
 
-<div class="nebula-viewport d-flex align-items-center justify-content-center min-vh-100 p-3 p-md-4">
+<div class="nebula-viewport">
     <!-- Ambient Nebula Glass Card -->
-    <div class="nebula-card p-4 p-md-5">
-        
+    <div class="nebula-card">
+
         <!-- Live Market Widget Wrapper -->
-        <div class="market-widget-wrapper mb-4">
+        <div class="market-widget-wrapper">
             <MarketWidget />
         </div>
 
         <!-- Clean & Minimalist Content (Tanpa Header Besar) -->
-        <div class="text-center content-body">
-            <p class="description-text mb-4">
+        <div class="content-body">
+            <p class="description-text">
                 @DescriptionText
             </p>
 
             <!-- Futuristic Navigation Actions -->
-            <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+            <div class="nebula-actions">
                 <NavLink href="/Dashboard" class="btn-nebula btn-nebula-primary">
-                    <i class="bi bi-speedometer2 me-2"></i>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 4h6v8h-6z" />
+                        <path d="M4 16h6v4h-6z" />
+                        <path d="M14 12h6v8h-6z" />
+                        <path d="M14 4h6v4h-6z" />
+                    </svg>
                     <span>Dashboard</span>
                 </NavLink>
 
                 <NavLink href="/Journal" class="btn-nebula btn-nebula-secondary">
-                    <i class="bi bi-journal-text me-2"></i>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M6 4h11a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-11a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1z" />
+                        <path d="M13.5 15h-6.5" />
+                        <path d="M13.5 11h-6.5" />
+                        <path d="M13.5 7h-6.5" />
+                        <path d="M16 3v18" />
+                    </svg>
                     <span>General Journal</span>
                 </NavLink>
             </div>
@@ -43,6 +54,14 @@
 <style>
     /* Scope Styling: Deep Nebula Futuristic Theme */
     .nebula-viewport {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 100vh;
+
+        padding: 0.75rem;
+
         background: radial-gradient(circle at 50% 30%, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.95) 70%),
                     radial-gradient(circle at 80% 80%, rgba(76, 29, 149, 0.25) 0%, transparent 50%),
                     radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 40%);
@@ -50,9 +69,18 @@
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
+    @@media (min-width: 768px) {
+        .nebula-viewport {
+            padding: 1rem;
+        }
+    }
+
     .nebula-card {
         max-width: 720px;
         width: 100%;
+
+        padding: 2rem;
+
         background: rgba(17, 24, 39, 0.55);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
@@ -63,14 +91,28 @@
         transition: all 0.3s ease;
     }
 
+    @@media (min-width: 768px) {
+        .nebula-card {
+            padding: 3rem;
+        }
+    }
+
     .market-widget-wrapper {
+        margin-bottom: 1.5rem;
+
         background: rgba(15, 23, 42, 0.6);
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 0.05);
         padding: 0.75rem;
     }
 
+    .content-body {
+        text-align: center;
+    }
+
     .description-text {
+        margin-bottom: 1.5rem;
+
         color: rgba(226, 232, 240, 0.85);
         font-size: 1rem;
         line-height: 1.6;
@@ -81,11 +123,21 @@
         margin-right: auto;
     }
 
+    .nebula-actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
     /* Buttons Style */
     .btn-nebula {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 0.5rem;
+
         padding: 0.625rem 1.5rem;
         font-size: 0.9rem;
         font-weight: 500;
@@ -95,6 +147,18 @@
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
         overflow: hidden;
+    }
+
+    .btn-nebula svg {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 18px;
+
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 
     .btn-nebula-primary {

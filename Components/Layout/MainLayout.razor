@@ -6,7 +6,7 @@
      Cosmic / Nebula Theme
      ========================================== -->
 
-<div class="d-flex flex-column min-vh-100 min-vw-0 aumo-main-shell">
+<div class="aumo-main-shell">
 
     <!-- TOPBAR -->
     <AuthorizeView>
@@ -16,13 +16,13 @@
     </AuthorizeView>
 
     <!-- SHELL UTAMA (Hapus overflow-hidden agar sticky sidebar berfungsi sempurna) -->
-    <div class="d-flex flex-grow-1 position-relative">
-        
+    <div class="aumo-body-row">
+
         <!-- SIDEBAR (Sticky di sebelah kiri) -->
         <AumoFinance.Components.Layout.Sidebar />
 
         <!-- MAIN CONTENT AREA (Hapus margin-left: 60px dan overflow-auto) -->
-        <main id="mainContent" class="content flex-grow-1 p-2 p-md-4 d-flex flex-column" role="main">
+        <main id="mainContent" class="content" role="main">
             @Body
         </main>
 
@@ -35,8 +35,35 @@
         transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    .content { 
+    .aumo-main-shell {
+        display: flex;
+        flex-direction: column;
+
+        min-height: 100vh;
+        min-width: 0;
+    }
+
+    .aumo-body-row {
+        display: flex;
+        flex: 1 1 auto;
+
+        position: relative;
+    }
+
+    .content {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+
+        padding: 0.5rem 1rem;
+
         transition: background-color 0.3s ease;
+    }
+
+    @@media (min-width: 768px) {
+        .content {
+            padding: 1rem 1.5rem;
+        }
     }
 
     @@media (max-width: 767.98px) {

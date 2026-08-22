@@ -1,32 +1,54 @@
 @using Microsoft.AspNetCore.Components.Authorization
 
-<header class="navbar navbar-expand topbar-header py-2 sticky-top position-relative">
-    <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100 position-relative">
-        
+<header class="topbar-header">
+    <div class="topbar-container">
+
         <!-- CENTER SECTION: QURAN VERSE -->
-        <div class="d-none d-md-flex flex-column align-items-center justify-content-center quran-center-wrapper text-center">
+        <div class="quran-center-wrapper">
             <QuranVerse />
         </div>
 
         <!-- RIGHT SECTION: ACTION CONTROLS -->
-        <div class="d-flex align-items-center gap-2 ms-auto">
+        <div class="topbar-actions">
             <AuthorizeView>
                 <Authorized>
-                    <button class="btn btn-sm topbar-btn text-secondary p-1 px-2 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
-                        <i class="bi bi-search search-icon"></i>
-                        <span class="d-none d-lg-inline text-muted small cmd-shortcut">Command + K</span>
+                    <button class="topbar-btn" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
+                        <svg class="topbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+                            <path d="M21 21l-6 -6" />
+                        </svg>
+                        <span class="cmd-shortcut">Command + K</span>
                     </button>
                 </Authorized>
             </AuthorizeView>
 
             <div class="dropdown">
-                <button class="btn btn-sm topbar-btn text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
-                    <i class="bi bi-three-dots-vertical menu-icon"></i>
+                <button class="topbar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
+                    <svg class="topbar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                        <path d="M12 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                        <path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                    </svg>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-lg">
-                    <li><h6 class="dropdown-header py-1 text-uppercase">Theme Interface</h6></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark Nebula</button></li>
-                    <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light Minimal</button></li>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><h6 class="dropdown-header">Theme Interface</h6></li>
+                    <li>
+                        <button type="button" class="dropdown-item" onclick="setAppTheme('dark')">
+                            <svg class="dropdown-icon text-warning" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+                            </svg>
+                            Dark Nebula
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" class="dropdown-item" onclick="setAppTheme('light')">
+                            <svg class="dropdown-icon text-warning" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                                <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7" />
+                            </svg>
+                            Light Minimal
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -35,55 +57,103 @@
 
 <AuthorizeView>
     <Authorized>
-        <div class="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap">
+        <div class="status-strip">
             <div class="dropdown">
-                <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-2 dropdown-toggle shadow-none status-badge" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi @iconClass"></i>
-                    <span class="text-body fw-semibold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
+                <button class="status-badge dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <svg class="dropdown-icon @(periodIconState == "none" ? "text-warning" : periodIconState == "locked" ? "text-secondary" : "text-success")" viewBox="0 0 24 24" aria-hidden="true">
+                        @if (periodIconState == "none")
+                        {
+                            <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" />
+                            <path d="M16 3v4" />
+                            <path d="M8 3v4" />
+                            <path d="M4 11h16" />
+                            <path d="M10 16l4 4m0 -4l-4 4" />
+                        }
+                        else if (periodIconState == "locked")
+                        {
+                            <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" />
+                            <path d="M11 16m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                            <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
+                        }
+                        else
+                        {
+                            <path d="M4 5m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" />
+                            <path d="M16 3v4" />
+                            <path d="M8 3v4" />
+                            <path d="M4 11h16" />
+                            <path d="M9 16l2 2l4 -4" />
+                        }
+                    </svg>
+                    <span class="period-text @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
                     @if (isViewingClosed)
                     {
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace badge-locked">LOCKED</span>
+                        <span class="badge-locked">LOCKED</span>
                     }
                 </button>
-                
-                <ul class="dropdown-menu shadow-lg mt-1">
-                    <li><h6 class="dropdown-header py-1 text-uppercase">Accounting Period</h6></li>
+
+                <ul class="dropdown-menu">
+                    <li><h6 class="dropdown-header">Accounting Period</h6></li>
                     <li>
-                        <NavLink class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" href="/periods/create">
-                            <i class="bi bi-plus-circle"></i> Open New Period
+                        <NavLink class="dropdown-item text-primary" href="/periods/create">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                <path d="M9 12h6" />
+                                <path d="M12 9v6" />
+                            </svg>
+                            Open New Period
                         </NavLink>
                     </li>
-                    <li><hr class="dropdown-divider my-1"></li>
+                    <li><hr class="dropdown-divider"></li>
                     <li>
-                        <NavLink class="dropdown-item py-1 d-flex align-items-center gap-2" href="/periods">
-                            <i class="bi bi-list-ul"></i> Manage All Periods
+                        <NavLink class="dropdown-item" href="/periods">
+                            <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M9 6l11 0" />
+                                <path d="M9 12l11 0" />
+                                <path d="M9 18l11 0" />
+                                <path d="M4 6l0 .01" />
+                                <path d="M4 12l0 .01" />
+                                <path d="M4 18l0 .01" />
+                            </svg>
+                            Manage All Periods
                         </NavLink>
                     </li>
                     @if (hasActivePeriod)
                     {
                         <li>
-                            <NavLink class="dropdown-item py-1 text-danger d-flex align-items-center gap-2" href="/periods/clear-selection">
-                                <i class="bi bi-eye-slash"></i> Stop Viewing
+                            <NavLink class="dropdown-item text-danger" href="/periods/clear-selection">
+                                <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M10.585 10.587a2 2 0 0 0 2.829 2.828" />
+                                    <path d="M16.681 16.673a8.717 8.717 0 0 1 -4.681 1.327c-3.6 0 -6.6 -2 -9 -6c1.272 -2.12 2.712 -3.678 4.32 -4.674m2.86 -1.146a9.055 9.055 0 0 1 1.82 -.18c3.6 0 6.6 2 9 6c-.666 1.11 -1.379 2.067 -2.138 2.87" />
+                                    <path d="M3 3l18 18" />
+                                </svg>
+                                Stop Viewing
                             </NavLink>
                         </li>
                     }
                 </ul>
             </div>
 
-            <span class="text-secondary opacity-25">|</span>
+            <span class="status-divider">|</span>
 
-            <div class="d-flex align-items-center gap-2 font-monospace">
-                <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" title="Guardian Security: Protected & Active" aria-label="Guardian Status">
-                    <span class="pulse-dot-green me-1"></span>
-                    <i class="bi bi-shield-check search-icon"></i>
-                    <span class="d-none d-sm-inline text-muted status-text">PROTECTED</span>
+            <div class="status-group">
+                <button class="status-link text-success" type="button" title="Guardian Security: Protected &amp; Active" aria-label="Guardian Status">
+                    <span class="pulse-dot-green"></span>
+                    <svg class="dropdown-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
+                        <path d="M9 12l2 2l4 -4" />
+                    </svg>
+                    <span class="status-text">PROTECTED</span>
                 </button>
 
-                <span class="text-secondary opacity-25">/</span>
+                <span class="status-divider">/</span>
 
-                <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
-                    <i id="syncIcon" class="bi bi-cloud-check search-icon"></i>
-                    <span class="d-none d-sm-inline text-muted status-text">SYNCED</span>
+                <button id="syncBtn" class="status-link text-info" type="button" title="Sync: Up to date" aria-label="Sync Status">
+                    <span id="syncIcon" class="dropdown-icon sync-icon">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 12l5 5l10 -10" />
+                        </svg>
+                    </span>
+                    <span class="status-text">SYNCED</span>
                 </button>
             </div>
         </div>
@@ -92,14 +162,22 @@
 
 <AuthorizeView>
     <Authorized>
-        <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-top modal-md mt-5">
-                <div class="modal-content shadow-lg">
-                    <div class="modal-body p-3">
-                        <div class="input-group">
-                            <span class="input-group-text bg-transparent border-0 text-warning"><i class="bi bi-search"></i></span>
-                            <input type="search" class="form-control bg-transparent border-0 shadow-none text-body" placeholder="Type a command or search accounts, entries..." autofocus>
-                            <button type="button" class="btn-close btn-close-white ms-2 my-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal" id="searchModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <div class="search-input-group">
+                            <svg class="dropdown-icon text-warning" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+                                <path d="M21 21l-6 -6" />
+                            </svg>
+                            <input type="search" class="search-input" placeholder="Type a command or search accounts, entries..." autofocus>
+                            <button type="button" class="modal-close" data-bs-dismiss="modal" aria-label="Close">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M18 6l-12 12" />
+                                    <path d="M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
