@@ -174,6 +174,125 @@
                             </span>
 
                         </button>
+
+
+                        <!-- =====================================================
+                             REPORTS DROPDOWN (expands downward, in-flow)
+                             ===================================================== -->
+
+                        @if (showReportsFlyout)
+                        {
+                            <div id="reports-flyout"
+                                 class="sidebar-flyout">
+
+                                <div class="flyout-header">
+
+                                    <span class="flyout-title">
+                                        Financial Reports
+                                    </span>
+
+                                    <button type="button"
+                                            class="flyout-close"
+                                            @onclick="CloseFlyout"
+                                            aria-label="Close">
+
+                                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M18 6l-12 12" />
+                                            <path d="M6 6l12 12" />
+                                        </svg>
+
+                                    </button>
+
+                                </div>
+
+
+                                <div class="reports-list">
+
+                                    <NavLink href="/reports/general-journal"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        General Journal
+                                    </NavLink>
+
+                                    <NavLink href="/reports/general-ledger"
+                                             Match="NavLinkMatch.All"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        GL (Permanent Accounts)
+                                    </NavLink>
+
+                                    <NavLink href="/reports/general-ledger/true"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        GL (Temporary Accounts)
+                                    </NavLink>
+
+                                    <NavLink href="/reports/trial-balance"
+                                             Match="NavLinkMatch.All"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Trial Balance
+                                    </NavLink>
+
+                                    <NavLink href="/reports/adjusting-journal"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Adjusting Journal
+                                    </NavLink>
+
+                                    <NavLink href="/reports/trial-balance/true"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Adjusted Trial Balance
+                                    </NavLink>
+
+                                    <NavLink href="/reports/worksheet"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Worksheet
+                                    </NavLink>
+
+                                    <NavLink href="/reports/income-statement"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Income Statement
+                                    </NavLink>
+
+                                    <NavLink href="/reports/retained-earnings"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Retained Earnings
+                                    </NavLink>
+
+                                    <NavLink href="/reports/statement-of-financial-position"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Financial Position
+                                    </NavLink>
+
+                                    <NavLink href="/reports/closing-journal"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Closing Journal
+                                    </NavLink>
+
+                                    <NavLink href="/reports/post-closing-trial-balance"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Post-Closing TB
+                                    </NavLink>
+
+                                    <NavLink href="/reports/cash-flow"
+                                             class="report-link"
+                                             @onclick="CloseFlyout">
+                                        Cash Flow
+                                    </NavLink>
+
+                                </div>
+
+                            </div>
+                        }
+
                     </li>
 
 
@@ -388,124 +507,6 @@
                 </div>
 
             </nav>
-
-
-            <!-- =====================================================
-                 REPORTS FLYOUT
-                 ===================================================== -->
-
-            @if (showReportsFlyout)
-            {
-                <div id="reports-flyout"
-                     class="sidebar-flyout">
-
-                    <div class="flyout-header">
-
-                        <span class="flyout-title">
-                            Financial Reports
-                        </span>
-
-                        <button type="button"
-                                class="flyout-close"
-                                @onclick="CloseFlyout"
-                                aria-label="Close">
-
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M18 6l-12 12" />
-                                <path d="M6 6l12 12" />
-                            </svg>
-
-                        </button>
-
-                    </div>
-
-
-                    <div class="reports-list">
-
-                        <NavLink href="/reports/general-journal"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            General Journal
-                        </NavLink>
-
-                        <NavLink href="/reports/general-ledger"
-                                 Match="NavLinkMatch.All"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            GL (Permanent Accounts)
-                        </NavLink>
-
-                        <NavLink href="/reports/general-ledger/true"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            GL (Temporary Accounts)
-                        </NavLink>
-
-                        <NavLink href="/reports/trial-balance"
-                                 Match="NavLinkMatch.All"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Trial Balance
-                        </NavLink>
-
-                        <NavLink href="/reports/adjusting-journal"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Adjusting Journal
-                        </NavLink>
-
-                        <NavLink href="/reports/trial-balance/true"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Adjusted Trial Balance
-                        </NavLink>
-
-                        <NavLink href="/reports/worksheet"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Worksheet
-                        </NavLink>
-
-                        <NavLink href="/reports/income-statement"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Income Statement
-                        </NavLink>
-
-                        <NavLink href="/reports/retained-earnings"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Retained Earnings
-                        </NavLink>
-
-                        <NavLink href="/reports/statement-of-financial-position"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Financial Position
-                        </NavLink>
-
-                        <NavLink href="/reports/closing-journal"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Closing Journal
-                        </NavLink>
-
-                        <NavLink href="/reports/post-closing-trial-balance"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Post-Closing TB
-                        </NavLink>
-
-                        <NavLink href="/reports/cash-flow"
-                                 class="report-link"
-                                 @onclick="CloseFlyout">
-                            Cash Flow
-                        </NavLink>
-
-                    </div>
-
-                </div>
-            }
 
         </div>
     </Authorized>
