@@ -1,38 +1,9 @@
 @using Microsoft.AspNetCore.Components.Authorization
 
-<script>
-    window.triggerSyncProcess = function(isSuccess = true, queueTimeMs = 10000) {
-        const syncBtn = document.getElementById('syncBtn');
-        const syncIcon = document.getElementById('syncIcon');
-
-        if (!syncBtn || !syncIcon) return;
-
-        syncBtn.classList.remove('text-info', 'text-danger', 'text-success', 'text-secondary');
-        syncBtn.style.color = '#d97706';
-        syncBtn.title = "Syncing: In queue (10 seconds)...";
-        syncIcon.className = "bi bi-arrow-repeat icon-spin"; 
-
-        setTimeout(() => {
-            syncIcon.classList.remove('icon-spin');
-            syncBtn.style.color = '';
-
-            if (isSuccess) {
-                syncBtn.classList.add('text-info');
-                syncBtn.title = "Sync: Saved to Database";
-                syncIcon.className = "bi bi-cloud-check";
-            } else {
-                syncBtn.classList.add('text-danger');
-                syncBtn.title = "Sync: Error saving data!";
-                syncIcon.className = "bi bi-cloud-slash";
-            }
-        }, queueTimeMs);
-    };
-</script>
-
-<header class="navbar navbar-expand topbar-solid py-2 sticky-top position-relative" style="min-height: 56px;">
+<header class="navbar navbar-expand topbar-header py-2 sticky-top position-relative">
     <div class="container-xxl px-3 d-flex align-items-center justify-content-between h-100 position-relative">
         
-        <!-- CENTER SECTION: QURAN VERSE (Posisikan Absolut Presisi di Tengah) -->
+        <!-- CENTER SECTION: QURAN VERSE -->
         <div class="d-none d-md-flex flex-column align-items-center justify-content-center quran-center-wrapper text-center">
             <QuranVerse />
         </div>
@@ -42,18 +13,18 @@
             <AuthorizeView>
                 <Authorized>
                     <button class="btn btn-sm topbar-btn text-secondary p-1 px-2 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" aria-label="Search">
-                        <i class="bi bi-search" style="font-size: 0.825rem;"></i>
-                        <span class="d-none d-lg-inline text-muted small" style="font-size: 0.725rem;">Command + K</span>
+                        <i class="bi bi-search search-icon"></i>
+                        <span class="d-none d-lg-inline text-muted small cmd-shortcut">Command + K</span>
                     </button>
                 </Authorized>
             </AuthorizeView>
 
             <div class="dropdown">
                 <button class="btn btn-sm topbar-btn text-secondary p-1 border-0 shadow-none lh-1" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More Options">
-                    <i class="bi bi-three-dots-vertical" style="font-size: 0.875rem;"></i>
+                    <i class="bi bi-three-dots-vertical menu-icon"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-secondary border-opacity-25" style="font-size: 0.8rem; min-width: 150px;">
-                    <li><h6 class="dropdown-header py-1 text-uppercase tracking-wider" style="font-size: 0.65rem;">Theme Interface</h6></li>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg">
+                    <li><h6 class="dropdown-header py-1 text-uppercase">Theme Interface</h6></li>
                     <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('dark')"><i class="bi bi-moon-stars-fill text-warning"></i> Dark Nebula</button></li>
                     <li><button type="button" class="dropdown-item py-1 d-flex align-items-center gap-2" onclick="setAppTheme('light')"><i class="bi bi-sun-fill text-warning"></i> Light Minimal</button></li>
                 </ul>
@@ -64,19 +35,19 @@
 
 <AuthorizeView>
     <Authorized>
-        <div class="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap" style="min-height: 30px; font-size: 0.75rem;">
+        <div class="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap">
             <div class="dropdown">
                 <button class="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-2 dropdown-toggle shadow-none status-badge" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi @iconClass"></i>
                     <span class="text-body fw-semibold @(!hasActivePeriod ? "text-danger" : "")">@periodText</span>
                     @if (isViewingClosed)
                     {
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace" style="font-size: 0.65rem;">LOCKED</span>
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace badge-locked">LOCKED</span>
                     }
                 </button>
                 
-                <ul class="dropdown-menu shadow-lg border-secondary border-opacity-25 mt-1" style="font-size: 0.75rem; min-width: 190px;">
-                    <li><h6 class="dropdown-header py-1 text-uppercase" style="font-size: 0.65rem;">Accounting Period</h6></li>
+                <ul class="dropdown-menu shadow-lg mt-1">
+                    <li><h6 class="dropdown-header py-1 text-uppercase">Accounting Period</h6></li>
                     <li>
                         <NavLink class="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2" href="/periods/create">
                             <i class="bi bi-plus-circle"></i> Open New Period
@@ -101,18 +72,18 @@
 
             <span class="text-secondary opacity-25">|</span>
 
-            <div class="d-flex align-items-center gap-2 fs-8 font-monospace">
+            <div class="d-flex align-items-center gap-2 font-monospace">
                 <button class="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" title="Guardian Security: Protected & Active" aria-label="Guardian Status">
                     <span class="pulse-dot-green me-1"></span>
-                    <i class="bi bi-shield-check" style="font-size: 0.825rem;"></i>
-                    <span class="d-none d-sm-inline text-muted" style="font-size: 0.7rem;">PROTECTED</span>
+                    <i class="bi bi-shield-check search-icon"></i>
+                    <span class="d-none d-sm-inline text-muted status-text">PROTECTED</span>
                 </button>
 
                 <span class="text-secondary opacity-25">/</span>
 
                 <button id="syncBtn" class="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1 d-flex align-items-center gap-1" type="button" title="Sync: Up to date" aria-label="Sync Status">
-                    <i id="syncIcon" class="bi bi-cloud-check" style="font-size: 0.825rem;"></i>
-                    <span class="d-none d-sm-inline text-muted" style="font-size: 0.7rem;">SYNCED</span>
+                    <i id="syncIcon" class="bi bi-cloud-check search-icon"></i>
+                    <span class="d-none d-sm-inline text-muted status-text">SYNCED</span>
                 </button>
             </div>
         </div>
@@ -123,7 +94,7 @@
     <Authorized>
         <div class="modal fade" id="searchModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-top modal-md mt-5">
-                <div class="modal-content topbar-solid border border-secondary border-opacity-25 shadow-lg">
+                <div class="modal-content shadow-lg">
                     <div class="modal-body p-3">
                         <div class="input-group">
                             <span class="input-group-text bg-transparent border-0 text-warning"><i class="bi bi-search"></i></span>
