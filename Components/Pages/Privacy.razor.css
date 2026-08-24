@@ -1,0 +1,46 @@
+<style>
+    .legal-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem 0;
+    }
+
+    .legal-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+    }
+
+    .legal-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        color: #ffffff;
+    }
+
+    .legal-subtitle {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.5);
+        margin-bottom: 2rem;
+    }
+
+    .legal-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .legal-section h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-section p {
+        font-size: 0.9rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+    }
+</style>
