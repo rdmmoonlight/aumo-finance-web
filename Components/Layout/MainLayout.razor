@@ -3,7 +3,7 @@
 
 <!-- ==========================================
      Aumo Finance - Main Layout
-     Cosmic / Nebula Theme
+     Aumo Theme
      ========================================== -->
 
 <div class="aumo-main-shell">
@@ -21,9 +21,18 @@
         <!-- SIDEBAR (Sticky di sebelah kiri) -->
         <AumoFinance.Components.Layout.Sidebar />
 
-        <!-- MAIN CONTENT AREA (Hapus margin-left: 60px dan overflow-auto) -->
+        <!-- MAIN CONTENT AREA -->
         <main id="mainContent" class="content" role="main">
             @Body
+
+            <!-- FOOTER -->
+            <footer class="aumo-footer">
+                <p>
+                    <a href="/privacy">Privacy</a> | 
+                    <a href="/security">Security</a>
+                </p>
+                <p>© rdmmoonlight. All rights reserved.</p>
+            </footer>
         </main>
 
     </div>
@@ -38,7 +47,6 @@
     .aumo-main-shell {
         display: flex;
         flex-direction: column;
-
         min-height: 100vh;
         min-width: 0;
     }
@@ -46,7 +54,6 @@
     .aumo-body-row {
         display: flex;
         flex: 1 1 auto;
-
         position: relative;
     }
 
@@ -54,19 +61,43 @@
         display: flex;
         flex-direction: column;
         flex: 1 1 auto;
-
         padding: 0.5rem 1rem;
-
         transition: background-color 0.3s ease;
     }
 
-    @@media (min-width: 768px) {
+    /* FOOTER STYLING */
+    .aumo-footer {
+        margin-top: auto; /* Otomatis mendorong footer ke dasar halaman jika konten sedikit */
+        padding-top: 2rem;
+        padding-bottom: 1rem;
+        text-align: center;
+        font-size: 0.75rem; /* 12px */
+        color: rgba(255, 255, 255, 0.5); /* Menyesuaikan tema Cosmic/Nebula */
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .aumo-footer a {
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .aumo-footer a:hover {
+        color: #ffffff;
+        text-decoration: underline;
+    }
+
+    .aumo-footer p {
+        margin-bottom: 0.25rem;
+    }
+
+    @media (min-width: 768px) {
         .content {
             padding: 1rem 1.5rem;
         }
     }
 
-    @@media (max-width: 767.98px) {
+    @media (max-width: 767.98px) {
         #mainContent {
             padding: 0.75rem 0.5rem !important;
         }
