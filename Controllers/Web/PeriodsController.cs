@@ -33,7 +33,7 @@ public class PeriodsController : ControllerBase
     public async Task<IActionResult> GetPeriods()
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var periods = await _db.Periods
@@ -66,7 +66,7 @@ public class PeriodsController : ControllerBase
     public async Task<IActionResult> GetOpenPeriodInfo()
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var accounts = await _db.ChartOfAccounts
@@ -106,7 +106,7 @@ public class PeriodsController : ControllerBase
     public async Task<IActionResult> CreatePeriod([FromBody] CreateWebPeriodRequest request)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         if (request.Month < 1 || request.Month > 12)
@@ -269,7 +269,7 @@ public class PeriodsController : ControllerBase
     public async Task<IActionResult> SelectPeriod(int id)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var entity = await _db.Periods.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
@@ -292,7 +292,7 @@ public class PeriodsController : ControllerBase
     public async Task<IActionResult> ClearSelection()
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         await SelectedPeriodHelper.ClearSelectionAsync(_db, userId);
@@ -311,7 +311,7 @@ public class PeriodsController : ControllerBase
     public async Task<IActionResult> ClosePeriod(int id)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var entity = await _db.Periods.FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
@@ -339,7 +339,7 @@ public class PeriodsController : ControllerBase
 
     private Guid GetCurrentUserId()
     {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) 
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? User.FindFirstValue("sub");
 
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
