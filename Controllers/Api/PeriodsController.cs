@@ -60,10 +60,10 @@ public class PeriodsController : ControllerBase
     // ==========================================
     // 2. GET: /api/mobile/periods/open-info (Reference data for the Open
     //    New Period screen — tells the client whether this is the very
-    //    first period (belum ada periode yang pernah dibuat/ditutup, jadi
-    //    belum ada akun permanen) or a later period (sudah ada akun
-    //    permanen dari periode sebelumnya, tinggal lanjutkan saldonya).
-    //    Mirrors OpenPeriodPage.razor's PopulateReferenceDataAsync.
+    //    first period (belum ada periode & akun permanen sama sekali) or a
+    //    later period. Untuk kondisi kedua, langsung hitung & tampilkan
+    //    saldo carry-forward akun permanen dari periode SEBELUMNYA — tidak
+    //    ada lagi pemilihan akun manual oleh user.
     // ==========================================
     [HttpGet("open-info")]
     public async Task<IActionResult> GetOpenPeriodInfo()
@@ -71,47 +71,87 @@ public class PeriodsController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized();
 
-        var accounts = await _db.ChartOfAccounts
-            .Where(a => a.IsActive && a.UserId == userId)
-            .OrderBy(a => a.ReferenceNumber)
-            .ToListAsync();
-
-        var permanentAccounts = accounts
-            .Where(a => a.Type == "Assets" || a.Type == "Liabilities" || a.Type == "Equity")
-            .Select(a => new { a.Id, a.ReferenceNumber, a.AccountName, a.Type, a.DisplayLabel })
-            .ToList();
-
-        var availableCashAndBank = accounts.Where(a => a.Role == "CashAndEquivalents")
-            .Select(a => new { a.Id, a.ReferenceNumber, a.AccountName, a.DisplayLabel })
-            .ToList();
-
-        var availableRetainedEarnings = accounts.Where(a => a.Role == "RetainedEarnings")
-            .Select(a => new { a.Id, a.ReferenceNumber, a.AccountName, a.DisplayLabel })
-            .ToList();
-
-        var hasExistingPermanentAccounts = availableCashAndBank.Any() && availableRetainedEarnings.Any();
+        var carryForwardAccounts = await GetCarryForwardAccountsAsync(userId);
 
         return Ok(new
         {
             success = true,
-            // false = belum pernah ada periode ditutup -> wajib daftar akun baru.
-            // true  = sudah ada periode yang ditutup sebelumnya -> tinggal lanjutkan akun lama.
-            hasExistingPermanentAccounts,
-            availableCashAndBankAccounts = availableCashAndBank,
-            availableRetainedEarningsAccounts = availableRetainedEarnings,
-            permanentAccounts
+            // false = belum pernah ada periode sama sekali -> wajib daftar akun baru.
+            // true  = sudah ada periode sebelumnya -> tampilkan akun permanennya, lanjutkan saldonya.
+            hasExistingPermanentAccounts = carryForwardAccounts.Count > 0,
+            carryForwardAccounts
         });
+    }
+
+    // Akun permanen (Assets/Liabilities/Equity) beserta saldo carry-forward-nya,
+    // dihitung dari periode paling akhir yang sudah ada milik user ini — bukan
+    // dari seluruh riwayat, karena tiap periode memang dibukukan terpisah
+    // (persis seperti ChartOfAccountsController.GetAccounts menghitung saldo
+    // akun hanya dari EntryDate dalam rentang periode yang sedang dipilih).
+    private async Task<List<CarryForwardAccount>> GetCarryForwardAccountsAsync(Guid userId)
+    {
+        var previousPeriod = await _db.Periods
+            .Where(p => p.UserId == userId)
+            .OrderByDescending(p => p.StartDate)
+            .FirstOrDefaultAsync();
+
+        if (previousPeriod == null) return new List<CarryForwardAccount>();
+
+        var permanentAccounts = await _db.ChartOfAccounts
+            .Where(a => a.UserId == userId && a.IsActive
+                     && (a.Type == "Assets" || a.Type == "Liabilities" || a.Type == "Equity"))
+            .OrderBy(a => a.ReferenceNumber)
+            .ToListAsync();
+
+        if (permanentAccounts.Count == 0) return new List<CarryForwardAccount>();
+
+        var accountIds = permanentAccounts.Select(a => a.Id).ToList();
+
+        var totals = await _db.JournalEntryLines
+            .Where(j => accountIds.Contains(j.AccountId)
+                     && j.JournalEntry != null
+                     && j.JournalEntry.EntryDate >= previousPeriod.StartDate
+                     && j.JournalEntry.EntryDate <= previousPeriod.EndDate)
+            .GroupBy(j => j.AccountId)
+            .Select(g => new { AccountId = g.Key, TotalDebit = g.Sum(j => j.Debit), TotalCredit = g.Sum(j => j.Credit) })
+            .ToDictionaryAsync(x => x.AccountId);
+
+        var result = new List<CarryForwardAccount>();
+        foreach (var account in permanentAccounts)
+        {
+            decimal balance = 0;
+            if (totals.TryGetValue(account.Id, out var t))
+            {
+                // Sama persis dengan ChartOfAccountsController.GetAccounts:
+                // positif = sisi normal akun itu (Debit utk Assets, Credit utk Liabilities/Equity).
+                balance = AccountClassification.NormalBalanceIsDebit(account.Type)
+                    ? t.TotalDebit - t.TotalCredit
+                    : t.TotalCredit - t.TotalDebit;
+            }
+
+            result.Add(new CarryForwardAccount
+            {
+                Id = account.Id,
+                ReferenceNumber = account.ReferenceNumber,
+                AccountName = account.AccountName,
+                Type = account.Type,
+                Balance = balance
+            });
+        }
+
+        return result;
     }
 
     // ==========================================
     // 3. POST: /api/mobile/periods/create (Open New Period)
-    //    Mirrors OpenPeriodPage.razor's HandleSubmit exactly:
-    //    - SetupMode = "CreateNew": dipakai saat belum ada periode yang
-    //      pernah ditutup (belum ada akun permanen) -> daftarkan akun
-    //      Cash/Bank/Retained Earnings baru + posting jurnal saldo awal.
-    //    - SetupMode = "LoadExisting": dipakai saat sudah ada periode yang
-    //      pernah ditutup (akun permanen sudah ada) -> lanjutkan akun lama,
-    //      saldo otomatis nyambung dari ledger, tanpa jurnal saldo awal.
+    //    - SetupMode = "CreateNew": dipakai saat belum ada periode sama
+    //      sekali -> daftarkan akun Cash/Bank/Retained Earnings baru +
+    //      posting jurnal saldo awal dari input user.
+    //    - SetupMode = "LoadExisting": dipakai saat sudah ada periode
+    //      sebelumnya -> ambil SEMUA akun permanen + saldo carry-forward
+    //      dari periode sebelumnya (dihitung ulang di server, bukan dari
+    //      client), lalu posting sebagai jurnal "Opening Balance" di
+    //      periode baru — debit/kredit mengikuti sisi normal tiap akun.
     // ==========================================
     [HttpPost("create")]
     public async Task<IActionResult> CreatePeriod([FromBody] CreatePeriodRequest request)
@@ -135,15 +175,7 @@ public class PeriodsController : ControllerBase
 
         var isLoadExisting = request.SetupMode == CreatePeriodRequest.ModeLoadExisting;
 
-        if (isLoadExisting)
-        {
-            if (request.CashAccountId == null || request.BankAccountId == null || request.RetainedEarningsAccountId == null)
-                return BadRequest(new { success = false, message = "Please select the Cash, Bank, and Retained Earnings accounts to carry forward." });
-
-            if (request.CashAccountId == request.BankAccountId)
-                return BadRequest(new { success = false, message = "Cash Account and Bank Account cannot be the same account." });
-        }
-        else
+        if (!isLoadExisting)
         {
             if (string.IsNullOrWhiteSpace(request.CashAccountCode) || string.IsNullOrWhiteSpace(request.CashAccountName) ||
                 string.IsNullOrWhiteSpace(request.BankAccountCode) || string.IsNullOrWhiteSpace(request.BankAccountName) ||
@@ -159,14 +191,13 @@ public class PeriodsController : ControllerBase
         {
             if (isLoadExisting)
             {
-                var cashAccount = await _db.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == request.CashAccountId && a.UserId == userId);
-                var bankAccount = await _db.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == request.BankAccountId && a.UserId == userId);
-                var retainedAccount = await _db.ChartOfAccounts.FirstOrDefaultAsync(a => a.Id == request.RetainedEarningsAccountId && a.UserId == userId);
-
-                if (cashAccount == null || bankAccount == null || retainedAccount == null)
+                // Dihitung ulang di server (bukan menerima saldo dari client)
+                // supaya tidak bisa dipalsukan / basi.
+                var carryForwardAccounts = await GetCarryForwardAccountsAsync(userId);
+                if (carryForwardAccounts.Count == 0)
                 {
                     await transaction.RollbackAsync();
-                    return BadRequest(new { success = false, message = "One or more selected accounts could not be found." });
+                    return BadRequest(new { success = false, message = "No permanent accounts found from a previous period to carry forward." });
                 }
 
                 var newPeriod = new Period
@@ -179,12 +210,67 @@ public class PeriodsController : ControllerBase
                 };
                 _db.Periods.Add(newPeriod);
                 await _db.SaveChangesAsync();
+
+                var nonZeroAccounts = carryForwardAccounts.Where(a => a.Balance != 0).ToList();
+
+                // Hanya posting jurnal kalau ada saldo yang perlu dibawa. Kalau
+                // SEMUA akun permanen bersaldo nol (kasus jarang), periode baru
+                // tetap terbuka tanpa jurnal Opening Balance.
+                if (nonZeroAccounts.Count > 0)
+                {
+                    var transactionNumber = await _txNumberService.GenerateAsync(userId, "General", startDate);
+
+                    var journalEntry = new JournalEntry
+                    {
+                        UserId = userId,
+                        TransactionNumber = transactionNumber,
+                        JournalType = "General",
+                        EntryDate = startDate,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _db.JournalEntries.Add(journalEntry);
+                    await _db.SaveChangesAsync();
+
+                    var lines = new List<JournalEntryLine>();
+                    int order = 0;
+                    foreach (var account in nonZeroAccounts)
+                    {
+                        var isDebitNormal = AccountClassification.NormalBalanceIsDebit(account.Type);
+                        decimal debit = 0, credit = 0;
+
+                        // account.Balance positif = sisi normal akun itu (lihat
+                        // GetCarryForwardAccountsAsync). Negatif berarti saldo
+                        // terbalik dari sisi normalnya (mis. bank overdraft).
+                        if (account.Balance >= 0)
+                        {
+                            if (isDebitNormal) debit = account.Balance; else credit = account.Balance;
+                        }
+                        else
+                        {
+                            if (isDebitNormal) credit = -account.Balance; else debit = -account.Balance;
+                        }
+
+                        lines.Add(new JournalEntryLine
+                        {
+                            JournalEntryId = journalEntry.Id,
+                            AccountId = account.Id,
+                            Debit = debit,
+                            Credit = credit,
+                            LineDescription = "Opening Balance",
+                            LineOrder = order++
+                        });
+                    }
+
+                    _db.JournalEntryLines.AddRange(lines);
+                    await _db.SaveChangesAsync();
+                }
+
                 await transaction.CommitAsync();
 
                 return Ok(new
                 {
                     success = true,
-                    message = $"Period {newPeriod.PeriodName} has been opened successfully. Balances carry forward from the ledger.",
+                    message = $"Period {newPeriod.PeriodName} has been opened successfully. Opening balances carried forward from the previous period.",
                     periodId = newPeriod.Id
                 });
             }
@@ -355,6 +441,15 @@ public class PeriodsController : ControllerBase
     }
 }
 
+public class CarryForwardAccount
+{
+    public int Id { get; set; }
+    public int ReferenceNumber { get; set; }
+    public string AccountName { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public decimal Balance { get; set; }
+}
+
 public class CreatePeriodRequest
 {
     public const string ModeLoadExisting = "LoadExisting";
@@ -363,15 +458,11 @@ public class CreatePeriodRequest
     public int Month { get; set; }
     public int Year { get; set; }
 
-    // "LoadExisting" (sudah ada periode yang pernah ditutup -> akun permanen
-    // sudah ada) atau "CreateNew" (belum ada periode yang pernah ditutup ->
-    // akun permanen belum ada, harus didaftarkan).
+    // "LoadExisting" (sudah ada periode sebelumnya -> akun permanen +
+    // saldo carry-forward dihitung otomatis di server) atau "CreateNew"
+    // (belum ada periode sama sekali -> akun permanen belum ada, harus
+    // didaftarkan manual beserta saldo awalnya).
     public string SetupMode { get; set; } = ModeLoadExisting;
-
-    // --- MODE: LoadExisting ---
-    public int? CashAccountId { get; set; }
-    public int? BankAccountId { get; set; }
-    public int? RetainedEarningsAccountId { get; set; }
 
     // --- MODE: CreateNew ---
     public string? CashAccountCode { get; set; }
