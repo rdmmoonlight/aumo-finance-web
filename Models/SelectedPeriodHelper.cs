@@ -57,24 +57,41 @@ namespace AumoFinance.Models
 
         public static async Task SelectPeriodAsync(AppDbContext db, Guid userId, int periodId)
         {
+            // PENTING: harus DUA langkah SaveChangesAsync terpisah, bukan
+            // digabung jadi satu batch. Kolom IsSelected dijaga oleh unique
+            // partial index di database (maksimum satu TRUE per user, index
+            // tidak deferrable) — kalau "set target=true" dan "clear yang
+            // lama=false" dikirim dalam satu batch yang sama, EF Core tidak
+            // menjamin urutan statement UPDATE-nya. Kalau UPDATE ...=true
+            // sempat dieksekusi Postgres SEBELUM UPDATE ...=false untuk baris
+            // lama committed, unique index langsung menolak (violation) dan
+            // SELURUH SaveChangesAsync di-rollback — sehingga pemilihan
+            // periode baru gagal total dan diam-diam kembali ke periode lama.
+
+            // Langkah 1: lepas tanda selected dari SEMUA periode lain milik
+            // user ini dulu, dan commit sendiri.
             var currentlySelected = await db.Periods
-                .Where(p => p.UserId == userId && p.IsSelected)
+                .Where(p => p.UserId == userId && p.IsSelected && p.Id != periodId)
                 .ToListAsync();
 
-            foreach (var p in currentlySelected)
+            if (currentlySelected.Count > 0)
             {
-                p.IsSelected = false;
+                foreach (var p in currentlySelected)
+                {
+                    p.IsSelected = false;
+                }
+                await db.SaveChangesAsync();
             }
 
+            // Langkah 2: baru tandai periode target sebagai selected.
             var target = await db.Periods
                 .FirstOrDefaultAsync(p => p.Id == periodId && p.UserId == userId);
 
-            if (target != null)
+            if (target != null && !target.IsSelected)
             {
                 target.IsSelected = true;
+                await db.SaveChangesAsync();
             }
-
-            await db.SaveChangesAsync();
         }
 
         public static async Task ClearSelectionAsync(AppDbContext db, Guid userId)
