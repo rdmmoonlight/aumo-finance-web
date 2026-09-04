@@ -49,9 +49,9 @@ public class AuthController : ControllerBase
 
         // Melakukan Sign-in berbasis Cookie (IsPersistent sesuai dengan RememberMe)
         var result = await _signInManager.PasswordSignInAsync(
-            user.UserName ?? user.Email!, 
-            request.Password, 
-            isPersistent: request.RememberMe, 
+            user.UserName ?? user.Email!,
+            request.Password,
+            isPersistent: request.RememberMe,
             lockoutOnFailure: false);
 
         if (!result.Succeeded)
@@ -95,7 +95,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> GetProfile()
     {
         var user = await _userManager.GetUserAsync(User);
-        if (user == null) 
+        if (user == null)
             return NotFound(new { success = false, message = "User session active, but user not found." });
 
         return Ok(new
