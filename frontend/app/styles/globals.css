@@ -1,0 +1,580 @@
+/* =========================================================
+   AUMO FINANCE — COSMIC / NEBULA THEME & GLOBAL STYLES
+   Bootstrap 5 compatible | Dark + Light mode
+   ========================================================= */
+
+/* src/app/globals.css */
+@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
+
+/* =========================================================
+   1. TOKENS & VARIABLES CONFIGURATION
+   ========================================================= */
+
+:root,
+[data-bs-theme="dark"] {
+    --bs-body-bg: #0D1117;
+    --bs-body-bg-rgb: 13, 17, 23;
+    --bs-body-color: #F8FAFC;
+    --bs-body-color-rgb: 248, 250, 252;
+    --bs-secondary-bg: #161B22;
+    --bs-tertiary-bg: #1C222B;
+    --bs-emphasis-color: #FFFFFF;
+    --bs-secondary-color: #CBD5E1;
+    --bs-tertiary-color: #94A3B8;
+    --bs-border-color: #2A313C;
+
+    --bs-primary: #3B82F6;
+    --bs-secondary: #7C3AED;
+    --bs-success: #22C55E;
+    --bs-warning: #F59E0B;
+    --bs-danger: #EF4444;
+    --bs-info: #00C2FF;
+
+    --bs-link-color: #60A5FA;
+    --bs-link-hover-color: #00C2FF;
+
+    --aumo-bg: #0D1117;
+    --aumo-surface: #161B22;
+    --aumo-surface-raised: #1C222B;
+    --aumo-surface-hover: #222934;
+    --aumo-primary: #3B82F6;
+    --aumo-secondary: #7C3AED;
+    --aumo-accent: #00C2FF;
+    --aumo-success: #22C55E;
+    --aumo-warning: #F59E0B;
+    --aumo-error: #EF4444;
+    --aumo-text: #F8FAFC;
+    --aumo-text-strong: #FFFFFF;
+    --aumo-text-muted: #94A3B8;
+    --aumo-border: #2A313C;
+    --aumo-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    --aumo-shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.35);
+
+    --font-heading: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+}
+
+[data-bs-theme="light"] {
+    --bs-body-bg: #F8FAFC;
+    --bs-body-bg-rgb: 248, 250, 252;
+    --bs-body-color: #0F172A;
+    --bs-body-color-rgb: 15, 23, 42;
+    --bs-secondary-bg: #F1F5F9;
+    --bs-tertiary-bg: #FFFFFF;
+    --bs-emphasis-color: #020617;
+    --bs-secondary-color: #475569;
+    --bs-tertiary-color: #64748B;
+    --bs-border-color: #E2E8F0;
+
+    --bs-primary: #2563EB;
+    --bs-secondary: #6D28D9;
+    --bs-success: #16A34A;
+    --bs-warning: #D97706;
+    --bs-danger: #DC2626;
+    --bs-info: #0891B2;
+
+    --bs-link-color: #2563EB;
+    --bs-link-hover-color: #0891B2;
+
+    --aumo-bg: #F8FAFC;
+    --aumo-surface: #FFFFFF;
+    --aumo-surface-raised: #FFFFFF;
+    --aumo-surface-hover: #F1F5F9;
+    --aumo-primary: #2563EB;
+    --aumo-secondary: #6D28D9;
+    --aumo-accent: #0891B2;
+    --aumo-success: #16A34A;
+    --aumo-warning: #D97706;
+    --aumo-error: #DC2626;
+    --aumo-text: #0F172A;
+    --aumo-text-strong: #020617;
+    --aumo-text-muted: #64748B;
+    --aumo-border: #E2E8F0;
+    --aumo-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    --aumo-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.12);
+
+    --font-heading: "Space Grotesk", sans-serif;
+    --font-body: "Inter", sans-serif;
+}
+
+
+/* =========================================================
+   2. HTML & BODY & APPLICATION ROOT
+   ========================================================= */
+
+html {
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+    background-color: var(--aumo-bg);
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+body {
+    margin: 0;
+    margin-bottom: 60px;
+    min-height: 100vh;
+    font-family: var(--font-body);
+    background-color: var(--aumo-bg) !important;
+    color: var(--aumo-text) !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#app {
+    min-height: 100vh;
+    background-color: var(--aumo-bg) !important;
+    color: var(--aumo-text) !important;
+}
+
+
+/* =========================================================
+   3. FOCUS STATES & ACCESSIBILITY
+   ========================================================= */
+
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    box-shadow:
+        0 0 0 0.1rem var(--aumo-bg),
+        0 0 0 0.25rem var(--aumo-primary);
+}
+
+
+/* =========================================================
+   4. FORM FLOATING PLACEHOLDERS
+   ========================================================= */
+
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+
+/* =========================================================
+   5. AUMO FINANCE CUSTOM COMPONENTS & CARDS
+   ========================================================= */
+
+.card.glass-card {
+    background-color: var(--aumo-surface) !important;
+    color: var(--aumo-text) !important;
+    border-color: var(--aumo-border) !important;
+    box-shadow: var(--aumo-shadow);
+}
+
+.card.glass-card h1,
+.card.glass-card h2,
+.card.glass-card h3,
+.card.glass-card h4,
+.card.glass-card h5,
+.card.glass-card h6 {
+    color: var(--aumo-text-strong) !important;
+}
+
+.card.glass-card .text-secondary,
+.card.glass-card .fs-8 {
+    color: var(--aumo-text-muted) !important;
+}
+
+.card.glass-card table thead th {
+    color: var(--aumo-text-muted) !important;
+}
+
+.card.glass-card table tbody td {
+    color: var(--aumo-text) !important;
+}
+
+.health-circle .text-body {
+    color: var(--aumo-text-strong) !important;
+}
+
+
+/* =========================================================
+   6. ANIMATION - PULSE DOT
+   ========================================================= */
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--aumo-success);
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px var(--aumo-success);
+}
+
+
+/* =========================================================
+   7. SIDEBAR & FLYOUT NAVIGATION
+   ========================================================= */
+
+.sidebar-wrapper {
+    position: relative;
+    height: 100vh;
+    z-index: 1040;
+}
+
+.sidebar-icons {
+    width: 60px;
+    min-width: 60px;
+    height: 100%;
+    background-color: var(--aumo-bg) !important;
+    border-right: 1px solid var(--aumo-border);
+    z-index: 1045;
+}
+
+.sidebar-icons .icon-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: var(--aumo-text-muted);
+    transition:
+        background-color 0.2s ease-in-out,
+        color 0.2s ease-in-out,
+        transform 0.2s ease-in-out;
+}
+
+.sidebar-icons .icon-btn:hover,
+.sidebar-icons .icon-btn.active {
+    background-color: rgba(255, 255, 255, 0.10);
+    color: var(--aumo-accent) !important;
+}
+
+.sidebar-flyout {
+    position: absolute;
+    top: 0;
+    left: 60px;
+    height: 100vh;
+    width: 280px;
+    z-index: 1040;
+    background-color: var(--aumo-surface) !important;
+    border-left: 1px solid var(--aumo-border);
+    border-right: 1px solid var(--aumo-border);
+    color: var(--aumo-text) !important;
+    box-shadow: var(--aumo-shadow-lg);
+    overflow-y: auto;
+    transition:
+        opacity 0.2s ease-in-out,
+        transform 0.2s ease-in-out;
+}
+
+.sidebar-flyout .list-group-item {
+    background-color: transparent !important;
+    border-color: var(--aumo-border) !important;
+    color: var(--aumo-text) !important;
+    transition:
+        background-color 0.15s ease-in-out,
+        color 0.15s ease-in-out;
+}
+
+.sidebar-flyout .list-group-item:hover,
+.sidebar-flyout .list-group-item.active {
+    background-color: rgba(255, 255, 255, 0.10) !important;
+    color: var(--aumo-accent) !important;
+}
+
+
+/* =========================================================
+   8. THEME-SPECIFIC ADJUSTMENTS (DARK vs LIGHT)
+   ========================================================= */
+
+[data-bs-theme="dark"] body,
+[data-bs-theme="dark"] #app {
+    background-color: #0D1117 !important;
+    color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .sidebar-icons {
+    background-color: #0D1117 !important;
+    border-color: #2A313C !important;
+}
+
+[data-bs-theme="dark"] .sidebar-flyout {
+    background-color: #161B22 !important;
+    border-color: #2A313C !important;
+}
+
+[data-bs-theme="light"] body,
+[data-bs-theme="light"] #app {
+    background-color: #F8FAFC !important;
+    color: #0F172A !important;
+}
+
+[data-bs-theme="light"] .sidebar-icons {
+    background-color: #F8FAFC !important;
+    border-color: #E2E8F0 !important;
+}
+
+[data-bs-theme="light"] .sidebar-flyout {
+    background-color: #FFFFFF !important;
+    border-color: #E2E8F0 !important;
+}
+
+[data-bs-theme="light"] .sidebar-icons .icon-btn:hover,
+[data-bs-theme="light"] .sidebar-icons .icon-btn.active {
+    background-color: rgba(15, 23, 42, 0.08);
+    color: var(--aumo-primary) !important;
+}
+
+[data-bs-theme="light"] .sidebar-flyout .list-group-item:hover,
+[data-bs-theme="light"] .sidebar-flyout .list-group-item.active {
+    background-color: rgba(15, 23, 42, 0.08) !important;
+    color: var(--aumo-primary) !important;
+}
+
+/* ==========================================
+   Aumo Finance - Futuristic Sidebar Theme
+   Cosmic / Enterprise Command Style
+   ========================================== */
+
+/* 1. FLOATING CONTAINER SHELL */
+.sidebar-wrapper {
+    position: relative;
+    z-index: 1040;
+    padding: 10px 0 10px 10px;
+    height: 100vh;
+}
+
+/* 2. MAIN ICON DOCK (60px) */
+.sidebar-icons {
+    width: 60px;
+    min-width: 60px;
+    height: calc(100vh - 20px) !important;
+    background: rgba(13, 17, 23, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 1045;
+    transition: all 0.3s ease;
+}
+
+[data-bs-theme="light"] .sidebar-icons {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+/* 3. ICON BUTTONS & LASER ACTIVE STATE */
+.sidebar-icons .icon-btn {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.6) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.sidebar-icons .icon-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+/* Laser Neon Accent pada Menu Aktif */
+.sidebar-icons .icon-btn.active {
+    background: rgba(245, 158, 11, 0.12) !important;
+    color: #f59e0b !important;
+}
+
+.sidebar-icons .icon-btn.active::before {
+    content: '';
+    position: absolute;
+    left: -9px;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    background: #f59e0b;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 0 10px #f59e0b;
+}
+
+[data-bs-theme="light"] .sidebar-icons .icon-btn {
+    color: rgba(15, 23, 42, 0.6) !important;
+}
+
+[data-bs-theme="light"] .sidebar-icons .icon-btn:hover {
+    background: rgba(15, 23, 42, 0.06);
+    color: #0f172a !important;
+}
+
+/* 4. HOLOGRAM FLYOUT PANEL (REPORTS) */
+.sidebar-flyout {
+    position: absolute;
+    top: 10px;
+    left: 78px;
+    height: calc(100vh - 20px) !important;
+    width: 270px;
+    z-index: 1040;
+    background: rgba(15, 23, 42, 0.90) !important;
+    background-image: radial-gradient(circle at top left, rgba(245, 158, 11, 0.08), transparent 45%) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px;
+    color: #ffffff !important;
+    box-shadow: 16px 0 40px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    animation: flyoutSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes flyoutSlide {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+[data-bs-theme="light"] .sidebar-flyout {
+    background: rgba(255, 255, 255, 0.92) !important;
+    background-image: radial-gradient(circle at top left, rgba(217, 119, 6, 0.06), transparent 45%) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    color: #0f172a !important;
+    box-shadow: 16px 0 40px rgba(0, 0, 0, 0.08);
+}
+
+/* 5. FLYOUT ITEMS & HOVER EFFECT */
+.sidebar-flyout .list-group-item {
+    background-color: transparent !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.sidebar-flyout .list-group-item:hover,
+.sidebar-flyout .list-group-item.active {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f59e0b !important;
+    padding-left: 1.25rem !important;
+}
+
+[data-bs-theme="light"] .sidebar-flyout .list-group-item {
+    color: rgba(15, 23, 42, 0.75) !important;
+}
+
+[data-bs-theme="light"] .sidebar-flyout .list-group-item:hover,
+[data-bs-theme="light"] .sidebar-flyout .list-group-item.active {
+    background-color: rgba(15, 23, 42, 0.05) !important;
+    color: #d97706 !important;
+}
+
+/* 6. SCROLLBAR STYLING FOR FLYOUT */
+.sidebar-flyout::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar-flyout::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.sidebar-flyout::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Solid TopBar Background (Dengan !important tegas untuk menimpa Bootstrap) */
+.topbar-solid {
+    background-color: #0f172a !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-bs-theme="light"] .topbar-solid {
+    background-color: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Sub-bar Status Strip */
+.status-strip {
+    background-color: #0a0f1c !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-bs-theme="light"] .status-strip {
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Container Quran Verse Rapi & Terpusat Simetris */
+.quran-center-wrapper {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 650px;
+    width: 100%;
+    pointer-events: auto;
+}
+
+/* Glowing Status Badge */
+.status-badge {
+    font-family: 'Space Grotesk', monospace;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease;
+}
+
+/* Live Pulsing Dot Indicator */
+.pulse-dot-green {
+    width: 6px;
+    height: 6px;
+    background-color: #10b981;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Sync Spin Animation */
+.icon-spin {
+    display: inline-block;
+    animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Smooth Hover Buttons */
+.topbar-btn {
+    transition: all 0.2s ease;
+    border-radius: 6px;
+}
+.topbar-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f59e0b !important;
+}

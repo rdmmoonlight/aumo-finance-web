@@ -1,0 +1,102 @@
+.marketCard {
+  position: relative;
+  max-width: 720px;
+  background: rgba(18, 24, 38, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.marketCard:hover {
+  border-color: rgba(56, 189, 248, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(14, 165, 233, 0.15);
+}
+
+.styleLabel {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.styleValue {
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.indicatorDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dotUp {
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.dotDown {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+}
+
+.dotInfo {
+  background-color: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+}
+
+.badgeFuturistic {
+  font-size: 0.675rem;
+  font-weight: 600;
+  padding: 0.25em 0.5em;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.badgeUp {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.badgeDown {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.textGlow {
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+}
+
+.textInfoGlow {
+  color: #38bdf8;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.spinnerGlow {
+  filter: drop-shadow(0 0 6px #0ea5e9);
+}
+
+@media (min-width: 768px) {
+  .borderEndFuturistic {
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .borderEndFuturistic {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.75rem;
+  }
+}

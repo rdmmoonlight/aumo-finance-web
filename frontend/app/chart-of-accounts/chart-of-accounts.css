@@ -1,0 +1,36 @@
+/* ============================================================================
+ * CHART OF ACCOUNTS CUSTOM STYLES
+ * ============================================================================ */
+
+/* Header & Table Enhancements */
+.coa-table-card {
+  border-radius: 1rem;
+  overflow: hidden;
+  background-color: var(--bs-body-bg);
+}
+
+.coa-table code {
+  font-family: var(--bs-font-monospace);
+  font-size: 0.85rem;
+  padding: 0.2rem 0.4rem;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+
+.coa-table tbody tr {
+  transition: background-color 0.15s ease-in-out;
+}
+
+.coa-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Modal Enhancements */
+.coa-modal .modal-content {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.coa-modal .form-text {
+  font-size: 0.75rem;
+}
