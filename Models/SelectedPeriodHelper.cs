@@ -9,14 +9,36 @@ namespace AumoFinance.Models
     {
         public static async Task<Period?> GetSelectedPeriodAsync(AppDbContext db, Guid userId)
         {
-            // 1. Prioritas utama: periode yang sedang di-view manual (IsSelected)
-            var selected = await db.Periods
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.UserId == userId && p.IsSelected);
+            // 1. Prioritas utama: periode yang sedang di-view manual (IsSelected).
+            //    Ambil SEMUA baris yang bertanda selected (bukan cuma satu) supaya
+            //    kita bisa mendeteksi & memperbaiki sendiri kalau ada lebih dari
+            //    satu baris IsSelected=true untuk user yang sama — kondisi yang
+            //    seharusnya dicegah oleh unique index IX_Periods_IsSelected_Unique,
+            //    tapi index itu migration manual (lihat
+            //    manual-neon-run-selected-period.sql) sehingga tidak dijamin
+            //    benar-benar sudah dijalankan di database.
+            var selectedRows = await db.Periods
+                .Where(p => p.UserId == userId && p.IsSelected)
+                .OrderByDescending(p => p.StartDate)
+                .ToListAsync();
 
-            if (selected != null)
+            if (selectedRows.Count > 0)
             {
-                return selected;
+                var mostRecent = selectedRows[0];
+
+                if (selectedRows.Count > 1)
+                {
+                    // Data tidak konsisten (lebih dari satu baris selected) —
+                    // perbaiki sendiri: simpan hanya yang StartDate paling baru,
+                    // lepas tanda selected dari sisanya.
+                    foreach (var stale in selectedRows.Skip(1))
+                    {
+                        stale.IsSelected = false;
+                    }
+                    await db.SaveChangesAsync();
+                }
+
+                return mostRecent;
             }
 
             // 2. Fallback: periode aktif berjalan
