@@ -30,7 +30,7 @@ public class DashboardWebController : ControllerBase
     public async Task<IActionResult> GetDashboardData()
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         // 1. Ambil periode yang sedang dipilih
@@ -132,7 +132,7 @@ public class DashboardWebController : ControllerBase
 
     private Guid GetCurrentUserId()
     {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) 
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? User.FindFirstValue("sub");
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
     }

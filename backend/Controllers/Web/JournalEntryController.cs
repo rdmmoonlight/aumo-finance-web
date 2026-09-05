@@ -32,7 +32,7 @@ public class JournalEntryWebController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var entry = await _db.JournalEntries
@@ -80,7 +80,7 @@ public class JournalEntryWebController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateJournalEntryWebRequest request)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var effectiveLines = request.Lines
@@ -161,7 +161,7 @@ public class JournalEntryWebController : ControllerBase
     public async Task<IActionResult> Edit(int id, [FromBody] UpdateJournalEntryWebRequest request)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var entry = await _db.JournalEntries
@@ -244,7 +244,7 @@ public class JournalEntryWebController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var entry = await _db.JournalEntries
@@ -286,7 +286,7 @@ public class JournalEntryWebController : ControllerBase
         }
 
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         var keyword = q.Trim();
@@ -313,7 +313,7 @@ public class JournalEntryWebController : ControllerBase
     public async Task<IActionResult> GetNextTransactionNumber([FromQuery] string journalType = "General", [FromQuery] DateTime? entryDate = null)
     {
         var userId = GetCurrentUserId();
-        if (userId == Guid.Empty) 
+        if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
         string type = string.IsNullOrWhiteSpace(journalType) ? "General" : journalType;
@@ -325,7 +325,7 @@ public class JournalEntryWebController : ControllerBase
 
     private Guid GetCurrentUserId()
     {
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier) 
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? User.FindFirstValue("sub");
 
         return Guid.TryParse(userIdStr, out Guid userId) ? userId : Guid.Empty;
