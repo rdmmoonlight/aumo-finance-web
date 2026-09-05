@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-namespace AumoFinance; // CS0436 Fix: Mencegah bentrokan namespace global dengan proyek lain
+namespace AumoBackend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,14 +28,13 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Database connection string 'DefaultConnection' or 'DATABASE_URL' is missing.");
 }
 
-// Mendaftarkan DbContext sekaligus DbContextFactory secara efisien
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
-builder.Services.AddScoped<AppDbContext>(sp =>
+builder.Services.AddScoped<AppDbContext>(sp => 
     sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
@@ -65,16 +64,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "AumoFinance.Session";
     options.Cookie.HttpOnly = true;
-
-    // PENTING: SameSite=None dan SecurePolicy=Always wajib aktif agar Cookie 
-    // dapat dikirim pada Cross-Origin/Cross-Domain requests (e.g., Frontend Vercel -> Backend Render)
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
 
-    // Untuk API Web: Jangan redirect ke HTML, kembalikan HTTP 401/403
     options.Events.OnRedirectToLogin = context =>
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
@@ -104,7 +98,6 @@ if (string.IsNullOrWhiteSpace(jwtSigningKey))
 
 var authBuilder = builder.Services.AddAuthentication(options =>
 {
-    // Default Scheme menggunakan Identity Cookie (Web App)
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
     options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
     options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
@@ -126,7 +119,6 @@ var authBuilder = builder.Services.AddAuthentication(options =>
     };
 });
 
-// --- GOOGLE OAUTH CONFIGURATION ---
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
     ?? builder.Configuration["Google:ClientId"]
     ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
@@ -181,7 +173,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS: Membaca FRONTEND_URL + Localhost + Vercel
 var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")?.TrimEnd('/');
 
 var originsList = new List<string>
@@ -189,7 +180,7 @@ var originsList = new List<string>
     "http://localhost:3000",
     "http://localhost:5000",
     "https://localhost:7000",
-    "https://my-authentic-web.vercel.app" // Domain produksi Vercel
+    "https://my-authentic-web.vercel.app"
 };
 
 if (!string.IsNullOrWhiteSpace(frontendUrl))
@@ -206,7 +197,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials(); // Mandatori untuk mendukung Cookie Session
+              .AllowCredentials();
     });
 });
 
@@ -216,7 +207,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddHealthChecks();
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
-// --- EMAIL SERVICES REGISTRATION (RESEND API) ---
 builder.Services.AddTransient<ResendEmailSender>();
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, IdentityEmailSenderBridge>();
 
@@ -292,7 +282,6 @@ else
         }
         catch (Exception ex)
         {
-            // DI AMBIL DARI REQUEST SERVICES (Thread-safe)
             var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogError(ex, "Unhandled exception on {Path}", context.Request.Path);
 
@@ -313,7 +302,6 @@ else
 
 app.UseRouting();
 
-// CORS wajib sebelum Authentication & Authorization
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
@@ -322,7 +310,6 @@ app.UseAuthorization();
 // =====================================
 // 10. ENDPOINTS & MAP CONTROLLERS
 // =====================================
-// Root Route (Mencegah Log Status 404 pada Render Ping Root)
 app.MapGet("/", () => Results.Ok(new
 {
     service = "AumoFinance Web & Mobile API",
