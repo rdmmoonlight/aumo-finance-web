@@ -65,7 +65,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "AumoFinance.Session";
     options.Cookie.HttpOnly = true;
-    
+
     // PENTING: SameSite=None dan SecurePolicy=Always wajib aktif agar Cookie 
     // dapat dikirim pada Cross-Origin/Cross-Domain requests (e.g., Frontend Vercel -> Backend Render)
     options.Cookie.SameSite = SameSiteMode.None;
@@ -90,11 +90,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 // =====================================
 // 4. AUTHENTICATION (Cookie, JWT & OAuth)
 // =====================================
-var jwtSigningKey = builder.Configuration["JWT_SIGNING_KEY"] 
+var jwtSigningKey = builder.Configuration["JWT_SIGNING_KEY"]
     ?? Environment.GetEnvironmentVariable("JWT_SIGNING_KEY");
 
-var jwtIssuer = builder.Configuration["JWT_ISSUER"] 
-    ?? Environment.GetEnvironmentVariable("JWT_ISSUER") 
+var jwtIssuer = builder.Configuration["JWT_ISSUER"]
+    ?? Environment.GetEnvironmentVariable("JWT_ISSUER")
     ?? "AumoFinanceApp";
 
 if (string.IsNullOrWhiteSpace(jwtSigningKey))
@@ -127,12 +127,12 @@ var authBuilder = builder.Services.AddAuthentication(options =>
 });
 
 // --- GOOGLE OAUTH CONFIGURATION ---
-var googleClientId = builder.Configuration["Authentication:Google:ClientId"] 
-    ?? builder.Configuration["Google:ClientId"] 
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
+    ?? builder.Configuration["Google:ClientId"]
     ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
 
-var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] 
-    ?? builder.Configuration["Google:ClientSecret"] 
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+    ?? builder.Configuration["Google:ClientSecret"]
     ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
 if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
@@ -184,10 +184,10 @@ builder.Services.AddSwaggerGen(options =>
 // CORS: Membaca FRONTEND_URL + Localhost + Vercel
 var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")?.TrimEnd('/');
 
-var originsList = new List<string> 
-{ 
-    "http://localhost:3000", 
-    "http://localhost:5000", 
+var originsList = new List<string>
+{
+    "http://localhost:3000",
+    "http://localhost:5000",
     "https://localhost:7000",
     "https://my-authentic-web.vercel.app" // Domain produksi Vercel
 };
