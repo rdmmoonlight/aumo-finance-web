@@ -96,9 +96,9 @@ public class ToolsWebController : ControllerBase
                 // If Year & Month properties do not exist in Period, align them 
                 // with the date properties in your Period model (e.g., StartDate)
                 // -------------------------------------------------------------
-                var period = await _context.Periods.FirstOrDefaultAsync(p => 
-                    p.UserId == userId && 
-                    p.StartDate.Year == txDate.Year && 
+                var period = await _context.Periods.FirstOrDefaultAsync(p =>
+                    p.UserId == userId &&
+                    p.StartDate.Year == txDate.Year &&
                     p.StartDate.Month == txDate.Month
                 );
 
@@ -122,8 +122,8 @@ public class ToolsWebController : ControllerBase
                 string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                 string counterKey = $"{prefix}{txDate:yyMM}";
 
-                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c => 
-                    c.UserId == userId && 
+                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
+                    c.UserId == userId &&
                     c.CounterKey == counterKey
                 );
 
@@ -168,8 +168,8 @@ public class ToolsWebController : ControllerBase
                 {
                     string refStr = lineDto.RefNumber.ToString();
 
-                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c => 
-                        c.UserId == userId && 
+                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c =>
+                        c.UserId == userId &&
                         c.ReferenceNumber == refStr
                     );
 
