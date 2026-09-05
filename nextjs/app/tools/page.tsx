@@ -228,8 +228,9 @@ export default function ToolsPage() {
         throw new Error(result.message || 'Failed to save data to database.');
       }
 
+      const reallocInfo = result.reallocatedCount ? ` (${result.reallocatedCount} entries reallocated to master COA)` : '';
       setSuccessMessage(
-        `Successfully imported ${parseResult.totalTransactionsRead} journal entries for period ${targetMonth}/${targetYear}. (${result.createdCoaCount || 0} new COA created)`
+        `Successfully imported ${parseResult.totalTransactionsRead} journal entries for period ${targetMonth}/${targetYear}.${reallocInfo}`
       );
 
       if ((window as any).aumoModal) {
@@ -380,6 +381,10 @@ export default function ToolsPage() {
                   <span className="badge bg-secondary text-white fw-normal">Debit</span>
                   <span className="badge bg-secondary text-white fw-normal">Credit</span>
                 </div>
+                <ul className="text-white fw-normal small mb-3 ps-3">
+                  <li>2 Worksheets: <strong>GJ</strong> (General Journal) and <strong>AJ</strong> (Adjusting Journal).</li>
+                  <li><strong>Ref</strong> and <strong>Account Name</strong> will be automatically mapped to standard Chart of Accounts in the system.</li>
+                </ul>
                 <button type="button" className="btn btn-sm btn-outline-light text-white fw-normal rounded-3" onClick={handleDownloadTemplate}>
                   <i className="bi bi-download me-1"></i> Download Template (.xlsx)
                 </button>
