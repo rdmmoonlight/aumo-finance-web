@@ -40,14 +40,15 @@ export default function ToolsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState<boolean>(false);
 
-  const [reallocations, setReallocations] = useState<ReallocationDetail[]>([]);
-
+  // Periode State
   const now = new Date();
   const [targetMonth, setTargetMonth] = useState<number>(now.getMonth() + 1);
   const [targetYear, setTargetYear] = useState<number>(now.getFullYear());
 
+  // Import State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<JournalImportResult | null>(null);
+  const [reallocations, setReallocations] = useState<ReallocationDetail[]>([]);
 
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -180,7 +181,7 @@ export default function ToolsPage() {
         throw new Error('No valid transaction entries found in GJ or AJ sheets.');
       }
 
-      // KIRIM KE BACKEND UNTUK EVALUASI CUSTODY & PELIMPAHAN AKUN
+      // Evaluasi Pelimpahan COA via Backend API
       const previewRes = await fetch('/web/tools/preview-journal-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -204,7 +205,7 @@ export default function ToolsPage() {
       const previewData = await previewRes.json();
 
       if (!previewRes.ok) {
-        throw new Error(previewData.message || 'Failed to generate import preview.');
+        throw new Error(previewData.message || 'Failed to generate preview.');
       }
 
       if (previewData.reallocations && previewData.reallocations.length > 0) {
@@ -218,10 +219,6 @@ export default function ToolsPage() {
         warnings: [],
         transactions: previewData.transactions || parsedTransactions,
       });
-
-      if ((window as any).aumoModal) {
-        (window as any).aumoModal.show('indexPreviewModal');
-      }
     } catch (err: any) {
       setErrorMessage(`Failed to process file: ${err.message || 'Unknown error'}`);
     } finally {
@@ -269,12 +266,9 @@ export default function ToolsPage() {
         `Successfully imported ${parseResult.totalTransactionsRead} journal entries for period ${targetMonth}/${targetYear}.`
       );
 
-      if ((window as any).aumoModal) {
-        (window as any).aumoModal.hide('indexPreviewModal');
-      }
-
       setParseResult(null);
       setSelectedFile(null);
+      setReallocations([]);
     } catch (err: any) {
       setErrorMessage(`Failed to save entries: ${err.message}`);
     } finally {
@@ -358,26 +352,24 @@ export default function ToolsPage() {
         </div>
       )}
 
+      {/* SPLIT SCREEN LAYOUT */}
       <div className="row g-4">
-        <div className="col-12 col-xl-8 mx-auto">
-          <div className="card glass-card border-0 shadow-sm rounded-4 h-100">
+        {/* PANEL KIRI: FORM KONTROL & SUMMARY PELIMPAHAN */}
+        <div className="col-12 col-lg-5 col-xl-4">
+          <div className="card glass-card border-0 shadow-sm rounded-4 mb-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 pt-4 pb-3 px-4">
               <h5 className="fw-bold text-white mb-0">
                 <i className="bi bi-file-earmark-spreadsheet me-2 text-white"></i> Import Journal Entries
               </h5>
             </div>
-            <div className="card-body px-4 py-4 d-flex flex-column">
-              <p className="text-white fw-normal small mb-4">
-                Upload batch journal entries using standard <code>.xlsx</code> format. Target period will be created automatically if not existing.
-              </p>
-
-              {/* Target Period */}
+            <div className="card-body px-4 py-4">
+              {/* Target Import Period */}
               <div className="bg-body-tertiary rounded-3 p-3 mb-4 border border-secondary border-opacity-25">
                 <label className="form-label fw-bold small text-white d-block mb-2">
                   <i className="bi bi-calendar3 me-1"></i> Target Import Period
                 </label>
                 <div className="row g-2">
-                  <div className="col-12 col-md-6">
+                  <div className="col-6">
                     <select
                       className="form-select bg-dark text-white border-secondary small"
                       value={targetMonth}
@@ -390,7 +382,7 @@ export default function ToolsPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-12 col-md-6">
+                  <div className="col-6">
                     <select
                       className="form-select bg-dark text-white border-secondary small"
                       value={targetYear}
@@ -406,184 +398,189 @@ export default function ToolsPage() {
                 </div>
               </div>
 
-              {/* Template Info */}
-              <div className="bg-body-tertiary rounded-3 p-3 mb-4 border border-secondary border-opacity-25">
-                <span className="d-block fw-bold small mb-2 text-white">Required Columns (Row 1 Header):</span>
-                <div className="d-flex flex-wrap gap-2 mb-3">
-                  <span className="badge bg-secondary text-white fw-normal">Date</span>
-                  <span className="badge bg-secondary text-white fw-normal">Account Name</span>
-                  <span className="badge bg-secondary text-white fw-normal">Description</span>
-                  <span className="badge bg-secondary text-white fw-normal">Ref</span>
-                  <span className="badge bg-secondary text-white fw-normal">Debit</span>
-                  <span className="badge bg-secondary text-white fw-normal">Credit</span>
-                </div>
-                <ul className="text-white fw-normal small mb-3 ps-3">
-                  <li>2 Worksheets: <strong>GJ</strong> (General Journal) and <strong>AJ</strong> (Adjusting Journal).</li>
-                  <li><strong>Ref</strong> and <strong>Account Name</strong> will be automatically mapped to standard Chart of Accounts in the system.</li>
-                </ul>
-                <button type="button" className="btn btn-sm btn-outline-light text-white fw-normal rounded-3" onClick={handleDownloadTemplate}>
-                  <i className="bi bi-download me-1"></i> Download Template (.xlsx)
-                </button>
-              </div>
-
-              {/* Upload Form */}
-              <div className="mb-3 mt-auto">
+              {/* Upload Input & Template */}
+              <div className="mb-3">
                 <label className="form-label fw-bold small text-white">Select Excel File (.xlsx)</label>
                 <input
                   type="file"
-                  className="form-control bg-body-tertiary text-white border-secondary fw-normal"
+                  className="form-control bg-body-tertiary text-white border-secondary fw-normal mb-2"
                   accept=".xlsx"
                   onChange={handleFileSelected}
                 />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-link text-white-50 text-decoration-none p-0 fw-normal small"
+                  onClick={handleDownloadTemplate}
+                >
+                  <i className="bi bi-download me-1"></i> Download Excel Template (.xlsx)
+                </button>
               </div>
-              <button
-                type="button"
-                className="btn btn-primary px-4 fw-bold shadow-sm w-100 rounded-3 text-white"
-                disabled={!selectedFile || isBusy}
-                onClick={handlePreview}
-              >
-                {isBusy ? (
-                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                ) : (
-                  <i className="bi bi-eye me-2"></i>
+
+              {/* Buttons Action */}
+              <div className="d-grid gap-2 mt-4">
+                <button
+                  type="button"
+                  className="btn btn-primary fw-bold rounded-3 text-white shadow-sm"
+                  disabled={!selectedFile || isBusy}
+                  onClick={handlePreview}
+                >
+                  {isBusy ? (
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                  ) : (
+                    <i className="bi bi-eye me-2"></i>
+                  )}
+                  Preview Entries
+                </button>
+
+                {parseResult && (
+                  <button
+                    type="button"
+                    className="btn btn-success fw-bold rounded-3 text-white shadow-sm"
+                    disabled={isBusy}
+                    onClick={handleConfirmImport}
+                  >
+                    <i className="bi bi-check2-all me-1"></i> Submit & Import Data
+                  </button>
                 )}
-                Preview Entries
-              </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* INSTANT PREVIEW MODAL */}
-      <div className="modal fade" id="indexPreviewModal" tabIndex={-1} aria-labelledby="indexPreviewModalLabel" aria-hidden="true">
-        <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-          <div className="modal-content rounded-4 border-0 shadow bg-dark text-white border border-secondary border-opacity-25" style={{ fontFamily: "'Aptos', 'Aptos Display', system-ui, sans-serif" }}>
-            <div className="modal-header border-bottom border-secondary border-opacity-25 px-4 py-3">
-              <div>
-                <h5 className="modal-title fw-bold mb-0 text-white" id="indexPreviewModalLabel">
-                  <i className="bi bi-file-earmark-check me-2 text-white"></i> Journal Entries Preview
-                </h5>
-                <small className="text-white fw-normal">
-                  Target Period: {monthOptions.find(m => m.value === targetMonth)?.label} {targetYear}
-                </small>
+          {/* SUMMARY INFO CARD */}
+          {parseResult && (
+            <div className="card border-0 glass-card rounded-4 shadow-sm mb-4">
+              <div className="card-body p-4">
+                <h6 className="fw-bold text-white mb-3">
+                  <i className="bi bi-bar-chart-line me-2"></i> Import Metadata Summary
+                </h6>
+                <div className="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2 mb-2 small">
+                  <span className="text-secondary">Total Transactions:</span>
+                  <strong className="text-white">{parseResult.totalTransactionsRead} Entries</strong>
+                </div>
+                <div className="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2 mb-2 small">
+                  <span className="text-secondary">Total Lines Read:</span>
+                  <strong className="text-white">{parseResult.totalLinesRead} Lines</strong>
+                </div>
+                <div className="d-flex justify-content-between small">
+                  <span className="text-secondary">Target Period:</span>
+                  <strong className="text-info">
+                    {monthOptions.find((m) => m.value === targetMonth)?.label} {targetYear}
+                  </strong>
+                </div>
               </div>
-              <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+          )}
 
-            <div className="modal-body p-4 text-white">
-              {/* DIALOG RINGKASAN PELIMPAHAN AKUN DI DALAM MODAL PREVIEW */}
-              {reallocations.length > 0 && (
-                <div className="card border-warning bg-dark text-white rounded-3 shadow-sm mb-4">
-                  <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-2 px-3">
-                    <h6 className="fw-bold mb-0 text-warning small">
-                      <i className="bi bi-exclamation-triangle me-2"></i> Account Reallocation Notice ({reallocations.length} items adjusted)
-                    </h6>
+          {/* TABEL SUMMARY PELIMPAHAN AKUN (DI KIRI) */}
+          {reallocations.length > 0 && (
+            <div className="card border-warning bg-dark text-white rounded-4 shadow-sm">
+              <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-3 px-4">
+                <h6 className="fw-bold mb-0 text-warning small">
+                  <i className="bi bi-arrow-left-right me-2"></i> Account Reallocations ({reallocations.length})
+                </h6>
+              </div>
+              <div className="card-body p-0">
+                <div className="table-responsive" style={{ maxHeight: '350px' }}>
+                  <table className="table table-dark table-hover mb-0 align-middle extra-small style-table" style={{ fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr className="text-secondary">
+                        <th>Original Excel</th>
+                        <th>Mapped Master COA</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reallocations.map((r, i) => (
+                        <tr key={i}>
+                          <td>
+                            <span className="badge bg-secondary me-1">{r.excelRef}</span>
+                            <span className="text-white-50">{r.excelAccountName}</span>
+                          </td>
+                          <td>
+                            <span className="badge bg-primary me-1">{r.mappedRef}</span>
+                            <strong className="text-white">{r.mappedAccountName}</strong>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (SCROLLABLE SIDE) */}
+        <div className="col-12 col-lg-7 col-xl-8">
+          {parseResult ? (
+            <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <h6 className="fw-bold text-white mb-0">
+                  <i className="bi bi-journal-text me-2"></i> Preview Transactions Stream
+                </h6>
+                <span className="badge bg-info text-dark fw-bold">
+                  {parseResult.transactions.length} Transactions Loaded
+                </span>
+              </div>
+
+              {parseResult.transactions.map((tx, txIndex) => (
+                <div key={txIndex} className="card border border-secondary border-opacity-25 rounded-3 shadow-sm bg-body-tertiary text-white">
+                  <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-2 px-3">
+                    <span className="badge bg-primary text-white fw-normal">{tx.journalType} Journal</span>
+                    <strong className="text-white fw-bold"><i className="bi bi-calendar-event me-1"></i> Date: {tx.date}</strong>
                   </div>
-                  <div className="card-body p-0">
-                    <div className="table-responsive">
-                      <table className="table table-dark table-hover mb-0 align-middle extra-small style-table" style={{ fontSize: '0.825rem' }}>
-                        <thead>
-                          <tr className="text-secondary">
-                            <th>Original Excel Data</th>
-                            <th className="text-center" style={{ width: '40px' }}><i className="bi bi-arrow-right"></i></th>
-                            <th>Master COA Application</th>
-                            <th>Mapping Reason</th>
+                  <div className="table-responsive">
+                    <table className="table table-dark table-hover table-striped mb-0 align-middle small text-white">
+                      <thead>
+                        <tr className="text-white fw-bold">
+                          <th style={{ width: '40px' }} className="text-center">#</th>
+                          <th style={{ width: '80px' }} className="text-center">Ref</th>
+                          <th>Account Name</th>
+                          <th>Description</th>
+                          <th style={{ width: '130px' }} className="text-end">Debit</th>
+                          <th style={{ width: '130px' }} className="text-end">Credit</th>
+                        </tr>
+                      </thead>
+                      <tbody className="fw-normal text-white">
+                        {tx.lines.map((line, lineIndex) => (
+                          <tr key={lineIndex} className="text-white">
+                            <td className="text-center text-white-50">{line.rowIndex}</td>
+                            <td className="text-center fw-bold text-white">{line.refNumber}</td>
+                            <td className="text-white">{line.accountName}</td>
+                            <td className="text-white-50">{line.description}</td>
+                            <td className="text-end fw-bold text-white">
+                              {line.debit !== null ? formatIDR(line.debit) : '-'}
+                            </td>
+                            <td className="text-end fw-bold text-white">
+                              {line.credit !== null ? formatIDR(line.credit) : '-'}
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {reallocations.map((r, i) => (
-                            <tr key={i}>
-                              <td>
-                                <span className="badge bg-secondary me-1">{r.excelRef}</span>
-                                <span className="text-white-50">{r.excelAccountName}</span>
-                              </td>
-                              <td className="text-center text-warning"><i className="bi bi-arrow-right-short fs-5"></i></td>
-                              <td>
-                                <span className="badge bg-primary me-1">{r.mappedRef}</span>
-                                <strong className="text-white">{r.mappedAccountName}</strong>
-                              </td>
-                              <td className="text-white-50">{r.reason}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                        ))}
+                      </tbody>
+                      <tfoot className="table-group-divider fw-bold text-white">
+                        <tr>
+                          <td colSpan={4} className="text-end text-white">Total Amount:</td>
+                          <td className="text-end text-white">
+                            {formatIDR(tx.lines.reduce((acc, l) => acc + (l.debit || 0), 0))}
+                          </td>
+                          <td className="text-end text-white">
+                            {formatIDR(tx.lines.reduce((acc, l) => acc + (l.credit || 0), 0))}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 </div>
-              )}
-
-              {parseResult && (
-                <>
-                  {parseResult.transactions.map((tx, txIndex) => (
-                    <div key={txIndex} className="card border border-secondary border-opacity-25 mb-3 rounded-3 shadow-sm bg-body-tertiary text-white">
-                      <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-2 px-3">
-                        <span className="badge bg-primary text-white fw-normal">{tx.journalType} Journal</span>
-                        <strong className="text-white fw-bold"><i className="bi bi-calendar-event me-1"></i> Date: {tx.date}</strong>
-                      </div>
-                      <div className="table-responsive">
-                        <table className="table table-dark table-hover table-striped mb-0 align-middle small text-white">
-                          <thead>
-                            <tr className="text-white fw-bold">
-                              <th style={{ width: '50px' }} className="text-center">#</th>
-                              <th style={{ width: '100px' }} className="text-center">Ref</th>
-                              <th>Account Name</th>
-                              <th>Description</th>
-                              <th style={{ width: '150px' }} className="text-end">Debit</th>
-                              <th style={{ width: '150px' }} className="text-end">Credit</th>
-                            </tr>
-                          </thead>
-                          <tbody className="fw-normal text-white">
-                            {tx.lines.map((line, lineIndex) => (
-                              <tr key={lineIndex} className="text-white">
-                                <td className="text-center text-white">{line.rowIndex}</td>
-                                <td className="text-center fw-bold text-white">{line.refNumber}</td>
-                                <td className="text-white">{line.accountName}</td>
-                                <td className="text-white">{line.description}</td>
-                                <td className="text-end fw-bold text-white">
-                                  {line.debit !== null ? formatIDR(line.debit) : '-'}
-                                </td>
-                                <td className="text-end fw-bold text-white">
-                                  {line.credit !== null ? formatIDR(line.credit) : '-'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                          <tfoot className="table-group-divider fw-bold text-white">
-                            <tr>
-                              <td colSpan={4} className="text-end text-white">Total Amount:</td>
-                              <td className="text-end text-white">
-                                {formatIDR(tx.lines.reduce((acc, l) => acc + (l.debit || 0), 0))}
-                              </td>
-                              <td className="text-end text-white">
-                                {formatIDR(tx.lines.reduce((acc, l) => acc + (l.credit || 0), 0))}
-                              </td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
+              ))}
             </div>
-
-            <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-3">
-              <button type="button" className="btn btn-outline-light text-white rounded-3 fw-normal" data-bs-dismiss="modal">Cancel</button>
-              <button
-                type="button"
-                className="btn btn-success rounded-3 px-4 fw-bold shadow-sm text-white"
-                disabled={!parseResult || parseResult.transactions.length === 0 || isBusy}
-                onClick={handleConfirmImport}
-              >
-                {isBusy ? (
-                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                ) : (
-                  <i className="bi bi-check2-all me-1"></i>
-                )}
-                Import Data
-              </button>
+          ) : (
+            <div className="card glass-card border-0 rounded-4 shadow-sm h-100 d-flex align-items-center justify-content-center p-5 text-center text-secondary">
+              <div>
+                <i className="bi bi-file-earmark-arrow-up display-3 d-block mb-3 opacity-50"></i>
+                <h6 className="fw-bold text-white mb-2">No Preview Generated Yet</h6>
+                <p className="small mb-0 text-white-50">Select an Excel file on the left panel and click <strong>Preview Entries</strong> to inspect data before importing.</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
