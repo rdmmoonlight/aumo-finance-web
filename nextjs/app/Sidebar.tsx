@@ -6,7 +6,7 @@ import {
   IconHome,
   IconLayoutGrid,
   IconRobot,
-  IconBookPlus,
+  IconBook2,
   IconFolder,
   IconSitemap,
   IconCalendarEvent,
@@ -84,7 +84,7 @@ export default function Sidebar({
                 title="Journal Entry"
                 onClick={closeFlyout}
               >
-                <IconBookPlus size={22} />
+                <IconBook2 size={22} />
               </Link>
             </li>
 
