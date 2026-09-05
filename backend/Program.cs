@@ -34,7 +34,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
-builder.Services.AddScoped<AppDbContext>(sp => 
+builder.Services.AddScoped<AppDbContext>(sp =>
     sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
