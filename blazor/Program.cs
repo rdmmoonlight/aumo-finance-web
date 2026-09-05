@@ -12,49 +12,44 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
-var builder = WebApplication.CreateBuilder(args);
+namespace AumoFinance; // CS0436 Fix: Mencegah bentrokan namespace global dengan proyek/assembly lain
 
+var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
 // 1. DATABASE CONFIGURATION (PostgreSQL)
 // =====================================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Database connection string 'DefaultConnection' or 'DATABASE_URL' is missing.");
+}
 
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    );
-
+    options.UseNpgsql(connectionString);
     options.ConfigureWarnings(w =>
-        w.Ignore(
-            Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId
-                .PendingModelChangesWarning
-        )
-    );
+        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
 builder.Services.AddScoped(sp =>
-    sp.GetRequiredService<IDbContextFactory<AppDbContext>>()
-        .CreateDbContext());
-
+    sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
 // 2. DATA PROTECTION & PERSISTENCE
 // =====================================
-
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>()
     .SetApplicationName("AumoFinanceApp");
 
-
 // =====================================
 // 3. ASP.NET CORE IDENTITY SETUP
 // =====================================
-
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
-
     options.Password.RequiredLength = 6;
     options.Password.RequireDigit = false;
     options.Password.RequireNonAlphanumeric = false;
@@ -65,21 +60,17 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 .AddDefaultTokenProviders()
 .AddClaimsPrincipalFactory<AumoUserClaimsPrincipalFactory>();
 
-
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/auth/login";
     options.AccessDeniedPath = "/auth/login";
-
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.SlidingExpiration = true;
 });
 
-
 // =====================================
 // 4. AUTHENTICATION (Cookie, JWT & OAuth)
 // =====================================
-
 var authBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -93,23 +84,22 @@ var authBuilder = builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-
         ValidIssuer = AuthController.JwtIssuer,
         ValidAudience = AuthController.JwtIssuer,
-
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(AuthController.JwtSecretKey)
         )
     };
 });
 
-
 // --- GOOGLE OAUTH CONFIGURATION ---
 var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
-    ?? builder.Configuration["Google:ClientId"];
+    ?? builder.Configuration["Google:ClientId"]
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
 
 var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
-    ?? builder.Configuration["Google:ClientSecret"];
+    ?? builder.Configuration["Google:ClientSecret"]
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
 if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
 {
@@ -121,11 +111,9 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
     });
 }
 
-
 // =====================================
 // 5. BLAZOR CORE & API CONTROLLERS
 // =====================================
-
 builder.Services.AddControllers();
 
 builder.Services.AddRazorComponents()
@@ -133,20 +121,14 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddCascadingAuthenticationState();
 
-
 // =====================================
 // 6. APPLICATION SERVICES & HEALTH CHECKS
 // =====================================
-
 builder.Services.AddHealthChecks();
-
-// Render Keep-Alive Service
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
 // --- EMAIL SERVICES REGISTRATION (RESEND API) ---
 builder.Services.AddTransient<IEmailSender, ResendEmailSender>();
-
-// Bridging Microsoft Identity's IEmailSender<TUser> to AumoFinance's IEmailSender
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, IdentityEmailSenderBridge>();
 
 builder.Services.AddScoped<IGuardianService, GuardianService>();
@@ -165,13 +147,10 @@ builder.Services.AddHttpClient("MarketApiClient", client =>
 });
 
 builder.Services.AddScoped<IMarketService, MarketService>();
-builder.Services.AddHttpClient();
-
 
 // =====================================
 // 7. FORWARDED HEADERS (Render / Reverse Proxy)
 // =====================================
-
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -179,22 +158,17 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-
 // =====================================
 // BUILD APPLICATION
 // =====================================
-
 var app = builder.Build();
-
 
 // =====================================
 // 8. AUTOMATIC DATABASE MIGRATION
 // =====================================
-
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
@@ -207,11 +181,9 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-
 // =====================================
 // 9. HTTP PIPELINE MIDDLEWARE
 // =====================================
-
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -222,14 +194,6 @@ else
 {
     app.UseHsts();
 
-    // Sebelumnya production tidak punya exception handler sama sekali,
-    // jadi error tak tertangani di controller (mis. kolom/tabel belum
-    // dimigrasikan) menghasilkan body 500 KOSONG. Mobile/web yang
-    // mem-parse body itu sebagai JSON lalu crash dengan
-    // "JsonException: ExpectedJsonTokens ... LineNumber: 0" — pesan yang
-    // membingungkan dan menyembunyikan error aslinya. Middleware ini
-    // memastikan setiap 500 tak tertangani tetap mengirim JSON yang bisa
-    // dibaca, plus tercatat di log server untuk didiagnosis.
     app.Use(async (context, next) =>
     {
         try
@@ -238,7 +202,8 @@ else
         }
         catch (Exception ex)
         {
-            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            // Perbaikan: Mengambil logger dari context.RequestServices (Thread-Safe per Request Scope)
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogError(ex, "Unhandled exception on {Path}", context.Request.Path);
 
             if (!context.Response.HasStarted)
@@ -257,20 +222,14 @@ else
 }
 
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAntiforgery();
-
 app.UseAuthentication();
-
 app.UseAuthorization();
-
 
 // =====================================
 // 10. ENDPOINTS & MAP CONTROLLERS
 // =====================================
-
 app.MapHealthChecks("/health");
 
 app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
@@ -284,22 +243,14 @@ app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-
 // =====================================
 // 11. RUN APPLICATION
 // =====================================
-
 app.Run();
-
 
 // =====================================
 // 12. IDENTITY EMAIL SENDER BRIDGE CLASS
 // =====================================
-
-/// <summary>
-/// Bridge class to map Microsoft Identity's IEmailSender&lt;ApplicationUser&gt; 
-/// to AumoFinance's custom IEmailSender service.
-/// </summary>
 public class IdentityEmailSenderBridge : IEmailSender<ApplicationUser>
 {
     private readonly IEmailSender _emailSender;
