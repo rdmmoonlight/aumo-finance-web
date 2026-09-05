@@ -1,25 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 
 interface SidebarProps {
   pathname: string;
-  showReportsFlyout: boolean;
   currentUserEmail: string;
-  toggleReportsFlyout: () => void;
-  closeFlyout: () => void;
   handleSignOut: () => void;
+  showReportsFlyout?: boolean;
+  toggleReportsFlyout?: () => void;
+  closeFlyout?: () => void;
 }
 
 export default function Sidebar({
   pathname,
-  showReportsFlyout,
   currentUserEmail,
-  toggleReportsFlyout,
-  closeFlyout,
   handleSignOut,
+  showReportsFlyout: externalShowFlyout,
+  toggleReportsFlyout: externalToggleFlyout,
+  closeFlyout: externalCloseFlyout,
 }: SidebarProps) {
+  // State internal sebagai fallback jika tidak di-pass dari induk
+  const [internalShowFlyout, setInternalShowFlyout] = useState<boolean>(false);
+
+  const showReportsFlyout = externalShowFlyout ?? internalShowFlyout;
+  const toggleReportsFlyout = externalToggleFlyout ?? (() => setInternalShowFlyout((prev) => !prev));
+  const closeFlyout = externalCloseFlyout ?? (() => setInternalShowFlyout(false));
+
   return (
     <>
       <div className="sidebar-wrapper d-flex sidebar-sticky-matte">
