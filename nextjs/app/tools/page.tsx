@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 
-// Interface untuk struktur data Preview Import Excel
 interface JournalLineImport {
   rowIndex: number;
   refNumber: number;
@@ -14,7 +13,7 @@ interface JournalLineImport {
 }
 
 interface JournalTransactionImport {
-  date: string; // Format terjamin ISO standar DB (YYYY-MM-DD)
+  date: string;
   journalType: string;
   lines: JournalLineImport[];
 }
@@ -33,11 +32,15 @@ export default function ToolsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState<boolean>(false);
 
+  // Periode State (Default: Bulan & Tahun Saat Ini)
+  const now = new Date();
+  const [targetMonth, setTargetMonth] = useState<number>(now.getMonth() + 1);
+  const [targetYear, setTargetYear] = useState<number>(now.getFullYear());
+
   // Import State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<JournalImportResult | null>(null);
 
-  // Format Mata Uang IDR
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -46,7 +49,6 @@ export default function ToolsPage() {
     }).format(amount);
   };
 
-  // Handler Pemilihan File Excel
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setSelectedFile(e.target.files[0]);
@@ -55,47 +57,37 @@ export default function ToolsPage() {
     }
   };
 
-  // Helper Murni Pembacaan & Konversi Tanggal ke Standar DB (YYYY-MM-DD)
-  const parseRawDateString = (val: any): string => {
+  // Helper Pembacaan Tanggal & Penggabungan dengan Periode Pilihan User
+  const parseAndCombineDate = (val: any, year: number, month: number): string => {
     if (val === undefined || val === null) return '';
-
     const strVal = String(val).trim();
     if (!strVal) return '';
 
-    const now = new Date();
-    const defaultYear = now.getFullYear();
-    const defaultMonth = String(now.getMonth() + 1).padStart(2, '0');
+    const paddedMonth = String(month).padStart(2, '0');
 
-    // 1. Jika format standar YYYY-MM-DD
+    // Jika input berupa angka hari (1 s/d 31)
+    if (/^\d{1,2}$/.test(strVal)) {
+      const dayNum = parseInt(strVal, 10);
+      if (dayNum >= 1 && dayNum <= 31) {
+        const paddedDay = String(dayNum).padStart(2, '0');
+        return `${year}-${paddedMonth}-${paddedDay}`;
+      }
+    }
+
+    // Jika diisi format full YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(strVal)) {
       return strVal;
     }
 
-    // 2. Jika format DD-MM-YYYY (Contoh: 27-09-2006 -> 2006-09-27)
+    // Format DD-MM-YYYY
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(strVal)) {
       const parts = strVal.split('-');
       return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
     }
 
-    // 3. Jika format DD/MM/YYYY (Contoh: 27/09/2006 -> 2006-09-27)
-    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(strVal)) {
-      const parts = strVal.split('/');
-      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-    }
-
-    // 4. Jika input berupa Angka Hari Tunggal (Contoh: 1, 3, 15 -> YYYY-MM-DD)
-    if (/^\d{1,2}$/.test(strVal)) {
-      const dayNum = parseInt(strVal, 10);
-      if (dayNum >= 1 && dayNum <= 31) {
-        const paddedDay = String(dayNum).padStart(2, '0');
-        return `${defaultYear}-${defaultMonth}-${paddedDay}`;
-      }
-    }
-
     return strVal;
   };
 
-  // Handler Preview Excel Asli
   const handlePreview = async () => {
     if (!selectedFile) {
       setErrorMessage('Please select an Excel file first.');
@@ -107,7 +99,6 @@ export default function ToolsPage() {
     setIsBusy(true);
 
     try {
-      // 1. Memuat pustaka XLSX dari CDN jika belum ada di window
       if (!(window as any).XLSX) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
@@ -119,20 +110,16 @@ export default function ToolsPage() {
       }
 
       const XLSX = (window as any).XLSX;
-
-      // 2. Baca file Excel dalam mode raw (tanpa konversi tipe tanggal otomatis)
       const arrayBuffer = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array', raw: true });
 
       const parsedTransactions: JournalTransactionImport[] = [];
       let totalLines = 0;
 
-      // 3. Iterasi Sheet GJ dan AJ
       ['GJ', 'AJ'].forEach((sheetName) => {
         const worksheet = workbook.Sheets[sheetName];
         if (!worksheet) return;
 
-        // Ambil data dalam bentuk mentah ({ raw: true, defval: '' })
         const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: '' });
 
         let currentDate = '';
@@ -140,9 +127,8 @@ export default function ToolsPage() {
 
         rows.forEach((row, index) => {
           const rawDate = row['Date'] ?? row['date'] ?? row['DATE'] ?? '';
-          const parsedDateStr = parseRawDateString(rawDate);
+          const parsedDateStr = parseAndCombineDate(rawDate, targetYear, targetMonth);
 
-          // FORWARD FILL: simpan tanggal baru, atau pakai tanggal sebelumnya untuk enter/baris kosong
           if (parsedDateStr !== '') {
             currentDate = parsedDateStr;
           }
@@ -188,15 +174,13 @@ export default function ToolsPage() {
         throw new Error('No valid transaction entries found in GJ or AJ sheets.');
       }
 
-      const realResult: JournalImportResult = {
+      setParseResult({
         isSuccess: true,
         totalTransactionsRead: parsedTransactions.length,
         totalLinesRead: totalLines,
         warnings: [],
         transactions: parsedTransactions,
-      };
-
-      setParseResult(realResult);
+      });
 
       if ((window as any).aumoModal) {
         (window as any).aumoModal.show('indexPreviewModal');
@@ -208,7 +192,6 @@ export default function ToolsPage() {
     }
   };
 
-  // Handler Konfirmasi Import ke Database (Mengirim HTTP POST ke Controller C#)
   const handleConfirmImport = async () => {
     if (!parseResult || parseResult.transactions.length === 0) {
       setErrorMessage('No valid transactions to import.');
@@ -223,6 +206,8 @@ export default function ToolsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          targetMonth: Number(targetMonth),
+          targetYear: Number(targetYear),
           transactions: parseResult.transactions.map((tx) => ({
             date: tx.date,
             journalType: tx.journalType,
@@ -244,7 +229,7 @@ export default function ToolsPage() {
       }
 
       setSuccessMessage(
-        `Successfully imported ${parseResult.totalTransactionsRead} journal entries. (${result.createdCoaCount || 0} new COA created)`
+        `Successfully imported ${parseResult.totalTransactionsRead} journal entries for period ${targetMonth}/${targetYear}. (${result.createdCoaCount || 0} new COA created)`
       );
 
       if ((window as any).aumoModal) {
@@ -260,7 +245,6 @@ export default function ToolsPage() {
     }
   };
 
-  // Generator File Excel Template Langsung di Client
   const handleDownloadTemplate = async () => {
     try {
       if (!(window as any).XLSX) {
@@ -274,7 +258,6 @@ export default function ToolsPage() {
       }
 
       const XLSX = (window as any).XLSX;
-
       const headers = [['Date', 'Account Name', 'Description', 'Ref', 'Debit', 'Credit']];
 
       const sampleGJ = [
@@ -285,8 +268,8 @@ export default function ToolsPage() {
       ];
 
       const sampleAJ = [
-        ['4', 'Beban Sewa Kantor', 'Akrual Sewa Bulan Juni', 501, 2500000, ''],
-        ['', 'Utang Usaha', 'Akrual Sewa Bulan Juni', 201, '', 2500000],
+        ['4', 'Beban Sewa Kantor', 'Akrual Sewa', 501, 2500000, ''],
+        ['', 'Utang Usaha', 'Akrual Sewa', 201, '', 2500000],
       ];
 
       const wb = XLSX.utils.book_new();
@@ -302,6 +285,21 @@ export default function ToolsPage() {
       setErrorMessage('Gagal mengunduh template. Pastikan koneksi internet stabil.');
     }
   };
+
+  const monthOptions = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' },
+  ];
 
   return (
     <div 
@@ -324,7 +322,6 @@ export default function ToolsPage() {
       )}
 
       <div className="row g-4">
-        {/* IMPORT JOURNAL ENTRIES (.XLSX) */}
         <div className="col-12 col-xl-8 mx-auto">
           <div className="card glass-card border-0 shadow-sm rounded-4 h-100">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 pt-4 pb-3 px-4">
@@ -334,10 +331,45 @@ export default function ToolsPage() {
             </div>
             <div className="card-body px-4 py-4 d-flex flex-column">
               <p className="text-white fw-normal small mb-4">
-                Upload batch journal entries using the standard <code>.xlsx</code> format. Strict validation will be applied to verify debit/credit balance before committing records to the ledger.
+                Upload batch journal entries using standard <code>.xlsx</code> format. Target period will be created automatically if not existing.
               </p>
 
-              {/* Template Format Info */}
+              {/* Pemilihan Periode Target */}
+              <div className="bg-body-tertiary rounded-3 p-3 mb-4 border border-secondary border-opacity-25">
+                <label className="form-label fw-bold small text-white d-block mb-2">
+                  <i className="bi bi-calendar3 me-1"></i> Target Import Period
+                </label>
+                <div className="row g-2">
+                  <div className="col-12 col-md-6">
+                    <select
+                      className="form-select bg-dark text-white border-secondary small"
+                      value={targetMonth}
+                      onChange={(e) => setTargetMonth(Number(e.target.value))}
+                    >
+                      {monthOptions.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-12 col-md-6">
+                    <select
+                      className="form-select bg-dark text-white border-secondary small"
+                      value={targetYear}
+                      onChange={(e) => setTargetYear(Number(e.target.value))}
+                    >
+                      {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Template Info */}
               <div className="bg-body-tertiary rounded-3 p-3 mb-4 border border-secondary border-opacity-25">
                 <span className="d-block fw-bold small mb-2 text-white">Required Columns (Row 1 Header):</span>
                 <div className="d-flex flex-wrap gap-2 mb-3">
@@ -348,17 +380,12 @@ export default function ToolsPage() {
                   <span className="badge bg-secondary text-white fw-normal">Debit</span>
                   <span className="badge bg-secondary text-white fw-normal">Credit</span>
                 </div>
-                <ul className="text-white fw-normal small mb-3 ps-3">
-                  <li>2 Worksheets: <strong>GJ</strong> (General Journal) and <strong>AJ</strong> (Adjusting Journal).</li>
-                  <li>Rows sharing the same <strong>Date</strong> will be grouped as a single entry.</li>
-                  <li><strong>Ref</strong> corresponds to Chart of Accounts (COA) numbers. Missing accounts will be created automatically.</li>
-                </ul>
                 <button type="button" className="btn btn-sm btn-outline-light text-white fw-normal rounded-3" onClick={handleDownloadTemplate}>
                   <i className="bi bi-download me-1"></i> Download Template (.xlsx)
                 </button>
               </div>
 
-              {/* Upload & Preview Form */}
+              {/* Upload Input */}
               <div className="mb-3 mt-auto">
                 <label className="form-label fw-bold small text-white">Select Excel File (.xlsx)</label>
                 <input
@@ -396,9 +423,7 @@ export default function ToolsPage() {
                   <i className="bi bi-file-earmark-check me-2 text-white"></i> Journal Entries Preview
                 </h5>
                 <small className="text-white fw-normal">
-                  {parseResult
-                    ? `Found ${parseResult.totalTransactionsRead} transactions with ${parseResult.totalLinesRead} line entries.`
-                    : 'Review entries below before importing.'}
+                  Target Period: {monthOptions.find(m => m.value === targetMonth)?.label} {targetYear}
                 </small>
               </div>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -407,16 +432,6 @@ export default function ToolsPage() {
             <div className="modal-body p-4 text-white">
               {parseResult && (
                 <>
-                  {parseResult.warnings.length > 0 && (
-                    <div className="alert alert-warning rounded-3 mb-4 text-white fw-normal">
-                      <ul className="small mb-0 ps-3">
-                        {parseResult.warnings.map((w, index) => (
-                          <li key={index}>{w}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
                   {parseResult.transactions.map((tx, txIndex) => (
                     <div key={txIndex} className="card border border-secondary border-opacity-25 mb-3 rounded-3 shadow-sm bg-body-tertiary text-white">
                       <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-2 px-3">
@@ -440,12 +455,7 @@ export default function ToolsPage() {
                               <tr key={lineIndex} className="text-white">
                                 <td className="text-center text-white">{line.rowIndex}</td>
                                 <td className="text-center fw-bold text-white">{line.refNumber}</td>
-                                <td className="text-white">
-                                  {line.accountName}
-                                  {line.isNewAccount && (
-                                    <span className="badge bg-secondary text-white border border-light ms-1 fw-normal">New COA</span>
-                                  )}
-                                </td>
+                                <td className="text-white">{line.accountName}</td>
                                 <td className="text-white">{line.description}</td>
                                 <td className="text-end fw-bold text-white">
                                   {line.debit !== null ? formatIDR(line.debit) : '-'}
