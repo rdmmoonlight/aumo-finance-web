@@ -22,6 +22,9 @@
     <!-- PostgreSQL Provider -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0-preview.1" />
 
+    <!-- OpenAPI / Swagger Support (Diperlukan untuk Program.cs & SwaggerUI) -->
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+
     <!-- Utility & Third-Party Libraries -->
     <PackageReference Include="ClosedXML" Version="0.104.2" />
     <PackageReference Include="ExcelDataReader" Version="3.7.0" />
