@@ -9,15 +9,15 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy file .csproj dulu agar restore bisa ditaruh di cache
-COPY ["AumoFinance.csproj", "./"]
-RUN dotnet restore "AumoFinance.csproj"
+COPY ["AumoBackend.csproj", "./"]
+RUN dotnet restore "AumoBackend.csproj"
 
 # Copy seluruh source code dan publish
 COPY . .
-RUN dotnet publish "AumoFinance.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "AumoBackend.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # 3. Stage Final (Gabungkan hasil build ke runtime)
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "AumoFinance.dll"]
+ENTRYPOINT ["dotnet", "AumoBackend.dll"]
