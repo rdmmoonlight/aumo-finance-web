@@ -25,9 +25,6 @@ namespace AumoFinance.Controllers.Web
             _context = context;
         }
 
-        // ==========================================
-        // 1. GET: /web/tools/download-journal-template
-        // ==========================================
         [HttpGet("download-journal-template")]
         public IActionResult DownloadJournalTemplate()
         {
@@ -63,7 +60,7 @@ namespace AumoFinance.Controllers.Web
         }
 
         // ==========================================
-        // 2. POST: /web/tools/preview-journal-import
+        // 1. POST: /web/tools/preview-journal-import
         // ==========================================
         [HttpPost("preview-journal-import")]
         public async Task<IActionResult> PreviewJournalImport([FromBody] JournalImportRequestDto request)
@@ -87,8 +84,36 @@ namespace AumoFinance.Controllers.Web
             var reallocations = new List<ReallocationDetailDto>();
             var processedTransactions = new List<JournalTransactionDto>();
 
+            // Memory tracker untuk simulasi penomoran transaksi berurutan di Preview
+            var counterMemory = new Dictionary<string, int>();
+
             foreach (var txDto in request.Transactions)
             {
+                if (!DateTime.TryParse(txDto.Date, out var txDate))
+                {
+                    continue;
+                }
+
+                txDate = DateTime.SpecifyKind(txDate, DateTimeKind.Utc);
+
+                // Buat Counter Key berdasarkan Jenis Jurnal + Tahun-Bulan (Contoh: GJ2609)
+                string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
+                string counterKey = $"{prefix}{txDate:yyMM}";
+
+                // Jika kunci belum ada di memory tracker, ambil dari DB atau mulai dari 0
+                if (!counterMemory.ContainsKey(counterKey))
+                {
+                    var existingCounter = await _context.TransactionCounters
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.UserId == userId && c.CounterKey == counterKey);
+
+                    counterMemory[counterKey] = existingCounter?.LastSequence ?? 0;
+                }
+
+                // Naikkan sequence (+1)
+                counterMemory[counterKey] += 1;
+                string generatedTxNumber = $"{counterKey}{counterMemory[counterKey]:D5}"; // Format: GJ260900001
+
                 var processedLines = new List<JournalLineDto>();
 
                 foreach (var lineDto in txDto.Lines)
@@ -96,7 +121,6 @@ namespace AumoFinance.Controllers.Web
                     int refInt = lineDto.RefNumber;
                     string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
-                    // Match A: By ReferenceNumber (Prioritas Utama)
                     var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt);
 
                     if (coa != null)
@@ -109,14 +133,14 @@ namespace AumoFinance.Controllers.Web
                                 ExcelAccountName = excelAccountName,
                                 MappedRef = coa.ReferenceNumber,
                                 MappedAccountName = coa.AccountName,
-                                Reason = "Nama akun di Excel berbeda. Transaksi dilimpahkan ke Nama Akun Baku master COA."
+                                Reason = "Nama akun di Excel beda. Transaksi dilimpahkan ke Nama Akun Baku master COA."
                             });
                         }
 
                         processedLines.Add(new JournalLineDto
                         {
                             RefNumber = coa.ReferenceNumber,
-                            AccountName = coa.AccountName, // Gunakan nama baku
+                            AccountName = coa.AccountName,
                             Description = lineDto.Description,
                             Debit = lineDto.Debit,
                             Credit = lineDto.Credit
@@ -124,7 +148,6 @@ namespace AumoFinance.Controllers.Web
                     }
                     else
                     {
-                        // Match B: Fallback by AccountName
                         coa = existingCoas.FirstOrDefault(c =>
                             string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
@@ -150,7 +173,6 @@ namespace AumoFinance.Controllers.Web
                         }
                         else
                         {
-                            // Match C: COA Tidak Ditemukan
                             reallocations.Add(new ReallocationDetailDto
                             {
                                 ExcelRef = refInt,
@@ -174,6 +196,7 @@ namespace AumoFinance.Controllers.Web
 
                 processedTransactions.Add(new JournalTransactionDto
                 {
+                    TransactionNumber = generatedTxNumber,
                     Date = txDto.Date,
                     JournalType = txDto.JournalType,
                     Lines = processedLines
@@ -193,7 +216,7 @@ namespace AumoFinance.Controllers.Web
         }
 
         // ==========================================
-        // 3. POST: /web/tools/import-journal-entries
+        // 2. POST: /web/tools/import-journal-entries
         // ==========================================
         [HttpPost("import-journal-entries")]
         public async Task<IActionResult> ImportJournalEntries([FromBody] JournalImportRequestDto request)
@@ -218,7 +241,7 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
-                // A. Pengecekan Periode
+                // A. Pengecekan / Pembuatan Periode Baru
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -253,7 +276,7 @@ namespace AumoFinance.Controllers.Web
 
                     txDate = DateTime.SpecifyKind(txDate, DateTimeKind.Utc);
 
-                    // B. Transaction Counter
+                    // B. Penomoran Otomatis Berdasarkan Counter Periode
                     string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                     string counterKey = $"{prefix}{txDate:yyMM}";
 
@@ -264,6 +287,7 @@ namespace AumoFinance.Controllers.Web
 
                     if (counter == null)
                     {
+                        // Jika dalam bulan/periode itu belum ada, buat baru dari 1
                         counter = new TransactionCounter
                         {
                             UserId = userId,
@@ -274,10 +298,11 @@ namespace AumoFinance.Controllers.Web
                     }
                     else
                     {
+                        // Jika sudah ada, otomatis melanjutkan
                         counter.LastSequence += 1;
                     }
 
-                    string transactionNumber = $"{counterKey}{counter.LastSequence:D4}";
+                    string transactionNumber = $"{counterKey}{counter.LastSequence:D5}"; // Format: GJ260900001
 
                     var journalEntry = new JournalEntry
                     {
@@ -288,23 +313,14 @@ namespace AumoFinance.Controllers.Web
                         Lines = new List<JournalEntryLine>()
                     };
 
-                    // C. Matching Lines ke Master COA Baku
                     foreach (var lineDto in txDto.Lines)
                     {
                         int refInt = lineDto.RefNumber;
                         string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
-                        // Match Priority A: By Ref Number
-                        var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt);
+                        var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt)
+                            ?? existingCoas.FirstOrDefault(c => string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
-                        if (coa == null)
-                        {
-                            // Match Priority B: By Account Name
-                            coa = existingCoas.FirstOrDefault(c =>
-                                string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
-                        }
-
-                        // Jika COA sama sekali tidak terdaftar di sistem, lewati baris ini demi menjaga integritas data
                         if (coa == null)
                         {
                             continue;
@@ -352,6 +368,7 @@ namespace AumoFinance.Controllers.Web
 
     public class JournalTransactionDto
     {
+        public string TransactionNumber { get; set; } = string.Empty;
         public string Date { get; set; } = string.Empty;
         public string JournalType { get; set; } = string.Empty;
         public List<JournalLineDto> Lines { get; set; } = new();
