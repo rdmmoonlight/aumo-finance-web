@@ -55,7 +55,34 @@ export default function ToolsPage() {
     }
   };
 
-  // Handler Simulasi Preview Excel
+  // Helper untuk Normalisasi & Parsing Tanggal Excel
+  const parseExcelDate = (val: any, XLSX: any): string => {
+    if (val === undefined || val === null || val === '') return '';
+
+    // Jika serial date bawaan Excel (number)
+    if (typeof val === 'number') {
+      const parsed = XLSX.SSF.parse_date_code(val);
+      if (parsed) {
+        const y = parsed.y;
+        const m = String(parsed.m).padStart(2, '0');
+        const d = String(parsed.d).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+      return String(val);
+    }
+
+    const strVal = String(val).trim();
+    
+    // Jika format DD-MM-YYYY
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(strVal)) {
+      const parts = strVal.split('-');
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+
+    return strVal;
+  };
+
+  // Handler Preview Excel Asli (Membaca file dari input)
   const handlePreview = async () => {
     if (!selectedFile) {
       setErrorMessage('Please select an Excel file first.');
@@ -67,38 +94,102 @@ export default function ToolsPage() {
     setIsBusy(true);
 
     try {
-      // Simulasi Parsing Excel di sisi klien / API
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // 1. Memuat pustaka XLSX dari CDN jika belum ada di window
+      if (!(window as any).XLSX) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
 
-      // Mock Data Preview Hasil Parsing Excel Template
-      const mockResult: JournalImportResult = {
+      const XLSX = (window as any).XLSX;
+
+      // 2. Baca file Excel sebagai ArrayBuffer
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: false });
+
+      const parsedTransactions: JournalTransactionImport[] = [];
+      let totalLines = 0;
+
+      // 3. Iterasi Sheet GJ dan AJ
+      ['GJ', 'AJ'].forEach((sheetName) => {
+        const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) return;
+
+        // Ambil data dalam bentuk array of object
+        const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+        let currentDate = '';
+        const groupedByDate: { [key: string]: JournalLineImport[] } = {};
+
+        rows.forEach((row, index) => {
+          // Cari kolom Date (opsi case-insensitive)
+          const rawDate = row['Date'] ?? row['date'] ?? row['DATE'] ?? '';
+          const parsedDateStr = parseExcelDate(rawDate, XLSX);
+
+          // Jika ada tanggal baru, perbarui currentDate. Jika kosong (akibat enter/baris baru), pakai currentDate terakhir (Forward Fill)
+          if (parsedDateStr !== '') {
+            currentDate = parsedDateStr;
+          }
+
+          // Lewati baris jika belum ada tanggal sama sekali atau baris benar-benar kosong
+          if (!currentDate) return;
+
+          const accountName = String(row['Account Name'] ?? row['accountName'] ?? row['ACCOUNT NAME'] ?? '').trim();
+          const description = String(row['Description'] ?? row['description'] ?? row['DESCRIPTION'] ?? '').trim();
+          const refVal = row['Ref'] ?? row['ref'] ?? row['REF'] ?? 0;
+
+          // Jika baris tidak berisi akun/ref/nominal, abaikan
+          if (!accountName && !description && !refVal) return;
+
+          const rawDebit = row['Debit'] ?? row['debit'] ?? row['DEBIT'] ?? '';
+          const rawCredit = row['Credit'] ?? row['credit'] ?? row['CREDIT'] ?? '';
+
+          const line: JournalLineImport = {
+            rowIndex: index + 2, // offset header baris 1
+            refNumber: Number(refVal) || 0,
+            accountName: accountName,
+            description: description,
+            debit: rawDebit !== '' && !isNaN(Number(rawDebit)) ? Number(rawDebit) : null,
+            credit: rawCredit !== '' && !isNaN(Number(rawCredit)) ? Number(rawCredit) : null,
+            isNewAccount: false,
+          };
+
+          if (!groupedByDate[currentDate]) {
+            groupedByDate[currentDate] = [];
+          }
+          groupedByDate[currentDate].push(line);
+          totalLines++;
+        });
+
+        // Masukkan data terkelompok ke transaksi
+        Object.keys(groupedByDate).forEach((dateKey) => {
+          parsedTransactions.push({
+            date: dateKey,
+            journalType: sheetName === 'GJ' ? 'General' : 'Adjusting',
+            lines: groupedByDate[dateKey],
+          });
+        });
+      });
+
+      if (parsedTransactions.length === 0) {
+        throw new Error('No valid transaction entries found in GJ or AJ sheets.');
+      }
+
+      const realResult: JournalImportResult = {
         isSuccess: true,
-        totalTransactionsRead: 2,
-        totalLinesRead: 4,
-        warnings: ['Row 5: Account reference 102 presumed as new COA automatically.'],
-        transactions: [
-          {
-            date: '2026-06-01',
-            journalType: 'General',
-            lines: [
-              { rowIndex: 2, refNumber: 101, accountName: 'Kas Utama', description: 'Setoran Modal Awal', debit: 15000000, credit: null, isNewAccount: false },
-              { rowIndex: 3, refNumber: 301, accountName: 'Modal Pemilik', description: 'Setoran Modal Awal', debit: null, credit: 15000000, isNewAccount: false },
-            ],
-          },
-          {
-            date: '2026-06-02',
-            journalType: 'Adjusting',
-            lines: [
-              { rowIndex: 5, refNumber: 501, accountName: 'Beban Sewa Kantor', description: 'Akrual Sewa Bulan Juni', debit: 2500000, credit: null, isNewAccount: true },
-              { rowIndex: 6, refNumber: 201, accountName: 'Utang Usaha', description: 'Akrual Sewa Bulan Juni', debit: null, credit: 2500000, isNewAccount: false },
-            ],
-          },
-        ],
+        totalTransactionsRead: parsedTransactions.length,
+        totalLinesRead: totalLines,
+        warnings: [],
+        transactions: parsedTransactions,
       };
 
-      setParseResult(mockResult);
+      setParseResult(realResult);
 
-      // Tampilkan Modal Preview menggunakan Bootstrap Modal Helper global
+      // Tampilkan Modal Preview
       if ((window as any).aumoModal) {
         (window as any).aumoModal.show('indexPreviewModal');
       }
@@ -138,10 +229,9 @@ export default function ToolsPage() {
     }
   };
 
-  // Generator File Excel Template Langsung di Sisi Client (Tanpa Endpoint/Route Server)
+  // Generator File Excel Template Langsung di Sisi Client
   const handleDownloadTemplate = async () => {
     try {
-      // Memuat SheetJS (XLSX) secara dinamis dari CDN jika belum ada di window
       if (!(window as any).XLSX) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
@@ -154,32 +244,28 @@ export default function ToolsPage() {
 
       const XLSX = (window as any).XLSX;
 
-      // Header kolom sesuai kriteria
       const headers = [['Date', 'Account Name', 'Description', 'Ref', 'Debit', 'Credit']];
 
-      // Sample baris untuk panduan pengisian
       const sampleGJ = [
-        ['2026-06-01', 'Kas Utama', 'Setoran Modal Awal', 101, 15000000, ''],
-        ['2026-06-01', 'Modal Pemilik', 'Setoran Modal Awal', 301, '', 15000000],
+        [1, 'Kas Utama', 'Setoran Modal Awal', 101, 15000000, ''],
+        ['', 'Modal Pemilik', 'Setoran Modal Awal', 301, '', 15000000],
+        [3, 'Beban Listrik', 'Pembayaran PLN', 502, 500000, ''],
+        ['', 'Kas Utama', 'Pembayaran PLN', 101, '', 500000],
       ];
 
       const sampleAJ = [
-        ['2026-06-02', 'Beban Sewa Kantor', 'Akrual Sewa Bulan Juni', 501, 2500000, ''],
-        ['2026-06-02', 'Utang Usaha', 'Akrual Sewa Bulan Juni', 201, '', 2500000],
+        [4, 'Beban Sewa Kantor', 'Akrual Sewa Bulan Juni', 501, 2500000, ''],
+        ['', 'Utang Usaha', 'Akrual Sewa Bulan Juni', 201, '', 2500000],
       ];
 
-      // Buat Workbook baru
       const wb = XLSX.utils.book_new();
 
-      // Sheet 1: General Journal (GJ)
       const wsGJ = XLSX.utils.aoa_to_sheet([...headers, ...sampleGJ]);
       XLSX.utils.book_append_sheet(wb, wsGJ, 'GJ');
 
-      // Sheet 2: Adjusting Journal (AJ)
       const wsAJ = XLSX.utils.aoa_to_sheet([...headers, ...sampleAJ]);
       XLSX.utils.book_append_sheet(wb, wsAJ, 'AJ');
 
-      // Unduh file secara otomatis
       XLSX.writeFile(wb, 'Journal_Import_Template.xlsx');
     } catch (err) {
       setErrorMessage('Gagal mengunduh template. Pastikan koneksi internet stabil.');
@@ -207,9 +293,7 @@ export default function ToolsPage() {
       )}
 
       <div className="row g-4">
-        {/* ========================================== */}
-        {/* IMPORT JOURNAL ENTRIES (.XLSX)            */}
-        {/* ========================================== */}
+        {/* IMPORT JOURNAL ENTRIES (.XLSX) */}
         <div className="col-12 col-xl-8 mx-auto">
           <div className="card glass-card border-0 shadow-sm rounded-4 h-100">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 pt-4 pb-3 px-4">
@@ -306,7 +390,7 @@ export default function ToolsPage() {
                     <div key={txIndex} className="card border border-secondary border-opacity-25 mb-3 rounded-3 shadow-sm bg-body-tertiary text-white">
                       <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-2 px-3">
                         <span className="badge bg-primary text-white fw-normal">{tx.journalType} Journal</span>
-                        <strong className="text-white fw-bold"><i className="bi bi-calendar-event me-1"></i> {tx.date}</strong>
+                        <strong className="text-white fw-bold"><i className="bi bi-calendar-event me-1"></i> Date: {tx.date}</strong>
                       </div>
                       <div className="table-responsive">
                         <table className="table table-dark table-hover table-striped mb-0 align-middle small text-white">
