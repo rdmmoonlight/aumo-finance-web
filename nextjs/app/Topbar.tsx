@@ -6,33 +6,125 @@ import { useRouter } from 'next/navigation';
 
 interface TopbarProps {
   isAuthenticated: boolean;
-  hasActivePeriod?: boolean;
-  isViewingClosed?: boolean;
-  periodText?: string;
-  QuranVerse: React.ComponentType;
   changeTheme: (theme: 'dark' | 'light') => void;
   onPeriodChanged?: () => void;
 }
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
-  .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+const API_BASE_URL = rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '');
 
+/* ============================================================================
+ * QURAN VERSE ALGORITHM & UTILITIES (DITARUH DI TOPBAR)
+ * ============================================================================ */
+const timeSlots = [
+  0, 85, 169, 254, 339, 424, 508, 593, 678, 762, 847, 932, 1016, 1101, 1186, 1271, 1355
+];
+
+function calculateAyahNumber() {
+  const now = new Date();
+  const startOfYear = new Date(now.getFullYear(), 0, 0);
+  const diff = now.getTime() - startOfYear.getTime();
+  const oneDay = 1000 * 60 * 60 * 24;
+  const dayOfYear = Math.floor(diff / oneDay);
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  let slotIndex = 0;
+
+  for (let i = timeSlots.length - 1; i >= 0; i--) {
+    if (currentMinutes >= timeSlots[i]) {
+      slotIndex = i;
+      break;
+    }
+  }
+
+  let ayahNumber = (dayOfYear - 1) * 17 + slotIndex + 1;
+  if (ayahNumber > 6236) {
+    ayahNumber = ((ayahNumber - 1) % 6236) + 1;
+  }
+  return ayahNumber;
+}
+
+let cachedVerseText: string | null = null;
+let cachedVerseRef: string | null = null;
+
+function QuranVerse() {
+  const [verseText, setVerseText] = useState<string>(cachedVerseText || 'Loading verse...');
+  const [verseRef, setVerseRef] = useState<string>(cachedVerseRef || '--');
+
+  useEffect(() => {
+    if (cachedVerseText && cachedVerseRef) {
+      setVerseText(cachedVerseText);
+      setVerseRef(cachedVerseRef);
+      return;
+    }
+
+    const fetchVerse = async () => {
+      try {
+        const ayahNumber = calculateAyahNumber();
+        const res = await fetch(`https://api.alquran.cloud/v1/ayah/${ayahNumber}/en.sahih`);
+        const json = await res.json();
+
+        if (json.code === 200 && json.data) {
+          const data = json.data;
+          const text = `"${data.text}"`;
+          const reference = `QS. ${data.surah.englishName} ${data.surah.number}:${data.numberInSurah}`;
+
+          cachedVerseText = text;
+          cachedVerseRef = reference;
+
+          setVerseText(text);
+          setVerseRef(reference);
+        } else {
+          throw new Error('Invalid response structure');
+        }
+      } catch {
+        setVerseText('"Allah does not charge a soul except with that which He has given it."');
+        setVerseRef('QS. At-Talaq 65:7');
+      }
+    };
+
+    fetchVerse();
+  }, []);
+
+  return (
+    <div
+      className="w-100 px-1 text-center mx-auto"
+      style={{
+        maxWidth: '95%',
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        lineHeight: 1.4,
+      }}
+    >
+      <span className="text-body-secondary fst-italic" style={{ fontSize: '0.75rem' }}>
+        {verseText}
+      </span>
+      <span
+        className="badge bg-primary-subtle text-primary fw-semibold ms-1 align-baseline"
+        style={{ fontSize: '0.675rem' }}
+      >
+        {verseRef}
+      </span>
+    </div>
+  );
+}
+
+/* ============================================================================
+ * MAIN TOPBAR COMPONENT
+ * ============================================================================ */
 export default function Topbar({
   isAuthenticated,
-  hasActivePeriod: propHasActivePeriod,
-  isViewingClosed: propIsViewingClosed,
-  periodText: propPeriodText,
-  QuranVerse,
   changeTheme,
   onPeriodChanged,
 }: TopbarProps) {
   const router = useRouter();
 
-  const [hasActivePeriod, setHasActivePeriod] = useState<boolean>(propHasActivePeriod ?? false);
-  const [isViewingClosed, setIsViewingClosed] = useState<boolean>(propIsViewingClosed ?? false);
-  const [periodText, setPeriodText] = useState<string>(propPeriodText || 'No Period Selected');
+  // State Periode dikelola langsung di sini
+  const [hasActivePeriod, setHasActivePeriod] = useState<boolean>(false);
+  const [isViewingClosed, setIsViewingClosed] = useState<boolean>(false);
+  const [periodText, setPeriodText] = useState<string>('No Period Selected');
   const [loadingPeriod, setLoadingPeriod] = useState<boolean>(false);
 
   const fetchSelectedPeriod = async () => {
@@ -85,10 +177,7 @@ export default function Topbar({
   useEffect(() => {
     fetchSelectedPeriod();
 
-    const handlePeriodEvent = () => {
-      fetchSelectedPeriod();
-    };
-
+    const handlePeriodEvent = () => fetchSelectedPeriod();
     window.addEventListener('periodChanged', handlePeriodEvent);
 
     return () => {
@@ -110,7 +199,6 @@ export default function Topbar({
         setPeriodText('No Period Selected');
 
         window.dispatchEvent(new Event('periodChanged'));
-
         if (onPeriodChanged) onPeriodChanged();
         router.refresh();
       }
@@ -127,7 +215,7 @@ export default function Topbar({
 
   return (
     <>
-      {/* BARIS PERTAMA: KHUSUS QURAN VERSE */}
+      {/* BARIS PERTAMA: QURAN VERSE */}
       <header
         className="navbar navbar-expand topbar-solid py-2 sticky-top border-bottom border-secondary border-opacity-10"
         style={{ minHeight: '56px' }}
@@ -291,7 +379,6 @@ export default function Topbar({
         </div>
       )}
 
-      {/* STYLES FOR TOPBAR */}
       <style jsx global>{`
         .topbar-solid {
           background-color: var(--bs-body-bg, #121212);
