@@ -93,12 +93,10 @@ public class ToolsWebController : ControllerBase
 
                 // -------------------------------------------------------------
                 // A. PERIODS
-                // If Year & Month properties do not exist in Period, align them 
-                // with the date properties in your Period model (e.g., StartDate)
                 // -------------------------------------------------------------
-                var period = await _context.Periods.FirstOrDefaultAsync(p =>
-                    p.UserId == userId &&
-                    p.StartDate.Year == txDate.Year &&
+                var period = await _context.Periods.FirstOrDefaultAsync(p => 
+                    p.UserId == userId && 
+                    p.StartDate.Year == txDate.Year && 
                     p.StartDate.Month == txDate.Month
                 );
 
@@ -106,7 +104,7 @@ public class ToolsWebController : ControllerBase
                 {
                     period = new Period
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.NewGuid(), // Menggunakan Guid
                         UserId = userId,
                         StartDate = new DateTime(txDate.Year, txDate.Month, 1),
                         EndDate = new DateTime(txDate.Year, txDate.Month, DateTime.DaysInMonth(txDate.Year, txDate.Month)),
@@ -122,8 +120,8 @@ public class ToolsWebController : ControllerBase
                 string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                 string counterKey = $"{prefix}{txDate:yyMM}";
 
-                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
-                    c.UserId == userId &&
+                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c => 
+                    c.UserId == userId && 
                     c.CounterKey == counterKey
                 );
 
@@ -131,7 +129,7 @@ public class ToolsWebController : ControllerBase
                 {
                     counter = new TransactionCounter
                     {
-                        Id = Guid.NewGuid(),
+                        Id = Guid.NewGuid(), // Menggunakan Guid
                         UserId = userId,
                         CounterKey = counterKey,
                         LastSequence = 1
@@ -147,14 +145,12 @@ public class ToolsWebController : ControllerBase
 
                 // -------------------------------------------------------------
                 // C. JOURNAL ENTRY
-                // Align 'EntryDate' / 'Date' with the date field in JournalEntry
                 // -------------------------------------------------------------
                 var journalEntry = new JournalEntry
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.NewGuid(), // Menggunakan Guid
                     UserId = userId,
                     TransactionNumber = transactionNumber,
-                    EntryDate = txDate, // Change to TransactionDate/Date if named differently
                     JournalType = txDto.JournalType,
                     CreatedAt = DateTime.UtcNow,
                     Lines = new List<JournalEntryLine>()
@@ -162,25 +158,24 @@ public class ToolsWebController : ControllerBase
 
                 // -------------------------------------------------------------
                 // D. JOURNAL ENTRY LINES & CHART OF ACCOUNTS
-                // Note: RefNumber is of type string to match COA standard
                 // -------------------------------------------------------------
                 foreach (var lineDto in txDto.Lines)
                 {
-                    string refStr = lineDto.RefNumber.ToString();
+                    int refInt = lineDto.RefNumber; // Matching int type
 
-                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c =>
-                        c.UserId == userId &&
-                        c.ReferenceNumber == refStr
+                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c => 
+                        c.UserId == userId && 
+                        c.ReferenceNumber == refInt
                     );
 
                     if (coa == null)
                     {
                         coa = new ChartOfAccount
                         {
-                            Id = Guid.NewGuid(),
+                            Id = Guid.NewGuid(), // Menggunakan Guid
                             UserId = userId,
-                            ReferenceNumber = refStr,
-                            Name = lineDto.AccountName, // Change to AccountName if named differently
+                            ReferenceNumber = refInt, // Mengisi int
+                            AccountName = lineDto.AccountName, // Diubah dari Name ke AccountName
                             IsActive = true
                         };
                         _context.ChartOfAccounts.Add(coa);
@@ -190,12 +185,12 @@ public class ToolsWebController : ControllerBase
 
                     journalEntry.Lines.Add(new JournalEntryLine
                     {
-                        Id = Guid.NewGuid(),
-                        JournalEntryId = journalEntry.Id,
-                        AccountId = coa.Id,
-                        Description = lineDto.Description, // Change to Memo/Note if named differently
-                        Debit = lineDto.Debit ?? 0m,   // Cast / fallback from decimal? to decimal
-                        Credit = lineDto.Credit ?? 0m  // Cast / fallback from decimal? to decimal
+                        Id = Guid.NewGuid(), // Menggunakan Guid
+                        JournalEntryId = journalEntry.Id, // Foreign Key Guid
+                        AccountId = coa.Id, // Foreign Key Guid
+                        Memo = lineDto.Description, // Diubah dari Description ke Memo
+                        Debit = lineDto.Debit ?? 0m,
+                        Credit = lineDto.Credit ?? 0m
                     });
                 }
 
@@ -220,7 +215,7 @@ public class ToolsWebController : ControllerBase
 }
 
 // ==========================================
-// DTOs (Adjusted for Data Types)
+// DTOs
 // ==========================================
 public class JournalImportRequestDto
 {
@@ -236,7 +231,7 @@ public class JournalTransactionDto
 
 public class JournalLineDto
 {
-    public string RefNumber { get; set; } = string.Empty; // Changed to string to match Guid/COA Ref
+    public int RefNumber { get; set; } // Disesuaikan ke int
     public string AccountName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal? Debit { get; set; }
