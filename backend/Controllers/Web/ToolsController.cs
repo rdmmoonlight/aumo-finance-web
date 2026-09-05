@@ -1,5 +1,9 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using AumoFinance.Models;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +32,6 @@ public class ToolsWebController : ControllerBase
     {
         using var workbook = new XLWorkbook();
 
-        // --- Sheet General Journal (GJ) ---
         var wsGj = workbook.Worksheets.Add("GJ");
         wsGj.Cell(1, 1).Value = "Date";
         wsGj.Cell(1, 2).Value = "Account Name";
@@ -38,7 +41,6 @@ public class ToolsWebController : ControllerBase
         wsGj.Cell(1, 6).Value = "Credit";
         wsGj.Row(1).Style.Font.Bold = true;
 
-        // --- Sheet Adjusting Journal (AJ) ---
         var wsAj = workbook.Worksheets.Add("AJ");
         wsAj.Cell(1, 1).Value = "Date";
         wsAj.Cell(1, 2).Value = "Account Name";
@@ -67,10 +69,9 @@ public class ToolsWebController : ControllerBase
     {
         if (request?.Transactions == null || !request.Transactions.Any())
         {
-            return BadRequest(new { message = "Tidak ada data transaksi untuk diimpor." });
+            return BadRequest(new { message = "No transaction data provided for import." });
         }
 
-        // Ambil UserId dari User Login
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userIdStr, out var userId))
         {
@@ -87,16 +88,18 @@ public class ToolsWebController : ControllerBase
             {
                 if (!DateTime.TryParse(txDto.Date, out var txDate))
                 {
-                    continue; // Skip jika format tanggal tidak valid
+                    continue;
                 }
 
                 // -------------------------------------------------------------
-                // A. AUTOMATION PERIODE: Cek / Buat Periode Baru Jika Belum Ada
+                // A. PERIODS
+                // If Year & Month properties do not exist in Period, align them 
+                // with the date properties in your Period model (e.g., StartDate)
                 // -------------------------------------------------------------
-                var period = await _context.Periods.FirstOrDefaultAsync(p =>
-                    p.UserId == userId &&
-                    p.Year == txDate.Year &&
-                    p.Month == txDate.Month
+                var period = await _context.Periods.FirstOrDefaultAsync(p => 
+                    p.UserId == userId && 
+                    p.StartDate.Year == txDate.Year && 
+                    p.StartDate.Month == txDate.Month
                 );
 
                 if (period == null)
@@ -105,22 +108,22 @@ public class ToolsWebController : ControllerBase
                     {
                         Id = Guid.NewGuid(),
                         UserId = userId,
-                        Year = txDate.Year,
-                        Month = txDate.Month,
+                        StartDate = new DateTime(txDate.Year, txDate.Month, 1),
+                        EndDate = new DateTime(txDate.Year, txDate.Month, DateTime.DaysInMonth(txDate.Year, txDate.Month)),
                         IsClosed = false
                     };
                     _context.Periods.Add(period);
-                    await _context.SaveChangesAsync(); // Simpan periode baru langsung
+                    await _context.SaveChangesAsync();
                 }
 
                 // -------------------------------------------------------------
-                // B. TRANSAKSI COUNTER: Penomoran Otomatis (Contoh: GJ26090001)
+                // B. TRANSACTION COUNTER
                 // -------------------------------------------------------------
                 string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                 string counterKey = $"{prefix}{txDate:yyMM}";
 
-                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
-                    c.UserId == userId &&
+                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c => 
+                    c.UserId == userId && 
                     c.CounterKey == counterKey
                 );
 
@@ -143,39 +146,41 @@ public class ToolsWebController : ControllerBase
                 string transactionNumber = $"{counterKey}{counter.LastSequence:D4}";
 
                 // -------------------------------------------------------------
-                // C. MEMBUAT RECORD JOURNAL ENTRY
+                // C. JOURNAL ENTRY
+                // Align 'EntryDate' / 'Date' with the date field in JournalEntry
                 // -------------------------------------------------------------
                 var journalEntry = new JournalEntry
                 {
                     Id = Guid.NewGuid(),
                     UserId = userId,
                     TransactionNumber = transactionNumber,
-                    Date = txDate,
+                    EntryDate = txDate, // Change to TransactionDate/Date if named differently
                     JournalType = txDto.JournalType,
                     CreatedAt = DateTime.UtcNow,
                     Lines = new List<JournalEntryLine>()
                 };
 
                 // -------------------------------------------------------------
-                // D. MEMPROSES BARIS INDIVIDUAL & AKUN COA
+                // D. JOURNAL ENTRY LINES & CHART OF ACCOUNTS
+                // Note: RefNumber is of type string to match COA standard
                 // -------------------------------------------------------------
                 foreach (var lineDto in txDto.Lines)
                 {
-                    // Cek COA berdasarkan Reference Number & UserId
-                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c =>
-                        c.UserId == userId &&
-                        c.ReferenceNumber == lineDto.RefNumber
+                    string refStr = lineDto.RefNumber.ToString();
+
+                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c => 
+                        c.UserId == userId && 
+                        c.ReferenceNumber == refStr
                     );
 
-                    // Buat COA Baru Otomatis jika belum ada di database
                     if (coa == null)
                     {
                         coa = new ChartOfAccount
                         {
                             Id = Guid.NewGuid(),
                             UserId = userId,
-                            ReferenceNumber = lineDto.RefNumber,
-                            Name = lineDto.AccountName,
+                            ReferenceNumber = refStr,
+                            Name = lineDto.AccountName, // Change to AccountName if named differently
                             IsActive = true
                         };
                         _context.ChartOfAccounts.Add(coa);
@@ -188,9 +193,9 @@ public class ToolsWebController : ControllerBase
                         Id = Guid.NewGuid(),
                         JournalEntryId = journalEntry.Id,
                         AccountId = coa.Id,
-                        Description = lineDto.Description,
-                        Debit = lineDto.Debit,
-                        Credit = lineDto.Credit
+                        Description = lineDto.Description, // Change to Memo/Note if named differently
+                        Debit = lineDto.Debit ?? 0m,   // Cast / fallback from decimal? to decimal
+                        Credit = lineDto.Credit ?? 0m  // Cast / fallback from decimal? to decimal
                     });
                 }
 
@@ -202,20 +207,20 @@ public class ToolsWebController : ControllerBase
 
             return Ok(new
             {
-                message = "Berhasil mengimpor data jurnal.",
+                message = "Journal data successfully imported.",
                 createdCoaCount = createdCoaCount
             });
         }
         catch (Exception ex)
         {
             await dbTransaction.RollbackAsync();
-            return StatusCode(500, new { message = $"Gagal menyimpan data: {ex.Message}" });
+            return StatusCode(500, new { message = $"Failed to save data: {ex.Message}" });
         }
     }
 }
 
 // ==========================================
-// DTO DUKUNGAN UNTUK REQUEST BODY
+// DTOs (Adjusted for Data Types)
 // ==========================================
 public class JournalImportRequestDto
 {
@@ -231,7 +236,7 @@ public class JournalTransactionDto
 
 public class JournalLineDto
 {
-    public int RefNumber { get; set; }
+    public string RefNumber { get; set; } = string.Empty; // Changed to string to match Guid/COA Ref
     public string AccountName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal? Debit { get; set; }
