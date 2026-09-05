@@ -181,35 +181,45 @@ export default function ToolsPage() {
         throw new Error('No valid transaction entries found in GJ or AJ sheets.');
       }
 
-      // Evaluasi Pelimpahan COA via Backend API
-      const previewRes = await fetch('/web/tools/preview-journal-import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetMonth: Number(targetMonth),
-          targetYear: Number(targetYear),
-          transactions: parsedTransactions.map((tx) => ({
-            date: tx.date,
-            journalType: tx.journalType,
-            lines: tx.lines.map((l) => ({
-              refNumber: l.refNumber,
-              accountName: l.accountName,
-              description: l.description,
-              debit: l.debit,
-              credit: l.credit,
+      // Safe Request ke Backend untuk Evaluasi Pelimpahan COA
+      let displayTransactions = parsedTransactions;
+
+      try {
+        const previewRes = await fetch('/web/tools/preview-journal-import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            targetMonth: Number(targetMonth),
+            targetYear: Number(targetYear),
+            transactions: parsedTransactions.map((tx) => ({
+              date: tx.date,
+              journalType: tx.journalType,
+              lines: tx.lines.map((l) => ({
+                refNumber: l.refNumber,
+                accountName: l.accountName,
+                description: l.description,
+                debit: l.debit,
+                credit: l.credit,
+              })),
             })),
-          })),
-        }),
-      });
+          }),
+        });
 
-      const previewData = await previewRes.json();
-
-      if (!previewRes.ok) {
-        throw new Error(previewData.message || 'Failed to generate preview.');
-      }
-
-      if (previewData.reallocations && previewData.reallocations.length > 0) {
-        setReallocations(previewData.reallocations);
+        const contentType = previewRes.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const previewData = await previewRes.json();
+          if (previewRes.ok) {
+            if (previewData.reallocations && previewData.reallocations.length > 0) {
+              setReallocations(previewData.reallocations);
+            }
+            if (previewData.transactions && previewData.transactions.length > 0) {
+              displayTransactions = previewData.transactions;
+            }
+          }
+        }
+      } catch (e) {
+        // Fallback jika API preview belum tersedia di server
+        console.warn('Backend preview endpoint unreachable, displaying client-parsed preview.');
       }
 
       setParseResult({
@@ -217,7 +227,7 @@ export default function ToolsPage() {
         totalTransactionsRead: parsedTransactions.length,
         totalLinesRead: totalLines,
         warnings: [],
-        transactions: previewData.transactions || parsedTransactions,
+        transactions: displayTransactions,
       });
     } catch (err: any) {
       setErrorMessage(`Failed to process file: ${err.message || 'Unknown error'}`);
@@ -255,6 +265,12 @@ export default function ToolsPage() {
           })),
         }),
       });
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const rawErrText = await response.text();
+        throw new Error(`Server returned HTML error (${response.status}). Ensure endpoint route exists & user is authenticated.`);
+      }
 
       const result = await response.json();
 
@@ -416,7 +432,7 @@ export default function ToolsPage() {
                 </button>
               </div>
 
-              {/* Buttons Action */}
+              {/* Action Buttons */}
               <div className="d-grid gap-2 mt-4">
                 <button
                   type="button"
@@ -446,7 +462,7 @@ export default function ToolsPage() {
             </div>
           </div>
 
-          {/* SUMMARY INFO CARD */}
+          {/* METADATA SUMMARY CARD */}
           {parseResult && (
             <div className="card border-0 glass-card rounded-4 shadow-sm mb-4">
               <div className="card-body p-4">
@@ -471,7 +487,7 @@ export default function ToolsPage() {
             </div>
           )}
 
-          {/* TABEL SUMMARY PELIMPAHAN AKUN (DI KIRI) */}
+          {/* SUMMARY PELIMPAHAN AKUN (DI KIRI) */}
           {reallocations.length > 0 && (
             <div className="card border-warning bg-dark text-white rounded-4 shadow-sm">
               <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-3 px-4">
@@ -509,7 +525,7 @@ export default function ToolsPage() {
           )}
         </div>
 
-        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (SCROLLABLE SIDE) */}
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (SCROLLABLE) */}
         <div className="col-12 col-lg-7 col-xl-8">
           {parseResult ? (
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
@@ -577,7 +593,9 @@ export default function ToolsPage() {
               <div>
                 <i className="bi bi-file-earmark-arrow-up display-3 d-block mb-3 opacity-50"></i>
                 <h6 className="fw-bold text-white mb-2">No Preview Generated Yet</h6>
-                <p className="small mb-0 text-white-50">Select an Excel file on the left panel and click <strong>Preview Entries</strong> to inspect data before importing.</p>
+                <p className="small mb-0 text-white-50">
+                  Select an Excel file on the left panel and click <strong>Preview Entries</strong> to inspect data before importing.
+                </p>
               </div>
             </div>
           )}
