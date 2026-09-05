@@ -127,84 +127,23 @@ export default function Topbar({
 
   return (
     <>
-      {/* TOPBAR HEADER */}
+      {/* BARIS PERTAMA: KHUSUS QURAN VERSE */}
       <header
-        className="navbar navbar-expand topbar-solid py-2 sticky-top position-relative border-bottom border-secondary border-opacity-10"
+        className="navbar navbar-expand topbar-solid py-2 sticky-top border-bottom border-secondary border-opacity-10"
         style={{ minHeight: '56px' }}
       >
-        <div className="container-xxl px-3 d-flex align-items-center justify-content-end h-100 position-relative">
-          
-          {/* Qur'an Verse - Rata Tengah Presisi */}
-          <div 
-            className="d-none d-md-flex align-items-center justify-content-center text-center quran-center-wrapper position-absolute top-50 start-50 translate-middle"
-            style={{ width: 'auto', maxWidth: '65%', pointerEvents: 'none' }}
-          >
-            <QuranVerse />
-          </div>
-
-          {/* Akses Kanan */}
-          <div className="d-flex align-items-center gap-2 ms-auto position-relative" style={{ zIndex: 2 }}>
-            {isAuthenticated && (
-              <button
-                className="btn btn-sm topbar-btn text-secondary p-1 border-0 shadow-none lh-1 d-flex align-items-center"
-                type="button"
-                data-bs-toggle="modal"
-                data-bs-target="#searchModal"
-                aria-label="Search"
-              >
-                <i className="ti ti-search" style={{ fontSize: '1.1rem' }}></i>
-              </button>
-            )}
-
-            <div className="dropdown">
-              <button
-                className="btn btn-sm topbar-btn text-secondary p-1 border-0 shadow-none lh-1"
-                type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-                aria-label="More Options"
-              >
-                <i className="ti ti-dots-vertical" style={{ fontSize: '1.1rem' }}></i>
-              </button>
-              <ul
-                className="dropdown-menu dropdown-menu-end shadow border border-secondary border-opacity-10"
-                style={{ fontSize: '0.8rem', minWidth: '150px' }}
-              >
-                <li>
-                  <h6 className="dropdown-header py-1 text-uppercase tracking-wider" style={{ fontSize: '0.65rem' }}>
-                    Theme Interface
-                  </h6>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    className="dropdown-item py-1 d-flex align-items-center gap-2"
-                    onClick={() => changeTheme('dark')}
-                  >
-                    <i className="ti ti-moon-stars text-warning"></i> Dark Matte
-                  </button>
-                </li>
-                <li>
-                  <button
-                    type="button"
-                    className="dropdown-item py-1 d-flex align-items-center gap-2"
-                    onClick={() => changeTheme('light')}
-                  >
-                    <i className="ti ti-sun text-warning"></i> Light Minimal
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </div>
+        <div className="container-xxl px-3 d-flex align-items-center justify-content-center text-center">
+          <QuranVerse />
         </div>
       </header>
 
-      {/* STATUS STRIP */}
+      {/* BARIS KEDUAA: STATUS STRIP & AKSES FITUR */}
       {isAuthenticated && (
         <div
           className="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap border-bottom border-secondary border-opacity-10"
-          style={{ minHeight: '30px', fontSize: '0.75rem' }}
+          style={{ minHeight: '36px', fontSize: '0.75rem' }}
         >
+          {/* Dropdown Period */}
           <div className="dropdown">
             <button
               className="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-2 dropdown-toggle shadow-none status-badge"
@@ -267,8 +206,64 @@ export default function Topbar({
 
           <span className="text-secondary opacity-25">|</span>
 
-          {/* Ikon Guardian & Sync (Hanya Ikon, Tanpa Teks) */}
+          {/* Akses Fitur: Search, Theme, Guardian, & Sync */}
           <div className="d-flex align-items-center gap-2">
+            <button
+              className="btn btn-sm topbar-btn text-secondary p-0 border-0 shadow-none lh-1 d-flex align-items-center"
+              type="button"
+              data-bs-toggle="modal"
+              data-bs-target="#searchModal"
+              aria-label="Search"
+              title="Search"
+            >
+              <i className="ti ti-search" style={{ fontSize: '1.1rem' }}></i>
+            </button>
+
+            <span className="text-secondary opacity-25">/</span>
+
+            <div className="dropdown">
+              <button
+                className="btn btn-sm topbar-btn text-secondary p-0 border-0 shadow-none lh-1 d-flex align-items-center"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-label="More Options"
+                title="Theme Settings"
+              >
+                <i className="ti ti-dots-vertical" style={{ fontSize: '1.1rem' }}></i>
+              </button>
+              <ul
+                className="dropdown-menu dropdown-menu-end shadow border border-secondary border-opacity-10"
+                style={{ fontSize: '0.8rem', minWidth: '150px' }}
+              >
+                <li>
+                  <h6 className="dropdown-header py-1 text-uppercase tracking-wider" style={{ fontSize: '0.65rem' }}>
+                    Theme Interface
+                  </h6>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    className="dropdown-item py-1 d-flex align-items-center gap-2"
+                    onClick={() => changeTheme('dark')}
+                  >
+                    <i className="ti ti-moon-stars text-warning"></i> Dark Matte
+                  </button>
+                </li>
+                <li>
+                  <button
+                    type="button"
+                    className="dropdown-item py-1 d-flex align-items-center gap-2"
+                    onClick={() => changeTheme('light')}
+                  >
+                    <i className="ti ti-sun text-warning"></i> Light Minimal
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <span className="text-secondary opacity-25">/</span>
+
             <button
               className="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1 d-flex align-items-center"
               type="button"
@@ -286,9 +281,9 @@ export default function Topbar({
               title="Sync: Up to date"
               onClick={fetchSelectedPeriod}
             >
-              <i 
-                id="syncIcon" 
-                className={`ti ${loadingPeriod ? 'ti-refresh spin' : 'ti-cloud-check'}`} 
+              <i
+                id="syncIcon"
+                className={`ti ${loadingPeriod ? 'ti-refresh spin' : 'ti-cloud-check'}`}
                 style={{ fontSize: '1.15rem' }}
               ></i>
             </button>
