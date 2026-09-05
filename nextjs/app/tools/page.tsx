@@ -27,17 +27,26 @@ interface JournalImportResult {
   transactions: JournalTransactionImport[];
 }
 
+interface ReallocationDetail {
+  excelRef: number;
+  excelAccountName: string;
+  mappedRef: number;
+  mappedAccountName: string;
+  reason: string;
+}
+
 export default function ToolsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState<boolean>(false);
 
-  // Periode State (Default: Bulan & Tahun Saat Ini)
+  // Reallocation Summary State
+  const [reallocations, setReallocations] = useState<ReallocationDetail[]>([]);
+
   const now = new Date();
   const [targetMonth, setTargetMonth] = useState<number>(now.getMonth() + 1);
   const [targetYear, setTargetYear] = useState<number>(now.getFullYear());
 
-  // Import State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<JournalImportResult | null>(null);
 
@@ -54,10 +63,10 @@ export default function ToolsPage() {
       setSelectedFile(e.target.files[0]);
       setParseResult(null);
       setErrorMessage(null);
+      setReallocations([]);
     }
   };
 
-  // Helper Pembacaan Tanggal & Penggabungan dengan Periode Pilihan User
   const parseAndCombineDate = (val: any, year: number, month: number): string => {
     if (val === undefined || val === null) return '';
     const strVal = String(val).trim();
@@ -65,7 +74,6 @@ export default function ToolsPage() {
 
     const paddedMonth = String(month).padStart(2, '0');
 
-    // Jika input berupa angka hari (1 s/d 31)
     if (/^\d{1,2}$/.test(strVal)) {
       const dayNum = parseInt(strVal, 10);
       if (dayNum >= 1 && dayNum <= 31) {
@@ -74,12 +82,10 @@ export default function ToolsPage() {
       }
     }
 
-    // Jika diisi format full YYYY-MM-DD
     if (/^\d{4}-\d{2}-\d{2}$/.test(strVal)) {
       return strVal;
     }
 
-    // Format DD-MM-YYYY
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(strVal)) {
       const parts = strVal.split('-');
       return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
@@ -96,6 +102,7 @@ export default function ToolsPage() {
 
     setErrorMessage(null);
     setSuccessMessage(null);
+    setReallocations([]);
     setIsBusy(true);
 
     try {
@@ -228,9 +235,12 @@ export default function ToolsPage() {
         throw new Error(result.message || 'Failed to save data to database.');
       }
 
-      const reallocInfo = result.reallocatedCount ? ` (${result.reallocatedCount} entries reallocated to master COA)` : '';
+      if (result.reallocations && result.reallocations.length > 0) {
+        setReallocations(result.reallocations);
+      }
+
       setSuccessMessage(
-        `Successfully imported ${parseResult.totalTransactionsRead} journal entries for period ${targetMonth}/${targetYear}.${reallocInfo}`
+        `Successfully imported ${parseResult.totalTransactionsRead} journal entries for period ${targetMonth}/${targetYear}.`
       );
 
       if ((window as any).aumoModal) {
@@ -322,6 +332,48 @@ export default function ToolsPage() {
         </div>
       )}
 
+      {/* REALLOCATION SUMMARY TABLE */}
+      {reallocations.length > 0 && (
+        <div className="card border-warning bg-dark text-white rounded-4 shadow-sm mb-4">
+          <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
+            <h6 className="fw-bold mb-0 text-warning">
+              <i className="bi bi-arrow-left-right me-2"></i> Account Reallocation Summary ({reallocations.length} entries adjusted)
+            </h6>
+            <button className="btn-close btn-close-white" onClick={() => setReallocations([])}></button>
+          </div>
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-dark table-hover mb-0 align-middle small">
+                <thead>
+                  <tr className="text-secondary">
+                    <th>Excel Data (Original)</th>
+                    <th className="text-center" style={{ width: '50px' }}><i className="bi bi-arrow-right"></i></th>
+                    <th>Master COA System (Target Baku)</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reallocations.map((r, i) => (
+                    <tr key={i}>
+                      <td>
+                        <span className="badge bg-secondary me-1">{r.excelRef}</span>
+                        <span>{r.excelAccountName}</span>
+                      </td>
+                      <td className="text-center text-warning"><i className="bi bi-arrow-right-short fs-5"></i></td>
+                      <td>
+                        <span className="badge bg-primary me-1">{r.mappedRef}</span>
+                        <strong className="text-white">{r.mappedAccountName}</strong>
+                      </td>
+                      <td className="text-secondary">{r.reason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="row g-4">
         <div className="col-12 col-xl-8 mx-auto">
           <div className="card glass-card border-0 shadow-sm rounded-4 h-100">
@@ -335,7 +387,7 @@ export default function ToolsPage() {
                 Upload batch journal entries using standard <code>.xlsx</code> format. Target period will be created automatically if not existing.
               </p>
 
-              {/* Pemilihan Periode Target */}
+              {/* Target Period */}
               <div className="bg-body-tertiary rounded-3 p-3 mb-4 border border-secondary border-opacity-25">
                 <label className="form-label fw-bold small text-white d-block mb-2">
                   <i className="bi bi-calendar3 me-1"></i> Target Import Period
@@ -390,7 +442,7 @@ export default function ToolsPage() {
                 </button>
               </div>
 
-              {/* Upload Input */}
+              {/* Upload Form */}
               <div className="mb-3 mt-auto">
                 <label className="form-label fw-bold small text-white">Select Excel File (.xlsx)</label>
                 <input
