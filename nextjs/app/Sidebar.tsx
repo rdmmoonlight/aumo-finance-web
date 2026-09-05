@@ -2,10 +2,23 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import {
+  IconHome,
+  IconLayoutGrid,
+  IconRobot,
+  IconBookPlus,
+  IconFolder,
+  IconSitemap,
+  IconCalendarEvent,
+  IconShieldCheck,
+  IconTools,
+  IconSettings,
+  IconLogout
+} from '@tabler/icons-react';
 
 interface SidebarProps {
   pathname: string;
-  currentUserEmail: string;
+  currentUserEmail?: string;
   handleSignOut: () => void;
   showReportsFlyout?: boolean;
   toggleReportsFlyout?: () => void;
@@ -14,7 +27,6 @@ interface SidebarProps {
 
 export default function Sidebar({
   pathname,
-  currentUserEmail,
   handleSignOut,
   showReportsFlyout: externalShowFlyout,
   toggleReportsFlyout: externalToggleFlyout,
@@ -37,7 +49,7 @@ export default function Sidebar({
             title="Aumo Finance Home"
             onClick={closeFlyout}
           >
-            <i className="bi bi-house-door-fill fs-5"></i>
+            <IconHome size={22} />
           </Link>
 
           <hr className="hr-matte my-2 w-75" />
@@ -50,7 +62,7 @@ export default function Sidebar({
                 title="Dashboard"
                 onClick={closeFlyout}
               >
-                <i className="bi bi-columns-gap fs-5"></i>
+                <IconLayoutGrid size={22} />
               </Link>
             </li>
 
@@ -61,7 +73,7 @@ export default function Sidebar({
                 title="AI Financial Assistant"
                 onClick={closeFlyout}
               >
-                <i className="bi bi-robot fs-5"></i>
+                <IconRobot size={22} />
               </Link>
             </li>
 
@@ -72,7 +84,7 @@ export default function Sidebar({
                 title="Journal Entry"
                 onClick={closeFlyout}
               >
-                <i className="bi bi-journal-plus fs-5"></i>
+                <IconBookPlus size={22} />
               </Link>
             </li>
 
@@ -83,7 +95,7 @@ export default function Sidebar({
                 className={`nav-link icon-btn border-0 bg-transparent ${showReportsFlyout ? 'active' : ''}`}
                 title="Reports"
               >
-                <i className="bi bi-folder fs-5"></i>
+                <IconFolder size={22} />
               </button>
             </li>
 
@@ -94,7 +106,7 @@ export default function Sidebar({
                 title="Chart of Accounts"
                 onClick={closeFlyout}
               >
-                <i className="bi bi-diagram-3 fs-5"></i>
+                <IconSitemap size={22} />
               </Link>
             </li>
 
@@ -105,7 +117,7 @@ export default function Sidebar({
                 title="Financial Periods"
                 onClick={closeFlyout}
               >
-                <i className="bi bi-calendar3 fs-5"></i>
+                <IconCalendarEvent size={22} />
               </Link>
             </li>
 
@@ -116,7 +128,7 @@ export default function Sidebar({
                 title="Guardian Security"
                 onClick={closeFlyout}
               >
-                <i className="bi bi-shield-check fs-5"></i>
+                <IconShieldCheck size={22} />
               </Link>
             </li>
 
@@ -127,48 +139,41 @@ export default function Sidebar({
                 title="Tools"
                 onClick={closeFlyout}
               >
-                <i className="bi bi-tools fs-5"></i>
+                <IconTools size={22} />
               </Link>
             </li>
           </ul>
 
+          {/* Menus Bawah (Pilihan Settings & Sign Out) */}
           <div className="mt-auto dropup position-relative">
             <button
               className="nav-link icon-btn border-0 bg-transparent"
-              id="userDropdown"
+              id="settingsDropdown"
               data-bs-toggle="dropdown"
               aria-expanded="false"
-              title="User Profile"
+              title="Settings & Account"
             >
-              <i className="bi bi-person-circle fs-5"></i>
+              <IconSettings size={22} />
             </button>
-            <span
-              className="position-absolute bottom-0 end-0 p-1 bg-success border border-dark rounded-circle"
-              style={{ width: '7px', height: '7px' }}
-            ></span>
 
             <ul
               className="dropdown-menu dropdown-menu-dark shadow ms-2 mb-2 fs-7 border border-secondary border-opacity-10"
-              aria-labelledby="userDropdown"
+              aria-labelledby="settingsDropdown"
             >
-              <li className="dropdown-header text-truncate" style={{ maxWidth: '180px' }}>
-                {currentUserEmail}
-              </li>
               <li>
-                <hr className="dropdown-divider opacity-10" />
-              </li>
-              <li>
-                <Link className="dropdown-item d-flex align-items-center" href="/settings" onClick={closeFlyout}>
-                  <i className="bi bi-gear me-2"></i> Settings
+                <Link className="dropdown-item d-flex align-items-center gap-2" href="/settings" onClick={closeFlyout}>
+                  <IconSettings size={18} />
+                  <span>Settings</span>
                 </Link>
               </li>
               <li>
                 <button
                   type="button"
-                  className="dropdown-item d-flex align-items-center text-danger w-100"
+                  className="dropdown-item d-flex align-items-center gap-2 text-danger w-100"
                   onClick={handleSignOut}
                 >
-                  <i className="bi bi-box-arrow-right me-2"></i> Sign Out
+                  <IconLogout size={18} />
+                  <span>Sign Out</span>
                 </button>
               </li>
             </ul>
