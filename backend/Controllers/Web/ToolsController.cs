@@ -175,7 +175,7 @@ namespace AumoFinance.Controllers.Web
                         else
                         {
                             // Priority B: Ref tidak ada, pelimpahan berdasarkan Nama Akun (Case-Insensitive)
-                            coa = existingCoas.FirstOrDefault(c => 
+                            coa = existingCoas.FirstOrDefault(c =>
                                 string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
                             if (coa != null)
