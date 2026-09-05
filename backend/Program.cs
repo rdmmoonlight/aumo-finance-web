@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+// Single File-Scoped Namespace (Wajib diletakkan tepat setelah using)
 namespace AumoBackend;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,7 +35,7 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
-builder.Services.AddScoped<AppDbContext>(sp =>
+builder.Services.AddScoped<AppDbContext>(sp => 
     sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
