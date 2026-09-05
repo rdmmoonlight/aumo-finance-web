@@ -9,13 +9,13 @@ import {
   IconInfoCircle, 
   IconMailForward, 
   IconCheck,
-  IconAlertTriangle,
   IconPhone,
   IconShieldCheck,
   IconMail
 } from '@tabler/icons-react';
 
 export interface UserProfile {
+  userId: string;
   fullName: string;
   userName: string;
   email: string;
@@ -52,79 +52,39 @@ export default function SettingsPage() {
     }, 5000);
   };
 
-  // Helper untuk memindai localStorage mencari userId dinamis atau email
-  const getStoredUserInfo = () => {
-    let extractedUserId = localStorage.getItem('userId') || '';
-    let savedEmail = localStorage.getItem('userEmail') || localStorage.getItem('email') || '';
-
-    // Jika userId belum ketemu, cari dari pattern key dinamis seperti "app_selected_period_id2userId..."
-    if (!extractedUserId && typeof window !== 'undefined') {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.includes('2userId')) {
-          extractedUserId = key.split('2userId')[1] || '';
-          break;
-        }
-      }
-    }
-
-    return { extractedUserId, savedEmail };
-  };
-
-  // 1. Fetch Data User Asli dari Database Backend saat Komponen Dimuat
+  // 1. Fetch Data User Asli dari Database Backend
   useEffect(() => {
     const fetchUserProfile = async () => {
       setLoading(true);
       try {
-        // Cek beberapa variasi nama key token di localStorage
-        const token = 
-          localStorage.getItem('token') || 
-          localStorage.getItem('authToken') || 
-          localStorage.getItem('accessToken') ||
-          localStorage.getItem('jwt');
+        // Panggil /web/auth/me dengan credentials: 'include' agar Identity Cookie terkirim
+        const res = await fetch(`${API_BASE_URL}/web/auth/me`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // PENTING: Untuk Identity.Application Cookie Session
+        });
 
-        const { extractedUserId, savedEmail } = getStoredUserInfo();
+        if (res.ok) {
+          const data = await res.json();
 
-        // Jika ada token, panggil endpoint profil backend (Route: web/auth/me)
-        if (token) {
-          const res = await fetch(`${API_BASE_URL}/web/auth/me`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-
-          if (res.ok) {
-            const rawData = await res.json();
-            // Penanganan jika payload backend dibungkus .data atau .user
-            const data = rawData.data || rawData.user || rawData;
-
+          if (data.success) {
             setUserProfile({
-              fullName: data.fullName || data.name || data.userName || 'User',
-              userName: data.userName || data.username || data.email,
-              email: data.email,
-              isEmailConfirmed: Boolean(data.isEmailConfirmed ?? data.emailConfirmed ?? true),
-              phoneNumber: data.phoneNumber || data.phone || '-',
-              twoFactorEnabled: Boolean(data.twoFactorEnabled),
+              userId: data.userId || '',
+              fullName: data.fullName || data.userName || 'User',
+              userName: data.userName || data.email,
+              email: data.email || '-',
+              isEmailConfirmed: true, // Default karena tidak dikirim dari backend me endpoint
+              phoneNumber: '-',      // Default karena tidak dikirim dari backend me endpoint
+              twoFactorEnabled: false,
             });
             return;
           }
-        }
-
-        // Fallback: Jika endpoint belum dapat dipanggil tetapi ada session/user info terdeteksi
-        if (savedEmail || extractedUserId) {
-          const usernameFromSession = savedEmail ? savedEmail.split('@')[0] : 'User';
-          setUserProfile({
-            fullName: usernameFromSession,
-            userName: usernameFromSession,
-            email: savedEmail || 'user@domain.com',
-            isEmailConfirmed: true,
-            phoneNumber: '-',
-            twoFactorEnabled: false,
-          });
-        } else {
+        } else if (res.status === 401 || res.status === 404) {
           showNotification('User session not found. Please sign in again.', true);
+        } else {
+          showNotification(`Failed to fetch profile: HTTP ${res.status}`, true);
         }
       } catch (err: any) {
         showNotification(`Failed to load profile from database: ${err.message}`, true);
@@ -144,7 +104,7 @@ export default function SettingsPage() {
     }
   }, []);
 
-  // Handler Kirim Ulang Verifikasi Email ke API Backend (Route: web/auth/resend-verification)
+  // Handler Kirim Ulang Verifikasi Email
   const handleResendVerification = async () => {
     if (!userProfile?.email) {
       showNotification('User account email not found.', true);
@@ -156,6 +116,7 @@ export default function SettingsPage() {
       const response = await fetch(`${API_BASE_URL}/web/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email: userProfile.email }),
       });
 
@@ -252,37 +213,9 @@ export default function SettingsPage() {
                 <dt className="col-sm-4 text-white-50">Email Status</dt>
                 <dd className="col-sm-8">
                   <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <span className={`badge d-inline-flex align-items-center gap-1 ${userProfile?.isEmailConfirmed ? 'bg-success' : 'bg-warning text-dark'}`}>
-                      {userProfile?.isEmailConfirmed ? (
-                        <>
-                          <IconCheck size={14} /> Confirmed
-                        </>
-                      ) : (
-                        <>
-                          <IconAlertTriangle size={14} /> Not Confirmed
-                        </>
-                      )}
+                    <span className="badge d-inline-flex align-items-center gap-1 bg-success">
+                      <IconCheck size={14} /> Confirmed
                     </span>
-
-                    {!userProfile?.isEmailConfirmed && (
-                      <button
-                        className="btn btn-sm btn-outline-primary py-0 px-2 d-inline-flex align-items-center gap-1"
-                        onClick={handleResendVerification}
-                        disabled={isSendingEmail}
-                      >
-                        {isSendingEmail ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                            <span>Sending...</span>
-                          </>
-                        ) : (
-                          <>
-                            <IconMailForward size={14} />
-                            <span>Resend Verification</span>
-                          </>
-                        )}
-                      </button>
-                    )}
                   </div>
                 </dd>
 
@@ -294,9 +227,8 @@ export default function SettingsPage() {
 
                 <dt className="col-sm-4 text-white-50">2FA Status</dt>
                 <dd className="col-sm-8">
-                  <span className={`badge d-inline-flex align-items-center gap-1 ${userProfile?.twoFactorEnabled ? 'bg-success' : 'bg-secondary'}`}>
-                    <IconShieldCheck size={14} />
-                    {userProfile?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
+                  <span className="badge d-inline-flex align-items-center gap-1 bg-secondary">
+                    <IconShieldCheck size={14} /> Disabled
                   </span>
                 </dd>
               </dl>
