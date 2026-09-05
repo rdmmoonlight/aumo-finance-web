@@ -14,7 +14,7 @@ interface JournalLineImport {
 }
 
 interface JournalTransactionImport {
-  date: string;
+  date: string; // Format terjamin ISO standar DB (YYYY-MM-DD)
   journalType: string;
   lines: JournalLineImport[];
 }
@@ -55,34 +55,47 @@ export default function ToolsPage() {
     }
   };
 
-  // Helper untuk Normalisasi & Parsing Tanggal Excel
-  const parseExcelDate = (val: any, XLSX: any): string => {
-    if (val === undefined || val === null || val === '') return '';
-
-    // Jika serial date bawaan Excel (number)
-    if (typeof val === 'number') {
-      const parsed = XLSX.SSF.parse_date_code(val);
-      if (parsed) {
-        const y = parsed.y;
-        const m = String(parsed.m).padStart(2, '0');
-        const d = String(parsed.d).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      }
-      return String(val);
-    }
+  // Helper Murni Pembacaan & Konversi Tanggal ke Standar DB (YYYY-MM-DD)
+  const parseRawDateString = (val: any): string => {
+    if (val === undefined || val === null) return '';
 
     const strVal = String(val).trim();
-    
-    // Jika format DD-MM-YYYY
+    if (!strVal) return '';
+
+    const now = new Date();
+    const defaultYear = now.getFullYear();
+    const defaultMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+    // 1. Jika format standar YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(strVal)) {
+      return strVal;
+    }
+
+    // 2. Jika format DD-MM-YYYY (Contoh: 27-09-2006 -> 2006-09-27)
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(strVal)) {
       const parts = strVal.split('-');
       return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
     }
 
+    // 3. Jika format DD/MM/YYYY (Contoh: 27/09/2006 -> 2006-09-27)
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(strVal)) {
+      const parts = strVal.split('/');
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+
+    // 4. Jika input berupa Angka Hari Tunggal (Contoh: 1, 3, 15 -> YYYY-MM-DD)
+    if (/^\d{1,2}$/.test(strVal)) {
+      const dayNum = parseInt(strVal, 10);
+      if (dayNum >= 1 && dayNum <= 31) {
+        const paddedDay = String(dayNum).padStart(2, '0');
+        return `${defaultYear}-${defaultMonth}-${paddedDay}`;
+      }
+    }
+
     return strVal;
   };
 
-  // Handler Preview Excel Asli (Membaca file dari input)
+  // Handler Preview Excel Asli
   const handlePreview = async () => {
     if (!selectedFile) {
       setErrorMessage('Please select an Excel file first.');
@@ -107,9 +120,9 @@ export default function ToolsPage() {
 
       const XLSX = (window as any).XLSX;
 
-      // 2. Baca file Excel sebagai ArrayBuffer
+      // 2. Baca file Excel dalam mode raw (tanpa konversi tipe tanggal otomatis)
       const arrayBuffer = await selectedFile.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: false });
+      const workbook = XLSX.read(arrayBuffer, { type: 'array', raw: true });
 
       const parsedTransactions: JournalTransactionImport[] = [];
       let totalLines = 0;
@@ -119,37 +132,34 @@ export default function ToolsPage() {
         const worksheet = workbook.Sheets[sheetName];
         if (!worksheet) return;
 
-        // Ambil data dalam bentuk array of object
-        const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        // Ambil data dalam bentuk mentah ({ raw: true, defval: '' })
+        const rows: any[] = XLSX.utils.sheet_to_json(worksheet, { raw: true, defval: '' });
 
         let currentDate = '';
         const groupedByDate: { [key: string]: JournalLineImport[] } = {};
 
         rows.forEach((row, index) => {
-          // Cari kolom Date (opsi case-insensitive)
           const rawDate = row['Date'] ?? row['date'] ?? row['DATE'] ?? '';
-          const parsedDateStr = parseExcelDate(rawDate, XLSX);
+          const parsedDateStr = parseRawDateString(rawDate);
 
-          // Jika ada tanggal baru, perbarui currentDate. Jika kosong (akibat enter/baris baru), pakai currentDate terakhir (Forward Fill)
+          // FORWARD FILL: simpan tanggal baru, atau pakai tanggal sebelumnya untuk enter/baris kosong
           if (parsedDateStr !== '') {
             currentDate = parsedDateStr;
           }
 
-          // Lewati baris jika belum ada tanggal sama sekali atau baris benar-benar kosong
           if (!currentDate) return;
 
           const accountName = String(row['Account Name'] ?? row['accountName'] ?? row['ACCOUNT NAME'] ?? '').trim();
           const description = String(row['Description'] ?? row['description'] ?? row['DESCRIPTION'] ?? '').trim();
           const refVal = row['Ref'] ?? row['ref'] ?? row['REF'] ?? 0;
 
-          // Jika baris tidak berisi akun/ref/nominal, abaikan
           if (!accountName && !description && !refVal) return;
 
           const rawDebit = row['Debit'] ?? row['debit'] ?? row['DEBIT'] ?? '';
           const rawCredit = row['Credit'] ?? row['credit'] ?? row['CREDIT'] ?? '';
 
           const line: JournalLineImport = {
-            rowIndex: index + 2, // offset header baris 1
+            rowIndex: index + 2,
             refNumber: Number(refVal) || 0,
             accountName: accountName,
             description: description,
@@ -165,7 +175,6 @@ export default function ToolsPage() {
           totalLines++;
         });
 
-        // Masukkan data terkelompok ke transaksi
         Object.keys(groupedByDate).forEach((dateKey) => {
           parsedTransactions.push({
             date: dateKey,
@@ -189,7 +198,6 @@ export default function ToolsPage() {
 
       setParseResult(realResult);
 
-      // Tampilkan Modal Preview
       if ((window as any).aumoModal) {
         (window as any).aumoModal.show('indexPreviewModal');
       }
@@ -200,7 +208,7 @@ export default function ToolsPage() {
     }
   };
 
-  // Handler Konfirmasi Import ke Database
+  // Handler Konfirmasi Import ke Database (Mengirim HTTP POST ke Controller C#)
   const handleConfirmImport = async () => {
     if (!parseResult || parseResult.transactions.length === 0) {
       setErrorMessage('No valid transactions to import.');
@@ -209,13 +217,36 @@ export default function ToolsPage() {
 
     setIsBusy(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch('/web/tools/import-journal-entries', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transactions: parseResult.transactions.map((tx) => ({
+            date: tx.date,
+            journalType: tx.journalType,
+            lines: tx.lines.map((l) => ({
+              refNumber: l.refNumber,
+              accountName: l.accountName,
+              description: l.description,
+              debit: l.debit,
+              credit: l.credit,
+            })),
+          })),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to save data to database.');
+      }
 
       setSuccessMessage(
-        `Successfully imported ${parseResult.totalTransactionsRead} journal entries with 1 new COA account created.`
+        `Successfully imported ${parseResult.totalTransactionsRead} journal entries. (${result.createdCoaCount || 0} new COA created)`
       );
 
-      // Tutup modal
       if ((window as any).aumoModal) {
         (window as any).aumoModal.hide('indexPreviewModal');
       }
@@ -229,7 +260,7 @@ export default function ToolsPage() {
     }
   };
 
-  // Generator File Excel Template Langsung di Sisi Client
+  // Generator File Excel Template Langsung di Client
   const handleDownloadTemplate = async () => {
     try {
       if (!(window as any).XLSX) {
@@ -247,14 +278,14 @@ export default function ToolsPage() {
       const headers = [['Date', 'Account Name', 'Description', 'Ref', 'Debit', 'Credit']];
 
       const sampleGJ = [
-        [1, 'Kas Utama', 'Setoran Modal Awal', 101, 15000000, ''],
+        ['1', 'Kas Utama', 'Setoran Modal Awal', 101, 15000000, ''],
         ['', 'Modal Pemilik', 'Setoran Modal Awal', 301, '', 15000000],
-        [3, 'Beban Listrik', 'Pembayaran PLN', 502, 500000, ''],
+        ['3', 'Beban Listrik', 'Pembayaran PLN', 502, 500000, ''],
         ['', 'Kas Utama', 'Pembayaran PLN', 101, '', 500000],
       ];
 
       const sampleAJ = [
-        [4, 'Beban Sewa Kantor', 'Akrual Sewa Bulan Juni', 501, 2500000, ''],
+        ['4', 'Beban Sewa Kantor', 'Akrual Sewa Bulan Juni', 501, 2500000, ''],
         ['', 'Utang Usaha', 'Akrual Sewa Bulan Juni', 201, '', 2500000],
       ];
 
