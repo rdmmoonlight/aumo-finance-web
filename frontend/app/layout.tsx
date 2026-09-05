@@ -2,17 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Script from 'next/script';
 
-// Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 import Topbar from './Topbar';
 import Sidebar from './Sidebar';
 
 /* ============================================================================
- * 1. QURAN VERSE ALGORITHM & COMPONENT
+ * 1. QURAN VERSE ALGORITHM & UTILITIES
  * ============================================================================ */
 const timeSlots = [
   0, 85, 169, 254, 339, 424, 508, 593, 678, 762, 847, 932, 1016, 1101, 1186, 1271, 1355
@@ -295,7 +294,7 @@ export default function RootLayout({
     <html lang="en-US">
       <head>
         <script dangerouslySetInnerHTML={{ __html: globalHelpersScript }} />
-        {/* TABLER ICONS CDN */}
+        {/* TABLER ICONS VIA CDN */}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
       </head>
       <body>
@@ -360,7 +359,15 @@ export default function RootLayout({
 
               {/* MAIN CONTENT AREA */}
               <main id="mainContent" className="content flex-grow-1 p-2 p-md-4 d-flex flex-column" role="main">
-                {children}
+                <div className="flex-grow-1">
+                  {children}
+                </div>
+
+                {/* FOOTER */}
+                <footer className="mt-auto pt-3 border-top border-secondary border-opacity-10 text-center text-body-tertiary" style={{ fontSize: '0.75rem' }}>
+                  <div className="fw-medium text-body-secondary mb-1">Aumo Finance by rdmmonlight</div>
+                  <div>© 2026 rdmmonlight. All rights reserved. Proprietary.</div>
+                </footer>
               </main>
             </div>
           </div>
