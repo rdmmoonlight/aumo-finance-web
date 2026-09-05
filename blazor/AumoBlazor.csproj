@@ -8,6 +8,7 @@
     <RootNamespace>AumoFinance</RootNamespace>
     <UserSecretsId>3b80a545-4808-45e1-aed8-8b28c45e72fe</UserSecretsId>
     <NoWarn>$(NoWarn);NU1603</NoWarn>
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
