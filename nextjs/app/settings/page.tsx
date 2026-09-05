@@ -1,6 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { 
+  IconUser, 
+  IconSettings, 
+  IconMoon, 
+  IconSun, 
+  IconInfoCircle, 
+  IconMailForward, 
+  IconX,
+  IconCheck,
+  IconAlertTriangle,
+  IconPhone,
+  IconShieldCheck,
+  IconMail
+} from '@tabler/icons-react';
 
 export interface UserProfile {
   fullName: string;
@@ -47,9 +61,9 @@ export default function SettingsPage() {
         const token = localStorage.getItem('token');
         const savedEmail = localStorage.getItem('userEmail');
 
-        // Jika ada token, panggil endpoint profil backend
+        // Jika ada token, panggil endpoint profil backend (Route: web/auth/me)
         if (token) {
-          const res = await fetch(`${API_BASE_URL}/auth/me`, {
+          const res = await fetch(`${API_BASE_URL}/web/auth/me`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -58,23 +72,26 @@ export default function SettingsPage() {
           });
 
           if (res.ok) {
-            const data = await res.json();
+            const rawData = await res.json();
+            // Penanganan jika payload backend dibungkus .data atau .user
+            const data = rawData.data || rawData.user || rawData;
+
             setUserProfile({
-              fullName: data.fullName || data.userName || 'User',
-              userName: data.userName || data.email,
+              fullName: data.fullName || data.name || data.userName || 'User',
+              userName: data.userName || data.username || data.email,
               email: data.email,
               isEmailConfirmed: Boolean(data.isEmailConfirmed ?? data.emailConfirmed ?? true),
-              phoneNumber: data.phoneNumber || '-',
+              phoneNumber: data.phoneNumber || data.phone || '-',
               twoFactorEnabled: Boolean(data.twoFactorEnabled),
             });
             return;
           }
         }
 
-        // Fallback: Jika endpoint /auth/me belum tersedia, gunakan email dari session login
+        // Fallback: Jika endpoint /web/auth/me belum memberikan data, gunakan data lokal
         if (savedEmail) {
           setUserProfile({
-            fullName: 'Abdul Ghofur',
+            fullName: savedEmail.split('@')[0],
             userName: savedEmail.split('@')[0],
             email: savedEmail,
             isEmailConfirmed: true,
@@ -102,7 +119,7 @@ export default function SettingsPage() {
     }
   }, []);
 
-  // Handler Kirim Ulang Verifikasi Email ke API Backend
+  // Handler Kirim Ulang Verifikasi Email ke API Backend (Route: web/auth/resend-verification)
   const handleResendVerification = async () => {
     if (!userProfile?.email) {
       showNotification('User account email not found.', true);
@@ -111,7 +128,7 @@ export default function SettingsPage() {
 
     setIsSendingEmail(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+      const response = await fetch(`${API_BASE_URL}/web/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: userProfile.email }),
@@ -166,16 +183,19 @@ export default function SettingsPage() {
 
   return (
     <div className="container-fluid py-4 px-4 text-white">
-      <h3 className="mb-4 fw-bold">Settings</h3>
+      <h3 className="mb-4 fw-bold d-flex align-items-center gap-2">
+        <IconSettings size={28} />
+        <span>Settings</span>
+      </h3>
 
       {/* Status Notification Alert */}
       {statusAlertMessage && (
-        <div className={`alert ${statusAlertClass} alert-dismissible fade show my-3 shadow-sm`} role="alert">
-          <i className="bi bi-info-circle me-2"></i>
-          {statusAlertMessage}
+        <div className={`alert ${statusAlertClass} alert-dismissible fade show my-3 shadow-sm d-flex align-items-center`} role="alert">
+          <IconInfoCircle size={20} className="me-2 flex-shrink-0" />
+          <div>{statusAlertMessage}</div>
           <button
             type="button"
-            className="btn-close"
+            className="btn-close ms-auto"
             onClick={() => setStatusAlertMessage(null)}
             aria-label="Close"
           ></button>
@@ -184,8 +204,9 @@ export default function SettingsPage() {
 
       {/* ===== USER PROFILE SECTION (FROM DB) ===== */}
       <div className="card glass-card border-0 shadow-sm rounded-4 mb-4">
-        <div className="card-header bg-primary text-white py-3 rounded-top-4">
-          <h5 className="mb-0">👤 User Profile</h5>
+        <div className="card-header bg-primary text-white py-3 rounded-top-4 d-flex align-items-center gap-2">
+          <IconUser size={22} />
+          <h5 className="mb-0 fw-semibold">User Profile</h5>
         </div>
         <div className="card-body p-4">
           <div className="row">
@@ -198,28 +219,42 @@ export default function SettingsPage() {
                 <dd className="col-sm-8 fw-semibold">{userProfile?.userName || '-'}</dd>
 
                 <dt className="col-sm-4 text-white-50">Email</dt>
-                <dd className="col-sm-8">{userProfile?.email || '-'}</dd>
+                <dd className="col-sm-8 d-flex align-items-center gap-1">
+                  <IconMail size={16} className="text-white-50" />
+                  <span>{userProfile?.email || '-'}</span>
+                </dd>
 
                 <dt className="col-sm-4 text-white-50">Email Status</dt>
                 <dd className="col-sm-8">
                   <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <span className={`badge ${userProfile?.isEmailConfirmed ? 'bg-success' : 'bg-warning text-dark'}`}>
-                      {userProfile?.isEmailConfirmed ? 'Confirmed' : 'Not Confirmed'}
+                    <span className={`badge d-inline-flex align-items-center gap-1 ${userProfile?.isEmailConfirmed ? 'bg-success' : 'bg-warning text-dark'}`}>
+                      {userProfile?.isEmailConfirmed ? (
+                        <>
+                          <IconCheck size={14} /> Confirmed
+                        </>
+                      ) : (
+                        <>
+                          <IconAlertTriangle size={14} /> Not Confirmed
+                        </>
+                      )}
                     </span>
 
                     {!userProfile?.isEmailConfirmed && (
                       <button
-                        className="btn btn-sm btn-outline-primary py-0 px-2"
+                        className="btn btn-sm btn-outline-primary py-0 px-2 d-inline-flex align-items-center gap-1"
                         onClick={handleResendVerification}
                         disabled={isSendingEmail}
                       >
                         {isSendingEmail ? (
                           <>
-                            <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             <span>Sending...</span>
                           </>
                         ) : (
-                          <span>Resend Verification</span>
+                          <>
+                            <IconMailForward size={14} />
+                            <span>Resend Verification</span>
+                          </>
                         )}
                       </button>
                     )}
@@ -227,11 +262,15 @@ export default function SettingsPage() {
                 </dd>
 
                 <dt className="col-sm-4 text-white-50">Phone</dt>
-                <dd className="col-sm-8 font-monospace">{userProfile?.phoneNumber || '-'}</dd>
+                <dd className="col-sm-8 font-monospace d-flex align-items-center gap-1">
+                  <IconPhone size={16} className="text-white-50" />
+                  <span>{userProfile?.phoneNumber || '-'}</span>
+                </dd>
 
                 <dt className="col-sm-4 text-white-50">2FA Status</dt>
                 <dd className="col-sm-8">
-                  <span className={`badge ${userProfile?.twoFactorEnabled ? 'bg-success' : 'bg-secondary'}`}>
+                  <span className={`badge d-inline-flex align-items-center gap-1 ${userProfile?.twoFactorEnabled ? 'bg-success' : 'bg-secondary'}`}>
+                    <IconShieldCheck size={14} />
                     {userProfile?.twoFactorEnabled ? 'Enabled' : 'Disabled'}
                   </span>
                 </dd>
@@ -243,8 +282,9 @@ export default function SettingsPage() {
 
       {/* ===== PREFERENCES SECTION ===== */}
       <div className="card glass-card border-0 shadow-sm rounded-4">
-        <div className="card-header bg-primary text-white py-3 rounded-top-4">
-          <h5 className="mb-0">⚙️ Preferences</h5>
+        <div className="card-header bg-primary text-white py-3 rounded-top-4 d-flex align-items-center gap-2">
+          <IconSettings size={22} />
+          <h5 className="mb-0 fw-semibold">Preferences</h5>
         </div>
         <div className="card-body p-4">
           <div className="mb-4">
@@ -258,8 +298,16 @@ export default function SettingsPage() {
                 checked={isDarkMode}
                 onChange={handleThemeChanged}
               />
-              <label className="form-check-label ms-2 cursor-pointer" htmlFor="themeToggle">
-                {isDarkMode ? '🌙 Dark Nebula Mode' : '☀️ Light Minimal Mode'}
+              <label className="form-check-label ms-2 cursor-pointer d-inline-flex align-items-center gap-1" htmlFor="themeToggle">
+                {isDarkMode ? (
+                  <>
+                    <IconMoon size={18} className="text-info" /> Dark Nebula Mode
+                  </>
+                ) : (
+                  <>
+                    <IconSun size={18} className="text-warning" /> Light Minimal Mode
+                  </>
+                )}
               </label>
             </div>
           </div>
@@ -286,7 +334,8 @@ export default function SettingsPage() {
       {/* Toast Notification Container */}
       <div className="toast-container position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1080 }}>
         <div id="settingsToast" className="toast show bg-dark text-white border-secondary shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
-          <div className="toast-header bg-primary text-white border-bottom border-secondary border-opacity-25">
+          <div className="toast-header bg-primary text-white border-bottom border-secondary border-opacity-25 d-flex align-items-center">
+            <IconInfoCircle size={18} className="me-2" />
             <strong className="me-auto">Notification</strong>
             <button
               type="button"
