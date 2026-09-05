@@ -138,8 +138,52 @@ export default function ToolsPage() {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    window.location.href = '/web/Tools/DownloadJournalTemplate';
+  // Generator File Excel Template Langsung di Sisi Client (Tanpa Endpoint/Route Server)
+  const handleDownloadTemplate = async () => {
+    try {
+      // Memuat SheetJS (XLSX) secara dinamis dari CDN jika belum ada di window
+      if (!(window as any).XLSX) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      const XLSX = (window as any).XLSX;
+
+      // Header kolom sesuai kriteria
+      const headers = [['Date', 'Account Name', 'Description', 'Ref', 'Debit', 'Credit']];
+
+      // Sample baris untuk panduan pengisian
+      const sampleGJ = [
+        ['2026-06-01', 'Kas Utama', 'Setoran Modal Awal', 101, 15000000, ''],
+        ['2026-06-01', 'Modal Pemilik', 'Setoran Modal Awal', 301, '', 15000000],
+      ];
+
+      const sampleAJ = [
+        ['2026-06-02', 'Beban Sewa Kantor', 'Akrual Sewa Bulan Juni', 501, 2500000, ''],
+        ['2026-06-02', 'Utang Usaha', 'Akrual Sewa Bulan Juni', 201, '', 2500000],
+      ];
+
+      // Buat Workbook baru
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: General Journal (GJ)
+      const wsGJ = XLSX.utils.aoa_to_sheet([...headers, ...sampleGJ]);
+      XLSX.utils.book_append_sheet(wb, wsGJ, 'GJ');
+
+      // Sheet 2: Adjusting Journal (AJ)
+      const wsAJ = XLSX.utils.aoa_to_sheet([...headers, ...sampleAJ]);
+      XLSX.utils.book_append_sheet(wb, wsAJ, 'AJ');
+
+      // Unduh file secara otomatis
+      XLSX.writeFile(wb, 'Journal_Import_Template.xlsx');
+    } catch (err) {
+      setErrorMessage('Gagal mengunduh template. Pastikan koneksi internet stabil.');
+    }
   };
 
   return (
