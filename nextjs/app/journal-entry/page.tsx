@@ -3,6 +3,21 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  IconEdit,
+  IconNotebook,
+  IconArrowLeft,
+  IconCircleCheck,
+  IconAlertTriangle,
+  IconLock,
+  IconHash,
+  IconCategory,
+  IconCalendar,
+  IconListDetails,
+  IconPlus,
+  IconTrash,
+  IconDeviceFloppy
+} from '@tabler/icons-react';
 import './journal-entry.css';
 
 // Data Model Interfaces
@@ -55,7 +70,32 @@ function JournalEntryContent() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Helper to get Authorization JWT Header
+  // Helper untuk Memeriksa Status Preferensi "System Alerts" dari Settings Page
+  const isSystemAlertsEnabled = (): boolean => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const savedPref = localStorage.getItem('aumo_system_alerts');
+      return savedPref !== null ? JSON.parse(savedPref) : true;
+    } catch {
+      return true;
+    }
+  };
+
+  // Wrapper Notifikasi Sukses yang Menghormati Setting System Alerts
+  const triggerSuccessAlert = (message: string) => {
+    if (isSystemAlertsEnabled()) {
+      setSuccessMessage(message);
+    }
+  };
+
+  // Wrapper Notifikasi Error yang Menghormati Setting System Alerts
+  const triggerValidationAlerts = (errors: string[]) => {
+    if (isSystemAlertsEnabled()) {
+      setValidationErrors(errors);
+    }
+  };
+
+  // Helper to get Authorization JWT Header / Credentials
   const getAuthHeaders = (): Record<string, string> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     return {
@@ -103,6 +143,7 @@ function JournalEntryContent() {
         const accountsRes = await fetch(`${API_BASE_URL}/chart-of-accounts`, {
           method: 'GET',
           headers,
+          credentials: 'include',
         });
 
         if (accountsRes.ok) {
@@ -129,6 +170,7 @@ function JournalEntryContent() {
           const journalRes = await fetch(`${API_BASE_URL}/journals/${entryIdParam}`, {
             method: 'GET',
             headers,
+            credentials: 'include',
           });
 
           if (!journalRes.ok) {
@@ -166,7 +208,7 @@ function JournalEntryContent() {
           resetForm();
         }
       } catch (err: any) {
-        setValidationErrors([err.message || 'Failed to load data from the server.']);
+        triggerValidationAlerts([err.message || 'Failed to load data from the server.']);
       } finally {
         setLoading(false);
       }
@@ -217,7 +259,6 @@ function JournalEntryContent() {
       prev.map((line) => {
         if (line.id !== id) return line;
 
-        // If user enters Debit, clear Credit (and vice versa) to keep accounting inputs clean
         if (field === 'debit' && value !== '') {
           return { ...line, debit: value, credit: '' };
         }
@@ -295,7 +336,7 @@ function JournalEntryContent() {
     }
 
     if (errors.length > 0) {
-      setValidationErrors(errors);
+      triggerValidationAlerts(errors);
       return;
     }
 
@@ -317,6 +358,7 @@ function JournalEntryContent() {
       const response = await fetch(url, {
         method,
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
@@ -328,17 +370,17 @@ function JournalEntryContent() {
       const result = await response.json();
 
       if (isEdit) {
-        setSuccessMessage(`Journal entry ${transactionNumber} has been updated.`);
+        triggerSuccessAlert(`Journal entry ${transactionNumber} has been updated.`);
         setTimeout(() => {
           router.push('/reports/general-journal');
         }, 1200);
       } else {
-        const postedTxNum = result.transactionNumber || 'GJ-2026-XXX';
-        setSuccessMessage(`Journal entry ${postedTxNum} has been posted successfully.`);
+        const postedTxNum = result.transactionNumber || 'Auto-generated';
+        triggerSuccessAlert(`Journal entry ${postedTxNum} has been posted successfully.`);
         resetForm();
       }
     } catch (err: any) {
-      setValidationErrors([err.message || 'An error occurred while processing the journal entry.']);
+      triggerValidationAlerts([err.message || 'An error occurred while processing the journal entry.']);
     }
   };
 
@@ -358,9 +400,10 @@ function JournalEntryContent() {
         <div>
           {isEdit ? (
             <>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-edit me-2 text-warning fs-2"></i> Edit Journal Entry
-                <span className="badge bg-secondary-subtle text-white border border-secondary-subtle ms-2">
+              <h2 className="fw-bold text-white mb-1 d-flex align-items-center gap-2">
+                <IconEdit size={28} className="text-warning" /> 
+                <span>Edit Journal Entry</span>
+                <span className="badge bg-secondary-subtle text-white border border-secondary-subtle ms-2 fs-6">
                   {transactionNumber}
                 </span>
               </h2>
@@ -368,8 +411,9 @@ function JournalEntryContent() {
             </>
           ) : (
             <>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-notebook me-2 text-warning fs-2"></i> Create Journal Entry
+              <h2 className="fw-bold text-white mb-1 d-flex align-items-center gap-2">
+                <IconNotebook size={28} className="text-warning" /> 
+                <span>Create Journal Entry</span>
               </h2>
               <p className="text-white-50 mb-0">
                 Record double-entry financial transactions or adjusting entries for Aumo Finance.
@@ -378,17 +422,18 @@ function JournalEntryContent() {
           )}
         </div>
         <div>
-          <Link href="/reports/general-journal" className="btn btn-outline-secondary shadow-sm d-inline-flex align-items-center">
-            <i className="ti ti-arrow-left me-1"></i> Back to Journal
+          <Link href="/reports/general-journal" className="btn btn-outline-secondary shadow-sm d-inline-flex align-items-center gap-1">
+            <IconArrowLeft size={18} /> 
+            <span>Back to Journal</span>
           </Link>
         </div>
       </div>
 
-      {/* Notifications */}
+      {/* Notifications - Respecting System Alerts Preference */}
       {successMessage && (
         <div className="alert alert-success alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-circle-check-filled me-2 fs-5 flex-shrink-0"></i>
+          <div className="d-flex align-items-center gap-2">
+            <IconCircleCheck size={20} className="flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
           <button type="button" className="btn-close ms-auto" onClick={() => setSuccessMessage(null)}></button>
@@ -397,8 +442,8 @@ function JournalEntryContent() {
 
       {validationErrors.length > 0 && (
         <div className="alert alert-danger alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle-filled me-2 fs-5 flex-shrink-0"></i>
+          <div className="d-flex align-items-center gap-2">
+            <IconAlertTriangle size={20} className="flex-shrink-0" />
             <ul className="mb-0 small fw-semibold list-unstyled">
               {validationErrors.map((err, idx) => (
                 <li key={idx}>{err}</li>
@@ -410,8 +455,8 @@ function JournalEntryContent() {
       )}
 
       {lockedMessage ? (
-        <div className="alert alert-warning shadow-sm py-2 d-flex align-items-center" role="alert">
-          <i className="ti ti-lock me-2 fs-5 flex-shrink-0"></i>
+        <div className="alert alert-warning shadow-sm py-2 d-flex align-items-center gap-2" role="alert">
+          <IconLock size={20} className="flex-shrink-0" />
           <span>{lockedMessage}</span>
           <Link href="/reports/general-journal" className="alert-link ms-2">
             Back to General Journal
@@ -423,20 +468,24 @@ function JournalEntryContent() {
           <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
             <div className="card-body p-4 text-white">
               <div className="row g-3">
-                {isEdit && (
-                  <div className="col-md-3">
-                    <label className="form-label fw-semibold small text-white-50">Transaction No.</label>
-                    <input
-                      type="text"
-                      className="form-control bg-dark text-white border-secondary fw-semibold"
-                      value={transactionNumber}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  </div>
-                )}
-                <div className="col-md-3">
-                  <label className="form-label fw-semibold small text-white-50">Journal Type</label>
+                {/* Transaction Number Input */}
+                <div className="col-md-4">
+                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
+                    <IconHash size={16} /> Transaction No.
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control bg-dark text-white-50 border-secondary fw-semibold"
+                    value={isEdit ? transactionNumber : 'Auto-generated (e.g. GJ-2026-0001)'}
+                    readOnly
+                    tabIndex={-1}
+                  />
+                </div>
+
+                <div className="col-md-4">
+                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
+                    <IconCategory size={16} /> Journal Type
+                  </label>
                   <select
                     className="form-select bg-dark text-white border-secondary fw-semibold"
                     value={journalType}
@@ -447,8 +496,10 @@ function JournalEntryContent() {
                   </select>
                 </div>
 
-                <div className="col-md-3">
-                  <label className="form-label fw-semibold small text-white-50">Transaction Date</label>
+                <div className="col-md-4">
+                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
+                    <IconCalendar size={16} /> Transaction Date
+                  </label>
                   <input
                     type="date"
                     className="form-control bg-dark text-white border-secondary"
@@ -464,15 +515,17 @@ function JournalEntryContent() {
           {/* Journal Lines Table */}
           <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 px-4">
-              <h5 className="mb-0 fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-list-details me-2 text-warning fs-4"></i> Journal Lines
+              <h5 className="mb-0 fw-bold text-white d-flex align-items-center gap-2">
+                <IconListDetails size={22} className="text-warning" /> 
+                <span>Journal Lines</span>
               </h5>
               <button
                 type="button"
-                className="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center"
+                className="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center gap-1"
                 onClick={addLine}
               >
-                <i className="ti ti-plus me-1"></i> Add Line
+                <IconPlus size={16} /> 
+                <span>Add Line</span>
               </button>
             </div>
             <div className="card-body p-0">
@@ -504,7 +557,7 @@ function JournalEntryContent() {
 
                       return (
                         <tr key={line.id}>
-                          {/* Ref No. (Read-only Auto Fill) */}
+                          {/* Ref No. */}
                           <td className="ps-4">
                             <input
                               type="text"
@@ -611,7 +664,7 @@ function JournalEntryContent() {
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => removeLine(line.id)}
                             >
-                              <i className="ti ti-trash"></i>
+                              <IconTrash size={16} />
                             </button>
                           </td>
                         </tr>
@@ -637,12 +690,12 @@ function JournalEntryContent() {
                       </td>
                       <td colSpan={2} className="text-center pb-3 border-bottom-0">
                         {isBalanced ? (
-                          <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 d-inline-flex align-items-center">
-                            <i className="ti ti-circle-check me-1"></i> Balanced
+                          <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 d-inline-flex align-items-center gap-1">
+                            <IconCircleCheck size={16} /> Balanced
                           </span>
                         ) : (
-                          <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 d-inline-flex align-items-center">
-                            <i className="ti ti-alert-triangle me-1"></i> Unbalanced (Rp {formatIDR(Math.abs(totalDebit - totalCredit))})
+                          <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 d-inline-flex align-items-center gap-1">
+                            <IconAlertTriangle size={16} /> Unbalanced (Rp {formatIDR(Math.abs(totalDebit - totalCredit))})
                           </span>
                         )}
                       </td>
@@ -671,11 +724,11 @@ function JournalEntryContent() {
             )}
             <button
               type="submit"
-              className="btn btn-primary fw-semibold px-4 shadow-sm d-inline-flex align-items-center"
+              className="btn btn-primary fw-semibold px-4 shadow-sm d-inline-flex align-items-center gap-1"
               disabled={!isBalanced}
             >
-              <i className="ti ti-device-floppy me-1"></i>{' '}
-              {isEdit ? 'Save Changes' : 'Post Journal Entry'}
+              <IconDeviceFloppy size={18} /> 
+              <span>{isEdit ? 'Save Changes' : 'Post Journal Entry'}</span>
             </button>
           </div>
         </form>
