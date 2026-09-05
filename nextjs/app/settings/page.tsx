@@ -8,7 +8,6 @@ import {
   IconSun, 
   IconInfoCircle, 
   IconMailForward, 
-  IconX,
   IconCheck,
   IconAlertTriangle,
   IconPhone,
@@ -53,13 +52,38 @@ export default function SettingsPage() {
     }, 5000);
   };
 
+  // Helper untuk memindai localStorage mencari userId dinamis atau email
+  const getStoredUserInfo = () => {
+    let extractedUserId = localStorage.getItem('userId') || '';
+    let savedEmail = localStorage.getItem('userEmail') || localStorage.getItem('email') || '';
+
+    // Jika userId belum ketemu, cari dari pattern key dinamis seperti "app_selected_period_id2userId..."
+    if (!extractedUserId && typeof window !== 'undefined') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('2userId')) {
+          extractedUserId = key.split('2userId')[1] || '';
+          break;
+        }
+      }
+    }
+
+    return { extractedUserId, savedEmail };
+  };
+
   // 1. Fetch Data User Asli dari Database Backend saat Komponen Dimuat
   useEffect(() => {
     const fetchUserProfile = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const savedEmail = localStorage.getItem('userEmail');
+        // Cek beberapa variasi nama key token di localStorage
+        const token = 
+          localStorage.getItem('token') || 
+          localStorage.getItem('authToken') || 
+          localStorage.getItem('accessToken') ||
+          localStorage.getItem('jwt');
+
+        const { extractedUserId, savedEmail } = getStoredUserInfo();
 
         // Jika ada token, panggil endpoint profil backend (Route: web/auth/me)
         if (token) {
@@ -88,12 +112,13 @@ export default function SettingsPage() {
           }
         }
 
-        // Fallback: Jika endpoint /web/auth/me belum memberikan data, gunakan data lokal
-        if (savedEmail) {
+        // Fallback: Jika endpoint belum dapat dipanggil tetapi ada session/user info terdeteksi
+        if (savedEmail || extractedUserId) {
+          const usernameFromSession = savedEmail ? savedEmail.split('@')[0] : 'User';
           setUserProfile({
-            fullName: savedEmail.split('@')[0],
-            userName: savedEmail.split('@')[0],
-            email: savedEmail,
+            fullName: usernameFromSession,
+            userName: usernameFromSession,
+            email: savedEmail || 'user@domain.com',
             isEmailConfirmed: true,
             phoneNumber: '-',
             twoFactorEnabled: false,
