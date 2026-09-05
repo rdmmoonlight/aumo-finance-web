@@ -132,6 +132,7 @@ export default function ToolsPage() {
       const workbook = XLSX.read(arrayBuffer, { type: 'array', raw: true });
 
       const parsedTransactions: JournalTransactionImport[] = [];
+      const tempMappings: Record<string, AccountMappingDetail> = {};
       let totalLines = 0;
 
       ['GJ', 'AJ'].forEach((sheetName) => {
@@ -162,9 +163,24 @@ export default function ToolsPage() {
           const rawDebit = row['Debit'] ?? row['debit'] ?? row['DEBIT'] ?? '';
           const rawCredit = row['Credit'] ?? row['credit'] ?? row['CREDIT'] ?? '';
 
+          const refNum = Number(refVal) || 0;
+
+          // Membangun fallback mapping untuk sisi client jika backend gagal
+          const mapKey = `${refNum}-${accountName}`;
+          if (!tempMappings[mapKey]) {
+            tempMappings[mapKey] = {
+              excelRef: refNum,
+              excelAccountName: accountName,
+              mappedRef: refNum,
+              mappedAccountName: accountName,
+              status: 'PENDING',
+              reason: 'Menunggu verifikasi backend...',
+            };
+          }
+
           const line: JournalLineImport = {
             rowIndex: index + 2,
-            refNumber: Number(refVal) || 0,
+            refNumber: refNum,
             accountName: accountName,
             description: description,
             debit: rawDebit !== '' && !isNaN(Number(rawDebit)) ? Number(rawDebit) : null,
@@ -193,6 +209,10 @@ export default function ToolsPage() {
       }
 
       let displayTransactions = parsedTransactions;
+      let finalMappings = Object.values(tempMappings);
+
+      // Set fallback mapping sebelum memanggil backend
+      setAccountMappings(finalMappings);
 
       try {
         const previewRes = await fetch('/web/tools/preview-journal-import', {
@@ -219,8 +239,10 @@ export default function ToolsPage() {
         if (contentType && contentType.includes('application/json')) {
           const previewData = await previewRes.json();
           if (previewRes.ok) {
-            if (previewData.accountMappings) {
-              setAccountMappings(previewData.accountMappings);
+            // Override dengan data valid dari backend
+            if (previewData.accountMappings && previewData.accountMappings.length > 0) {
+              finalMappings = previewData.accountMappings;
+              setAccountMappings(finalMappings);
             }
             if (previewData.summary) {
               setMappingSummary(previewData.summary);
@@ -232,6 +254,9 @@ export default function ToolsPage() {
         }
       } catch (e) {
         console.warn('Backend preview endpoint unreachable, displaying client-parsed preview.');
+        // Jika gagal, ubah status fallback menjadi unverified
+        finalMappings = finalMappings.map(m => ({ ...m, status: 'UNVERIFIED', reason: 'Gagal terhubung ke server.' }));
+        setAccountMappings(finalMappings);
       }
 
       setParseResult({
@@ -241,6 +266,7 @@ export default function ToolsPage() {
         warnings: [],
         transactions: displayTransactions,
       });
+
     } catch (err: any) {
       setErrorMessage(`Failed to process file: ${err.message || 'Unknown error'}`);
     } finally {
@@ -363,14 +389,16 @@ export default function ToolsPage() {
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'EXACT_MATCH':
-        return <span className="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25">Match 100%</span>;
+        return <span className="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25"><i className="ti ti-check me-1"></i>Presisi 100%</span>;
       case 'REALLOCATED_NAME':
       case 'REALLOCATED_REF':
-        return <span className="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25">Dilimpahkan</span>;
+        return <span className="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25"><i className="ti ti-arrow-right-circle me-1"></i>Dilimpahkan</span>;
       case 'UNMAPPED':
-        return <span className="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25">Tidak Terdaftar</span>;
+        return <span className="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25"><i className="ti ti-x me-1"></i>Tdk Terdaftar</span>;
+      case 'UNVERIFIED':
+        return <span className="badge bg-secondary bg-opacity-20 text-secondary border border-secondary border-opacity-25">Offline</span>;
       default:
-        return <span className="badge bg-secondary">-</span>;
+        return <span className="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Diproses</span>;
     }
   };
 
@@ -478,57 +506,62 @@ export default function ToolsPage() {
                   <button
                     type="button"
                     className="btn btn-success fw-bold rounded-3 text-white shadow-sm d-inline-flex align-items-center justify-content-center"
-                    disabled={isBusy}
+                    disabled={isBusy || (mappingSummary && mappingSummary.unmappedCount > 0)}
                     onClick={handleConfirmImport}
                   >
                     <i className="ti ti-check-all me-1 fs-5"></i> Submit & Import Data
                   </button>
                 )}
+                
+                {/* Peringatan Jika Ada Akun Tdk Terdaftar */}
+                {mappingSummary && mappingSummary.unmappedCount > 0 && (
+                  <div className="mt-2 text-danger small text-center fw-bold">
+                    <i className="ti ti-alert-circle me-1"></i>Terdapat akun yang tidak terdaftar. Perbaiki Master COA sebelum import.
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* TABEL LENGKAP PEMETAAN DAN PELIMPAHAN AKUN (TETAP MUNCUL SAMA SAAT MATCH ATAU DILIMPAHKAN) */}
+          {/* TABEL LENGKAP PEMETAAN DAN PELIMPAHAN AKUN SELALU MUNCUL */}
           {accountMappings.length > 0 && (
             <div className="card border-0 glass-card text-white rounded-4 shadow-sm mb-4">
               <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
                 <h6 className="fw-bold mb-0 text-white small d-flex align-items-center">
-                  <i className="ti ti-list-check me-2 fs-5 text-info"></i> Account Mapping Details ({accountMappings.length})
+                  <i className="ti ti-list-check me-2 fs-5 text-info"></i> Account Mapping Status
                 </h6>
-                {mappingSummary && (
-                  <span className={`badge ${mappingSummary.isPerfectMatch ? 'bg-success' : 'bg-warning text-dark'} fw-bold`}>
-                    {mappingSummary.isPerfectMatch ? '100% Presisi' : `${mappingSummary.reallocatedCount} Dilimpahkan`}
-                  </span>
-                )}
+                <span className="badge bg-primary text-white fw-bold">
+                  {accountMappings.length} Akun
+                </span>
               </div>
               <div className="card-body p-0">
                 <div className="table-responsive" style={{ maxHeight: '380px' }}>
                   <table className="table table-dark table-hover mb-0 align-middle style-table" style={{ fontSize: '0.8rem' }}>
                     <thead>
                       <tr className="text-secondary fw-bold border-bottom border-secondary border-opacity-25">
-                        <th>Input Excel</th>
+                        <th className="ps-4">Input Excel</th>
                         <th>Master COA Baku</th>
-                        <th className="text-center">Status</th>
+                        <th className="text-center pe-4">Status</th>
                       </tr>
                     </thead>
                     <tbody className="fw-normal">
                       {accountMappings.map((m, i) => (
                         <tr key={i} className="border-bottom border-secondary border-opacity-10">
-                          <td>
-                            <span className="badge bg-secondary me-1 font-monospace">{m.excelRef}</span>
+                          <td className="ps-4">
+                            <span className="badge bg-secondary me-2 font-monospace">{m.excelRef}</span>
                             <span className="text-white-50">{m.excelAccountName}</span>
                           </td>
                           <td>
                             {m.mappedRef > 0 ? (
                               <>
-                                <span className="badge bg-primary me-1 font-monospace">{m.mappedRef}</span>
+                                <span className="badge bg-primary me-2 font-monospace">{m.mappedRef}</span>
                                 <strong className="text-white fw-bold">{m.mappedAccountName}</strong>
                               </>
                             ) : (
-                              <span className="text-danger italic">{m.mappedAccountName}</span>
+                              <span className="text-danger fst-italic">Menunggu Registrasi...</span>
                             )}
                           </td>
-                          <td className="text-center">
+                          <td className="text-center pe-4">
                             {renderStatusBadge(m.status)}
                           </td>
                         </tr>
@@ -582,20 +615,28 @@ export default function ToolsPage() {
                         </tr>
                       </thead>
                       <tbody className="fw-normal text-white">
-                        {tx.lines.map((line, lineIndex) => (
-                          <tr key={lineIndex} className="text-white">
-                            <td className="text-center text-white-50">{line.rowIndex}</td>
-                            <td className="text-center fw-bold text-white font-monospace">{line.refNumber}</td>
-                            <td className="text-white">{line.accountName}</td>
-                            <td className="text-white-50">{line.description}</td>
-                            <td className="text-end fw-bold text-white">
-                              {line.debit !== null ? formatIDR(line.debit) : '-'}
-                            </td>
-                            <td className="text-end fw-bold text-white">
-                              {line.credit !== null ? formatIDR(line.credit) : '-'}
-                            </td>
-                          </tr>
-                        ))}
+                        {tx.lines.map((line, lineIndex) => {
+                          const mapping = accountMappings.find(m => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
+                          const isUnmapped = mapping?.status === 'UNMAPPED';
+                          
+                          return (
+                            <tr key={lineIndex} className={isUnmapped ? 'bg-danger bg-opacity-10 text-danger' : 'text-white'}>
+                              <td className="text-center text-white-50">{line.rowIndex}</td>
+                              <td className="text-center fw-bold font-monospace">{line.refNumber}</td>
+                              <td>
+                                {line.accountName}
+                                {isUnmapped && <i className="ti ti-alert-triangle ms-2 text-danger" title="Akun ini tidak terdaftar di sistem"></i>}
+                              </td>
+                              <td className="text-white-50">{line.description}</td>
+                              <td className="text-end fw-bold">
+                                {line.debit !== null ? formatIDR(line.debit) : '-'}
+                              </td>
+                              <td className="text-end fw-bold">
+                                {line.credit !== null ? formatIDR(line.credit) : '-'}
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                       <tfoot className="table-group-divider fw-bold text-white">
                         <tr>
