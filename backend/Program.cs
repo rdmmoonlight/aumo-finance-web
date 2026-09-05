@@ -13,6 +13,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+namespace AumoFinance; // CS0436 Fix: Mencegah bentrokan namespace global dengan proyek lain
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
@@ -26,17 +28,15 @@ if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("Database connection string 'DefaultConnection' or 'DATABASE_URL' is missing.");
 }
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+// Mendaftarkan DbContext sekaligus DbContextFactory secara efisien
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString);
     options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
 });
 
-builder.Services.AddDbContextFactory<AppDbContext>(options =>
-{
-    options.UseNpgsql(connectionString);
-    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-}, ServiceLifetime.Scoped);
+builder.Services.AddScoped<AppDbContext>(sp => 
+    sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // =====================================
 // 2. DATA PROTECTION & PERSISTENCE
@@ -235,7 +235,6 @@ builder.Services.AddHttpClient("MarketApiClient", client =>
 });
 
 builder.Services.AddScoped<IMarketService, MarketService>();
-builder.Services.AddHttpClient();
 
 // =====================================
 // 7. FORWARDED HEADERS
