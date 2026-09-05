@@ -102,13 +102,12 @@ namespace AumoFinance.Controllers.Web
                     await _context.SaveChangesAsync();
                 }
 
-                // Load seluruh COA milik User ke memory cache lokal untuk optimasi pencarian
                 var existingCoas = await _context.ChartOfAccounts
                     .Where(c => c.UserId == userId)
                     .ToListAsync();
 
                 int createdCoaCount = 0;
-                int reallocatedCount = 0;
+                var reallocations = new List<ReallocationDetailDto>();
 
                 foreach (var txDto in request.Transactions)
                 {
@@ -154,7 +153,7 @@ namespace AumoFinance.Controllers.Web
                         Lines = new List<JournalEntryLine>()
                     };
 
-                    // 3. PROSES BARIS JOURNAL DENGAN MEKANISME PELIMPAHAN COA
+                    // 3. MEKANISME PELIMPAHAN COA & TRACING
                     foreach (var lineDto in txDto.Lines)
                     {
                         int refInt = lineDto.RefNumber;
@@ -165,26 +164,38 @@ namespace AumoFinance.Controllers.Web
 
                         if (coa != null)
                         {
-                            // Jika Ref cocok tapi nama beda di Excel, transaksi otomatis
-                            // dilimpahkan ke Nama Akun Baku di DB
                             if (!string.Equals(coa.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase))
                             {
-                                reallocatedCount++;
+                                reallocations.Add(new ReallocationDetailDto
+                                {
+                                    ExcelRef = refInt,
+                                    ExcelAccountName = excelAccountName,
+                                    MappedRef = coa.ReferenceNumber,
+                                    MappedAccountName = coa.AccountName,
+                                    Reason = "Nama akun Excel disesuaikan dengan nama akun baku master COA."
+                                });
                             }
                         }
                         else
                         {
-                            // Priority B: Ref tidak ada, pelimpahan berdasarkan Nama Akun (Case-Insensitive)
+                            // Priority B: Ref tidak ada, pelimpahan berdasarkan Nama Akun
                             coa = existingCoas.FirstOrDefault(c =>
                                 string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
                             if (coa != null)
                             {
-                                reallocatedCount++;
+                                reallocations.Add(new ReallocationDetailDto
+                                {
+                                    ExcelRef = refInt,
+                                    ExcelAccountName = excelAccountName,
+                                    MappedRef = coa.ReferenceNumber,
+                                    MappedAccountName = coa.AccountName,
+                                    Reason = "Ref number Excel tidak ditemukan, dilimpahkan berdasarkan nama akun baku."
+                                });
                             }
                             else
                             {
-                                // Priority C: Benar-benar baru, buat COA baru di aplikasi
+                                // Priority C: Buat COA baru
                                 coa = new ChartOfAccount
                                 {
                                     UserId = userId,
@@ -195,7 +206,7 @@ namespace AumoFinance.Controllers.Web
                                 _context.ChartOfAccounts.Add(coa);
                                 await _context.SaveChangesAsync();
 
-                                existingCoas.Add(coa); // Update local list
+                                existingCoas.Add(coa);
                                 createdCoaCount++;
                             }
                         }
@@ -219,7 +230,8 @@ namespace AumoFinance.Controllers.Web
                 {
                     message = "Journal data successfully imported.",
                     createdCoaCount = createdCoaCount,
-                    reallocatedCount = reallocatedCount
+                    reallocatedCount = reallocations.Count,
+                    reallocations = reallocations
                 });
             }
             catch (Exception ex)
@@ -251,5 +263,14 @@ namespace AumoFinance.Controllers.Web
         public string Description { get; set; } = string.Empty;
         public decimal? Debit { get; set; }
         public decimal? Credit { get; set; }
+    }
+
+    public class ReallocationDetailDto
+    {
+        public int ExcelRef { get; set; }
+        public string ExcelAccountName { get; set; } = string.Empty;
+        public int MappedRef { get; set; }
+        public string MappedAccountName { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
     }
 }
