@@ -59,6 +59,130 @@ namespace AumoFinance.Controllers.Web
             );
         }
 
+        // ==========================================
+        // 2. POST: /web/tools/preview-journal-import (SIMULASI CUSTODY / CHECK)
+        // ==========================================
+        [HttpPost("preview-journal-import")]
+        public async Task<IActionResult> PreviewJournalImport([FromBody] JournalImportRequestDto request)
+        {
+            if (request?.Transactions == null || !request.Transactions.Any())
+            {
+                return BadRequest(new { message = "No transaction data provided for preview." });
+            }
+
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdStr, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var existingCoas = await _context.ChartOfAccounts
+                .Where(c => c.UserId == userId)
+                .ToListAsync();
+
+            var reallocations = new List<ReallocationDetailDto>();
+            var processedTransactions = new List<JournalTransactionDto>();
+
+            foreach (var txDto in request.Transactions)
+            {
+                var processedLines = new List<JournalLineDto>();
+
+                foreach (var lineDto in txDto.Lines)
+                {
+                    int refInt = lineDto.RefNumber;
+                    string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
+
+                    // Match A: By ReferenceNumber
+                    var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt);
+
+                    if (coa != null)
+                    {
+                        if (!string.Equals(coa.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            reallocations.Add(new ReallocationDetailDto
+                            {
+                                ExcelRef = refInt,
+                                ExcelAccountName = excelAccountName,
+                                MappedRef = coa.ReferenceNumber,
+                                MappedAccountName = coa.AccountName,
+                                Reason = "Nama akun Excel beda dengan master COA, dilimpahkan ke nama akun baku."
+                            });
+                        }
+
+                        processedLines.Add(new JournalLineDto
+                        {
+                            RefNumber = coa.ReferenceNumber,
+                            AccountName = coa.AccountName, // Gunakan nama baku
+                            Description = lineDto.Description,
+                            Debit = lineDto.Debit,
+                            Credit = lineDto.Credit
+                        });
+                    }
+                    else
+                    {
+                        // Match B: By AccountName
+                        coa = existingCoas.FirstOrDefault(c =>
+                            string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
+
+                        if (coa != null)
+                        {
+                            reallocations.Add(new ReallocationDetailDto
+                            {
+                                ExcelRef = refInt,
+                                ExcelAccountName = excelAccountName,
+                                MappedRef = coa.ReferenceNumber,
+                                MappedAccountName = coa.AccountName,
+                                Reason = "Ref number Excel tidak cocok, dilimpahkan ke Ref number baku master COA."
+                            });
+
+                            processedLines.Add(new JournalLineDto
+                            {
+                                RefNumber = coa.ReferenceNumber,
+                                AccountName = coa.AccountName,
+                                Description = lineDto.Description,
+                                Debit = lineDto.Debit,
+                                Credit = lineDto.Credit
+                            });
+                        }
+                        else
+                        {
+                            // Match C: COA Baru
+                            processedLines.Add(new JournalLineDto
+                            {
+                                RefNumber = refInt,
+                                AccountName = excelAccountName,
+                                Description = lineDto.Description,
+                                Debit = lineDto.Debit,
+                                Credit = lineDto.Credit
+                            });
+                        }
+                    }
+                }
+
+                processedTransactions.Add(new JournalTransactionDto
+                {
+                    Date = txDto.Date,
+                    JournalType = txDto.JournalType,
+                    Lines = processedLines
+                });
+            }
+
+            // Deduplicate reallocation details for display
+            var uniqueReallocations = reallocations
+                .GroupBy(r => new { r.ExcelRef, r.ExcelAccountName, r.MappedRef, r.MappedAccountName })
+                .Select(g => g.First())
+                .ToList();
+
+            return Ok(new
+            {
+                transactions = processedTransactions,
+                reallocations = uniqueReallocations
+            });
+        }
+
+        // ==========================================
+        // 3. POST: /web/tools/import-journal-entries (SIMPAN PERMANEN)
+        // ==========================================
         [HttpPost("import-journal-entries")]
         public async Task<IActionResult> ImportJournalEntries([FromBody] JournalImportRequestDto request)
         {
@@ -82,7 +206,6 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
-                // 1. OTO-PERIODE
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -107,7 +230,6 @@ namespace AumoFinance.Controllers.Web
                     .ToListAsync();
 
                 int createdCoaCount = 0;
-                var reallocations = new List<ReallocationDetailDto>();
 
                 foreach (var txDto in request.Transactions)
                 {
@@ -118,7 +240,6 @@ namespace AumoFinance.Controllers.Web
 
                     txDate = DateTime.SpecifyKind(txDate, DateTimeKind.Utc);
 
-                    // 2. COUNTER PENOMORAN
                     string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                     string counterKey = $"{prefix}{txDate:yyMM}";
 
@@ -153,49 +274,20 @@ namespace AumoFinance.Controllers.Web
                         Lines = new List<JournalEntryLine>()
                     };
 
-                    // 3. MEKANISME PELIMPAHAN COA & TRACING
                     foreach (var lineDto in txDto.Lines)
                     {
                         int refInt = lineDto.RefNumber;
                         string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
-                        // Priority A: Match berdasarkan ReferenceNumber
                         var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt);
 
-                        if (coa != null)
+                        if (coa == null)
                         {
-                            if (!string.Equals(coa.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase))
-                            {
-                                reallocations.Add(new ReallocationDetailDto
-                                {
-                                    ExcelRef = refInt,
-                                    ExcelAccountName = excelAccountName,
-                                    MappedRef = coa.ReferenceNumber,
-                                    MappedAccountName = coa.AccountName,
-                                    Reason = "Nama akun Excel disesuaikan dengan nama akun baku master COA."
-                                });
-                            }
-                        }
-                        else
-                        {
-                            // Priority B: Ref tidak ada, pelimpahan berdasarkan Nama Akun
                             coa = existingCoas.FirstOrDefault(c =>
                                 string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
-                            if (coa != null)
+                            if (coa == null)
                             {
-                                reallocations.Add(new ReallocationDetailDto
-                                {
-                                    ExcelRef = refInt,
-                                    ExcelAccountName = excelAccountName,
-                                    MappedRef = coa.ReferenceNumber,
-                                    MappedAccountName = coa.AccountName,
-                                    Reason = "Ref number Excel tidak ditemukan, dilimpahkan berdasarkan nama akun baku."
-                                });
-                            }
-                            else
-                            {
-                                // Priority C: Buat COA baru
                                 coa = new ChartOfAccount
                                 {
                                     UserId = userId,
@@ -229,9 +321,7 @@ namespace AumoFinance.Controllers.Web
                 return Ok(new
                 {
                     message = "Journal data successfully imported.",
-                    createdCoaCount = createdCoaCount,
-                    reallocatedCount = reallocations.Count,
-                    reallocations = reallocations
+                    createdCoaCount = createdCoaCount
                 });
             }
             catch (Exception ex)
