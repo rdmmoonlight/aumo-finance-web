@@ -3,6 +3,7 @@ using AumoFinance.Controllers.Api;
 using AumoFinance.Models;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -10,49 +11,46 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================
 // 1. DATABASE CONFIGURATION (PostgreSQL)
 // =====================================
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Database connection string 'DefaultConnection' or 'DATABASE_URL' is missing.");
+}
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseNpgsql(connectionString);
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+});
 
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
 {
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    );
-
-    options.ConfigureWarnings(w =>
-        w.Ignore(
-            Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId
-                .PendingModelChangesWarning
-        )
-    );
-});
-
-builder.Services.AddScoped(sp =>
-    sp.GetRequiredService<IDbContextFactory<AppDbContext>>()
-        .CreateDbContext());
-
+    options.UseNpgsql(connectionString);
+    options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+}, ServiceLifetime.Scoped);
 
 // =====================================
 // 2. DATA PROTECTION & PERSISTENCE
 // =====================================
-
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<AppDbContext>()
     .SetApplicationName("AumoFinanceApp");
 
-
 // =====================================
 // 3. ASP.NET CORE IDENTITY SETUP
 // =====================================
-
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
-
     options.Password.RequiredLength = 6;
     options.Password.RequireDigit = false;
     options.Password.RequireNonAlphanumeric = false;
@@ -63,41 +61,79 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
 .AddDefaultTokenProviders()
 .AddClaimsPrincipalFactory<AumoUserClaimsPrincipalFactory>();
 
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "AumoFinance.Session";
+    options.Cookie.HttpOnly = true;
+    
+    // PENTING: SameSite=None dan SecurePolicy=Always wajib aktif agar Cookie 
+    // dapat dikirim pada Cross-Origin/Cross-Domain requests (e.g., Frontend Vercel -> Backend Render)
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.SlidingExpiration = true;
+
+    // Untuk API Web: Jangan redirect ke HTML, kembalikan HTTP 401/403
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
 
 // =====================================
-// 4. AUTHENTICATION (JWT & OAuth)
+// 4. AUTHENTICATION (Cookie, JWT & OAuth)
 // =====================================
+var jwtSigningKey = builder.Configuration["JWT_SIGNING_KEY"] 
+    ?? Environment.GetEnvironmentVariable("JWT_SIGNING_KEY");
+
+var jwtIssuer = builder.Configuration["JWT_ISSUER"] 
+    ?? Environment.GetEnvironmentVariable("JWT_ISSUER") 
+    ?? "AumoFinanceApp";
+
+if (string.IsNullOrWhiteSpace(jwtSigningKey))
+{
+    throw new InvalidOperationException("Fatal Error: Environment variable 'JWT_SIGNING_KEY' is missing.");
+}
 
 var authBuilder = builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    // Default Scheme menggunakan Identity Cookie (Web App)
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultAuthenticateScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultChallengeScheme = IdentityConstants.ApplicationScheme;
 })
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-
-        ValidIssuer = AuthController.JwtIssuer,
-        ValidAudience = AuthController.JwtIssuer,
-
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(AuthController.JwtSecretKey)
-        )
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey)),
+        ClockSkew = TimeSpan.FromMinutes(5)
     };
 });
 
-
 // --- GOOGLE OAUTH CONFIGURATION ---
-var googleClientId = builder.Configuration["Authentication:Google:ClientId"]
-    ?? builder.Configuration["Google:ClientId"];
+var googleClientId = builder.Configuration["Authentication:Google:ClientId"] 
+    ?? builder.Configuration["Google:ClientId"] 
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
 
-var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
-    ?? builder.Configuration["Google:ClientSecret"];
+var googleClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] 
+    ?? builder.Configuration["Google:ClientSecret"] 
+    ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
 
 if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(googleClientSecret))
 {
@@ -109,46 +145,79 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
     });
 }
 
+// =====================================
+// 5. REST API CORE SETUP, SWAGGER & CORS
+// =====================================
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
 
-// =====================================
-// 5. CORS CONFIGURATION (Next.js & Clients)
-// =====================================
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "AumoFinance API", Version = "v1" });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter the JWT token in the format: Bearer <your_token>"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// CORS: Membaca FRONTEND_URL + Localhost + Vercel
+var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")?.TrimEnd('/');
+
+var originsList = new List<string> 
+{ 
+    "http://localhost:3000", 
+    "http://localhost:5000", 
+    "https://localhost:7000",
+    "https://my-authentic-web.vercel.app" // Domain produksi Vercel
+};
+
+if (!string.IsNullOrWhiteSpace(frontendUrl))
+{
+    originsList.Add(frontendUrl);
+}
+
+var allowedOrigins = originsList.Distinct().ToArray();
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-                ?? new[] { "http://localhost:3000", "http://localhost:5000" }
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Mandatori untuk mendukung Cookie Session
     });
 });
 
-
 // =====================================
-// 6. API CONTROLLERS
+// 6. APPLICATION SERVICES & HEALTH CHECKS
 // =====================================
-
-builder.Services.AddControllers();
-
-
-// =====================================
-// 7. APPLICATION SERVICES & HEALTH CHECKS
-// =====================================
-
 builder.Services.AddHealthChecks();
-
-// Render Keep-Alive Service
 builder.Services.AddHostedService<RenderKeepAliveService>();
 
 // --- EMAIL SERVICES REGISTRATION (RESEND API) ---
-builder.Services.AddTransient<IEmailSender, ResendEmailSender>();
-
-// Bridging Microsoft Identity's IEmailSender<TUser> to AumoFinance's IEmailSender
+builder.Services.AddTransient<ResendEmailSender>();
 builder.Services.AddTransient<IEmailSender<ApplicationUser>, IdentityEmailSenderBridge>();
 
 builder.Services.AddScoped<IGuardianService, GuardianService>();
@@ -159,7 +228,6 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICloudStorageService, CloudinaryService>();
 builder.Services.AddScoped<DashboardDataService>();
 
-// --- MARKET SERVICE & HTTP CLIENT SETUP ---
 builder.Services.AddHttpClient("MarketApiClient", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(15);
@@ -169,11 +237,9 @@ builder.Services.AddHttpClient("MarketApiClient", client =>
 builder.Services.AddScoped<IMarketService, MarketService>();
 builder.Services.AddHttpClient();
 
-
 // =====================================
-// 8. FORWARDED HEADERS (Reverse Proxy)
+// 7. FORWARDED HEADERS
 // =====================================
-
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -181,22 +247,17 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-
 // =====================================
 // BUILD APPLICATION
 // =====================================
-
 var app = builder.Build();
 
-
 // =====================================
-// 9. AUTOMATIC DATABASE MIGRATION
+// 8. AUTOMATIC DATABASE MIGRATION
 // =====================================
-
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
@@ -209,12 +270,13 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-
 // =====================================
-// 10. HTTP PIPELINE MIDDLEWARE
+// 9. HTTP PIPELINE MIDDLEWARE
 // =====================================
-
 app.UseForwardedHeaders();
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 if (app.Environment.IsDevelopment())
 {
@@ -223,8 +285,6 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseHsts();
-
-    // Catch unhandled exceptions & send JSON format
     app.Use(async (context, next) =>
     {
         try
@@ -233,7 +293,8 @@ else
         }
         catch (Exception ex)
         {
-            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            // DI AMBIL DARI REQUEST SERVICES (Thread-safe)
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
             logger.LogError(ex, "Unhandled exception on {Path}", context.Request.Path);
 
             if (!context.Response.HasStarted)
@@ -244,60 +305,55 @@ else
                 await context.Response.WriteAsJsonAsync(new
                 {
                     success = false,
-                    message = "Terjadi kesalahan di server. Coba lagi beberapa saat lagi."
+                    message = "A server error occurred. Please try again in a moment."
                 });
             }
         }
     });
 }
 
-app.UseStaticFiles();
-
 app.UseRouting();
 
-// Gunakan CORS Policy
+// CORS wajib sebelum Authentication & Authorization
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
-
 // =====================================
-// 11. ENDPOINTS & MAP CONTROLLERS
+// 10. ENDPOINTS & MAP CONTROLLERS
 // =====================================
+// Root Route (Mencegah Log Status 404 pada Render Ping Root)
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "AumoFinance Web & Mobile API",
+    status = "Online",
+    timestamp = DateTime.UtcNow
+}));
 
 app.MapHealthChecks("/health");
 
 app.MapPost("/auth/logout", async (SignInManager<ApplicationUser> signInManager) =>
 {
     await signInManager.SignOutAsync();
-    return Results.Ok(new { success = true, message = "Berhasil logout." });
+    return Results.Ok(new { success = true, message = "Logout successful" });
 });
 
 app.MapControllers();
 
-
 // =====================================
-// 12. RUN APPLICATION
+// 11. RUN APPLICATION
 // =====================================
-
 app.Run();
 
-
 // =====================================
-// 13. IDENTITY EMAIL SENDER BRIDGE CLASS
+// 12. IDENTITY EMAIL SENDER BRIDGE CLASS
 // =====================================
-
-/// <summary>
-/// Bridge class to map Microsoft Identity's IEmailSender<ApplicationUser> 
-/// to AumoFinance's custom IEmailSender service.
-/// </summary>
 public class IdentityEmailSenderBridge : IEmailSender<ApplicationUser>
 {
-    private readonly IEmailSender _emailSender;
+    private readonly ResendEmailSender _emailSender;
 
-    public IdentityEmailSenderBridge(IEmailSender emailSender)
+    public IdentityEmailSenderBridge(ResendEmailSender emailSender)
     {
         _emailSender = emailSender;
     }
