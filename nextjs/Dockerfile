@@ -3,7 +3,7 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY frontend/package.json frontend/package-lock.json* ./
+COPY nextjs/package.json nextjs/package-lock.json* ./
 # Jika belum pakai package-lock.json, ganti 'npm ci' jadi 'npm install'
 RUN npm install
 
@@ -12,7 +12,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY frontend/ .
+COPY nextjs/ .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
