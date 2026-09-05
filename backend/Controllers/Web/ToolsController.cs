@@ -185,7 +185,7 @@ namespace AumoFinance.Controllers.Web
                         journalEntry.Lines.Add(new JournalEntryLine
                         {
                             AccountId = coa.Id,
-                            Memo = lineDto.Description, // Menggunakan Memo untuk rincian deskripsi
+                            LineDescription = lineDto.Description, // Menggunakan LineDescription
                             Debit = lineDto.Debit ?? 0m,
                             Credit = lineDto.Credit ?? 0m
                         });
