@@ -92,11 +92,11 @@ public class ToolsWebController : ControllerBase
                 }
 
                 // -------------------------------------------------------------
-                // A. PERIODS
+                // A. PERIODS (Cek / Buat Periode Baru)
                 // -------------------------------------------------------------
-                var period = await _context.Periods.FirstOrDefaultAsync(p =>
-                    p.UserId == userId &&
-                    p.StartDate.Year == txDate.Year &&
+                var period = await _context.Periods.FirstOrDefaultAsync(p => 
+                    p.UserId == userId && 
+                    p.StartDate.Year == txDate.Year && 
                     p.StartDate.Month == txDate.Month
                 );
 
@@ -104,7 +104,6 @@ public class ToolsWebController : ControllerBase
                 {
                     period = new Period
                     {
-                        Id = Guid.NewGuid(), // Menggunakan Guid
                         UserId = userId,
                         StartDate = new DateTime(txDate.Year, txDate.Month, 1),
                         EndDate = new DateTime(txDate.Year, txDate.Month, DateTime.DaysInMonth(txDate.Year, txDate.Month)),
@@ -120,8 +119,8 @@ public class ToolsWebController : ControllerBase
                 string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                 string counterKey = $"{prefix}{txDate:yyMM}";
 
-                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
-                    c.UserId == userId &&
+                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c => 
+                    c.UserId == userId && 
                     c.CounterKey == counterKey
                 );
 
@@ -129,7 +128,6 @@ public class ToolsWebController : ControllerBase
                 {
                     counter = new TransactionCounter
                     {
-                        Id = Guid.NewGuid(), // Menggunakan Guid
                         UserId = userId,
                         CounterKey = counterKey,
                         LastSequence = 1
@@ -148,7 +146,6 @@ public class ToolsWebController : ControllerBase
                 // -------------------------------------------------------------
                 var journalEntry = new JournalEntry
                 {
-                    Id = Guid.NewGuid(), // Menggunakan Guid
                     UserId = userId,
                     TransactionNumber = transactionNumber,
                     JournalType = txDto.JournalType,
@@ -161,10 +158,10 @@ public class ToolsWebController : ControllerBase
                 // -------------------------------------------------------------
                 foreach (var lineDto in txDto.Lines)
                 {
-                    int refInt = lineDto.RefNumber; // Matching int type
+                    int refInt = lineDto.RefNumber;
 
-                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c =>
-                        c.UserId == userId &&
+                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c => 
+                        c.UserId == userId && 
                         c.ReferenceNumber == refInt
                     );
 
@@ -172,10 +169,9 @@ public class ToolsWebController : ControllerBase
                     {
                         coa = new ChartOfAccount
                         {
-                            Id = Guid.NewGuid(), // Menggunakan Guid
                             UserId = userId,
-                            ReferenceNumber = refInt, // Mengisi int
-                            AccountName = lineDto.AccountName, // Diubah dari Name ke AccountName
+                            ReferenceNumber = refInt,
+                            AccountName = lineDto.AccountName,
                             IsActive = true
                         };
                         _context.ChartOfAccounts.Add(coa);
@@ -185,10 +181,8 @@ public class ToolsWebController : ControllerBase
 
                     journalEntry.Lines.Add(new JournalEntryLine
                     {
-                        Id = Guid.NewGuid(), // Menggunakan Guid
-                        JournalEntryId = journalEntry.Id, // Foreign Key Guid
-                        AccountId = coa.Id, // Foreign Key Guid
-                        Memo = lineDto.Description, // Diubah dari Description ke Memo
+                        AccountId = coa.Id,
+                        Description = lineDto.Description, // Menggunakan Description
                         Debit = lineDto.Debit ?? 0m,
                         Credit = lineDto.Credit ?? 0m
                     });
@@ -231,7 +225,7 @@ public class JournalTransactionDto
 
 public class JournalLineDto
 {
-    public int RefNumber { get; set; } // Disesuaikan ke int
+    public int RefNumber { get; set; }
     public string AccountName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public decimal? Debit { get; set; }
