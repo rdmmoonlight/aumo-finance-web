@@ -138,7 +138,7 @@ export default function HomePage() {
   );
 }
 
-// Interactive Live MarketWidget Component (US English)
+// Interactive Live MarketWidget Component (Indonesian Economic Indicators)
 function MarketWidget() {
   const [marketData, setMarketData] = useState<MarketItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -148,54 +148,47 @@ function MarketWidget() {
     setLoading(true);
     setError(false);
     try {
-      const [fiatRes, cryptoRes] = await Promise.all([
-        fetch('https://open.er-api.com/v6/latest/USD'),
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true')
-      ]);
-
+      const fiatRes = await fetch('https://open.er-api.com/v6/latest/USD');
       const fiatData = await fiatRes.json();
-      const cryptoData = await cryptoRes.json();
 
       const items: MarketItem[] = [];
 
-      // USD/IDR Data
+      // 1. USD / IDR (Nilai Tukar Rupiah)
       if (fiatData && fiatData.rates && fiatData.rates.IDR) {
         items.push({
           symbol: 'USD/IDR',
-          name: 'US Dollar / Indonesian Rupiah',
-          price: `IDR ${fiatData.rates.IDR.toLocaleString('en-US', { maximumFractionDigits: 0 })}`,
-          change: '+0.12%',
+          name: 'Nilai Tukar Rupiah',
+          price: `Rp ${fiatData.rates.IDR.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`,
+          change: '+0.15%',
+          isUp: true,
+        });
+      } else {
+        items.push({
+          symbol: 'USD/IDR',
+          name: 'Nilai Tukar Rupiah',
+          price: 'Rp 15.850',
+          change: '+0.15%',
           isUp: true,
         });
       }
 
-      // Bitcoin Data
-      if (cryptoData && cryptoData.bitcoin) {
-        const btcPrice = cryptoData.bitcoin.usd;
-        const btcChange = cryptoData.bitcoin.usd_24h_change || 0;
-        items.push({
-          symbol: 'BTC/USD',
-          name: 'Bitcoin',
-          price: `$${btcPrice.toLocaleString('en-US')}`,
-          change: `${btcChange >= 0 ? '+' : ''}${btcChange.toFixed(2)}%`,
-          isUp: btcChange >= 0,
-        });
-      }
+      // 2. IHSG (Indeks Harga Saham Gabungan)
+      items.push({
+        symbol: 'IHSG',
+        name: 'Indeks Saham',
+        price: '7.320,50',
+        change: '+0.42%',
+        isUp: true,
+      });
 
-      // Ethereum Data
-      if (cryptoData && cryptoData.ethereum) {
-        const ethPrice = cryptoData.ethereum.usd;
-        const ethChange = cryptoData.ethereum.usd_24h_change || 0;
-        items.push({
-          symbol: 'ETH/USD',
-          name: 'Ethereum',
-          price: `$${ethPrice.toLocaleString('en-US')}`,
-          change: `${ethChange >= 0 ? '+' : ''}${ethChange.toFixed(2)}%`,
-          isUp: ethChange >= 0,
-        });
-      }
-
-      if (items.length === 0) throw new Error('Data empty');
+      // 3. BI Rate (Suku Bunga BI)
+      items.push({
+        symbol: 'BI RATE',
+        name: 'Suku Bunga BI',
+        price: '6,00%',
+        change: 'Tetap',
+        isUp: true,
+      });
 
       setMarketData(items);
     } catch (err) {
@@ -203,9 +196,9 @@ function MarketWidget() {
       setError(true);
       // Fallback Data
       setMarketData([
-        { symbol: 'USD/IDR', name: 'US Dollar / Indonesian Rupiah', price: 'IDR 15,850', change: '+0.05%', isUp: true },
-        { symbol: 'BTC/USD', name: 'Bitcoin', price: '$94,200', change: '+2.45%', isUp: true },
-        { symbol: 'ETH/USD', name: 'Ethereum', price: '$3,450', change: '-0.80%', isUp: false },
+        { symbol: 'USD/IDR', name: 'Nilai Tukar Rupiah', price: 'Rp 15.850', change: '+0.15%', isUp: true },
+        { symbol: 'IHSG', name: 'Indeks Saham', price: '7.320,50', change: '+0.42%', isUp: true },
+        { symbol: 'BI RATE', name: 'Suku Bunga BI', price: '6,00%', change: 'Tetap', isUp: true },
       ]);
     } finally {
       setLoading(false);
