@@ -365,6 +365,15 @@ public class PeriodsController : ControllerBase
         if (hasEarlierOpenPeriod)
             return BadRequest(new { success = false, message = $"Cannot close {entity.PeriodName}: an earlier period is still open. Close earlier periods first." });
 
+        // Ayat jurnal penutup: menutup semua akun sementara (General Ledger
+        // Temporary) ke saldo 0, selisihnya dipindahkan ke Retained Earnings.
+        // Tanggal = hari terakhir periode, deskripsi "closing journal".
+        var closingEntry = await ClosingJournalPoster.BuildClosingEntryAsync(_db, userId, entity, _txNumberService);
+        if (closingEntry != null)
+        {
+            _db.JournalEntries.Add(closingEntry);
+        }
+
         entity.IsClosed = true;
         await _db.SaveChangesAsync();
 
@@ -372,6 +381,7 @@ public class PeriodsController : ControllerBase
         {
             success = true,
             message = $"Period {entity.PeriodName} has been closed. Transactions in this period are now locked."
+                + (closingEntry != null ? $" Closing journal {closingEntry.TransactionNumber} posted." : "")
         });
     }
 

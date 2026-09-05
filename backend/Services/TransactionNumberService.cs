@@ -23,7 +23,12 @@ namespace AumoFinance.Services
 
         public async Task<string> GenerateAsync(Guid userId, string journalType, DateTime entryDate)
         {
-            string prefix = journalType == "Adjusting" ? "AJ" : "GJ";
+            string prefix = journalType switch
+            {
+                "Adjusting" => "AJ",
+                "Closing" => "CJ",
+                _ => "GJ"
+            };
             string counterKey = $"{prefix}{entryDate:yyMM}";
 
             // UPSERT atomik: PostgreSQL menjamin INSERT ... ON CONFLICT DO
@@ -79,7 +84,12 @@ namespace AumoFinance.Services
 
         public async Task<string> PeekNextAsync(Guid userId, string journalType, DateTime entryDate)
         {
-            string prefix = journalType == "Adjusting" ? "AJ" : "GJ";
+            string prefix = journalType switch
+            {
+                "Adjusting" => "AJ",
+                "Closing" => "CJ",
+                _ => "GJ"
+            };
             string counterKey = $"{prefix}{entryDate:yyMM}";
 
             // Hanya membaca, tidak menaikkan LastSequence — kalau counter
