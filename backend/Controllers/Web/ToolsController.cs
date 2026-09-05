@@ -130,8 +130,8 @@ namespace AumoFinance.Controllers.Web
                             MappedRef = coa.ReferenceNumber,
                             MappedAccountName = coa.AccountName,
                             Status = isNameExact ? "EXACT_MATCH" : "REALLOCATED_NAME",
-                            Reason = isNameExact 
-                                ? "Nomor Ref dan Nama Akun cocok 100% presisi dengan Master COA." 
+                            Reason = isNameExact
+                                ? "Nomor Ref dan Nama Akun cocok 100% presisi dengan Master COA."
                                 : "Nama Akun Excel berbeda. Disesuaikan ke Nama Akun Baku Master COA."
                         });
 
