@@ -40,7 +40,6 @@ export default function ToolsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState<boolean>(false);
 
-  // Reallocation Summary State
   const [reallocations, setReallocations] = useState<ReallocationDetail[]>([]);
 
   const now = new Date();
@@ -181,12 +180,43 @@ export default function ToolsPage() {
         throw new Error('No valid transaction entries found in GJ or AJ sheets.');
       }
 
+      // KIRIM KE BACKEND UNTUK EVALUASI CUSTODY & PELIMPAHAN AKUN
+      const previewRes = await fetch('/web/tools/preview-journal-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetMonth: Number(targetMonth),
+          targetYear: Number(targetYear),
+          transactions: parsedTransactions.map((tx) => ({
+            date: tx.date,
+            journalType: tx.journalType,
+            lines: tx.lines.map((l) => ({
+              refNumber: l.refNumber,
+              accountName: l.accountName,
+              description: l.description,
+              debit: l.debit,
+              credit: l.credit,
+            })),
+          })),
+        }),
+      });
+
+      const previewData = await previewRes.json();
+
+      if (!previewRes.ok) {
+        throw new Error(previewData.message || 'Failed to generate import preview.');
+      }
+
+      if (previewData.reallocations && previewData.reallocations.length > 0) {
+        setReallocations(previewData.reallocations);
+      }
+
       setParseResult({
         isSuccess: true,
         totalTransactionsRead: parsedTransactions.length,
         totalLinesRead: totalLines,
         warnings: [],
-        transactions: parsedTransactions,
+        transactions: previewData.transactions || parsedTransactions,
       });
 
       if ((window as any).aumoModal) {
@@ -233,10 +263,6 @@ export default function ToolsPage() {
 
       if (!response.ok) {
         throw new Error(result.message || 'Failed to save data to database.');
-      }
-
-      if (result.reallocations && result.reallocations.length > 0) {
-        setReallocations(result.reallocations);
       }
 
       setSuccessMessage(
@@ -329,48 +355,6 @@ export default function ToolsPage() {
         <div className="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4 text-white fw-normal" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-2"></i> {errorMessage}
           <button type="button" className="btn-close btn-close-white" onClick={() => setErrorMessage(null)}></button>
-        </div>
-      )}
-
-      {/* REALLOCATION SUMMARY TABLE */}
-      {reallocations.length > 0 && (
-        <div className="card border-warning bg-dark text-white rounded-4 shadow-sm mb-4">
-          <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
-            <h6 className="fw-bold mb-0 text-warning">
-              <i className="bi bi-arrow-left-right me-2"></i> Account Reallocation Summary ({reallocations.length} entries adjusted)
-            </h6>
-            <button className="btn-close btn-close-white" onClick={() => setReallocations([])}></button>
-          </div>
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table table-dark table-hover mb-0 align-middle small">
-                <thead>
-                  <tr className="text-secondary">
-                    <th>Excel Data (Original)</th>
-                    <th className="text-center" style={{ width: '50px' }}><i className="bi bi-arrow-right"></i></th>
-                    <th>Master COA System (Target Baku)</th>
-                    <th>Reason</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reallocations.map((r, i) => (
-                    <tr key={i}>
-                      <td>
-                        <span className="badge bg-secondary me-1">{r.excelRef}</span>
-                        <span>{r.excelAccountName}</span>
-                      </td>
-                      <td className="text-center text-warning"><i className="bi bi-arrow-right-short fs-5"></i></td>
-                      <td>
-                        <span className="badge bg-primary me-1">{r.mappedRef}</span>
-                        <strong className="text-white">{r.mappedAccountName}</strong>
-                      </td>
-                      <td className="text-secondary">{r.reason}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       )}
 
@@ -487,6 +471,47 @@ export default function ToolsPage() {
             </div>
 
             <div className="modal-body p-4 text-white">
+              {/* DIALOG RINGKASAN PELIMPAHAN AKUN DI DALAM MODAL PREVIEW */}
+              {reallocations.length > 0 && (
+                <div className="card border-warning bg-dark text-white rounded-3 shadow-sm mb-4">
+                  <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-2 px-3">
+                    <h6 className="fw-bold mb-0 text-warning small">
+                      <i className="bi bi-exclamation-triangle me-2"></i> Account Reallocation Notice ({reallocations.length} items adjusted)
+                    </h6>
+                  </div>
+                  <div className="card-body p-0">
+                    <div className="table-responsive">
+                      <table className="table table-dark table-hover mb-0 align-middle extra-small style-table" style={{ fontSize: '0.825rem' }}>
+                        <thead>
+                          <tr className="text-secondary">
+                            <th>Original Excel Data</th>
+                            <th className="text-center" style={{ width: '40px' }}><i className="bi bi-arrow-right"></i></th>
+                            <th>Master COA Application</th>
+                            <th>Mapping Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reallocations.map((r, i) => (
+                            <tr key={i}>
+                              <td>
+                                <span className="badge bg-secondary me-1">{r.excelRef}</span>
+                                <span className="text-white-50">{r.excelAccountName}</span>
+                              </td>
+                              <td className="text-center text-warning"><i className="bi bi-arrow-right-short fs-5"></i></td>
+                              <td>
+                                <span className="badge bg-primary me-1">{r.mappedRef}</span>
+                                <strong className="text-white">{r.mappedAccountName}</strong>
+                              </td>
+                              <td className="text-white-50">{r.reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {parseResult && (
                 <>
                   {parseResult.transactions.map((tx, txIndex) => (
