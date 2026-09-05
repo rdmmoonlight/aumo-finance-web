@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -224,8 +225,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Script src="https://code.jquery.com/jquery-3.7.1.min.js" strategy="beforeInteractive" />
         <Script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" strategy="afterInteractive" />
         
-        {/* Vercel Analytics */}
+        {/* Vercel Analytics & Speed Insights */}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
