@@ -82,6 +82,18 @@ namespace AumoBlazor
             // =====================================
             // 4. AUTHENTICATION (Cookie, JWT & OAuth)
             // =====================================
+            var jwtSigningKey = builder.Configuration["JWT_SIGNING_KEY"]
+                ?? Environment.GetEnvironmentVariable("JWT_SIGNING_KEY");
+
+            var jwtIssuer = builder.Configuration["JWT_ISSUER"]
+                ?? Environment.GetEnvironmentVariable("JWT_ISSUER")
+                ?? "AumoFinanceApp";
+
+            if (string.IsNullOrWhiteSpace(jwtSigningKey))
+            {
+                throw new InvalidOperationException("Fatal Error: Environment variable 'JWT_SIGNING_KEY' is missing.");
+            }
+
             var authBuilder = builder.Services.AddAuthentication(options =>
             {
                 options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -89,17 +101,18 @@ namespace AumoBlazor
             })
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
             {
+                options.RequireHttpsMetadata = false;
+                options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidIssuer = AuthController.JwtIssuer,
-                    ValidAudience = AuthController.JwtIssuer,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(AuthController.JwtSecretKey)
-                    )
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtIssuer,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey)),
+                    ClockSkew = TimeSpan.FromMinutes(5)
                 };
             });
 
