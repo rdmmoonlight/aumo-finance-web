@@ -94,9 +94,9 @@ public class ToolsWebController : ControllerBase
                 // -------------------------------------------------------------
                 // A. PERIODS (Cek / Buat Periode Baru)
                 // -------------------------------------------------------------
-                var period = await _context.Periods.FirstOrDefaultAsync(p => 
-                    p.UserId == userId && 
-                    p.StartDate.Year == txDate.Year && 
+                var period = await _context.Periods.FirstOrDefaultAsync(p =>
+                    p.UserId == userId &&
+                    p.StartDate.Year == txDate.Year &&
                     p.StartDate.Month == txDate.Month
                 );
 
@@ -119,8 +119,8 @@ public class ToolsWebController : ControllerBase
                 string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                 string counterKey = $"{prefix}{txDate:yyMM}";
 
-                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c => 
-                    c.UserId == userId && 
+                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
+                    c.UserId == userId &&
                     c.CounterKey == counterKey
                 );
 
@@ -160,8 +160,8 @@ public class ToolsWebController : ControllerBase
                 {
                     int refInt = lineDto.RefNumber;
 
-                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c => 
-                        c.UserId == userId && 
+                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c =>
+                        c.UserId == userId &&
                         c.ReferenceNumber == refInt
                     );
 
