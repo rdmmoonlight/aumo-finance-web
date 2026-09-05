@@ -5,7 +5,6 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using AumoFinance.Models;
 using AumoFinance.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +13,7 @@ namespace AumoFinance.Controllers.Web;
 
 [ApiController]
 [Route("web/chart-of-accounts")]
-[Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ChartOfAccountsController : ControllerBase
 {
     private readonly AppDbContext _db;

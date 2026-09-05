@@ -5,7 +5,6 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using AumoFinance.Models;
 using AumoFinance.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +13,7 @@ namespace AumoFinance.Controllers.Web;
 
 [ApiController]
 [Route("web/periods")]
-[Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = "Identity.Application")]
 public class PeriodsController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -36,7 +35,7 @@ public class PeriodsController : ControllerBase
         if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
-        var periods = await _db.Periods
+        var periodsData = await _db.Periods
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.StartDate)
             .Select(p => new
@@ -45,16 +44,35 @@ public class PeriodsController : ControllerBase
                 p.PeriodName,
                 p.StartDate,
                 p.EndDate,
-                p.IsClosed
+                p.IsClosed,
+                p.IsSelected
             })
             .ToListAsync();
 
-        var selectedPeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
+        var selectedPeriod = periodsData.FirstOrDefault(p => p.IsSelected);
+        int? selectedPeriodId = selectedPeriod?.Id;
+
+        // Fallback ke helper jika di DB belum ada yang bernilai IsSelected = true
+        if (!selectedPeriodId.HasValue)
+        {
+            var selectedFromHelper = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
+            selectedPeriodId = selectedFromHelper?.Id;
+        }
+
+        var periods = periodsData.Select(p => new
+        {
+            p.Id,
+            p.PeriodName,
+            p.StartDate,
+            p.EndDate,
+            p.IsClosed,
+            IsSelected = selectedPeriodId.HasValue ? (p.Id == selectedPeriodId.Value) : p.IsSelected
+        }).ToList();
 
         return Ok(new
         {
             success = true,
-            selectedPeriodId = selectedPeriod?.Id,
+            selectedPeriodId = selectedPeriodId,
             periods = periods
         });
     }
@@ -165,7 +183,8 @@ public class PeriodsController : ControllerBase
                     PeriodName = periodName,
                     StartDate = startDate,
                     EndDate = endDate,
-                    IsClosed = false
+                    IsClosed = false,
+                    IsSelected = false
                 };
                 _db.Periods.Add(newPeriod);
                 await _db.SaveChangesAsync();
@@ -209,7 +228,8 @@ public class PeriodsController : ControllerBase
                     PeriodName = periodName,
                     StartDate = startDate,
                     EndDate = endDate,
-                    IsClosed = false
+                    IsClosed = false,
+                    IsSelected = false
                 };
                 _db.Periods.Add(newPeriod);
                 await _db.SaveChangesAsync();
@@ -276,11 +296,24 @@ public class PeriodsController : ControllerBase
         if (entity == null)
             return NotFound(new { success = false, message = "Accounting period not found." });
 
+        // TAHAP 1: Reset SEMUA IsSelected milik user ini menjadi false
+        // Hal ini menjamin tidak ada konflik pada IX_Periods_IsSelected_Unique saat update berjalan
+        await _db.Periods
+            .Where(p => p.UserId == userId && p.IsSelected)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.IsSelected, false));
+
+        // TAHAP 2: Set HANYA 1 periode yang dipilih menjadi true
+        await _db.Periods
+            .Where(p => p.Id == id && p.UserId == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.IsSelected, true));
+
+        // Sinkronisasi dengan helper session/cache
         await SelectedPeriodHelper.SelectPeriodAsync(_db, userId, entity.Id);
 
         return Ok(new
         {
             success = true,
+            selectedPeriodId = entity.Id,
             message = $"Now viewing {entity.PeriodName}" + (entity.IsClosed ? " (Closed)." : ".")
         });
     }
@@ -294,6 +327,11 @@ public class PeriodsController : ControllerBase
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
+
+        // Set semua IsSelected milik user menjadi false
+        await _db.Periods
+            .Where(p => p.UserId == userId && p.IsSelected)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.IsSelected, false));
 
         await SelectedPeriodHelper.ClearSelectionAsync(_db, userId);
 

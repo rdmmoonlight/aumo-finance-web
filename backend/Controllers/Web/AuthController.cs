@@ -1,6 +1,5 @@
 using AumoFinance.Models;
 using AumoFinance.Models.DTOs;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +9,7 @@ namespace AumoFinance.Controllers.Web;
 
 [ApiController]
 [Route("web/auth")]
-[Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = "Identity.Application")]
 public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -47,7 +46,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
-        // Melakukan Sign-in berbasis Cookie (IsPersistent sesuai dengan RememberMe)
+        // Sign-in berbasis Cookie Identity (IsPersistent sesuai dengan RememberMe)
         var result = await _signInManager.PasswordSignInAsync(
             user.UserName ?? user.Email!,
             request.Password,
