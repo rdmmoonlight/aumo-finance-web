@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace AumoFinance.Controllers.Api;
@@ -20,19 +21,18 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly AppDbContext _db;
-
-    // Hardcoded Secret Key for JWT Signing
-    public static readonly string JwtSecretKey = "AumoFinance_Mobile_Secure_JWT_Secret_Key_2026_998877665544332211";
-    public static readonly string JwtIssuer = "AumoFinanceWeb";
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        AppDbContext db)
+        AppDbContext db,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _db = db;
+        _configuration = configuration;
     }
 
     // ==========================================
@@ -62,8 +62,23 @@ public class AuthController : ControllerBase
         }
 
         // Generate JWT Token
+        // IMPORTANT: signing key/issuer must resolve exactly the same way as the
+        // validation side configured in Program.cs (JWT_SIGNING_KEY / JWT_ISSUER),
+        // otherwise every subsequent request fails signature validation (401).
+        var jwtSigningKey = _configuration["JWT_SIGNING_KEY"]
+            ?? Environment.GetEnvironmentVariable("JWT_SIGNING_KEY");
+
+        var jwtIssuer = _configuration["JWT_ISSUER"]
+            ?? Environment.GetEnvironmentVariable("JWT_ISSUER")
+            ?? "AumoFinanceApp";
+
+        if (string.IsNullOrWhiteSpace(jwtSigningKey))
+        {
+            return StatusCode(500, new MobileLoginResponse { Success = false, Message = "Server misconfiguration: JWT signing key is missing." });
+        }
+
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(JwtSecretKey);
+        var key = Encoding.UTF8.GetBytes(jwtSigningKey);
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -74,8 +89,8 @@ public class AuthController : ControllerBase
                 new Claim(ClaimTypes.Name, user.UserName ?? "")
             }),
             Expires = DateTime.UtcNow.AddDays(30),
-            Issuer = JwtIssuer,
-            Audience = JwtIssuer,
+            Issuer = jwtIssuer,
+            Audience = jwtIssuer,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
 
