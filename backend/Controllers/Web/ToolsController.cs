@@ -81,12 +81,9 @@ namespace AumoFinance.Controllers.Web
                 .Where(c => c.UserId == userId && c.IsActive)
                 .ToListAsync();
 
-            var reallocations = new List<ReallocationDetailDto>();
+            var mappingDetails = new List<AccountMappingDetailDto>();
             var processedTransactions = new List<JournalTransactionDto>();
             var counterMemory = new Dictionary<string, int>();
-
-            int totalLinesEvaluated = 0;
-            int exactMatchCount = 0;
 
             foreach (var txDto in request.Transactions)
             {
@@ -116,32 +113,27 @@ namespace AumoFinance.Controllers.Web
 
                 foreach (var lineDto in txDto.Lines)
                 {
-                    totalLinesEvaluated++;
                     int refInt = lineDto.RefNumber;
                     string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
-                    // Match Priority A: Ref Number
+                    // 1. Match berdasarkan Ref Number
                     var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt);
 
                     if (coa != null)
                     {
                         bool isNameExact = string.Equals(coa.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase);
 
-                        if (isNameExact)
+                        mappingDetails.Add(new AccountMappingDetailDto
                         {
-                            exactMatchCount++;
-                        }
-                        else
-                        {
-                            reallocations.Add(new ReallocationDetailDto
-                            {
-                                ExcelRef = refInt,
-                                ExcelAccountName = excelAccountName,
-                                MappedRef = coa.ReferenceNumber,
-                                MappedAccountName = coa.AccountName,
-                                Reason = "Nama akun di Excel beda. Transaksi dilimpahkan ke Nama Akun Baku master COA."
-                            });
-                        }
+                            ExcelRef = refInt,
+                            ExcelAccountName = excelAccountName,
+                            MappedRef = coa.ReferenceNumber,
+                            MappedAccountName = coa.AccountName,
+                            Status = isNameExact ? "EXACT_MATCH" : "REALLOCATED_NAME",
+                            Reason = isNameExact 
+                                ? "Nomor Ref dan Nama Akun cocok 100% presisi dengan Master COA." 
+                                : "Nama Akun Excel berbeda. Disesuaikan ke Nama Akun Baku Master COA."
+                        });
 
                         processedLines.Add(new JournalLineDto
                         {
@@ -154,19 +146,20 @@ namespace AumoFinance.Controllers.Web
                     }
                     else
                     {
-                        // Match Priority B: Account Name
+                        // 2. Fallback Match berdasarkan Nama Akun
                         coa = existingCoas.FirstOrDefault(c =>
                             string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
                         if (coa != null)
                         {
-                            reallocations.Add(new ReallocationDetailDto
+                            mappingDetails.Add(new AccountMappingDetailDto
                             {
                                 ExcelRef = refInt,
                                 ExcelAccountName = excelAccountName,
                                 MappedRef = coa.ReferenceNumber,
                                 MappedAccountName = coa.AccountName,
-                                Reason = "Ref number Excel tidak cocok. Transaksi dilimpahkan ke Ref Number baku master COA."
+                                Status = "REALLOCATED_REF",
+                                Reason = "Nomor Ref Excel tidak cocok. Disesuaikan ke Nomor Ref Baku Master COA."
                             });
 
                             processedLines.Add(new JournalLineDto
@@ -180,13 +173,15 @@ namespace AumoFinance.Controllers.Web
                         }
                         else
                         {
-                            reallocations.Add(new ReallocationDetailDto
+                            // 3. Tidak Ditemukan di Master COA
+                            mappingDetails.Add(new AccountMappingDetailDto
                             {
                                 ExcelRef = refInt,
                                 ExcelAccountName = excelAccountName,
                                 MappedRef = 0,
-                                MappedAccountName = "Unmapped / Invalid",
-                                Reason = "Akun tidak ditemukan di master COA. Mohon daftarkan akun di aplikasi terlebih dahulu."
+                                MappedAccountName = "Tidak Terdaftar",
+                                Status = "UNMAPPED",
+                                Reason = "Akun tidak ditemukan di Master COA. Baris ini akan dilewati saat diimpor."
                             });
 
                             processedLines.Add(new JournalLineDto
@@ -210,18 +205,28 @@ namespace AumoFinance.Controllers.Web
                 });
             }
 
-            var uniqueReallocations = reallocations
-                .GroupBy(r => new { r.ExcelRef, r.ExcelAccountName, r.MappedRef, r.MappedAccountName })
+            // Deduplikasi daftar pemetaan untuk tampilan ringkasan
+            var uniqueMappings = mappingDetails
+                .GroupBy(m => new { m.ExcelRef, m.ExcelAccountName, m.MappedRef, m.MappedAccountName, m.Status })
                 .Select(g => g.First())
                 .ToList();
+
+            int exactMatchCount = uniqueMappings.Count(m => m.Status == "EXACT_MATCH");
+            int reallocatedCount = uniqueMappings.Count(m => m.Status == "REALLOCATED_NAME" || m.Status == "REALLOCATED_REF");
+            int unmappedCount = uniqueMappings.Count(m => m.Status == "UNMAPPED");
 
             return Ok(new
             {
                 transactions = processedTransactions,
-                reallocations = uniqueReallocations,
-                totalLinesEvaluated = totalLinesEvaluated,
-                exactMatchCount = exactMatchCount,
-                isPerfectMatch = uniqueReallocations.Count == 0 && totalLinesEvaluated == exactMatchCount
+                accountMappings = uniqueMappings,
+                summary = new
+                {
+                    totalUniqueAccounts = uniqueMappings.Count,
+                    exactMatchCount = exactMatchCount,
+                    reallocatedCount = reallocatedCount,
+                    unmappedCount = unmappedCount,
+                    isPerfectMatch = (reallocatedCount == 0 && unmappedCount == 0)
+                }
             });
         }
 
@@ -389,12 +394,13 @@ namespace AumoFinance.Controllers.Web
         public decimal? Credit { get; set; }
     }
 
-    public class ReallocationDetailDto
+    public class AccountMappingDetailDto
     {
         public int ExcelRef { get; set; }
         public string ExcelAccountName { get; set; } = string.Empty;
         public int MappedRef { get; set; }
         public string MappedAccountName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty; // EXACT_MATCH, REALLOCATED_NAME, REALLOCATED_REF, UNMAPPED
         public string Reason { get; set; } = string.Empty;
     }
 }
