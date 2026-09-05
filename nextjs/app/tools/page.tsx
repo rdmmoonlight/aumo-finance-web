@@ -13,6 +13,7 @@ interface JournalLineImport {
 }
 
 interface JournalTransactionImport {
+  transactionNumber?: string;
   date: string;
   journalType: string;
   lines: JournalLineImport[];
@@ -40,15 +41,14 @@ export default function ToolsPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState<boolean>(false);
 
-  // Periode State
   const now = new Date();
   const [targetMonth, setTargetMonth] = useState<number>(now.getMonth() + 1);
   const [targetYear, setTargetYear] = useState<number>(now.getFullYear());
 
-  // Import State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<JournalImportResult | null>(null);
   const [reallocations, setReallocations] = useState<ReallocationDetail[]>([]);
+  const [isPerfectMatch, setIsPerfectMatch] = useState<boolean>(false);
 
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -64,6 +64,7 @@ export default function ToolsPage() {
       setParseResult(null);
       setErrorMessage(null);
       setReallocations([]);
+      setIsPerfectMatch(false);
     }
   };
 
@@ -103,6 +104,7 @@ export default function ToolsPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
     setReallocations([]);
+    setIsPerfectMatch(false);
     setIsBusy(true);
 
     try {
@@ -181,7 +183,6 @@ export default function ToolsPage() {
         throw new Error('No valid transaction entries found in GJ or AJ sheets.');
       }
 
-      // Safe Request ke Backend untuk Evaluasi Pelimpahan COA
       let displayTransactions = parsedTransactions;
 
       try {
@@ -212,13 +213,15 @@ export default function ToolsPage() {
             if (previewData.reallocations && previewData.reallocations.length > 0) {
               setReallocations(previewData.reallocations);
             }
+            if (previewData.isPerfectMatch) {
+              setIsPerfectMatch(true);
+            }
             if (previewData.transactions && previewData.transactions.length > 0) {
               displayTransactions = previewData.transactions;
             }
           }
         }
       } catch (e) {
-        // Fallback jika API preview belum tersedia di server
         console.warn('Backend preview endpoint unreachable, displaying client-parsed preview.');
       }
 
@@ -268,8 +271,7 @@ export default function ToolsPage() {
 
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const rawErrText = await response.text();
-        throw new Error(`Server returned HTML error (${response.status}). Ensure endpoint route exists & user is authenticated.`);
+        throw new Error(`Server returned error (${response.status}). Ensure API route exists.`);
       }
 
       const result = await response.json();
@@ -285,6 +287,7 @@ export default function ToolsPage() {
       setParseResult(null);
       setSelectedFile(null);
       setReallocations([]);
+      setIsPerfectMatch(false);
     } catch (err: any) {
       setErrorMessage(`Failed to save entries: ${err.message}`);
     } finally {
@@ -370,7 +373,7 @@ export default function ToolsPage() {
 
       {/* SPLIT SCREEN LAYOUT */}
       <div className="row g-4">
-        {/* PANEL KIRI: FORM KONTROL & SUMMARY PELIMPAHAN */}
+        {/* PANEL KIRI: FORM KONTROL & STATUS VERIFIKASI */}
         <div className="col-12 col-lg-5 col-xl-4">
           <div className="card glass-card border-0 shadow-sm rounded-4 mb-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 pt-4 pb-3 px-4">
@@ -487,7 +490,23 @@ export default function ToolsPage() {
             </div>
           )}
 
-          {/* SUMMARY PELIMPAHAN AKUN (DI KIRI) */}
+          {/* KONDISI A: PERFECTION STATUS (100% MATCH) */}
+          {parseResult && isPerfectMatch && (
+            <div className="card border-success bg-dark text-white rounded-4 shadow-sm mb-4">
+              <div className="card-header bg-success bg-opacity-10 border-bottom border-success border-opacity-25 py-3 px-4">
+                <h6 className="fw-bold mb-0 text-success small d-flex align-items-center">
+                  <i className="bi bi-patch-check-fill fs-5 me-2"></i> COA Verification Passed
+                </h6>
+              </div>
+              <div className="card-body p-3">
+                <p className="small text-white-50 mb-0">
+                  Seluruh Nomor Ref dan Nama Akun di file Excel cocok 100% presisi dengan Master COA aplikasi. Tidak ada pelimpahan akun yang diperlukan.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* KONDISI B: SUMMARY PELIMPAHAN AKUN */}
           {reallocations.length > 0 && (
             <div className="card border-warning bg-dark text-white rounded-4 shadow-sm">
               <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-3 px-4">
@@ -525,7 +544,7 @@ export default function ToolsPage() {
           )}
         </div>
 
-        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (SCROLLABLE) */}
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM */}
         <div className="col-12 col-lg-7 col-xl-8">
           {parseResult ? (
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
@@ -541,7 +560,14 @@ export default function ToolsPage() {
               {parseResult.transactions.map((tx, txIndex) => (
                 <div key={txIndex} className="card border border-secondary border-opacity-25 rounded-3 shadow-sm bg-body-tertiary text-white">
                   <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-2 px-3">
-                    <span className="badge bg-primary text-white fw-normal">{tx.journalType} Journal</span>
+                    <div className="d-flex align-items-center gap-2">
+                      <span className="badge bg-primary text-white fw-normal">{tx.journalType} Journal</span>
+                      {tx.transactionNumber && (
+                        <span className="badge bg-dark border border-secondary text-info font-monospace">
+                          <i className="bi bi-hash me-1"></i>{tx.transactionNumber}
+                        </span>
+                      )}
+                    </div>
                     <strong className="text-white fw-bold"><i className="bi bi-calendar-event me-1"></i> Date: {tx.date}</strong>
                   </div>
                   <div className="table-responsive">
