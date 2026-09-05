@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import './journal-entry.css';
@@ -16,18 +16,43 @@ export interface LineItem {
   id: string; // Unique temporary ID for list keys
   accountId: number;
   lineDescription: string;
-  debit: number | '';
-  credit: number | '';
+  debit: string; // Stored as formatted string for text input (e.g. "1.000.000")
+  credit: string;
   suggestions: string[];
   showSuggestions: boolean;
 }
 
+// Helpers Format Angka
 const formatIDR = (amount: number) =>
-  new Intl.NumberFormat('en-US', {
+  new Intl.NumberFormat('id-ID', {
     style: 'decimal',
     maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
   }).format(amount);
+
+// Format angka mentah/string ke format berpemisah titik
+const formatNumberWithDots = (val: string | number): string => {
+  if (val === '' || val === null || val === undefined) return '';
+  const cleanStr = val.toString().replace(/\D/g, '');
+  if (!cleanStr) return '';
+  return new Intl.NumberFormat('id-ID').format(parseInt(cleanStr, 10));
+};
+
+// Mengubah format string berpemisah titik kembali ke number murni
+const parseFormattedNumber = (val: string): number => {
+  if (!val) return 0;
+  const cleanStr = val.replace(/\D/g, '');
+  return cleanStr ? parseInt(cleanStr, 10) : 0;
+};
+
+// Helper Generate Next Transaction Number (Format: PREFIX + YYMM + 0001)
+const generateTxNumber = (journalType: string, dateStr: string): string => {
+  const prefix = journalType === 'Adjusting' ? 'AJ' : 'GJ';
+  const dateObj = dateStr ? new Date(dateStr) : new Date();
+  const yy = dateObj.getFullYear().toString().slice(-2);
+  const mm = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+  return `${prefix}${yy}${mm}0001`;
+};
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
@@ -45,7 +70,7 @@ function JournalEntryContent() {
   );
   const [transactionNumber, setTransactionNumber] = useState<string>('');
   const [availableAccounts, setAvailableAccounts] = useState<ChartOfAccountOption[]>([]);
-  
+
   // Lines State
   const [lines, setLines] = useState<LineItem[]>([]);
 
@@ -55,37 +80,20 @@ function JournalEntryContent() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Helper to get Authorization JWT Header
-  const getAuthHeaders = useCallback((): Record<string, string> => {
+  // Helper Authorization JWT Header
+  const getAuthHeaders = (): Record<string, string> => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     return {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
-  }, []);
+  };
 
-  // Fetch Next Transaction Number dari Backend (untuk mode create)
-  const fetchNextTransactionNumber = useCallback(async (type: string, date: string) => {
-    try {
-      const headers = getAuthHeaders();
-      const res = await fetch(
-        `${API_BASE_URL}/journals/next-number?journalType=${type}&entryDate=${date}`,
-        { method: 'GET', headers }
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setTransactionNumber(data.transactionNumber || data.nextNumber || '');
-      }
-    } catch {
-      // Mengabaikan error fetching preview agar pengguna tetap dapat berinteraksi
-    }
-  }, [getAuthHeaders]);
-
-  const resetForm = useCallback(() => {
-    const today = new Date().toISOString().split('T')[0];
+  const resetForm = () => {
+    const defaultDate = new Date().toISOString().split('T')[0];
     setJournalType('General');
-    setEntryDate(today);
-    setTransactionNumber('');
+    setEntryDate(defaultDate);
+    setTransactionNumber(generateTxNumber('General', defaultDate));
     setLines([
       {
         id: Date.now().toString() + '-1',
@@ -108,26 +116,23 @@ function JournalEntryContent() {
     ]);
     setValidationErrors([]);
     setSuccessMessage(null);
+  };
 
-    // Ambil ulang nomor transaksi berikutnya
-    fetchNextTransactionNumber('General', today);
-  }, [fetchNextTransactionNumber]);
-
-  // Handle Perubahan Journal Type / Date untuk Mode Create
+  // Auto Generate Nomor Transaksi jika bukan mode edit
   useEffect(() => {
     if (!isEdit) {
-      fetchNextTransactionNumber(journalType, entryDate);
+      setTransactionNumber(generateTxNumber(journalType, entryDate));
     }
-  }, [isEdit, journalType, entryDate, fetchNextTransactionNumber]);
+  }, [journalType, entryDate, isEdit]);
 
-  // Data Initialization: Fetch Accounts and Journal Entry from Backend API
+  // Data Initialization: Fetch Accounts & Journal Entry
   useEffect(() => {
     const initPage = async () => {
       setLoading(true);
       try {
         const headers = getAuthHeaders();
 
-        // 1. Fetch Chart of Accounts list dari API
+        // 1. Fetch Chart of Accounts
         const accountsRes = await fetch(`${API_BASE_URL}/chart-of-accounts`, {
           method: 'GET',
           headers,
@@ -152,7 +157,7 @@ function JournalEntryContent() {
           );
         }
 
-        // 2. Jika dalam Edit Mode, fetch data detail jurnal
+        // 2. Fetch data jika Edit Mode
         if (isEdit && entryIdParam) {
           const journalRes = await fetch(`${API_BASE_URL}/journals/${entryIdParam}`, {
             method: 'GET',
@@ -170,7 +175,7 @@ function JournalEntryContent() {
               `Journal entry ${journalData.transactionNumber} belongs to a closed period and cannot be edited. View it from the Periods page instead.`
             );
           } else {
-            setTransactionNumber(journalData.transactionNumber || '');
+            setTransactionNumber(journalData.transactionNumber);
             setJournalType(journalData.journalType || 'General');
             setEntryDate(
               journalData.entryDate
@@ -185,8 +190,8 @@ function JournalEntryContent() {
                   id: l.id ? l.id.toString() : `${Date.now()}-${idx}`,
                   accountId: l.accountId,
                   lineDescription: l.lineDescription || '',
-                  debit: l.debit > 0 ? l.debit : '',
-                  credit: l.credit > 0 ? l.credit : '',
+                  debit: l.debit > 0 ? formatNumberWithDots(l.debit) : '',
+                  credit: l.credit > 0 ? formatNumberWithDots(l.credit) : '',
                   suggestions: [],
                   showSuggestions: false,
                 }))
@@ -204,15 +209,15 @@ function JournalEntryContent() {
     };
 
     initPage();
-  }, [isEdit, entryIdParam, getAuthHeaders, resetForm]);
+  }, [isEdit, entryIdParam]);
 
   // Total Debit & Credit Calculation
   const totalDebit = useMemo(() => {
-    return lines.reduce((sum, line) => sum + (Number(line.debit) || 0), 0);
+    return lines.reduce((sum, line) => sum + parseFormattedNumber(line.debit), 0);
   }, [lines]);
 
   const totalCredit = useMemo(() => {
-    return lines.reduce((sum, line) => sum + (Number(line.credit) || 0), 0);
+    return lines.reduce((sum, line) => sum + parseFormattedNumber(line.credit), 0);
   }, [lines]);
 
   const isBalanced = useMemo(() => {
@@ -248,11 +253,12 @@ function JournalEntryContent() {
       prev.map((line) => {
         if (line.id !== id) return line;
 
+        // Auto Clear debit/credit yang berseberangan
         if (field === 'debit' && value !== '') {
-          return { ...line, debit: value, credit: '' };
+          return { ...line, debit: formatNumberWithDots(value), credit: '' };
         }
         if (field === 'credit' && value !== '') {
-          return { ...line, credit: value, debit: '' };
+          return { ...line, credit: formatNumberWithDots(value), debit: '' };
         }
 
         return { ...line, [field]: value };
@@ -304,7 +310,7 @@ function JournalEntryContent() {
     );
   };
 
-  // Submit Journal Form to Backend API
+  // Submit Journal Form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationErrors([]);
@@ -313,11 +319,15 @@ function JournalEntryContent() {
     const errors: string[] = [];
 
     const effectiveLines = lines.filter(
-      (l) => l.accountId !== 0 && ((Number(l.debit) || 0) > 0 || (Number(l.credit) || 0) > 0)
+      (l) =>
+        l.accountId !== 0 &&
+        (parseFormattedNumber(l.debit) > 0 || parseFormattedNumber(l.credit) > 0)
     );
 
     if (effectiveLines.length < 2) {
-      errors.push('A journal entry must have at least two valid line items with accounts and amounts.');
+      errors.push(
+        'A journal entry must have at least two valid line items with accounts and amounts.'
+      );
     }
 
     if (!isBalanced) {
@@ -333,15 +343,18 @@ function JournalEntryContent() {
       const payload = {
         journalType,
         entryDate,
+        transactionNumber,
         lines: effectiveLines.map((l) => ({
           accountId: l.accountId,
           lineDescription: l.lineDescription,
-          debit: Number(l.debit) || 0,
-          credit: Number(l.credit) || 0,
+          debit: parseFormattedNumber(l.debit),
+          credit: parseFormattedNumber(l.credit),
         })),
       };
 
-      const url = isEdit ? `${API_BASE_URL}/journals/${entryIdParam}` : `${API_BASE_URL}/journals`;
+      const url = isEdit
+        ? `${API_BASE_URL}/journals/${entryIdParam}`
+        : `${API_BASE_URL}/journals`;
       const method = isEdit ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -352,7 +365,9 @@ function JournalEntryContent() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to save journal transaction to server.');
+        throw new Error(
+          errData.message || 'Failed to save journal transaction to server.'
+        );
       }
 
       const result = await response.json();
@@ -364,11 +379,15 @@ function JournalEntryContent() {
         }, 1200);
       } else {
         const postedTxNum = result.transactionNumber || transactionNumber;
-        setSuccessMessage(`Journal entry ${postedTxNum} has been posted successfully.`);
+        setSuccessMessage(
+          `Journal entry ${postedTxNum} has been posted successfully.`
+        );
         resetForm();
       }
     } catch (err: any) {
-      setValidationErrors([err.message || 'An error occurred while processing the journal entry.']);
+      setValidationErrors([
+        err.message || 'An error occurred while processing the journal entry.',
+      ]);
     }
   };
 
@@ -390,8 +409,13 @@ function JournalEntryContent() {
             <>
               <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
                 <i className="ti ti-edit me-2 text-warning fs-2"></i> Edit Journal Entry
+                <span className="badge bg-secondary-subtle text-white border border-secondary-subtle ms-2">
+                  {transactionNumber}
+                </span>
               </h2>
-              <p className="text-white-50 mb-0">Update this double-entry transaction for Aumo Finance.</p>
+              <p className="text-white-50 mb-0">
+                Update this double-entry transaction for Aumo Finance.
+              </p>
             </>
           ) : (
             <>
@@ -405,7 +429,10 @@ function JournalEntryContent() {
           )}
         </div>
         <div>
-          <Link href="/reports/general-journal" className="btn btn-outline-secondary shadow-sm d-inline-flex align-items-center">
+          <Link
+            href="/reports/general-journal"
+            className="btn btn-outline-secondary shadow-sm d-inline-flex align-items-center"
+          >
             <i className="ti ti-arrow-left me-1"></i> Back to Journal
           </Link>
         </div>
@@ -413,17 +440,27 @@ function JournalEntryContent() {
 
       {/* Notifications */}
       {successMessage && (
-        <div className="alert alert-success alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between" role="alert">
+        <div
+          className="alert alert-success alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between"
+          role="alert"
+        >
           <div className="d-flex align-items-center">
             <i className="ti ti-circle-check me-2 fs-5 flex-shrink-0"></i>
             <span>{successMessage}</span>
           </div>
-          <button type="button" className="btn-close ms-auto" onClick={() => setSuccessMessage(null)}></button>
+          <button
+            type="button"
+            className="btn-close ms-auto"
+            onClick={() => setSuccessMessage(null)}
+          ></button>
         </div>
       )}
 
       {validationErrors.length > 0 && (
-        <div className="alert alert-danger alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between" role="alert">
+        <div
+          className="alert alert-danger alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between"
+          role="alert"
+        >
           <div className="d-flex align-items-center">
             <i className="ti ti-alert-triangle me-2 fs-5 flex-shrink-0"></i>
             <ul className="mb-0 small fw-semibold list-unstyled">
@@ -432,12 +469,19 @@ function JournalEntryContent() {
               ))}
             </ul>
           </div>
-          <button type="button" className="btn-close ms-auto" onClick={() => setValidationErrors([])}></button>
+          <button
+            type="button"
+            className="btn-close ms-auto"
+            onClick={() => setValidationErrors([])}
+          ></button>
         </div>
       )}
 
       {lockedMessage ? (
-        <div className="alert alert-warning shadow-sm py-2 d-flex align-items-center" role="alert">
+        <div
+          className="alert alert-warning shadow-sm py-2 d-flex align-items-center"
+          role="alert"
+        >
           <i className="ti ti-lock me-2 fs-5 flex-shrink-0"></i>
           <span>{lockedMessage}</span>
           <Link href="/reports/general-journal" className="alert-link ms-2">
@@ -450,7 +494,7 @@ function JournalEntryContent() {
           <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
             <div className="card-body p-4 text-white">
               <div className="row g-3">
-                {/* Transaction Number Input (Uneditable, langsung menampilkan nomor yang di-generate) */}
+                {/* Transaction Number Input (Uneditable, Disamakan Style-nya) */}
                 <div className="col-md-4">
                   <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
                     <i className="ti ti-hash"></i> Transaction No.
@@ -537,7 +581,7 @@ function JournalEntryContent() {
 
                       return (
                         <tr key={line.id}>
-                          {/* Ref No. (Read-only Auto Fill) */}
+                          {/* Ref No. */}
                           <td className="ps-4">
                             <input
                               type="text"
@@ -569,7 +613,7 @@ function JournalEntryContent() {
                             </select>
                           </td>
 
-                          {/* Description with Autocomplete Suggestions */}
+                          {/* Description */}
                           <td className="journal-line-description-container">
                             <input
                               type="text"
@@ -577,62 +621,61 @@ function JournalEntryContent() {
                               placeholder="Note..."
                               autoComplete="off"
                               value={line.lineDescription}
-                              onChange={(e) => handleDescriptionInput(line.id, e.target.value)}
+                              onChange={(e) =>
+                                handleDescriptionInput(line.id, e.target.value)
+                              }
                               onBlur={() => {
-                                setTimeout(() => updateLineField(line.id, 'showSuggestions', false), 200);
+                                setTimeout(
+                                  () => updateLineField(line.id, 'showSuggestions', false),
+                                  200
+                                );
                               }}
                             />
                             {line.showSuggestions && line.suggestions.length > 0 && (
                               <div className="list-group journal-suggestions-menu bg-dark border border-secondary">
-                                {lines.find((l) => l.id === line.id)?.suggestions.map((suggestion, sIdx) => (
-                                  <button
-                                    key={sIdx}
-                                    type="button"
-                                    className="list-group-item list-group-item-action bg-dark text-white border-secondary small py-1"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      selectSuggestion(line.id, suggestion);
-                                    }}
-                                  >
-                                    {suggestion}
-                                  </button>
-                                ))}
+                                {lines
+                                  .find((l) => l.id === line.id)
+                                  ?.suggestions.map((suggestion, sIdx) => (
+                                    <button
+                                      key={sIdx}
+                                      type="button"
+                                      className="list-group-item list-group-item-action bg-dark text-white border-secondary small py-1"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        selectSuggestion(line.id, suggestion);
+                                      }}
+                                    >
+                                      {suggestion}
+                                    </button>
+                                  ))}
                               </div>
                             )}
                           </td>
 
-                          {/* Debit Input */}
+                          {/* Debit Input (Tipe text, format titik otomatis, tanpa spinner) */}
                           <td>
                             <input
-                              type="number"
-                              step="any"
+                              type="text"
+                              inputMode="numeric"
                               className="form-control bg-dark text-white border-secondary text-end"
                               placeholder="0"
                               value={line.debit}
                               onChange={(e) =>
-                                updateLineField(
-                                  line.id,
-                                  'debit',
-                                  e.target.value === '' ? '' : Number(e.target.value)
-                                )
+                                updateLineField(line.id, 'debit', e.target.value)
                               }
                             />
                           </td>
 
-                          {/* Credit Input */}
+                          {/* Credit Input (Tipe text, format titik otomatis, tanpa spinner) */}
                           <td>
                             <input
-                              type="number"
-                              step="any"
+                              type="text"
+                              inputMode="numeric"
                               className="form-control bg-dark text-white border-secondary text-end"
                               placeholder="0"
                               value={line.credit}
                               onChange={(e) =>
-                                updateLineField(
-                                  line.id,
-                                  'credit',
-                                  e.target.value === '' ? '' : Number(e.target.value)
-                                )
+                                updateLineField(line.id, 'credit', e.target.value)
                               }
                             />
                           </td>
@@ -675,7 +718,8 @@ function JournalEntryContent() {
                           </span>
                         ) : (
                           <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 d-inline-flex align-items-center">
-                            <i className="ti ti-alert-triangle me-1"></i> Unbalanced (Rp {formatIDR(Math.abs(totalDebit - totalCredit))})
+                            <i className="ti ti-alert-triangle me-1"></i> Unbalanced (Rp{' '}
+                            {formatIDR(Math.abs(totalDebit - totalCredit))})
                           </span>
                         )}
                       </td>
@@ -690,7 +734,10 @@ function JournalEntryContent() {
           {/* Form Controls */}
           <div className="d-flex justify-content-end gap-2">
             {isEdit ? (
-              <Link href="/reports/general-journal" className="btn btn-outline-secondary px-4">
+              <Link
+                href="/reports/general-journal"
+                className="btn btn-outline-secondary px-4"
+              >
                 Cancel
               </Link>
             ) : (
