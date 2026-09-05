@@ -18,11 +18,7 @@ namespace AumoFinance.Models
 
         [Required]
         [StringLength(50)]
-        public string JournalType { get; set; } = "General"; // "General", "Adjusting", atau "Closing"
-
-        // "Closing" hanya dibuat sistem sendiri (lihat ClosingJournalPoster)
-        // saat sebuah periode ditutup — tidak pernah diinput manual lewat
-        // halaman Journal Entry.
+        public string JournalType { get; set; } = "General"; // "General" atau "Adjusting"
 
         [Required]
         public DateTime EntryDate { get; set; }

@@ -71,7 +71,7 @@ public class GeneralLedgerController : ControllerBase
             ? AccountClassification.IsTemporary
             : AccountClassification.IsPermanent;
 
-        var ledgers = await BuildLedgersAsync(userId, period, typeFilter);
+        var ledgers = await BuildLedgersAsync(userId, period, typeFilter, isTemporary);
 
         decimal netTotal = 0m;
         if (isTemporary)
@@ -90,7 +90,7 @@ public class GeneralLedgerController : ControllerBase
         });
     }
 
-    private async Task<List<LedgerAccountWebResponse>> BuildLedgersAsync(Guid userId, Period period, Func<string, bool> typeFilter)
+    private async Task<List<LedgerAccountWebResponse>> BuildLedgersAsync(Guid userId, Period period, Func<string, bool> typeFilter, bool isTemporary)
     {
         var accounts = (await _db.ChartOfAccounts
                 .Where(a => a.IsActive && a.UserId == userId)
@@ -131,6 +131,27 @@ public class GeneralLedgerController : ControllerBase
                     Description = line.LineDescription,
                     Debit = line.Debit,
                     Credit = line.Credit,
+                    RunningBalance = running
+                });
+            }
+
+            // Periode sudah ditutup: hitung ayat penutup di sini saja
+            // (tidak disimpan ke tabel JournalEntry/JournalEntryLine).
+            // Tampilkan sebagai baris paling bawah supaya saldo akhir
+            // akun sementara ini menjadi 0.
+            if (isTemporary && period.IsClosed && running != 0)
+            {
+                var closingDebit = normalDebit ? Math.Max(-running, 0) : Math.Max(running, 0);
+                var closingCredit = normalDebit ? Math.Max(running, 0) : Math.Max(-running, 0);
+                running = 0m;
+
+                ledgerLines.Add(new LedgerLineWebResponse
+                {
+                    JournalEntryId = 0,
+                    EntryDate = period.EndDate.ToString("yyyy-MM-dd"),
+                    Description = "closing journal",
+                    Debit = closingDebit,
+                    Credit = closingCredit,
                     RunningBalance = running
                 });
             }
