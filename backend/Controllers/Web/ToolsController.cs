@@ -73,6 +73,11 @@ namespace AumoFinance.Controllers.Web
                 return BadRequest(new { message = "No transaction data provided for import." });
             }
 
+            if (request.TargetMonth < 1 || request.TargetMonth > 12 || request.TargetYear < 2000)
+            {
+                return BadRequest(new { message = "Invalid period parameters provided." });
+            }
+
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!Guid.TryParse(userIdStr, out var userId))
             {
@@ -83,6 +88,30 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
+                // -------------------------------------------------------------
+                // A. PERIOD AUTOMATION
+                // Cek periode target dari request (bulan & tahun).
+                // Jika belum ada, buatkan baru. Jika ada, gabungkan data ke periode tsb.
+                // -------------------------------------------------------------
+                var period = await _context.Periods.FirstOrDefaultAsync(p =>
+                    p.UserId == userId &&
+                    p.StartDate.Year == request.TargetYear &&
+                    p.StartDate.Month == request.TargetMonth
+                );
+
+                if (period == null)
+                {
+                    period = new Period
+                    {
+                        UserId = userId,
+                        StartDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, 1), DateTimeKind.Utc),
+                        EndDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth)), DateTimeKind.Utc),
+                        IsClosed = false
+                    };
+                    _context.Periods.Add(period);
+                    await _context.SaveChangesAsync();
+                }
+
                 int createdCoaCount = 0;
 
                 foreach (var txDto in request.Transactions)
@@ -93,28 +122,6 @@ namespace AumoFinance.Controllers.Web
                     }
 
                     txDate = DateTime.SpecifyKind(txDate, DateTimeKind.Utc);
-
-                    // -------------------------------------------------------------
-                    // A. PERIODS (Cek / Buat Periode Baru)
-                    // -------------------------------------------------------------
-                    var period = await _context.Periods.FirstOrDefaultAsync(p =>
-                        p.UserId == userId &&
-                        p.StartDate.Year == txDate.Year &&
-                        p.StartDate.Month == txDate.Month
-                    );
-
-                    if (period == null)
-                    {
-                        period = new Period
-                        {
-                            UserId = userId,
-                            StartDate = DateTime.SpecifyKind(new DateTime(txDate.Year, txDate.Month, 1), DateTimeKind.Utc),
-                            EndDate = DateTime.SpecifyKind(new DateTime(txDate.Year, txDate.Month, DateTime.DaysInMonth(txDate.Year, txDate.Month)), DateTimeKind.Utc),
-                            IsClosed = false
-                        };
-                        _context.Periods.Add(period);
-                        await _context.SaveChangesAsync();
-                    }
 
                     // -------------------------------------------------------------
                     // B. TRANSACTION COUNTER
@@ -185,7 +192,7 @@ namespace AumoFinance.Controllers.Web
                         journalEntry.Lines.Add(new JournalEntryLine
                         {
                             AccountId = coa.Id,
-                            LineDescription = lineDto.Description, // Menggunakan LineDescription
+                            LineDescription = lineDto.Description,
                             Debit = lineDto.Debit ?? 0m,
                             Credit = lineDto.Credit ?? 0m
                         });
@@ -216,6 +223,8 @@ namespace AumoFinance.Controllers.Web
     // ==========================================
     public class JournalImportRequestDto
     {
+        public int TargetMonth { get; set; }
+        public int TargetYear { get; set; }
         public List<JournalTransactionDto> Transactions { get; set; } = new();
     }
 
