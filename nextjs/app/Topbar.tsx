@@ -137,7 +137,7 @@ export default function Topbar({
         </div>
       </header>
 
-      {/* BARIS KEDUAA: STATUS STRIP & AKSES FITUR */}
+      {/* BARIS KEDUA: STATUS STRIP & AKSES FITUR */}
       {isAuthenticated && (
         <div
           className="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap border-bottom border-secondary border-opacity-10"
@@ -290,6 +290,33 @@ export default function Topbar({
           </div>
         </div>
       )}
+
+      {/* STYLES FOR TOPBAR */}
+      <style jsx global>{`
+        .topbar-solid {
+          background-color: var(--bs-body-bg, #121212);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          z-index: 1020;
+        }
+        .status-strip {
+          background-color: rgba(0, 0, 0, 0.15);
+          backdrop-filter: blur(8px);
+        }
+        .topbar-btn {
+          transition: color 0.15s ease-in-out, transform 0.15s ease-in-out;
+        }
+        .topbar-btn:hover {
+          color: var(--bs-body-color, #ffffff) !important;
+          transform: translateY(-1px);
+        }
+        .status-badge {
+          transition: opacity 0.15s ease-in-out;
+        }
+        .status-badge:hover {
+          opacity: 0.85;
+        }
+      `}</style>
     </>
   );
 }
