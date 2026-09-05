@@ -28,12 +28,21 @@ interface JournalImportResult {
   transactions: JournalTransactionImport[];
 }
 
-interface ReallocationDetail {
+interface AccountMappingDetail {
   excelRef: number;
   excelAccountName: string;
   mappedRef: number;
   mappedAccountName: string;
+  status: 'EXACT_MATCH' | 'REALLOCATED_NAME' | 'REALLOCATED_REF' | 'UNMAPPED' | string;
   reason: string;
+}
+
+interface MappingSummary {
+  totalUniqueAccounts: number;
+  exactMatchCount: number;
+  reallocatedCount: number;
+  unmappedCount: number;
+  isPerfectMatch: boolean;
 }
 
 export default function ToolsPage() {
@@ -47,8 +56,8 @@ export default function ToolsPage() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<JournalImportResult | null>(null);
-  const [reallocations, setReallocations] = useState<ReallocationDetail[]>([]);
-  const [isPerfectMatch, setIsPerfectMatch] = useState<boolean>(false);
+  const [accountMappings, setAccountMappings] = useState<AccountMappingDetail[]>([]);
+  const [mappingSummary, setMappingSummary] = useState<MappingSummary | null>(null);
 
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -63,8 +72,8 @@ export default function ToolsPage() {
       setSelectedFile(e.target.files[0]);
       setParseResult(null);
       setErrorMessage(null);
-      setReallocations([]);
-      setIsPerfectMatch(false);
+      setAccountMappings([]);
+      setMappingSummary(null);
     }
   };
 
@@ -103,8 +112,8 @@ export default function ToolsPage() {
 
     setErrorMessage(null);
     setSuccessMessage(null);
-    setReallocations([]);
-    setIsPerfectMatch(false);
+    setAccountMappings([]);
+    setMappingSummary(null);
     setIsBusy(true);
 
     try {
@@ -210,11 +219,11 @@ export default function ToolsPage() {
         if (contentType && contentType.includes('application/json')) {
           const previewData = await previewRes.json();
           if (previewRes.ok) {
-            if (previewData.reallocations && previewData.reallocations.length > 0) {
-              setReallocations(previewData.reallocations);
+            if (previewData.accountMappings) {
+              setAccountMappings(previewData.accountMappings);
             }
-            if (previewData.isPerfectMatch) {
-              setIsPerfectMatch(true);
+            if (previewData.summary) {
+              setMappingSummary(previewData.summary);
             }
             if (previewData.transactions && previewData.transactions.length > 0) {
               displayTransactions = previewData.transactions;
@@ -286,8 +295,8 @@ export default function ToolsPage() {
 
       setParseResult(null);
       setSelectedFile(null);
-      setReallocations([]);
-      setIsPerfectMatch(false);
+      setAccountMappings([]);
+      setMappingSummary(null);
     } catch (err: any) {
       setErrorMessage(`Failed to save entries: ${err.message}`);
     } finally {
@@ -351,46 +360,60 @@ export default function ToolsPage() {
     { value: 12, label: 'December' },
   ];
 
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'EXACT_MATCH':
+        return <span className="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25">Match 100%</span>;
+      case 'REALLOCATED_NAME':
+      case 'REALLOCATED_REF':
+        return <span className="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25">Dilimpahkan</span>;
+      case 'UNMAPPED':
+        return <span className="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25">Tidak Terdaftar</span>;
+      default:
+        return <span className="badge bg-secondary">-</span>;
+    }
+  };
+
   return (
     <div 
       className="container-fluid py-4 px-4 text-white"
-      style={{ fontFamily: "'Aptos', 'Aptos Display', system-ui, sans-serif" }}
+      style={{ fontFamily: "'Aptos', 'Aptos Display', system-ui, -apple-system, sans-serif" }}
     >
       {/* Alert Messages */}
       {successMessage && (
         <div className="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-4 text-white fw-normal" role="alert">
-          <i className="bi bi-check-circle-fill me-2"></i> {successMessage}
+          <i className="ti ti-circle-check fs-5 me-2 align-middle"></i> {successMessage}
           <button type="button" className="btn-close btn-close-white" onClick={() => setSuccessMessage(null)}></button>
         </div>
       )}
 
       {errorMessage && (
         <div className="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4 text-white fw-normal" role="alert">
-          <i className="bi bi-exclamation-triangle-fill me-2"></i> {errorMessage}
+          <i className="ti ti-alert-triangle fs-5 me-2 align-middle"></i> {errorMessage}
           <button type="button" className="btn-close btn-close-white" onClick={() => setErrorMessage(null)}></button>
         </div>
       )}
 
       {/* SPLIT SCREEN LAYOUT */}
       <div className="row g-4">
-        {/* PANEL KIRI: FORM KONTROL & STATUS VERIFIKASI */}
+        {/* PANEL KIRI: FORM KONTROL & DETAIL PEMETAAN COA */}
         <div className="col-12 col-lg-5 col-xl-4">
           <div className="card glass-card border-0 shadow-sm rounded-4 mb-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 pt-4 pb-3 px-4">
-              <h5 className="fw-bold text-white mb-0">
-                <i className="bi bi-file-earmark-spreadsheet me-2 text-white"></i> Import Journal Entries
+              <h5 className="fw-bold text-white mb-0 d-flex align-items-center">
+                <i className="ti ti-file-spreadsheet me-2 fs-4 text-white"></i> Import Journal Entries
               </h5>
             </div>
             <div className="card-body px-4 py-4">
               {/* Target Import Period */}
               <div className="bg-body-tertiary rounded-3 p-3 mb-4 border border-secondary border-opacity-25">
                 <label className="form-label fw-bold small text-white d-block mb-2">
-                  <i className="bi bi-calendar3 me-1"></i> Target Import Period
+                  <i className="ti ti-calendar me-1 align-middle"></i> Target Import Period
                 </label>
                 <div className="row g-2">
                   <div className="col-6">
                     <select
-                      className="form-select bg-dark text-white border-secondary small"
+                      className="form-select bg-dark text-white border-secondary small fw-normal"
                       value={targetMonth}
                       onChange={(e) => setTargetMonth(Number(e.target.value))}
                     >
@@ -403,7 +426,7 @@ export default function ToolsPage() {
                   </div>
                   <div className="col-6">
                     <select
-                      className="form-select bg-dark text-white border-secondary small"
+                      className="form-select bg-dark text-white border-secondary small fw-normal"
                       value={targetYear}
                       onChange={(e) => setTargetYear(Number(e.target.value))}
                     >
@@ -428,10 +451,10 @@ export default function ToolsPage() {
                 />
                 <button
                   type="button"
-                  className="btn btn-sm btn-link text-white-50 text-decoration-none p-0 fw-normal small"
+                  className="btn btn-sm btn-link text-white-50 text-decoration-none p-0 fw-normal small d-inline-flex align-items-center"
                   onClick={handleDownloadTemplate}
                 >
-                  <i className="bi bi-download me-1"></i> Download Excel Template (.xlsx)
+                  <i className="ti ti-download me-1 fs-6"></i> Download Excel Template (.xlsx)
                 </button>
               </div>
 
@@ -439,14 +462,14 @@ export default function ToolsPage() {
               <div className="d-grid gap-2 mt-4">
                 <button
                   type="button"
-                  className="btn btn-primary fw-bold rounded-3 text-white shadow-sm"
+                  className="btn btn-primary fw-bold rounded-3 text-white shadow-sm d-inline-flex align-items-center justify-content-center"
                   disabled={!selectedFile || isBusy}
                   onClick={handlePreview}
                 >
                   {isBusy ? (
                     <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                   ) : (
-                    <i className="bi bi-eye me-2"></i>
+                    <i className="ti ti-eye me-2 fs-5"></i>
                   )}
                   Preview Entries
                 </button>
@@ -454,85 +477,59 @@ export default function ToolsPage() {
                 {parseResult && (
                   <button
                     type="button"
-                    className="btn btn-success fw-bold rounded-3 text-white shadow-sm"
+                    className="btn btn-success fw-bold rounded-3 text-white shadow-sm d-inline-flex align-items-center justify-content-center"
                     disabled={isBusy}
                     onClick={handleConfirmImport}
                   >
-                    <i className="bi bi-check2-all me-1"></i> Submit & Import Data
+                    <i className="ti ti-check-all me-1 fs-5"></i> Submit & Import Data
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* METADATA SUMMARY CARD */}
-          {parseResult && (
-            <div className="card border-0 glass-card rounded-4 shadow-sm mb-4">
-              <div className="card-body p-4">
-                <h6 className="fw-bold text-white mb-3">
-                  <i className="bi bi-bar-chart-line me-2"></i> Import Metadata Summary
+          {/* TABEL LENGKAP PEMETAAN DAN PELIMPAHAN AKUN (TETAP MUNCUL SAMA SAAT MATCH ATAU DILIMPAHKAN) */}
+          {accountMappings.length > 0 && (
+            <div className="card border-0 glass-card text-white rounded-4 shadow-sm mb-4">
+              <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
+                <h6 className="fw-bold mb-0 text-white small d-flex align-items-center">
+                  <i className="ti ti-list-check me-2 fs-5 text-info"></i> Account Mapping Details ({accountMappings.length})
                 </h6>
-                <div className="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2 mb-2 small">
-                  <span className="text-secondary">Total Transactions:</span>
-                  <strong className="text-white">{parseResult.totalTransactionsRead} Entries</strong>
-                </div>
-                <div className="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-2 mb-2 small">
-                  <span className="text-secondary">Total Lines Read:</span>
-                  <strong className="text-white">{parseResult.totalLinesRead} Lines</strong>
-                </div>
-                <div className="d-flex justify-content-between small">
-                  <span className="text-secondary">Target Period:</span>
-                  <strong className="text-info">
-                    {monthOptions.find((m) => m.value === targetMonth)?.label} {targetYear}
-                  </strong>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* KONDISI A: PERFECTION STATUS (100% MATCH) */}
-          {parseResult && isPerfectMatch && (
-            <div className="card border-success bg-dark text-white rounded-4 shadow-sm mb-4">
-              <div className="card-header bg-success bg-opacity-10 border-bottom border-success border-opacity-25 py-3 px-4">
-                <h6 className="fw-bold mb-0 text-success small d-flex align-items-center">
-                  <i className="bi bi-patch-check-fill fs-5 me-2"></i> COA Verification Passed
-                </h6>
-              </div>
-              <div className="card-body p-3">
-                <p className="small text-white-50 mb-0">
-                  Seluruh Nomor Ref dan Nama Akun di file Excel cocok 100% presisi dengan Master COA aplikasi. Tidak ada pelimpahan akun yang diperlukan.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* KONDISI B: SUMMARY PELIMPAHAN AKUN */}
-          {reallocations.length > 0 && (
-            <div className="card border-warning bg-dark text-white rounded-4 shadow-sm">
-              <div className="card-header bg-warning bg-opacity-10 border-bottom border-warning border-opacity-25 py-3 px-4">
-                <h6 className="fw-bold mb-0 text-warning small">
-                  <i className="bi bi-arrow-left-right me-2"></i> Account Reallocations ({reallocations.length})
-                </h6>
+                {mappingSummary && (
+                  <span className={`badge ${mappingSummary.isPerfectMatch ? 'bg-success' : 'bg-warning text-dark'} fw-bold`}>
+                    {mappingSummary.isPerfectMatch ? '100% Presisi' : `${mappingSummary.reallocatedCount} Dilimpahkan`}
+                  </span>
+                )}
               </div>
               <div className="card-body p-0">
-                <div className="table-responsive" style={{ maxHeight: '350px' }}>
-                  <table className="table table-dark table-hover mb-0 align-middle extra-small style-table" style={{ fontSize: '0.8rem' }}>
+                <div className="table-responsive" style={{ maxHeight: '380px' }}>
+                  <table className="table table-dark table-hover mb-0 align-middle style-table" style={{ fontSize: '0.8rem' }}>
                     <thead>
-                      <tr className="text-secondary">
-                        <th>Original Excel</th>
-                        <th>Mapped Master COA</th>
+                      <tr className="text-secondary fw-bold border-bottom border-secondary border-opacity-25">
+                        <th>Input Excel</th>
+                        <th>Master COA Baku</th>
+                        <th className="text-center">Status</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {reallocations.map((r, i) => (
-                        <tr key={i}>
+                    <tbody className="fw-normal">
+                      {accountMappings.map((m, i) => (
+                        <tr key={i} className="border-bottom border-secondary border-opacity-10">
                           <td>
-                            <span className="badge bg-secondary me-1">{r.excelRef}</span>
-                            <span className="text-white-50">{r.excelAccountName}</span>
+                            <span className="badge bg-secondary me-1 font-monospace">{m.excelRef}</span>
+                            <span className="text-white-50">{m.excelAccountName}</span>
                           </td>
                           <td>
-                            <span className="badge bg-primary me-1">{r.mappedRef}</span>
-                            <strong className="text-white">{r.mappedAccountName}</strong>
+                            {m.mappedRef > 0 ? (
+                              <>
+                                <span className="badge bg-primary me-1 font-monospace">{m.mappedRef}</span>
+                                <strong className="text-white fw-bold">{m.mappedAccountName}</strong>
+                              </>
+                            ) : (
+                              <span className="text-danger italic">{m.mappedAccountName}</span>
+                            )}
+                          </td>
+                          <td className="text-center">
+                            {renderStatusBadge(m.status)}
                           </td>
                         </tr>
                       ))}
@@ -549,8 +546,8 @@ export default function ToolsPage() {
           {parseResult ? (
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
               <div className="d-flex justify-content-between align-items-center mb-1">
-                <h6 className="fw-bold text-white mb-0">
-                  <i className="bi bi-journal-text me-2"></i> Preview Transactions Stream
+                <h6 className="fw-bold text-white mb-0 d-flex align-items-center">
+                  <i className="ti ti-file-text me-2 fs-5"></i> Preview Transactions Stream
                 </h6>
                 <span className="badge bg-info text-dark fw-bold">
                   {parseResult.transactions.length} Transactions Loaded
@@ -563,12 +560,14 @@ export default function ToolsPage() {
                     <div className="d-flex align-items-center gap-2">
                       <span className="badge bg-primary text-white fw-normal">{tx.journalType} Journal</span>
                       {tx.transactionNumber && (
-                        <span className="badge bg-dark border border-secondary text-info font-monospace">
-                          <i className="bi bi-hash me-1"></i>{tx.transactionNumber}
+                        <span className="badge bg-dark border border-secondary text-info font-monospace d-inline-flex align-items-center">
+                          <i className="ti ti-hash me-1 fs-6"></i>{tx.transactionNumber}
                         </span>
                       )}
                     </div>
-                    <strong className="text-white fw-bold"><i className="bi bi-calendar-event me-1"></i> Date: {tx.date}</strong>
+                    <strong className="text-white fw-bold d-inline-flex align-items-center">
+                      <i className="ti ti-calendar-event me-1 fs-5"></i> Date: {tx.date}
+                    </strong>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-dark table-hover table-striped mb-0 align-middle small text-white">
@@ -586,7 +585,7 @@ export default function ToolsPage() {
                         {tx.lines.map((line, lineIndex) => (
                           <tr key={lineIndex} className="text-white">
                             <td className="text-center text-white-50">{line.rowIndex}</td>
-                            <td className="text-center fw-bold text-white">{line.refNumber}</td>
+                            <td className="text-center fw-bold text-white font-monospace">{line.refNumber}</td>
                             <td className="text-white">{line.accountName}</td>
                             <td className="text-white-50">{line.description}</td>
                             <td className="text-end fw-bold text-white">
@@ -600,11 +599,11 @@ export default function ToolsPage() {
                       </tbody>
                       <tfoot className="table-group-divider fw-bold text-white">
                         <tr>
-                          <td colSpan={4} className="text-end text-white">Total Amount:</td>
-                          <td className="text-end text-white">
+                          <td colSpan={4} className="text-end text-white fw-bold">Total Amount:</td>
+                          <td className="text-end text-white fw-bold">
                             {formatIDR(tx.lines.reduce((acc, l) => acc + (l.debit || 0), 0))}
                           </td>
-                          <td className="text-end text-white">
+                          <td className="text-end text-white fw-bold">
                             {formatIDR(tx.lines.reduce((acc, l) => acc + (l.credit || 0), 0))}
                           </td>
                         </tr>
@@ -617,9 +616,9 @@ export default function ToolsPage() {
           ) : (
             <div className="card glass-card border-0 rounded-4 shadow-sm h-100 d-flex align-items-center justify-content-center p-5 text-center text-secondary">
               <div>
-                <i className="bi bi-file-earmark-arrow-up display-3 d-block mb-3 opacity-50"></i>
+                <i className="ti ti-file-upload display-3 d-block mb-3 opacity-50"></i>
                 <h6 className="fw-bold text-white mb-2">No Preview Generated Yet</h6>
-                <p className="small mb-0 text-white-50">
+                <p className="small mb-0 text-white-50 fw-normal">
                   Select an Excel file on the left panel and click <strong>Preview Entries</strong> to inspect data before importing.
                 </p>
               </div>
