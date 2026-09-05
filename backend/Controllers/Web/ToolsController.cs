@@ -144,21 +144,15 @@ namespace AumoFinance.Controllers.Web
 
                     string transactionNumber = $"{counterKey}{counter.LastSequence:D4}";
 
-                    // Ambil deskripsi pertama sebagai deskripsi utama transaksi
-                    string mainDescription = txDto.Lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l.Description))?.Description ?? string.Empty;
-
                     // -------------------------------------------------------------
                     // C. JOURNAL ENTRY
                     // -------------------------------------------------------------
                     var journalEntry = new JournalEntry
                     {
                         UserId = userId,
-                        PeriodId = period.Id,
-                        Date = txDate,
                         TransactionNumber = transactionNumber,
                         JournalType = txDto.JournalType,
-                        Description = mainDescription,
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = txDate,
                         Lines = new List<JournalEntryLine>()
                     };
 
@@ -191,7 +185,7 @@ namespace AumoFinance.Controllers.Web
                         journalEntry.Lines.Add(new JournalEntryLine
                         {
                             AccountId = coa.Id,
-                            Description = lineDto.Description, // Tetap menggunakan Description
+                            Memo = lineDto.Description, // Menggunakan Memo untuk rincian deskripsi
                             Debit = lineDto.Debit ?? 0m,
                             Credit = lineDto.Credit ?? 0m
                         });
