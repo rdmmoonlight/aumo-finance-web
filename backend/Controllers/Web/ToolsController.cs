@@ -93,9 +93,9 @@ public class ToolsWebController : ControllerBase
                 // -------------------------------------------------------------
                 // A. AUTOMATION PERIODE: Cek / Buat Periode Baru Jika Belum Ada
                 // -------------------------------------------------------------
-                var period = await _context.Periods.FirstOrDefaultAsync(p => 
-                    p.UserId == userId && 
-                    p.Year == txDate.Year && 
+                var period = await _context.Periods.FirstOrDefaultAsync(p =>
+                    p.UserId == userId &&
+                    p.Year == txDate.Year &&
                     p.Month == txDate.Month
                 );
 
@@ -119,8 +119,8 @@ public class ToolsWebController : ControllerBase
                 string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                 string counterKey = $"{prefix}{txDate:yyMM}";
 
-                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c => 
-                    c.UserId == userId && 
+                var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
+                    c.UserId == userId &&
                     c.CounterKey == counterKey
                 );
 
@@ -162,8 +162,8 @@ public class ToolsWebController : ControllerBase
                 foreach (var lineDto in txDto.Lines)
                 {
                     // Cek COA berdasarkan Reference Number & UserId
-                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c => 
-                        c.UserId == userId && 
+                    var coa = await _context.ChartOfAccounts.FirstOrDefaultAsync(c =>
+                        c.UserId == userId &&
                         c.ReferenceNumber == lineDto.RefNumber
                     );
 
