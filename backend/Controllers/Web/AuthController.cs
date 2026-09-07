@@ -1,5 +1,6 @@
 using AumoFinance.Models;
 using AumoFinance.Models.DTOs;
+using AumoFinance.Models.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
