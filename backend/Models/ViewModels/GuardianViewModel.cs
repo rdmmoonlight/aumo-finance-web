@@ -1,6 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using AumoFinance.Models;
 
+// Jembatan tipe data: Memaksa C# menganggap Security dan Guardian adalah tipe yang persis sama
+global using UserSessionSecurity = AumoFinance.Models.Guardian.UserSession;
+global using LoginActivitySecurity = AumoFinance.Models.Guardian.LoginActivity;
+
 namespace AumoFinance.Models.Guardian
 {
     #region View Models
@@ -263,4 +267,21 @@ namespace AumoFinance.Services.Guardian
     }
 
     #endregion
+}
+
+// Jembatan kompatibilitas namespace lama untuk Controllers & Program.cs
+namespace AumoFinance.Models.Security
+{
+    using UserSession = global::AumoFinance.Models.Guardian.UserSession;
+    using LoginActivity = global::AumoFinance.Models.Guardian.LoginActivity;
+}
+
+namespace AumoFinance.Services.Security
+{
+    public interface IGuardianService : global::AumoFinance.Services.Guardian.IGuardianService { }
+
+    public class GuardianService : global::AumoFinance.Services.Guardian.GuardianService, IGuardianService
+    {
+        public GuardianService(AumoFinance.Models.AppDbContext context) : base(context) { }
+    }
 }
