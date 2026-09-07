@@ -17,7 +17,7 @@ import {
 
 // Base URL Backend API dari environment variable Vercel atau fallback ke URL Render
 const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com'
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
 ).replace(/\/$/, '');
 
 // DTO disesuaikan dengan ActiveSessionViewModel C#
