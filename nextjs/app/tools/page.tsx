@@ -64,13 +64,7 @@ export default function ToolsPage() {
   const [accountMappings, setAccountMappings] = useState<AccountMappingDetail[]>([]);
   const [mappingSummary, setMappingSummary] = useState<MappingSummary | null>(null);
 
-  // Modal State untuk dialog pelimpahan akun
-  const [showMappingModal, setShowMappingModal] = useState<boolean>(false);
-  const [selectedMapping, setSelectedMapping] = useState<AccountMappingDetail | null>(null);
-  const [customMappedRef, setCustomMappedRef] = useState<number>(0);
-  const [customMappedName, setCustomMappedName] = useState<string>('');
-
-  // Contoh opsi Master COA baku yang dapat dipilih saat re-allocation
+  // Opsi pilihan Master COA Baku untuk pelimpahan
   const masterAccountOptions: MasterAccountOption[] = [
     { ref: 101, name: 'Kas Utama' },
     { ref: 102, name: 'Bank BCA' },
@@ -296,26 +290,20 @@ export default function ToolsPage() {
     }
   };
 
-  // Fungsi untuk Membuka Dialog Pelimpahan Akun Manual
-  const handleOpenMappingModal = (mapping: AccountMappingDetail) => {
-    setSelectedMapping(mapping);
-    setCustomMappedRef(mapping.mappedRef || masterAccountOptions[0].ref);
-    setCustomMappedName(mapping.mappedAccountName || masterAccountOptions[0].name);
-    setShowMappingModal(true);
-  };
-
-  // Simpan Pelimpahan Akun Manual dari Modal
-  const handleSaveReallocation = () => {
-    if (!selectedMapping) return;
+  // Fungsi Langsung Mengubah Pelimpahan Akun Melalui Dropdown Inline
+  const handleInlineReallocationChange = (excelRef: number, excelName: string, selectedTargetRef: number) => {
+    const selectedOption = masterAccountOptions.find((o) => o.ref === selectedTargetRef);
+    if (!selectedOption) return;
 
     const updated = accountMappings.map((m) => {
-      if (m.excelRef === selectedMapping.excelRef && m.excelAccountName === selectedMapping.excelAccountName) {
+      if (m.excelRef === excelRef && m.excelAccountName === excelName) {
+        const isMatchExact = m.excelRef === selectedOption.ref && m.excelAccountName === selectedOption.name;
         return {
           ...m,
-          mappedRef: customMappedRef,
-          mappedAccountName: customMappedName,
-          status: 'REALLOCATED_NAME',
-          reason: `Dilimpahkan secara manual ke ${customMappedRef} - ${customMappedName}`,
+          mappedRef: selectedOption.ref,
+          mappedAccountName: selectedOption.name,
+          status: isMatchExact ? 'EXACT_MATCH' : 'REALLOCATED_NAME',
+          reason: `Dilimpahkan ke ${selectedOption.ref} - ${selectedOption.name}`,
         };
       }
       return m;
@@ -323,8 +311,8 @@ export default function ToolsPage() {
 
     setAccountMappings(updated);
 
-    // Recalculate summary jika unmapped berkurang
-    const unmappedCount = updated.filter((m) => m.status === 'UNMAPPED').length;
+    // Hitung Ulang Summary
+    const unmappedCount = updated.filter((m) => m.status === 'UNMAPPED' || m.mappedRef === 0).length;
     const reallocatedCount = updated.filter((m) => m.status.includes('REALLOCATED')).length;
     const exactMatchCount = updated.filter((m) => m.status === 'EXACT_MATCH').length;
 
@@ -335,9 +323,6 @@ export default function ToolsPage() {
       unmappedCount,
       isPerfectMatch: unmappedCount === 0,
     });
-
-    setShowMappingModal(false);
-    setSelectedMapping(null);
   };
 
   const handleConfirmImport = async () => {
@@ -453,38 +438,32 @@ export default function ToolsPage() {
     { value: 12, label: 'December' },
   ];
 
-  // BADGE STYLING DENGAN KONTRAS TINGGI & PEMBEDAAN WARNA JELAS
+  // BADGE STYLING STATUS
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'EXACT_MATCH':
         return (
           <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-success border border-light rounded-2 shadow-sm d-inline-flex align-items-center">
-            <i className="ti ti-check me-1 fs-6"></i> Clean Match
+            <i className="ti ti-check me-1 fs-6 text-white"></i> Clean Match
           </span>
         );
       case 'REALLOCATED_NAME':
       case 'REALLOCATED_REF':
         return (
           <span className="badge px-2 py-1 fs-6 fw-bold text-dark bg-warning border border-warning-subtle rounded-2 shadow-sm d-inline-flex align-items-center">
-            <i className="ti ti-arrows-right-left me-1 fs-6"></i> Dilimpahkan
+            <i className="ti ti-arrows-right-left me-1 fs-6 text-dark"></i> Dilimpahkan
           </span>
         );
       case 'UNMAPPED':
         return (
           <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-danger border border-light rounded-2 shadow-sm d-inline-flex align-items-center">
-            <i className="ti ti-x me-1 fs-6"></i> Tdk Terdaftar
-          </span>
-        );
-      case 'UNVERIFIED':
-        return (
-          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-secondary border border-secondary-subtle rounded-2 d-inline-flex align-items-center">
-            Offline
+            <i className="ti ti-x me-1 fs-6 text-white"></i> Tdk Terdaftar
           </span>
         );
       default:
         return (
-          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-info border border-info-subtle rounded-2 d-inline-flex align-items-center">
-            Diproses
+          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-secondary border border-secondary-subtle rounded-2 d-inline-flex align-items-center">
+            Offline
           </span>
         );
     }
@@ -498,14 +477,14 @@ export default function ToolsPage() {
       {/* Alert Messages */}
       {successMessage && (
         <div className="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-4 text-white fw-normal" role="alert">
-          <i className="ti ti-circle-check fs-5 me-2 align-middle"></i> {successMessage}
+          <i className="ti ti-circle-check fs-5 me-2 align-middle text-white"></i> {successMessage}
           <button type="button" className="btn-close btn-close-white" onClick={() => setSuccessMessage(null)}></button>
         </div>
       )}
 
       {errorMessage && (
         <div className="alert alert-danger alert-dismissible fade show shadow-sm rounded-3 mb-4 text-white fw-normal" role="alert">
-          <i className="ti ti-alert-triangle fs-5 me-2 align-middle"></i> {errorMessage}
+          <i className="ti ti-alert-triangle fs-5 me-2 align-middle text-white"></i> {errorMessage}
           <button type="button" className="btn-close btn-close-white" onClick={() => setErrorMessage(null)}></button>
         </div>
       )}
@@ -524,7 +503,7 @@ export default function ToolsPage() {
               {/* Target Import Period */}
               <div className="bg-body-tertiary rounded-3 p-3 mb-4 border border-secondary border-opacity-25">
                 <label className="form-label fw-bold small text-white d-block mb-2">
-                  <i className="ti ti-calendar me-1 align-middle"></i> Target Import Period
+                  <i className="ti ti-calendar me-1 align-middle text-white"></i> Target Import Period
                 </label>
                 <div className="row g-2">
                   <div className="col-6">
@@ -611,7 +590,7 @@ export default function ToolsPage() {
             </div>
           </div>
 
-          {/* TABEL PEMETAAN DAN PELIMPAHAN AKUN */}
+          {/* TABEL EDITABLE PEMETAAN AKUN */}
           {accountMappings.length > 0 && (
             <div className="card border-0 glass-card text-white rounded-4 shadow-sm mb-4">
               <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
@@ -627,51 +606,39 @@ export default function ToolsPage() {
                   <table className="table table-dark table-hover mb-0 align-middle style-table" style={{ fontSize: '0.85rem' }}>
                     <thead>
                       <tr className="text-white fw-bold border-bottom border-secondary border-opacity-25 bg-secondary bg-opacity-20">
-                        <th className="ps-4 text-white">Input Excel</th>
-                        <th className="text-white">Master COA Baku</th>
-                        <th className="text-center pe-4 text-white">Status / Aksi</th>
+                        <th className="ps-3 text-white" style={{ width: '38%' }}>Input Excel</th>
+                        <th className="text-white" style={{ width: '42%' }}>Master COA Baku (Editable)</th>
+                        <th className="text-center pe-3 text-white" style={{ width: '20%' }}>Status</th>
                       </tr>
                     </thead>
                     <tbody className="fw-normal text-white">
                       {accountMappings.map((m, i) => {
                         const isReallocated = m.status.includes('REALLOCATED');
-                        const isClean = m.status === 'EXACT_MATCH';
-                        const isUnmapped = m.status === 'UNMAPPED';
 
                         return (
                           <tr key={i} className={`border-bottom border-secondary border-opacity-25 ${isReallocated ? 'bg-warning bg-opacity-10' : ''}`}>
-                            <td className="ps-4">
-                              <span className="badge bg-secondary text-white me-2 font-monospace">{m.excelRef}</span>
-                              <strong className="text-white">{m.excelAccountName}</strong>
+                            <td className="ps-3">
+                              <span className="badge bg-secondary text-white me-1 font-monospace">{m.excelRef}</span>
+                              <span className="text-white fw-bold">{m.excelAccountName}</span>
                             </td>
                             <td>
-                              {m.mappedRef > 0 ? (
-                                <>
-                                  <span className={`badge me-2 font-monospace ${isReallocated ? 'bg-warning text-dark fw-bold' : 'bg-primary text-white'}`}>
-                                    {m.mappedRef}
-                                  </span>
-                                  <strong className={isReallocated ? 'text-warning fw-bold' : 'text-white fw-bold'}>
-                                    {m.mappedAccountName}
-                                  </strong>
-                                </>
-                              ) : (
-                                <span className="text-danger fw-bold fst-italic">Belum Dipetakan</span>
-                              )}
+                              {/* DROPDOWN INLINE PELIMPAHAN AKUN EDITABLE */}
+                              <select
+                                className={`form-select form-select-sm text-white fw-bold ${isReallocated ? 'bg-warning bg-opacity-20 border-warning' : 'bg-dark border-secondary'}`}
+                                value={m.mappedRef || 0}
+                                onChange={(e) => handleInlineReallocationChange(m.excelRef, m.excelAccountName, Number(e.target.value))}
+                                style={{ fontSize: '0.8rem' }}
+                              >
+                                {m.mappedRef === 0 && <option value={0}>-- Pilih Pelimpahan Akun --</option>}
+                                {masterAccountOptions.map((opt) => (
+                                  <option key={opt.ref} value={opt.ref} className="bg-dark text-white">
+                                    [{opt.ref}] {opt.name}
+                                  </option>
+                                ))}
+                              </select>
                             </td>
-                            <td className="text-center pe-4">
-                              <div className="d-flex flex-column align-items-center gap-1 py-1">
-                                {renderStatusBadge(m.status)}
-                                {(isReallocated || isUnmapped) && (
-                                  <button
-                                    type="button"
-                                    className="btn btn-xs btn-outline-warning text-white fw-bold py-0 px-2 mt-1 rounded-2"
-                                    style={{ fontSize: '0.7rem' }}
-                                    onClick={() => handleOpenMappingModal(m)}
-                                  >
-                                    <i className="ti ti-edit me-1 text-white"></i> Pelimpahan Akun
-                                  </button>
-                                )}
-                              </div>
+                            <td className="text-center pe-3">
+                              {renderStatusBadge(m.status)}
                             </td>
                           </tr>
                         );
@@ -738,7 +705,7 @@ export default function ToolsPage() {
                                 <span className="text-white fw-bold">{line.accountName}</span>
                                 {isReallocated && (
                                   <span className="badge bg-warning text-dark ms-2 fw-bold" title={`Dilimpahkan ke ${mapping?.mappedRef} - ${mapping?.mappedAccountName}`}>
-                                    <i className="ti ti-arrow-right me-1"></i>{mapping?.mappedAccountName}
+                                    <i className="ti ti-arrow-right me-1 text-dark"></i>{mapping?.mappedAccountName}
                                   </span>
                                 )}
                                 {isUnmapped && <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini tidak terdaftar di sistem"></i>}
@@ -783,77 +750,6 @@ export default function ToolsPage() {
           )}
         </div>
       </div>
-
-      {/* MODAL DIALOG PELIMPAHAN AKUN */}
-      {showMappingModal && selectedMapping && (
-        <div className="modal fade show d-block tab-modal-backdrop" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content bg-dark text-white border border-secondary border-opacity-50 shadow-lg rounded-4">
-              <div className="modal-header border-bottom border-secondary border-opacity-25 py-3 px-4">
-                <h5 className="modal-title fw-bold text-white d-flex align-items-center">
-                  <i className="ti ti-arrows-right-left me-2 text-warning fs-4"></i> Pelimpahan Akun Manual
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setShowMappingModal(false)}
-                ></button>
-              </div>
-              <div className="modal-body px-4 py-4">
-                <p className="small text-white mb-3 fw-normal">
-                  Pilih Master COA Baku yang akan menerima data transaksi dari akun input Excel berikut:
-                </p>
-
-                {/* Info Akun Asal dari Excel */}
-                <div className="p-3 bg-secondary bg-opacity-20 rounded-3 border border-secondary border-opacity-25 mb-4">
-                  <div className="small text-white text-uppercase fw-bold mb-1">Akun Excel (Asal)</div>
-                  <div className="fs-6 fw-bold text-white">
-                    <span className="badge bg-secondary me-2 font-monospace">{selectedMapping.excelRef}</span>
-                    {selectedMapping.excelAccountName}
-                  </div>
-                </div>
-
-                {/* Form Pilih Akun Pelimpahan */}
-                <div className="mb-3">
-                  <label className="form-label fw-bold text-white small">Dilimpahkan Ke Master COA Baku:</label>
-                  <select
-                    className="form-select bg-black text-white border-secondary fw-normal py-2"
-                    value={customMappedRef}
-                    onChange={(e) => {
-                      const selectedRef = Number(e.target.value);
-                      const opt = masterAccountOptions.find((o) => o.ref === selectedRef);
-                      setCustomMappedRef(selectedRef);
-                      if (opt) setCustomMappedName(opt.name);
-                    }}
-                  >
-                    {masterAccountOptions.map((opt) => (
-                      <option key={opt.ref} value={opt.ref}>
-                        [{opt.ref}] {opt.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-3">
-                <button
-                  type="button"
-                  className="btn btn-outline-light rounded-3 fw-bold text-white"
-                  onClick={() => setShowMappingModal(false)}
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-warning fw-bold text-dark rounded-3 px-4 shadow-sm d-inline-flex align-items-center"
-                  onClick={handleSaveReallocation}
-                >
-                  <i className="ti ti-check me-1 fs-5"></i> Simpan Pelimpahan
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
