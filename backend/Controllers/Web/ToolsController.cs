@@ -88,12 +88,14 @@ namespace AumoFinance.Controllers.Web
 
             foreach (var txDto in request.Transactions)
             {
-                if (!DateTime.TryParse(txDto.Date, out var txDate))
+                if (!DateTime.TryParse(txDto.Date, out var rawTxDate))
                 {
                     continue;
                 }
 
-                txDate = DateTime.SpecifyKind(txDate, DateTimeKind.Utc);
+                // Paksa Tahun & Bulan mengikuti Target
+                int day = Math.Min(rawTxDate.Day, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth));
+                var txDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, day), DateTimeKind.Utc);
 
                 string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                 string counterKey = $"{prefix}{txDate:yyMM}";
@@ -157,7 +159,7 @@ namespace AumoFinance.Controllers.Web
                 processedTransactions.Add(new JournalTransactionDto
                 {
                     TransactionNumber = generatedTxNumber,
-                    Date = txDto.Date,
+                    Date = txDate.ToString("yyyy-MM-dd"),
                     JournalType = txDto.JournalType,
                     Lines = processedLines
                 });
@@ -213,7 +215,7 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
-                // Cek / Buat Periode Akuntansi dengan Nama Periode yang Sesuai ("September 2026")
+                // Cek / Buat Periode Akuntansi dengan Format "September 2026"
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -228,7 +230,7 @@ namespace AumoFinance.Controllers.Web
                     period = new Period
                     {
                         UserId = userId,
-                        PeriodName = monthName, // Menggunakan format nama bulan dan tahun (Contoh: "September 2026")
+                        PeriodName = monthName,
                         StartDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, 1), DateTimeKind.Utc),
                         EndDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth)), DateTimeKind.Utc),
                         IsClosed = false,
@@ -261,15 +263,17 @@ namespace AumoFinance.Controllers.Web
 
                 foreach (var txDto in request.Transactions)
                 {
-                    if (!DateTime.TryParse(txDto.Date, out var txDate))
+                    if (!DateTime.TryParse(txDto.Date, out var rawTxDate))
                     {
                         continue;
                     }
 
-                    txDate = DateTime.SpecifyKind(txDate, DateTimeKind.Utc);
+                    // PAKSA TANGGAL MENGGUNAKAN TARGET MONTH & TARGET YEAR
+                    int day = Math.Min(rawTxDate.Day, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth));
+                    var txDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, day), DateTimeKind.Utc);
 
                     string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
-                    string counterKey = $"{prefix}{txDate:yyMM}";
+                    string counterKey = $"{prefix}{txDate:yyMM}"; // Akan Selalu Menjadi GJ2609!
 
                     if (!activeCounters.TryGetValue(counterKey, out var counter))
                     {
