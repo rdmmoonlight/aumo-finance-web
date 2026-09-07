@@ -15,8 +15,8 @@ import {
   IconDownload,
 } from '@tabler/icons-react';
 
-// Model Sesi & Aktivitas (TypeScript Interface)
-interface UserSession {
+// Interface disesuaikan dengan GuardianViewModel.cs & DTO backend
+export interface UserSessionDto {
   id: string;
   deviceName: string;
   browser: string;
@@ -26,7 +26,7 @@ interface UserSession {
   isActive: boolean;
 }
 
-interface LoginActivity {
+export interface LoginActivityDto {
   id: string;
   activityType: string;
   device: string;
@@ -35,60 +35,23 @@ interface LoginActivity {
   isSuccess: boolean;
 }
 
-// Data Simulasi / Mock Data untuk Dashboard Guardian
-const initialSessions: UserSession[] = [
-  {
-    id: 'sess-1',
-    deviceName: 'MacBook Pro 16"',
-    browser: 'Chrome 123.0',
-    ipAddress: '182.253.114.50',
-    lastActivityAt: '2026-06-05 14:20:10',
-    isCurrent: true,
-    isActive: true,
-  },
-  {
-    id: 'sess-2',
-    deviceName: 'iPhone 15 Pro',
-    browser: 'Safari Mobile',
-    ipAddress: '182.253.114.88',
-    lastActivityAt: '2026-06-04 09:15:42',
-    isCurrent: false,
-    isActive: true,
-  },
-];
-
-const initialActivities: LoginActivity[] = [
-  {
-    id: 'act-1',
-    activityType: 'Login Berhasil',
-    device: 'MacBook Pro 16"',
-    ipAddress: '182.253.114.50',
-    createdAt: '2026-06-05 08:30:00',
-    isSuccess: true,
-  },
-  {
-    id: 'act-2',
-    activityType: 'Perubahan Sandi',
-    device: 'MacBook Pro 16"',
-    ipAddress: '182.253.114.50',
-    createdAt: '2026-06-01 19:10:22',
-    isSuccess: true,
-  },
-  {
-    id: 'act-3',
-    activityType: 'Percobaan Login Gagal',
-    device: 'Unknown Device',
-    ipAddress: '45.12.33.19',
-    createdAt: '2026-05-28 03:12:05',
-    isSuccess: false,
-  },
-];
+export interface GuardianViewModel {
+  accountStatus: string;
+  isAccountHealthy: boolean;
+  privacyMode: boolean;
+  autoLockTimeoutMinutes: number;
+  activeSessions: UserSessionDto[];
+  recentActivities: LoginActivityDto[];
+}
 
 export default function GuardianSecurityPage() {
   const [activeTab, setActiveTab] = useState<string>('health');
-  const [sessions, setSessions] = useState<UserSession[]>(initialSessions);
-  const [activities] = useState<LoginActivity[]>(initialActivities);
+  
+  // State data utama dari GuardianViewModel
+  const [viewModel, setViewModel] = useState<GuardianViewModel | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Notification State
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -96,35 +59,100 @@ export default function GuardianSecurityPage() {
   const [privacyMode, setPrivacyMode] = useState<boolean>(false);
   const [autoLockTimeout, setAutoLockTimeout] = useState<string>('5');
 
+  // Fetch data dari API endpoint
+  useEffect(() => {
+    const fetchGuardianData = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/guardian');
+        if (!response.ok) {
+          throw new Error('Gagal mengambil data keamanan.');
+        }
+        const data: GuardianViewModel = await response.json();
+        
+        setViewModel(data);
+        setPrivacyMode(data.privacyMode);
+        setAutoLockTimeout(data.autoLockTimeoutMinutes.toString());
+      } catch (err: any) {
+        setErrorMessage(err.message || 'Terjadi kesalahan saat memuat data.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGuardianData();
+  }, []);
+
   // Handle Revoke Individual Session
-  const handleRevokeSession = (sessionId: string) => {
-    const sessionTarget = sessions.find((s) => s.id === sessionId);
+  const handleRevokeSession = async (sessionId: string) => {
+    if (!viewModel) return;
+    
+    const sessionTarget = viewModel.activeSessions.find((s) => s.id === sessionId);
     if (!window.confirm(`Terminate session for "${sessionTarget?.deviceName || 'this device'}"?`)) {
       return;
     }
 
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    setSuccessMessage('Session has been signed out successfully.');
+    try {
+      const response = await fetch(`/api/guardian/sessions/${sessionId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Gagal mengakhiri sesi.');
 
-    // Auto clear notification
-    setTimeout(() => setSuccessMessage(null), 4000);
+      setViewModel((prev) =>
+        prev
+          ? {
+              ...prev,
+              activeSessions: prev.activeSessions.filter((s) => s.id !== sessionId),
+            }
+          : null
+      );
+      setSuccessMessage('Session has been signed out successfully.');
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Gagal merevoke sesi.');
+    }
   };
 
   // Handle Revoke All Sessions (Emergency Lockout)
-  const handleRevokeAllSessions = () => {
+  const handleRevokeAllSessions = async () => {
     const confirmed = window.confirm(
       'Emergency Lockout: Are you sure you want to sign out of ALL devices? You will be required to log in again.'
     );
     if (!confirmed) return;
 
-    // Sisakan sesi saat ini saja
-    setSessions((prev) => prev.filter((s) => s.isCurrent));
-    setSuccessMessage('All other active sessions have been terminated.');
+    try {
+      const response = await fetch('/api/guardian/sessions/revoke-all', { method: 'POST' });
+      if (!response.ok) throw new Error('Gagal mengakhiri semua sesi.');
 
-    setTimeout(() => {
-      window.location.href = '/auth/login';
-    }, 1500);
+      setViewModel((prev) =>
+        prev
+          ? {
+              ...prev,
+              activeSessions: prev.activeSessions.filter((s) => s.isCurrent),
+            }
+          : null
+      );
+      setSuccessMessage('All other active sessions have been terminated.');
+
+      setTimeout(() => {
+        window.location.href = '/auth/login';
+      }, 1500);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Gagal mengeksekusi emergency lockout.');
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="container-fluid py-5 text-center text-white">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3 text-white-50">Memuat Guardian Security Dashboard...</p>
+      </div>
+    );
+  }
+
+  const sessions = viewModel?.activeSessions || [];
+  const activities = viewModel?.recentActivities || [];
 
   return (
     <div
@@ -143,8 +171,8 @@ export default function GuardianSecurityPage() {
           </p>
         </div>
         <div>
-          <span className="badge bg-success fs-6 px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2">
-            <IconHeartbeat size={20} /> Account Healthy
+          <span className={`badge ${viewModel?.isAccountHealthy ? 'bg-success' : 'bg-warning'} fs-6 px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2`}>
+            <IconHeartbeat size={20} /> {viewModel?.accountStatus || 'Account Healthy'}
           </span>
         </div>
       </div>
@@ -234,50 +262,6 @@ export default function GuardianSecurityPage() {
                   </div>
                   <div>
                     <span className="badge bg-success">{sessions.length} Active Session(s)</span>
-                  </div>
-                </div>
-
-                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconKey className="text-warning" size={18} /> Transaction PIN
-                    </div>
-                    <small className="text-white-50">Secondary protection for sensitive financial actions.</small>
-                  </div>
-                  <div>
-                    <span className="badge bg-warning text-dark me-2">Not Set</span>
-                    <Link href="/settings" className="btn btn-sm btn-outline-warning py-0">
-                      Set Up PIN
-                    </Link>
-                  </div>
-                </div>
-
-                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconShieldLock className="text-primary" size={18} /> Password Age
-                    </div>
-                    <small className="text-white-50">
-                      Tracks when your password was last changed (Recommended: &lt; 90 days).
-                    </small>
-                  </div>
-                  <div>
-                    <span className="badge bg-success me-2">Updated Recently</span>
-                    <Link href="/settings" className="btn btn-sm btn-outline-light py-0">
-                      Change
-                    </Link>
-                  </div>
-                </div>
-
-                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconShieldAlert className="text-danger" size={18} /> Failed Login Attempts
-                    </div>
-                    <small className="text-white-50">Unrecognized access attempts detected in the last 30 days.</small>
-                  </div>
-                  <div>
-                    <span className="badge bg-success">0 Threat(s) Found</span>
                   </div>
                 </div>
               </div>
