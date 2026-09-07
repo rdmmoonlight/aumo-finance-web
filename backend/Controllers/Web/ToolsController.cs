@@ -59,6 +59,9 @@ namespace AumoFinance.Controllers.Web
             );
         }
 
+        // ==========================================
+        // 1. POST: /web/tools/preview-journal-import
+        // ==========================================
         [HttpPost("preview-journal-import")]
         public async Task<IActionResult> PreviewJournalImport([FromBody] JournalImportRequestDto request)
         {
@@ -183,6 +186,9 @@ namespace AumoFinance.Controllers.Web
             });
         }
 
+        // ==========================================
+        // 2. POST: /web/tools/import-journal-entries
+        // ==========================================
         [HttpPost("import-journal-entries")]
         public async Task<IActionResult> ImportJournalEntries([FromBody] JournalImportRequestDto request)
         {
@@ -206,7 +212,7 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
-                // Cek / Buat Periode Akuntansi
+                // PERBAIKAN: Cek / Buat Periode Tanpa Menabrak Unique Index 'IX_Periods_IsSelected_Unique'
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -218,10 +224,11 @@ namespace AumoFinance.Controllers.Web
                     period = new Period
                     {
                         UserId = userId,
+                        PeriodName = $"{request.TargetYear}-{request.TargetMonth:D2}",
                         StartDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, 1), DateTimeKind.Utc),
                         EndDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth)), DateTimeKind.Utc),
                         IsClosed = false,
-                        IsSelected = true // Set periode baru sebagai aktif
+                        IsSelected = false // AMAN: Menggunakan false agar tidak melanggar Unique Constraint IsSelected
                     };
                     _context.Periods.Add(period);
                     await _context.SaveChangesAsync();
@@ -293,7 +300,7 @@ namespace AumoFinance.Controllers.Web
                         UserId = userId,
                         TransactionNumber = transactionNumber,
                         JournalType = txDto.JournalType,
-                        EntryDate = txDate, // PERBAIKAN: Mengisi EntryDate agar terhitung di saldo
+                        EntryDate = txDate, // Mengisi EntryDate agar terhitung di saldo
                         CreatedAt = txDate,
                         Lines = new List<JournalEntryLine>()
                     };
@@ -304,7 +311,7 @@ namespace AumoFinance.Controllers.Web
                         string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
                         int targetRef = excelRef;
-
+                        
                         string mapKey = $"{excelRef}|||{excelAccountName}";
                         if (mappingDict.TryGetValue(mapKey, out var customMap))
                         {
