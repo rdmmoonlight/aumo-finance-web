@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 import {
   IconShieldCheck,
   IconHeartbeat,
@@ -10,9 +9,6 @@ import {
   IconActivity,
   IconDeviceLaptop,
   IconAdjustments,
-  IconKey,
-  IconShieldLock,
-  IconShieldAlert,
   IconAlertOctagon,
   IconLogout,
   IconHistory,
