@@ -212,7 +212,7 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
-                // PERBAIKAN: Cek / Buat Periode Tanpa Menabrak Unique Index 'IX_Periods_IsSelected_Unique'
+                // Cek / Buat Periode Akuntansi
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -228,7 +228,7 @@ namespace AumoFinance.Controllers.Web
                         StartDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, 1), DateTimeKind.Utc),
                         EndDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth)), DateTimeKind.Utc),
                         IsClosed = false,
-                        IsSelected = false // AMAN: Menggunakan false agar tidak melanggar Unique Constraint IsSelected
+                        IsSelected = false
                     };
                     _context.Periods.Add(period);
                     await _context.SaveChangesAsync();
@@ -251,6 +251,9 @@ namespace AumoFinance.Controllers.Web
                     .Select(j => j.TransactionNumber)
                     .ToHashSetAsync();
 
+                // PERBAIKAN: Gunakan Dictionary Memory untuk Mengelola Counter Tanpa Duplikat
+                var activeCounters = new Dictionary<string, TransactionCounter>();
+
                 int importedEntriesCount = 0;
 
                 foreach (var txDto in request.Transactions)
@@ -265,26 +268,29 @@ namespace AumoFinance.Controllers.Web
                     string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                     string counterKey = $"{prefix}{txDate:yyMM}";
 
-                    var counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
-                        c.UserId == userId &&
-                        c.CounterKey == counterKey
-                    );
-
-                    if (counter == null)
+                    // Ambil counter dari memori terdaftar atau dari DB
+                    if (!activeCounters.TryGetValue(counterKey, out var counter))
                     {
-                        counter = new TransactionCounter
+                        counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
+                            c.UserId == userId &&
+                            c.CounterKey == counterKey
+                        );
+
+                        if (counter == null)
                         {
-                            UserId = userId,
-                            CounterKey = counterKey,
-                            LastSequence = 1
-                        };
-                        _context.TransactionCounters.Add(counter);
-                    }
-                    else
-                    {
-                        counter.LastSequence += 1;
+                            counter = new TransactionCounter
+                            {
+                                UserId = userId,
+                                CounterKey = counterKey,
+                                LastSequence = 0
+                            };
+                            _context.TransactionCounters.Add(counter);
+                        }
+
+                        activeCounters[counterKey] = counter;
                     }
 
+                    counter.LastSequence += 1;
                     string transactionNumber = $"{counterKey}{counter.LastSequence:D5}";
 
                     while (existingTxNumbers.Contains(transactionNumber))
@@ -300,7 +306,7 @@ namespace AumoFinance.Controllers.Web
                         UserId = userId,
                         TransactionNumber = transactionNumber,
                         JournalType = txDto.JournalType,
-                        EntryDate = txDate, // Mengisi EntryDate agar terhitung di saldo
+                        EntryDate = txDate,
                         CreatedAt = txDate,
                         Lines = new List<JournalEntryLine>()
                     };
