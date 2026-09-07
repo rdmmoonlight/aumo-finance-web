@@ -326,6 +326,7 @@ export default function ToolsPage() {
     }
   };
 
+  // HANDLER PERUBAHAN PELIMPAHAN AKUN REALTIME
   const handleInlineReallocationChange = (excelRef: number, excelName: string, selectedTargetRef: number) => {
     const selectedOption = dbMasterAccounts.find((o) => o.referenceNumber === selectedTargetRef);
 
@@ -341,19 +342,23 @@ export default function ToolsPage() {
           };
         }
 
-        const isMatchExact = m.excelRef === selectedOption.referenceNumber && m.excelAccountName === selectedOption.accountName;
+        const isMatchExact =
+          m.excelRef === selectedOption.referenceNumber &&
+          m.excelAccountName.toLowerCase() === selectedOption.accountName.toLowerCase();
+
         return {
           ...m,
           mappedRef: selectedOption.referenceNumber,
           mappedAccountName: selectedOption.accountName,
-          status: isMatchExact ? 'EXACT_MATCH' : 'REALLOCATED_NAME',
+          status: isMatchExact ? 'EXACT_MATCH' : 'REALLOCATED_REF',
           reason: `Dilimpahkan ke ${selectedOption.referenceNumber} - ${selectedOption.accountName}`,
         };
       }
       return m;
     });
 
-    setAccountMappings(updated);
+    // PENTING: Update State dengan new array reference agar React Re-render Realtime
+    setAccountMappings([...updated]);
 
     const unmappedCount = updated.filter((m) => m.status === 'UNMAPPED' || m.mappedRef === 0).length;
     const reallocatedCount = updated.filter((m) => m.status.includes('REALLOCATED')).length;
@@ -654,7 +659,7 @@ export default function ToolsPage() {
                     </thead>
                     <tbody className="fw-normal text-white">
                       {accountMappings.map((m, i) => {
-                        const isReallocated = m.status.includes('REALLOCATED');
+                        const isReallocated = m.status.includes('REALLOCATED') || (m.mappedRef > 0 && m.mappedRef !== m.excelRef);
 
                         return (
                           <tr key={i} className={`border-bottom border-secondary border-opacity-25 ${isReallocated ? 'bg-warning bg-opacity-10' : ''}`}>
@@ -667,7 +672,7 @@ export default function ToolsPage() {
                               <select
                                 className={`form-select form-select-sm text-white fw-bold ${
                                   isReallocated
-                                    ? 'bg-warning bg-opacity-20 border-warning'
+                                    ? 'bg-warning bg-opacity-20 border-warning text-warning'
                                     : m.mappedRef === 0
                                     ? 'bg-danger bg-opacity-20 border-danger'
                                     : 'bg-dark border-secondary'
@@ -686,7 +691,7 @@ export default function ToolsPage() {
                               </select>
                             </td>
                             <td className="text-center pe-3">
-                              {renderStatusBadge(m.status)}
+                              {renderStatusBadge(isReallocated ? 'REALLOCATED_REF' : m.status)}
                             </td>
                           </tr>
                         );
@@ -699,7 +704,7 @@ export default function ToolsPage() {
           )}
         </div>
 
-        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (REALTIME UPDATE) */}
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (REALTIME UPDATE SANGAT PRESISI) */}
         <div className="col-12 col-lg-7 col-xl-8">
           {parseResult ? (
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
@@ -741,40 +746,51 @@ export default function ToolsPage() {
                       </thead>
                       <tbody className="fw-normal text-white">
                         {tx.lines.map((line, lineIndex) => {
-                          // PERBAIKAN: Cari mapping berdasarkan Ref DAN Nama Akun Excel untuk akurasi presisi
+                          // PERBAIKAN RE-RENDER REALTIME: Cari mapping secara presisi berdasarkan Ref & Account Name Excel
                           const mapping = accountMappings.find(
-                            m => m.excelRef === line.refNumber && m.excelAccountName === line.accountName
+                            (m) => m.excelRef === line.refNumber && m.excelAccountName === line.accountName
                           ) || accountMappings.find(m => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
 
                           const currentMappedRef = mapping?.mappedRef ?? 0;
-                          const currentMappedName = mapping?.mappedAccountName ?? '';
+                          
+                          // Cari nama resmi COA DB untuk pelimpahan
+                          const matchedDbAcc = dbMasterAccounts.find(a => a.referenceNumber === currentMappedRef);
+                          const currentMappedName = mapping?.mappedAccountName || matchedDbAcc?.accountName || '';
 
                           const isUnmapped = mapping?.status === 'UNMAPPED' || currentMappedRef === 0;
-                          
-                          // Mengecek apakah dilimpahkan ke akun lain
+
+                          // REALTIME REALLOCATION CHECK: Jika nomor akun DB beda dari Excel
                           const isReallocated =
-                            mapping?.status.includes('REALLOCATED') ||
-                            (currentMappedRef > 0 && (currentMappedRef !== line.refNumber || currentMappedName.toLowerCase() !== line.accountName.toLowerCase()));
+                            currentMappedRef > 0 &&
+                            (currentMappedRef !== line.refNumber ||
+                              (currentMappedName !== '' && currentMappedName.toLowerCase() !== line.accountName.toLowerCase()));
 
                           return (
-                            <tr key={lineIndex} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
+                            <tr key={`${lineIndex}-${currentMappedRef}`} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
                               <td className="text-center text-white">{line.rowIndex}</td>
                               <td className="text-center fw-bold font-monospace text-white">
                                 {isReallocated ? (
-                                  <span className="text-warning" title={`Asli dari Excel: ${line.refNumber}`}>{currentMappedRef}</span>
+                                  <span className="text-warning fw-bold" title={`Nomor Asli Excel: ${line.refNumber}`}>
+                                    {currentMappedRef}
+                                  </span>
                                 ) : (
                                   line.refNumber
                                 )}
                               </td>
                               <td>
                                 <span className="text-white fw-bold">{line.accountName}</span>
-                                {/* REALTIME BADGE: Tampilkan pelimpahan akun terbaru */}
+                                {/* BADGE PELIMPAHAN AKUN UNTUK COA TERBARU REALTIME */}
                                 {isReallocated && (
-                                  <span className="badge bg-warning text-dark ms-2 fw-bold" title={`Akun Asal [${line.refNumber}] ${line.accountName}`}>
+                                  <span
+                                    className="badge bg-warning text-dark ms-2 fw-bold"
+                                    title={`Akun Excel Asal: [${line.refNumber}] ${line.accountName}`}
+                                  >
                                     <i className="ti ti-arrow-right me-1 text-dark"></i>[{currentMappedRef}] {currentMappedName}
                                   </span>
                                 )}
-                                {isUnmapped && <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini tidak terdaftar di DB COA"></i>}
+                                {isUnmapped && (
+                                  <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini tidak terdaftar di DB COA"></i>
+                                )}
                               </td>
                               <td className="text-white">{line.description}</td>
                               <td className="text-end fw-bold text-white">
