@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using AumoFinance.Models.Guardian;
+using AumoFinance.Models.Security;
 
-// Entity bawaan yang digunakan oleh EF Core / AppDbContext
+#region 1. Security Entities (Kompatibel dengan AppDbContext)
+
 namespace AumoFinance.Models.Security
 {
     public class UserSession
@@ -33,11 +36,12 @@ namespace AumoFinance.Models.Security
     }
 }
 
-// ViewModels
+#endregion
+
+#region 2. View Models
+
 namespace AumoFinance.Models.Guardian
 {
-    using AumoFinance.Models.Security;
-
     public class GuardianViewModel
     {
         public List<UserSession> Sessions { get; set; } = new();
@@ -93,18 +97,42 @@ namespace AumoFinance.Models.Guardian
     }
 }
 
-// Service Interface & Class (Digabung agar tetap 1 file)
+#endregion
+
+#region 3. Service Interface & Implementation
+
 namespace AumoFinance.Services.Security
 {
-    using AumoFinance.Models.Security;
-
     public interface IGuardianService
     {
-        Task CreateLoginActivityAsync(Guid userId, string activityType, string device, string browser, string ipAddress, string country, bool isSuccess);
-        Task CreateSessionAsync(Guid userId, string deviceName, string browser, string ipAddress, string country, string refreshTokenHash);
+        Task CreateLoginActivityAsync(
+            Guid userId,
+            string activityType,
+            string device,
+            string browser,
+            string ipAddress,
+            string country,
+            bool isSuccess
+        );
+
+        Task CreateSessionAsync(
+            Guid userId,
+            string deviceName,
+            string browser,
+            string ipAddress,
+            string country,
+            string refreshTokenHash
+        );
+
         Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
+
         Task RevokeSessionAsync(Guid sessionId, Guid userId);
+
+        /// <summary>
+        /// Revokes all active sessions for a given user (Emergency Kill Switch).
+        /// </summary>
         Task RevokeAllSessionsAsync(Guid userId);
+
         Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId);
     }
 
@@ -239,3 +267,5 @@ namespace AumoFinance.Services.Security
         }
     }
 }
+
+#endregion
