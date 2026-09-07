@@ -15,6 +15,11 @@ import {
   IconDownload,
 } from '@tabler/icons-react';
 
+// Base URL Backend API dari environment variable Vercel atau fallback ke URL Render
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com'
+).replace(/\/$/, '');
+
 // DTO disesuaikan dengan ActiveSessionViewModel C#
 export interface UserSessionDto {
   id?: string;
@@ -79,11 +84,13 @@ export default function GuardianSecurityPage() {
         setIsLoading(true);
         setErrorMessage(null);
 
-        // Menyesuaikan ke route endpoint /web/guardian
-        const response = await fetch('/web/guardian', {
+        // Memanggil endpoint backend menggunakan NEXT_PUBLIC_API_URL & credentials
+        const response = await fetch(`${API_BASE_URL}/web/guardian`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include', // PENTING: Untuk mengirimkan cookie session ASP.NET Core
         });
 
         if (!response.ok) {
@@ -117,11 +124,12 @@ export default function GuardianSecurityPage() {
     }
 
     try {
-      const response = await fetch(`/web/guardian/revoke-session/${sessionId}`, {
+      const response = await fetch(`${API_BASE_URL}/web/guardian/revoke-session/${sessionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (!response.ok) throw new Error('Gagal mengakhiri sesi.');
@@ -142,11 +150,12 @@ export default function GuardianSecurityPage() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch('/web/guardian/revoke-all', {
+      const response = await fetch(`${API_BASE_URL}/web/guardian/revoke-all`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (!response.ok) throw new Error('Gagal mengakhiri semua sesi.');
@@ -350,7 +359,7 @@ export default function GuardianSecurityPage() {
                           <td className="text-white-50">{session.browser}</td>
                           <td className="font-monospace text-info">{session.ipAddress}</td>
                           <td className="text-white-50 small">
-                            {new Date(session.lastActivity).toLocaleString('id-ID')}
+                            {session.lastActivity ? new Date(session.lastActivity).toLocaleString('id-ID') : '-'}
                           </td>
                           <td className="text-end pe-4">
                             {!session.isCurrent ? (
@@ -461,7 +470,7 @@ export default function GuardianSecurityPage() {
                           <td className="text-white-50">{act.device}</td>
                           <td className="font-monospace text-info">{act.ipAddress}</td>
                           <td className="text-white-50 small">
-                            {new Date(act.occurredAt).toLocaleString('id-ID')}
+                            {act.occurredAt ? new Date(act.occurredAt).toLocaleString('id-ID') : '-'}
                           </td>
                           <td className="text-end pe-4">
                             <span className="badge bg-success">Success</span>
