@@ -15,40 +15,53 @@ import {
   IconDownload,
 } from '@tabler/icons-react';
 
-// Interface disesuaikan dengan GuardianViewModel.cs & DTO backend
+// DTO disesuaikan dengan ActiveSessionViewModel C#
 export interface UserSessionDto {
-  id: string;
+  id?: string;
   deviceName: string;
   browser: string;
   ipAddress: string;
-  lastActivityAt: string;
+  country: string;
+  lastActivity: string;
   isCurrent: boolean;
-  isActive: boolean;
 }
 
+// DTO disesuaikan dengan LoginActivityViewModel C#
 export interface LoginActivityDto {
-  id: string;
-  activityType: string;
+  activity: string;
   device: string;
+  browser: string;
+  country: string;
   ipAddress: string;
-  createdAt: string;
-  isSuccess: boolean;
+  occurredAt: string;
 }
 
+// SecurityStatusViewModel C#
+export interface SecurityStatusDto {
+  emailVerified: boolean;
+  passwordProtected: boolean;
+  multiFactorEnabled: boolean;
+  recoveryCodesAvailable: boolean;
+}
+
+// GuardianDashboardViewModel C#
 export interface GuardianViewModel {
-  accountStatus: string;
-  isAccountHealthy: boolean;
-  privacyMode: boolean;
-  autoLockTimeoutMinutes: number;
-  activeSessions: UserSessionDto[];
+  username: string;
+  email: string;
+  securityScore: number;
+  activeSessions: number;
+  trustedDevices: number;
+  lastLogin: string;
+  security: SecurityStatusDto;
   recentActivities: LoginActivityDto[];
 }
 
 export default function GuardianSecurityPage() {
   const [activeTab, setActiveTab] = useState<string>('health');
-  
-  // State data utama dari GuardianViewModel
+
+  // State data utama dari Backend
   const [viewModel, setViewModel] = useState<GuardianViewModel | null>(null);
+  const [activeSessionsList, setActiveSessionsList] = useState<UserSessionDto[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Notification State
@@ -59,20 +72,32 @@ export default function GuardianSecurityPage() {
   const [privacyMode, setPrivacyMode] = useState<boolean>(false);
   const [autoLockTimeout, setAutoLockTimeout] = useState<string>('5');
 
-  // Fetch data dari API endpoint
+  // Fetch data dari API endpoint backend
   useEffect(() => {
     const fetchGuardianData = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/guardian');
+        setErrorMessage(null);
+
+        // Menyesuaikan ke route endpoint /web/guardian
+        const response = await fetch('/web/guardian', {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
         if (!response.ok) {
           throw new Error('Gagal mengambil data keamanan.');
         }
-        const data: GuardianViewModel = await response.json();
-        
-        setViewModel(data);
-        setPrivacyMode(data.privacyMode);
-        setAutoLockTimeout(data.autoLockTimeoutMinutes.toString());
+
+        const json = await response.json();
+
+        if (json.success && json.data) {
+          setViewModel(json.data);
+          setActiveSessionsList(json.activeSessions || []);
+        } else {
+          throw new Error(json.message || 'Gagal memuat data keamanan.');
+        }
       } catch (err: any) {
         setErrorMessage(err.message || 'Terjadi kesalahan saat memuat data.');
       } finally {
@@ -84,27 +109,25 @@ export default function GuardianSecurityPage() {
   }, []);
 
   // Handle Revoke Individual Session
-  const handleRevokeSession = async (sessionId: string) => {
-    if (!viewModel) return;
-    
-    const sessionTarget = viewModel.activeSessions.find((s) => s.id === sessionId);
-    if (!window.confirm(`Terminate session for "${sessionTarget?.deviceName || 'this device'}"?`)) {
+  const handleRevokeSession = async (sessionId?: string, deviceName?: string) => {
+    if (!sessionId) return;
+
+    if (!window.confirm(`Akhiri sesi untuk perangkat "${deviceName || 'ini'}"?`)) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/guardian/sessions/${sessionId}`, { method: 'DELETE' });
+      const response = await fetch(`/web/guardian/revoke-session/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
       if (!response.ok) throw new Error('Gagal mengakhiri sesi.');
 
-      setViewModel((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeSessions: prev.activeSessions.filter((s) => s.id !== sessionId),
-            }
-          : null
-      );
-      setSuccessMessage('Session has been signed out successfully.');
+      setActiveSessionsList((prev) => prev.filter((s) => s.id !== sessionId));
+      setSuccessMessage('Sesi berhasil diakhiri.');
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       setErrorMessage(err.message || 'Gagal merevoke sesi.');
@@ -114,27 +137,24 @@ export default function GuardianSecurityPage() {
   // Handle Revoke All Sessions (Emergency Lockout)
   const handleRevokeAllSessions = async () => {
     const confirmed = window.confirm(
-      'Emergency Lockout: Are you sure you want to sign out of ALL devices? You will be required to log in again.'
+      'Emergency Lockout: Apakah Anda yakin ingin keluar dari SEMUA perangkat lain?'
     );
     if (!confirmed) return;
 
     try {
-      const response = await fetch('/api/guardian/sessions/revoke-all', { method: 'POST' });
+      const response = await fetch('/web/guardian/revoke-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
       if (!response.ok) throw new Error('Gagal mengakhiri semua sesi.');
 
-      setViewModel((prev) =>
-        prev
-          ? {
-              ...prev,
-              activeSessions: prev.activeSessions.filter((s) => s.isCurrent),
-            }
-          : null
-      );
-      setSuccessMessage('All other active sessions have been terminated.');
+      setActiveSessionsList((prev) => prev.filter((s) => s.isCurrent));
+      setSuccessMessage('Semua sesi perangkat lain telah berhasil diakhiri.');
 
-      setTimeout(() => {
-        window.location.href = '/auth/login';
-      }, 1500);
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
       setErrorMessage(err.message || 'Gagal mengeksekusi emergency lockout.');
     }
@@ -151,7 +171,6 @@ export default function GuardianSecurityPage() {
     );
   }
 
-  const sessions = viewModel?.activeSessions || [];
   const activities = viewModel?.recentActivities || [];
 
   return (
@@ -171,8 +190,10 @@ export default function GuardianSecurityPage() {
           </p>
         </div>
         <div>
-          <span className={`badge ${viewModel?.isAccountHealthy ? 'bg-success' : 'bg-warning'} fs-6 px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2`}>
-            <IconHeartbeat size={20} /> {viewModel?.accountStatus || 'Account Healthy'}
+          <span
+            className={`badge ${(viewModel?.securityScore ?? 0) >= 70 ? 'bg-success' : 'bg-warning'} fs-6 px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2`}
+          >
+            <IconHeartbeat size={20} /> Security Score: {viewModel?.securityScore ?? 0}%
           </span>
         </div>
       </div>
@@ -224,7 +245,7 @@ export default function GuardianSecurityPage() {
             onClick={() => setActiveTab('sessions')}
           >
             <IconDeviceLaptop className="text-info" size={18} /> Active Sessions
-            <span className="badge bg-secondary ms-1">{sessions.length}</span>
+            <span className="badge bg-secondary ms-1">{activeSessionsList.length}</span>
           </button>
         </li>
         <li className="nav-item" role="presentation">
@@ -256,12 +277,32 @@ export default function GuardianSecurityPage() {
                 <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                   <div>
                     <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconDeviceLaptop className="text-info" size={18} /> Active Device Sessions
+                      <IconDeviceLaptop className="text-info" size={18} /> Email Verification Status
                     </div>
-                    <small className="text-white-50">Monitors how many devices are currently signed in.</small>
+                    <small className="text-white-50">Primary account email confirmation</small>
                   </div>
                   <div>
-                    <span className="badge bg-success">{sessions.length} Active Session(s)</span>
+                    {viewModel?.security?.emailVerified ? (
+                      <span className="badge bg-success">Verified</span>
+                    ) : (
+                      <span className="badge bg-warning text-dark">Unverified</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div>
+                    <div className="fw-bold d-flex align-items-center gap-2">
+                      <IconShieldCheck className="text-warning" size={18} /> Two-Factor Authentication (2FA)
+                    </div>
+                    <small className="text-white-50">Adds an extra layer of security to your account</small>
+                  </div>
+                  <div>
+                    {viewModel?.security?.multiFactorEnabled ? (
+                      <span className="badge bg-success">Enabled</span>
+                    ) : (
+                      <span className="badge bg-secondary">Disabled</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -274,18 +315,18 @@ export default function GuardianSecurityPage() {
           <div className="card glass-card border-0 shadow-sm rounded-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
               <strong className="text-white d-flex align-items-center gap-2">
-                <IconDeviceLaptop className="text-info" size={20} /> Active Sessions (Max 5)
+                <IconDeviceLaptop className="text-info" size={20} /> Active Sessions
               </strong>
               <button
                 type="button"
                 className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"
                 onClick={handleRevokeAllSessions}
               >
-                <IconAlertOctagon size={16} /> Revoke All Sessions
+                <IconAlertOctagon size={16} /> Revoke All Other Sessions
               </button>
             </div>
             <div className="card-body p-0">
-              {sessions.length === 0 ? (
+              {activeSessionsList.length === 0 ? (
                 <div className="p-4 text-center text-white-50">No active sessions found.</div>
               ) : (
                 <div className="table-responsive">
@@ -300,21 +341,23 @@ export default function GuardianSecurityPage() {
                       </tr>
                     </thead>
                     <tbody className="border-top-0">
-                      {sessions.slice(0, 5).map((session) => (
-                        <tr key={session.id}>
+                      {activeSessionsList.map((session, index) => (
+                        <tr key={session.id || index}>
                           <td className="ps-4 fw-bold">
                             {session.deviceName}
                             {session.isCurrent && <span className="badge bg-success ms-2">Current</span>}
                           </td>
                           <td className="text-white-50">{session.browser}</td>
                           <td className="font-monospace text-info">{session.ipAddress}</td>
-                          <td className="text-white-50 small">{session.lastActivityAt}</td>
+                          <td className="text-white-50 small">
+                            {new Date(session.lastActivity).toLocaleString('id-ID')}
+                          </td>
                           <td className="text-end pe-4">
                             {!session.isCurrent ? (
                               <button
                                 type="button"
-                                className="btn btn-sm btn-outline-danger btn-terminate-session d-inline-flex align-items-center gap-1 ms-auto"
-                                onClick={() => handleRevokeSession(session.id)}
+                                className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 ms-auto"
+                                onClick={() => handleRevokeSession(session.id, session.deviceName)}
                               >
                                 <IconLogout size={16} /> Sign Out
                               </button>
@@ -382,16 +425,16 @@ export default function GuardianSecurityPage() {
             </div>
           </div>
 
-          {/* Login Activity Log (Max 5) */}
+          {/* Login Activity Log */}
           <div className="card glass-card border-0 shadow-sm rounded-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
               <strong className="text-white d-flex align-items-center gap-2">
-                <IconHistory className="text-info" size={20} /> Recent Login History (Max 5)
+                <IconHistory className="text-info" size={20} /> Recent Login History
               </strong>
               <button
                 type="button"
                 className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                onClick={() => alert('Exporting audit log CSV simulation...')}
+                onClick={() => alert('Exporting audit log CSV...')}
               >
                 <IconDownload size={16} /> Export Log (CSV)
               </button>
@@ -412,18 +455,16 @@ export default function GuardianSecurityPage() {
                       </tr>
                     </thead>
                     <tbody className="border-top-0">
-                      {activities.slice(0, 5).map((activity) => (
-                        <tr key={activity.id}>
-                          <td className="ps-4 fw-semibold">{activity.activityType}</td>
-                          <td className="text-white-50">{activity.device}</td>
-                          <td className="font-monospace text-info">{activity.ipAddress}</td>
-                          <td className="text-white-50 small">{activity.createdAt}</td>
+                      {activities.map((act, idx) => (
+                        <tr key={idx}>
+                          <td className="ps-4 fw-semibold">{act.activity}</td>
+                          <td className="text-white-50">{act.device}</td>
+                          <td className="font-monospace text-info">{act.ipAddress}</td>
+                          <td className="text-white-50 small">
+                            {new Date(act.occurredAt).toLocaleString('id-ID')}
+                          </td>
                           <td className="text-end pe-4">
-                            {activity.isSuccess ? (
-                              <span className="badge bg-success">Success</span>
-                            ) : (
-                              <span className="badge bg-danger">Failed</span>
-                            )}
+                            <span className="badge bg-success">Success</span>
                           </td>
                         </tr>
                       ))}
