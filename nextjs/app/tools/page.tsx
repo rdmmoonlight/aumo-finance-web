@@ -45,6 +45,11 @@ interface MappingSummary {
   isPerfectMatch: boolean;
 }
 
+interface MasterAccountOption {
+  ref: number;
+  name: string;
+}
+
 export default function ToolsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,6 +63,27 @@ export default function ToolsPage() {
   const [parseResult, setParseResult] = useState<JournalImportResult | null>(null);
   const [accountMappings, setAccountMappings] = useState<AccountMappingDetail[]>([]);
   const [mappingSummary, setMappingSummary] = useState<MappingSummary | null>(null);
+
+  // Modal State untuk dialog pelimpahan akun
+  const [showMappingModal, setShowMappingModal] = useState<boolean>(false);
+  const [selectedMapping, setSelectedMapping] = useState<AccountMappingDetail | null>(null);
+  const [customMappedRef, setCustomMappedRef] = useState<number>(0);
+  const [customMappedName, setCustomMappedName] = useState<string>('');
+
+  // Contoh opsi Master COA baku yang dapat dipilih saat re-allocation
+  const masterAccountOptions: MasterAccountOption[] = [
+    { ref: 101, name: 'Kas Utama' },
+    { ref: 102, name: 'Bank BCA' },
+    { ref: 103, name: 'Bank Mandiri' },
+    { ref: 104, name: 'Piutang Usaha' },
+    { ref: 201, name: 'Utang Usaha' },
+    { ref: 301, name: 'Modal Pemilik' },
+    { ref: 401, name: 'Pendapatan Usaha' },
+    { ref: 501, name: 'Beban Sewa Kantor' },
+    { ref: 502, name: 'Beban Listrik & Air' },
+    { ref: 503, name: 'Beban Gaji & Upah' },
+    { ref: 599, name: 'Beban Operasional Lainnya' },
+  ];
 
   const formatIDR = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -165,7 +191,6 @@ export default function ToolsPage() {
 
           const refNum = Number(refVal) || 0;
 
-          // Membangun fallback mapping untuk sisi client jika backend gagal
           const mapKey = `${refNum}-${accountName}`;
           if (!tempMappings[mapKey]) {
             tempMappings[mapKey] = {
@@ -211,7 +236,6 @@ export default function ToolsPage() {
       let displayTransactions = parsedTransactions;
       let finalMappings = Object.values(tempMappings);
 
-      // Set fallback mapping sebelum memanggil backend
       setAccountMappings(finalMappings);
 
       try {
@@ -239,7 +263,6 @@ export default function ToolsPage() {
         if (contentType && contentType.includes('application/json')) {
           const previewData = await previewRes.json();
           if (previewRes.ok) {
-            // Override dengan data valid dari backend
             if (previewData.accountMappings && previewData.accountMappings.length > 0) {
               finalMappings = previewData.accountMappings;
               setAccountMappings(finalMappings);
@@ -254,7 +277,6 @@ export default function ToolsPage() {
         }
       } catch (e) {
         console.warn('Backend preview endpoint unreachable, displaying client-parsed preview.');
-        // Jika gagal, ubah status fallback menjadi unverified
         finalMappings = finalMappings.map(m => ({ ...m, status: 'UNVERIFIED', reason: 'Gagal terhubung ke server.' }));
         setAccountMappings(finalMappings);
       }
@@ -274,6 +296,50 @@ export default function ToolsPage() {
     }
   };
 
+  // Fungsi untuk Membuka Dialog Pelimpahan Akun Manual
+  const handleOpenMappingModal = (mapping: AccountMappingDetail) => {
+    setSelectedMapping(mapping);
+    setCustomMappedRef(mapping.mappedRef || masterAccountOptions[0].ref);
+    setCustomMappedName(mapping.mappedAccountName || masterAccountOptions[0].name);
+    setShowMappingModal(true);
+  };
+
+  // Simpan Pelimpahan Akun Manual dari Modal
+  const handleSaveReallocation = () => {
+    if (!selectedMapping) return;
+
+    const updated = accountMappings.map((m) => {
+      if (m.excelRef === selectedMapping.excelRef && m.excelAccountName === selectedMapping.excelAccountName) {
+        return {
+          ...m,
+          mappedRef: customMappedRef,
+          mappedAccountName: customMappedName,
+          status: 'REALLOCATED_NAME',
+          reason: `Dilimpahkan secara manual ke ${customMappedRef} - ${customMappedName}`,
+        };
+      }
+      return m;
+    });
+
+    setAccountMappings(updated);
+
+    // Recalculate summary jika unmapped berkurang
+    const unmappedCount = updated.filter((m) => m.status === 'UNMAPPED').length;
+    const reallocatedCount = updated.filter((m) => m.status.includes('REALLOCATED')).length;
+    const exactMatchCount = updated.filter((m) => m.status === 'EXACT_MATCH').length;
+
+    setMappingSummary({
+      totalUniqueAccounts: updated.length,
+      exactMatchCount,
+      reallocatedCount,
+      unmappedCount,
+      isPerfectMatch: unmappedCount === 0,
+    });
+
+    setShowMappingModal(false);
+    setSelectedMapping(null);
+  };
+
   const handleConfirmImport = async () => {
     if (!parseResult || parseResult.transactions.length === 0) {
       setErrorMessage('No valid transactions to import.');
@@ -290,6 +356,7 @@ export default function ToolsPage() {
         body: JSON.stringify({
           targetMonth: Number(targetMonth),
           targetYear: Number(targetYear),
+          customMappings: accountMappings,
           transactions: parseResult.transactions.map((tx) => ({
             date: tx.date,
             journalType: tx.journalType,
@@ -386,24 +453,45 @@ export default function ToolsPage() {
     { value: 12, label: 'December' },
   ];
 
+  // BADGE STYLING DENGAN KONTRAS TINGGI & PEMBEDAAN WARNA JELAS
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'EXACT_MATCH':
-        return <span className="badge bg-success bg-opacity-20 text-success border border-success border-opacity-25"><i className="ti ti-check me-1"></i>Presisi 100%</span>;
+        return (
+          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-success border border-light rounded-2 shadow-sm d-inline-flex align-items-center">
+            <i className="ti ti-check me-1 fs-6"></i> Clean Match
+          </span>
+        );
       case 'REALLOCATED_NAME':
       case 'REALLOCATED_REF':
-        return <span className="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-25"><i className="ti ti-arrow-right-circle me-1"></i>Dilimpahkan</span>;
+        return (
+          <span className="badge px-2 py-1 fs-6 fw-bold text-dark bg-warning border border-warning-subtle rounded-2 shadow-sm d-inline-flex align-items-center">
+            <i className="ti ti-arrows-right-left me-1 fs-6"></i> Dilimpahkan
+          </span>
+        );
       case 'UNMAPPED':
-        return <span className="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-25"><i className="ti ti-x me-1"></i>Tdk Terdaftar</span>;
+        return (
+          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-danger border border-light rounded-2 shadow-sm d-inline-flex align-items-center">
+            <i className="ti ti-x me-1 fs-6"></i> Tdk Terdaftar
+          </span>
+        );
       case 'UNVERIFIED':
-        return <span className="badge bg-secondary bg-opacity-20 text-secondary border border-secondary border-opacity-25">Offline</span>;
+        return (
+          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-secondary border border-secondary-subtle rounded-2 d-inline-flex align-items-center">
+            Offline
+          </span>
+        );
       default:
-        return <span className="badge bg-info bg-opacity-20 text-info border border-info border-opacity-25">Diproses</span>;
+        return (
+          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-info border border-info-subtle rounded-2 d-inline-flex align-items-center">
+            Diproses
+          </span>
+        );
     }
   };
 
   return (
-    <div 
+    <div
       className="container-fluid py-4 px-4 text-white"
       style={{ fontFamily: "'Aptos', 'Aptos Display', system-ui, -apple-system, sans-serif" }}
     >
@@ -479,10 +567,10 @@ export default function ToolsPage() {
                 />
                 <button
                   type="button"
-                  className="btn btn-sm btn-link text-white-50 text-decoration-none p-0 fw-normal small d-inline-flex align-items-center"
+                  className="btn btn-sm btn-link text-white text-decoration-none p-0 fw-normal small d-inline-flex align-items-center"
                   onClick={handleDownloadTemplate}
                 >
-                  <i className="ti ti-download me-1 fs-6"></i> Download Excel Template (.xlsx)
+                  <i className="ti ti-download me-1 fs-6 text-white"></i> Download Excel Template (.xlsx)
                 </button>
               </div>
 
@@ -497,7 +585,7 @@ export default function ToolsPage() {
                   {isBusy ? (
                     <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                   ) : (
-                    <i className="ti ti-eye me-2 fs-5"></i>
+                    <i className="ti ti-eye me-2 fs-5 text-white"></i>
                   )}
                   Preview Entries
                 </button>
@@ -509,21 +597,21 @@ export default function ToolsPage() {
                     disabled={Boolean(isBusy || (mappingSummary && mappingSummary.unmappedCount > 0))}
                     onClick={handleConfirmImport}
                   >
-                    <i className="ti ti-check-all me-1 fs-5"></i> Submit & Import Data
+                    <i className="ti ti-check-all me-1 fs-5 text-white"></i> Submit & Import Data
                   </button>
                 )}
-                
+
                 {/* Peringatan Jika Ada Akun Tdk Terdaftar */}
                 {mappingSummary && mappingSummary.unmappedCount > 0 && (
                   <div className="mt-2 text-danger small text-center fw-bold">
-                    <i className="ti ti-alert-circle me-1"></i>Terdapat akun yang tidak terdaftar. Perbaiki Master COA sebelum import.
+                    <i className="ti ti-alert-circle me-1"></i>Terdapat akun yang belum dipetakan. Silakan pelimpahkan akun terlebih dahulu.
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* TABEL LENGKAP PEMETAAN DAN PELIMPAHAN AKUN SELALU MUNCUL */}
+          {/* TABEL PEMETAAN DAN PELIMPAHAN AKUN */}
           {accountMappings.length > 0 && (
             <div className="card border-0 glass-card text-white rounded-4 shadow-sm mb-4">
               <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
@@ -535,37 +623,59 @@ export default function ToolsPage() {
                 </span>
               </div>
               <div className="card-body p-0">
-                <div className="table-responsive" style={{ maxHeight: '380px' }}>
-                  <table className="table table-dark table-hover mb-0 align-middle style-table" style={{ fontSize: '0.8rem' }}>
+                <div className="table-responsive" style={{ maxHeight: '420px' }}>
+                  <table className="table table-dark table-hover mb-0 align-middle style-table" style={{ fontSize: '0.85rem' }}>
                     <thead>
-                      <tr className="text-secondary fw-bold border-bottom border-secondary border-opacity-25">
-                        <th className="ps-4">Input Excel</th>
-                        <th>Master COA Baku</th>
-                        <th className="text-center pe-4">Status</th>
+                      <tr className="text-white fw-bold border-bottom border-secondary border-opacity-25 bg-secondary bg-opacity-20">
+                        <th className="ps-4 text-white">Input Excel</th>
+                        <th className="text-white">Master COA Baku</th>
+                        <th className="text-center pe-4 text-white">Status / Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="fw-normal">
-                      {accountMappings.map((m, i) => (
-                        <tr key={i} className="border-bottom border-secondary border-opacity-10">
-                          <td className="ps-4">
-                            <span className="badge bg-secondary me-2 font-monospace">{m.excelRef}</span>
-                            <span className="text-white-50">{m.excelAccountName}</span>
-                          </td>
-                          <td>
-                            {m.mappedRef > 0 ? (
-                              <>
-                                <span className="badge bg-primary me-2 font-monospace">{m.mappedRef}</span>
-                                <strong className="text-white fw-bold">{m.mappedAccountName}</strong>
-                              </>
-                            ) : (
-                              <span className="text-danger fst-italic">Menunggu Registrasi...</span>
-                            )}
-                          </td>
-                          <td className="text-center pe-4">
-                            {renderStatusBadge(m.status)}
-                          </td>
-                        </tr>
-                      ))}
+                    <tbody className="fw-normal text-white">
+                      {accountMappings.map((m, i) => {
+                        const isReallocated = m.status.includes('REALLOCATED');
+                        const isClean = m.status === 'EXACT_MATCH';
+                        const isUnmapped = m.status === 'UNMAPPED';
+
+                        return (
+                          <tr key={i} className={`border-bottom border-secondary border-opacity-25 ${isReallocated ? 'bg-warning bg-opacity-10' : ''}`}>
+                            <td className="ps-4">
+                              <span className="badge bg-secondary text-white me-2 font-monospace">{m.excelRef}</span>
+                              <strong className="text-white">{m.excelAccountName}</strong>
+                            </td>
+                            <td>
+                              {m.mappedRef > 0 ? (
+                                <>
+                                  <span className={`badge me-2 font-monospace ${isReallocated ? 'bg-warning text-dark fw-bold' : 'bg-primary text-white'}`}>
+                                    {m.mappedRef}
+                                  </span>
+                                  <strong className={isReallocated ? 'text-warning fw-bold' : 'text-white fw-bold'}>
+                                    {m.mappedAccountName}
+                                  </strong>
+                                </>
+                              ) : (
+                                <span className="text-danger fw-bold fst-italic">Belum Dipetakan</span>
+                              )}
+                            </td>
+                            <td className="text-center pe-4">
+                              <div className="d-flex flex-column align-items-center gap-1 py-1">
+                                {renderStatusBadge(m.status)}
+                                {(isReallocated || isUnmapped) && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-xs btn-outline-warning text-white fw-bold py-0 px-2 mt-1 rounded-2"
+                                    style={{ fontSize: '0.7rem' }}
+                                    onClick={() => handleOpenMappingModal(m)}
+                                  >
+                                    <i className="ti ti-edit me-1 text-white"></i> Pelimpahan Akun
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -580,7 +690,7 @@ export default function ToolsPage() {
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
               <div className="d-flex justify-content-between align-items-center mb-1">
                 <h6 className="fw-bold text-white mb-0 d-flex align-items-center">
-                  <i className="ti ti-file-text me-2 fs-5"></i> Preview Transactions Stream
+                  <i className="ti ti-file-text me-2 fs-5 text-white"></i> Preview Transactions Stream
                 </h6>
                 <span className="badge bg-info text-dark fw-bold">
                   {parseResult.transactions.length} Transactions Loaded
@@ -594,44 +704,50 @@ export default function ToolsPage() {
                       <span className="badge bg-primary text-white fw-normal">{tx.journalType} Journal</span>
                       {tx.transactionNumber && (
                         <span className="badge bg-dark border border-secondary text-info font-monospace d-inline-flex align-items-center">
-                          <i className="ti ti-hash me-1 fs-6"></i>{tx.transactionNumber}
+                          <i className="ti ti-hash me-1 fs-6 text-info"></i>{tx.transactionNumber}
                         </span>
                       )}
                     </div>
                     <strong className="text-white fw-bold d-inline-flex align-items-center">
-                      <i className="ti ti-calendar-event me-1 fs-5"></i> Date: {tx.date}
+                      <i className="ti ti-calendar-event me-1 fs-5 text-white"></i> Date: {tx.date}
                     </strong>
                   </div>
                   <div className="table-responsive">
                     <table className="table table-dark table-hover table-striped mb-0 align-middle small text-white">
                       <thead>
                         <tr className="text-white fw-bold">
-                          <th style={{ width: '40px' }} className="text-center">#</th>
-                          <th style={{ width: '80px' }} className="text-center">Ref</th>
-                          <th>Account Name</th>
-                          <th>Description</th>
-                          <th style={{ width: '130px' }} className="text-end">Debit</th>
-                          <th style={{ width: '130px' }} className="text-end">Credit</th>
+                          <th style={{ width: '40px' }} className="text-center text-white">#</th>
+                          <th style={{ width: '80px' }} className="text-center text-white">Ref</th>
+                          <th className="text-white">Account Name</th>
+                          <th className="text-white">Description</th>
+                          <th style={{ width: '130px' }} className="text-end text-white">Debit</th>
+                          <th style={{ width: '130px' }} className="text-end text-white">Credit</th>
                         </tr>
                       </thead>
                       <tbody className="fw-normal text-white">
                         {tx.lines.map((line, lineIndex) => {
                           const mapping = accountMappings.find(m => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
                           const isUnmapped = mapping?.status === 'UNMAPPED';
-                          
+                          const isReallocated = mapping?.status.includes('REALLOCATED');
+
                           return (
-                            <tr key={lineIndex} className={isUnmapped ? 'bg-danger bg-opacity-10 text-danger' : 'text-white'}>
-                              <td className="text-center text-white-50">{line.rowIndex}</td>
-                              <td className="text-center fw-bold font-monospace">{line.refNumber}</td>
+                            <tr key={lineIndex} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
+                              <td className="text-center text-white">{line.rowIndex}</td>
+                              <td className="text-center fw-bold font-monospace text-white">{line.refNumber}</td>
                               <td>
-                                {line.accountName}
-                                {isUnmapped && <i className="ti ti-alert-triangle ms-2 text-danger" title="Akun ini tidak terdaftar di sistem"></i>}
+                                <span className="text-white fw-bold">{line.accountName}</span>
+                                {isReallocated && (
+                                  <span className="badge bg-warning text-dark ms-2 fw-bold" title={`Dilimpahkan ke ${mapping?.mappedRef} - ${mapping?.mappedAccountName}`}>
+                                    <i className="ti ti-arrow-right me-1"></i>{mapping?.mappedAccountName}
+                                  </span>
+                                )}
+                                {isUnmapped && <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini tidak terdaftar di sistem"></i>}
                               </td>
-                              <td className="text-white-50">{line.description}</td>
-                              <td className="text-end fw-bold">
+                              <td className="text-white">{line.description}</td>
+                              <td className="text-end fw-bold text-white">
                                 {line.debit !== null ? formatIDR(line.debit) : '-'}
                               </td>
-                              <td className="text-end fw-bold">
+                              <td className="text-end fw-bold text-white">
                                 {line.credit !== null ? formatIDR(line.credit) : '-'}
                               </td>
                             </tr>
@@ -657,16 +773,87 @@ export default function ToolsPage() {
           ) : (
             <div className="card glass-card border-0 rounded-4 shadow-sm h-100 d-flex align-items-center justify-content-center p-5 text-center text-secondary">
               <div>
-                <i className="ti ti-file-upload display-3 d-block mb-3 opacity-50"></i>
+                <i className="ti ti-file-upload display-3 d-block mb-3 opacity-50 text-white"></i>
                 <h6 className="fw-bold text-white mb-2">No Preview Generated Yet</h6>
-                <p className="small mb-0 text-white-50 fw-normal">
-                  Select an Excel file on the left panel and click <strong>Preview Entries</strong> to inspect data before importing.
+                <p className="small mb-0 text-white fw-normal">
+                  Select an Excel file on the left panel and click <strong className="text-white">Preview Entries</strong> to inspect data before importing.
                 </p>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* MODAL DIALOG PELIMPAHAN AKUN */}
+      {showMappingModal && selectedMapping && (
+        <div className="modal fade show d-block tab-modal-backdrop" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.75)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content bg-dark text-white border border-secondary border-opacity-50 shadow-lg rounded-4">
+              <div className="modal-header border-bottom border-secondary border-opacity-25 py-3 px-4">
+                <h5 className="modal-title fw-bold text-white d-flex align-items-center">
+                  <i className="ti ti-arrows-right-left me-2 text-warning fs-4"></i> Pelimpahan Akun Manual
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowMappingModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body px-4 py-4">
+                <p className="small text-white mb-3 fw-normal">
+                  Pilih Master COA Baku yang akan menerima data transaksi dari akun input Excel berikut:
+                </p>
+
+                {/* Info Akun Asal dari Excel */}
+                <div className="p-3 bg-secondary bg-opacity-20 rounded-3 border border-secondary border-opacity-25 mb-4">
+                  <div className="small text-white text-uppercase fw-bold mb-1">Akun Excel (Asal)</div>
+                  <div className="fs-6 fw-bold text-white">
+                    <span className="badge bg-secondary me-2 font-monospace">{selectedMapping.excelRef}</span>
+                    {selectedMapping.excelAccountName}
+                  </div>
+                </div>
+
+                {/* Form Pilih Akun Pelimpahan */}
+                <div className="mb-3">
+                  <label className="form-label fw-bold text-white small">Dilimpahkan Ke Master COA Baku:</label>
+                  <select
+                    className="form-select bg-black text-white border-secondary fw-normal py-2"
+                    value={customMappedRef}
+                    onChange={(e) => {
+                      const selectedRef = Number(e.target.value);
+                      const opt = masterAccountOptions.find((o) => o.ref === selectedRef);
+                      setCustomMappedRef(selectedRef);
+                      if (opt) setCustomMappedName(opt.name);
+                    }}
+                  >
+                    {masterAccountOptions.map((opt) => (
+                      <option key={opt.ref} value={opt.ref}>
+                        [{opt.ref}] {opt.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer border-top border-secondary border-opacity-25 px-4 py-3">
+                <button
+                  type="button"
+                  className="btn btn-outline-light rounded-3 fw-bold text-white"
+                  onClick={() => setShowMappingModal(false)}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-warning fw-bold text-dark rounded-3 px-4 shadow-sm d-inline-flex align-items-center"
+                  onClick={handleSaveReallocation}
+                >
+                  <i className="ti ti-check me-1 fs-5"></i> Simpan Pelimpahan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
