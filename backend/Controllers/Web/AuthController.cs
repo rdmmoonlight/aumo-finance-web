@@ -60,15 +60,13 @@ public class AuthController : ControllerBase
         }
 
         // Catat Sesi Web User ke Database
-        var session = new AumoFinance.Models.Security.UserSession
+        var session = new UserSession
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
             RefreshTokenHash = "WEB_COOKIE_SESSION",
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
-            UserAgent = Request.Headers["User-Agent"].ToString() ?? "WebBrowser",
             DeviceName = "Web Client",
-            OperatingSystem = "Desktop/Web",
             Browser = "Web Browser",
             Country = "ID",
             IsActive = true,
