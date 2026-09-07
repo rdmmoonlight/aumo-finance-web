@@ -1,0 +1,7 @@
+AumoBackend/
+├── Controllers/         --> Folder 1: Tempat semua Controller (Endpoint API)
+│   └── AccountingController.cs (misal: penutupan buku/closing entries)
+├── Models/              --> Folder 2: Tempat struktur data + DbContext
+│   └── JournalEntry.cs
+├── AumoBackend.csproj   --> File 1: Konfigurasi Proyek .NET
+└── Program.cs           --> File 2: Entry point & pendaftaran DB/Controller
