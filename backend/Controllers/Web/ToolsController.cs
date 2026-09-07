@@ -59,9 +59,6 @@ namespace AumoFinance.Controllers.Web
             );
         }
 
-        // ==========================================
-        // 1. POST: /web/tools/preview-journal-import
-        // ==========================================
         [HttpPost("preview-journal-import")]
         public async Task<IActionResult> PreviewJournalImport([FromBody] JournalImportRequestDto request)
         {
@@ -116,7 +113,6 @@ namespace AumoFinance.Controllers.Web
                     int refInt = lineDto.RefNumber;
                     string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
-                    // Tanpa paksaan auto match spekulatif - diserahkan pilihan ke user di frontend
                     var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt && string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
                     if (coa != null)
@@ -163,7 +159,6 @@ namespace AumoFinance.Controllers.Web
                 });
             }
 
-            // Deduplikasi daftar pemetaan untuk tampilan tabel kiri frontend
             var uniqueMappings = mappingDetails
                 .GroupBy(m => new { m.ExcelRef, m.ExcelAccountName })
                 .Select(g => g.First())
@@ -188,9 +183,6 @@ namespace AumoFinance.Controllers.Web
             });
         }
 
-        // ==========================================
-        // 2. POST: /web/tools/import-journal-entries
-        // ==========================================
         [HttpPost("import-journal-entries")]
         public async Task<IActionResult> ImportJournalEntries([FromBody] JournalImportRequestDto request)
         {
@@ -214,9 +206,7 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
-                // -------------------------------------------------------------
-                // A. CEK / BUAT PERIODE DI TABEL PERIODS AKUNTANSI AUTOMATIS
-                // -------------------------------------------------------------
+                // Cek / Buat Periode Akuntansi
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -230,7 +220,8 @@ namespace AumoFinance.Controllers.Web
                         UserId = userId,
                         StartDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, 1), DateTimeKind.Utc),
                         EndDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth)), DateTimeKind.Utc),
-                        IsClosed = false
+                        IsClosed = false,
+                        IsSelected = true // Set periode baru sebagai aktif
                     };
                     _context.Periods.Add(period);
                     await _context.SaveChangesAsync();
@@ -240,7 +231,6 @@ namespace AumoFinance.Controllers.Web
                     .Where(c => c.UserId == userId && c.IsActive)
                     .ToListAsync();
 
-                // Build Quick Lookup untuk Custom Mappings manual yang dikirim oleh Next.js
                 var mappingDict = request.CustomMappings?
                     .Where(m => m.MappedRef > 0)
                     .ToDictionary(
@@ -249,7 +239,6 @@ namespace AumoFinance.Controllers.Web
                         StringComparer.OrdinalIgnoreCase
                     ) ?? new Dictionary<string, AccountMappingDetailDto>();
 
-                // Ambil daftar nomor transaksi yang sudah pernah disimpan milik User agar tidak pernah terjadi bentrok Unique Index Constraint
                 var existingTxNumbers = await _context.JournalEntries
                     .Where(j => j.UserId == userId)
                     .Select(j => j.TransactionNumber)
@@ -289,10 +278,8 @@ namespace AumoFinance.Controllers.Web
                         counter.LastSequence += 1;
                     }
 
-                    // Buat penomoran transaksi yang unik secara terjamin
                     string transactionNumber = $"{counterKey}{counter.LastSequence:D5}";
 
-                    // Jika nomor urut bentrok dengan data lama di DB, naikkan counter sampai menemukan angka yang benar-benar belum terpakai
                     while (existingTxNumbers.Contains(transactionNumber))
                     {
                         counter.LastSequence += 1;
@@ -306,6 +293,7 @@ namespace AumoFinance.Controllers.Web
                         UserId = userId,
                         TransactionNumber = transactionNumber,
                         JournalType = txDto.JournalType,
+                        EntryDate = txDate, // PERBAIKAN: Mengisi EntryDate agar terhitung di saldo
                         CreatedAt = txDate,
                         Lines = new List<JournalEntryLine>()
                     };
@@ -316,20 +304,18 @@ namespace AumoFinance.Controllers.Web
                         string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
                         int targetRef = excelRef;
-
-                        // Cek apakah ada pelimpahan manual dari frontend Next.js
+                        
                         string mapKey = $"{excelRef}|||{excelAccountName}";
                         if (mappingDict.TryGetValue(mapKey, out var customMap))
                         {
                             targetRef = customMap.MappedRef;
                         }
 
-                        // Cari akun COA yang sesuai di DB
                         var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == targetRef);
 
                         if (coa == null)
                         {
-                            continue; // Skip baris jika akun sasaran tidak ditemukan di Master COA DB
+                            continue;
                         }
 
                         journalEntry.Lines.Add(new JournalEntryLine
