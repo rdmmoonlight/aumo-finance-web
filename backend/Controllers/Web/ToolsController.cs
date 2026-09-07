@@ -116,84 +116,42 @@ namespace AumoFinance.Controllers.Web
                     int refInt = lineDto.RefNumber;
                     string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
-                    // 1. Match berdasarkan Ref Number
-                    var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt);
+                    // Tanpa paksaan auto match spekulatif - diserahkan pilihan ke user di frontend
+                    var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt && string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
 
                     if (coa != null)
                     {
-                        bool isNameExact = string.Equals(coa.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase);
-
                         mappingDetails.Add(new AccountMappingDetailDto
                         {
                             ExcelRef = refInt,
                             ExcelAccountName = excelAccountName,
                             MappedRef = coa.ReferenceNumber,
                             MappedAccountName = coa.AccountName,
-                            Status = isNameExact ? "EXACT_MATCH" : "REALLOCATED_NAME",
-                            Reason = isNameExact
-                                ? "Nomor Ref dan Nama Akun cocok 100% presisi dengan Master COA."
-                                : "Nama Akun Excel berbeda. Disesuaikan ke Nama Akun Baku Master COA."
-                        });
-
-                        processedLines.Add(new JournalLineDto
-                        {
-                            RefNumber = coa.ReferenceNumber,
-                            AccountName = coa.AccountName,
-                            Description = lineDto.Description,
-                            Debit = lineDto.Debit,
-                            Credit = lineDto.Credit
+                            Status = "EXACT_MATCH",
+                            Reason = "Nomor Ref dan Nama Akun cocok 100% presisi dengan Master COA."
                         });
                     }
                     else
                     {
-                        // 2. Fallback Match berdasarkan Nama Akun
-                        coa = existingCoas.FirstOrDefault(c =>
-                            string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
-
-                        if (coa != null)
+                        mappingDetails.Add(new AccountMappingDetailDto
                         {
-                            mappingDetails.Add(new AccountMappingDetailDto
-                            {
-                                ExcelRef = refInt,
-                                ExcelAccountName = excelAccountName,
-                                MappedRef = coa.ReferenceNumber,
-                                MappedAccountName = coa.AccountName,
-                                Status = "REALLOCATED_REF",
-                                Reason = "Nomor Ref Excel tidak cocok. Disesuaikan ke Nomor Ref Baku Master COA."
-                            });
-
-                            processedLines.Add(new JournalLineDto
-                            {
-                                RefNumber = coa.ReferenceNumber,
-                                AccountName = coa.AccountName,
-                                Description = lineDto.Description,
-                                Debit = lineDto.Debit,
-                                Credit = lineDto.Credit
-                            });
-                        }
-                        else
-                        {
-                            // 3. Tidak Ditemukan di Master COA
-                            mappingDetails.Add(new AccountMappingDetailDto
-                            {
-                                ExcelRef = refInt,
-                                ExcelAccountName = excelAccountName,
-                                MappedRef = 0,
-                                MappedAccountName = "Tidak Terdaftar",
-                                Status = "UNMAPPED",
-                                Reason = "Akun tidak ditemukan di Master COA. Baris ini akan dilewati saat diimpor."
-                            });
-
-                            processedLines.Add(new JournalLineDto
-                            {
-                                RefNumber = refInt,
-                                AccountName = excelAccountName,
-                                Description = lineDto.Description,
-                                Debit = lineDto.Debit,
-                                Credit = lineDto.Credit
-                            });
-                        }
+                            ExcelRef = refInt,
+                            ExcelAccountName = excelAccountName,
+                            MappedRef = 0,
+                            MappedAccountName = string.Empty,
+                            Status = "UNMAPPED",
+                            Reason = "Silakan pilih akun pelimpahan manual dari dropdown."
+                        });
                     }
+
+                    processedLines.Add(new JournalLineDto
+                    {
+                        RefNumber = refInt,
+                        AccountName = excelAccountName,
+                        Description = lineDto.Description,
+                        Debit = lineDto.Debit,
+                        Credit = lineDto.Credit
+                    });
                 }
 
                 processedTransactions.Add(new JournalTransactionDto
@@ -205,15 +163,15 @@ namespace AumoFinance.Controllers.Web
                 });
             }
 
-            // Deduplikasi daftar pemetaan untuk tampilan ringkasan
+            // Deduplikasi daftar pemetaan untuk tampilan tabel kiri frontend
             var uniqueMappings = mappingDetails
-                .GroupBy(m => new { m.ExcelRef, m.ExcelAccountName, m.MappedRef, m.MappedAccountName, m.Status })
+                .GroupBy(m => new { m.ExcelRef, m.ExcelAccountName })
                 .Select(g => g.First())
                 .ToList();
 
             int exactMatchCount = uniqueMappings.Count(m => m.Status == "EXACT_MATCH");
             int reallocatedCount = uniqueMappings.Count(m => m.Status == "REALLOCATED_NAME" || m.Status == "REALLOCATED_REF");
-            int unmappedCount = uniqueMappings.Count(m => m.Status == "UNMAPPED");
+            int unmappedCount = uniqueMappings.Count(m => m.Status == "UNMAPPED" || m.MappedRef == 0);
 
             return Ok(new
             {
@@ -225,7 +183,7 @@ namespace AumoFinance.Controllers.Web
                     exactMatchCount = exactMatchCount,
                     reallocatedCount = reallocatedCount,
                     unmappedCount = unmappedCount,
-                    isPerfectMatch = (reallocatedCount == 0 && unmappedCount == 0)
+                    isPerfectMatch = (unmappedCount == 0)
                 }
             });
         }
@@ -256,6 +214,9 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
+                // -------------------------------------------------------------
+                // A. CEK / BUAT PERIODE DI TABEL PERIODS AKUNTANSI AUTOMATIS
+                // -------------------------------------------------------------
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -278,6 +239,21 @@ namespace AumoFinance.Controllers.Web
                 var existingCoas = await _context.ChartOfAccounts
                     .Where(c => c.UserId == userId && c.IsActive)
                     .ToListAsync();
+
+                // Build Quick Lookup untuk Custom Mappings manual yang dikirim oleh Next.js
+                var mappingDict = request.CustomMappings?
+                    .Where(m => m.MappedRef > 0)
+                    .ToDictionary(
+                        m => $"{m.ExcelRef}|||{m.ExcelAccountName.Trim()}",
+                        m => m,
+                        StringComparer.OrdinalIgnoreCase
+                    ) ?? new Dictionary<string, AccountMappingDetailDto>();
+
+                // Ambil daftar nomor transaksi yang sudah pernah disimpan milik User agar tidak pernah terjadi bentrok Unique Index Constraint
+                var existingTxNumbers = await _context.JournalEntries
+                    .Where(j => j.UserId == userId)
+                    .Select(j => j.TransactionNumber)
+                    .ToHashSetAsync();
 
                 int importedEntriesCount = 0;
 
@@ -313,7 +289,17 @@ namespace AumoFinance.Controllers.Web
                         counter.LastSequence += 1;
                     }
 
+                    // Buat penomoran transaksi yang unik secara terjamin
                     string transactionNumber = $"{counterKey}{counter.LastSequence:D5}";
+
+                    // Jika nomor urut bentrok dengan data lama di DB, naikkan counter sampai menemukan angka yang benar-benar belum terpakai
+                    while (existingTxNumbers.Contains(transactionNumber))
+                    {
+                        counter.LastSequence += 1;
+                        transactionNumber = $"{counterKey}{counter.LastSequence:D5}";
+                    }
+
+                    existingTxNumbers.Add(transactionNumber);
 
                     var journalEntry = new JournalEntry
                     {
@@ -326,15 +312,24 @@ namespace AumoFinance.Controllers.Web
 
                     foreach (var lineDto in txDto.Lines)
                     {
-                        int refInt = lineDto.RefNumber;
+                        int excelRef = lineDto.RefNumber;
                         string excelAccountName = lineDto.AccountName?.Trim() ?? string.Empty;
 
-                        var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == refInt)
-                            ?? existingCoas.FirstOrDefault(c => string.Equals(c.AccountName, excelAccountName, StringComparison.OrdinalIgnoreCase));
+                        int targetRef = excelRef;
+                        
+                        // Cek apakah ada pelimpahan manual dari frontend Next.js
+                        string mapKey = $"{excelRef}|||{excelAccountName}";
+                        if (mappingDict.TryGetValue(mapKey, out var customMap))
+                        {
+                            targetRef = customMap.MappedRef;
+                        }
+
+                        // Cari akun COA yang sesuai di DB
+                        var coa = existingCoas.FirstOrDefault(c => c.ReferenceNumber == targetRef);
 
                         if (coa == null)
                         {
-                            continue;
+                            continue; // Skip baris jika akun sasaran tidak ditemukan di Master COA DB
                         }
 
                         journalEntry.Lines.Add(new JournalEntryLine
@@ -375,6 +370,7 @@ namespace AumoFinance.Controllers.Web
         public int TargetMonth { get; set; }
         public int TargetYear { get; set; }
         public List<JournalTransactionDto> Transactions { get; set; } = new();
+        public List<AccountMappingDetailDto>? CustomMappings { get; set; } = new();
     }
 
     public class JournalTransactionDto
@@ -400,7 +396,7 @@ namespace AumoFinance.Controllers.Web
         public string ExcelAccountName { get; set; } = string.Empty;
         public int MappedRef { get; set; }
         public string MappedAccountName { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty; // EXACT_MATCH, REALLOCATED_NAME, REALLOCATED_REF, UNMAPPED
+        public string Status { get; set; } = string.Empty;
         public string Reason { get; set; } = string.Empty;
     }
 }
