@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref_name }} # Memastikan ref tepat saat dipicu PR
+          ref: ${{ github.head_ref || github.ref_name }} # Memastikan ref tepat saat dipicu PR/Push
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -26,12 +26,12 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore
 
-      # 1. Jalankan auto-format
+      # -------------------------------------------------------------
+      # 1. LINT (Auto-Format Code)
+      # -------------------------------------------------------------
       - name: Auto-Format Code
         run: dotnet format
 
-      # 2. Commit & Push otomatis (Hanya jalan jika ada perubahan format)
-      # Menggunakan [skip ci] agar tidak memicu loop build di GitHub Actions
       - name: Commit Formatted Changes
         id: auto_commit
         uses: stefanzweifel/git-auto-commit-action@v5
@@ -40,6 +40,23 @@ jobs:
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
 
-      # 3. Build & Check Code Quality (Strict Warning as Errors)
-      - name: Build & Run Roslyn Analyzers
+      # -------------------------------------------------------------
+      # 2. TYPECHECK & LINT (Build & Strict Roslyn Analyzers)
+      # -------------------------------------------------------------
+      - name: Build & Typecheck (.NET)
         run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
+
+      # -------------------------------------------------------------
+      # 3. MICROFRONTENDS CONFIG PRESENT (Pencarian Otomatis)
+      # -------------------------------------------------------------
+      - name: Verify microfrontends.json Present
+        run: |
+          # Cari file microfrontends.json di seluruh workspace, abaikan folder temporary/build biasa
+          FILE_PATH=$(find . -name "microfrontends.json" -not -path "*/node_modules/*" -not -path "*/bin/*" -not -path "*/obj/*" | head -n 1)
+          
+          if [ -n "$FILE_PATH" ]; then
+            echo "✅ microfrontends.json ditemukan di lokasi: $FILE_PATH"
+          else
+            echo "❌ ERROR: microfrontends.json tidak ditemukan di seluruh workspace!"
+            exit 1
+          fi
