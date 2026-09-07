@@ -1,7 +1,9 @@
 using System.Security.Claims;
+using AumoFinance.Models;
 using AumoFinance.Models.Guardian;
 using AumoFinance.Services.Guardian;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AumoFinance.Controllers.Web;
@@ -12,10 +14,14 @@ namespace AumoFinance.Controllers.Web;
 public class GuardianController : ControllerBase
 {
     private readonly IGuardianService _guardianService;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public GuardianController(IGuardianService guardianService)
+    public GuardianController(
+        IGuardianService guardianService,
+        UserManager<ApplicationUser> userManager)
     {
         _guardianService = guardianService;
+        _userManager = userManager;
     }
 
     [HttpGet]
@@ -27,12 +33,32 @@ public class GuardianController : ControllerBase
             return Unauthorized(new { success = false, message = "Unauthorized access." });
         }
 
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return NotFound(new { success = false, message = "User not found." });
+        }
+
         var sessions = await _guardianService.GetActiveSessionsAsync(userId);
         var activities = await _guardianService.GetLoginActivitiesAsync(userId);
 
+        var lastLoginActivity = activities.FirstOrDefault(a => a.IsSuccess);
+
         var viewModel = new GuardianDashboardViewModel
         {
+            Username = user.UserName ?? string.Empty,
+            Email = user.Email ?? string.Empty,
+            SecurityScore = calculateSecurityScore(user),
             ActiveSessions = sessions.Count,
+            TrustedDevices = sessions.Select(s => s.DeviceName).Distinct().Count(),
+            LastLogin = lastLoginActivity?.CreatedAt ?? DateTime.UtcNow,
+            Security = new SecurityStatusViewModel
+            {
+                EmailVerified = user.EmailConfirmed,
+                PasswordProtected = !string.IsNullOrEmpty(user.PasswordHash),
+                MultiFactorEnabled = user.TwoFactorEnabled,
+                RecoveryCodesAvailable = user.TwoFactorEnabled
+            },
             RecentActivities = activities.Select(a => new LoginActivityViewModel
             {
                 Activity = a.ActivityType,
@@ -44,7 +70,22 @@ public class GuardianController : ControllerBase
             }).ToList()
         };
 
-        return Ok(new { success = true, data = viewModel });
+        var mappedActiveSessions = sessions.Select(s => new ActiveSessionViewModel
+        {
+            DeviceName = s.DeviceName,
+            Browser = s.Browser,
+            IpAddress = s.IpAddress,
+            Country = s.Country,
+            LastActivity = s.LastActivityAt,
+            IsCurrent = s.IsCurrent
+        }).ToList();
+
+        return Ok(new
+        {
+            success = true,
+            data = viewModel,
+            activeSessions = mappedActiveSessions
+        });
     }
 
     [HttpPost("revoke-session/{sessionId:guid}")]
@@ -71,5 +112,13 @@ public class GuardianController : ControllerBase
 
         await _guardianService.RevokeAllSessionsAsync(userId);
         return Ok(new { success = true, message = "All other sessions revoked successfully." });
+    }
+
+    private static int calculateSecurityScore(ApplicationUser user)
+    {
+        int score = 40; // Base score password & account active
+        if (user.EmailConfirmed) score += 30;
+        if (user.TwoFactorEnabled) score += 30;
+        return score;
     }
 }
