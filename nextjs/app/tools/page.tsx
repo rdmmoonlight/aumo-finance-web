@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import './tools.css';
 
 interface JournalLineImport {
   rowIndex: number;
@@ -88,8 +87,6 @@ export default function ToolsPage() {
         if (data.success && Array.isArray(data.accounts)) {
           setDbMasterAccounts(data.accounts);
         }
-      } else {
-        console.warn(`Failed to fetch COA from server. Status: ${res.status}`);
       }
     } catch (err) {
       console.error('Error fetching COA:', err);
@@ -120,6 +117,7 @@ export default function ToolsPage() {
     }
   };
 
+  // PERBAIKAN: PAKSA TAHUN DAN BULAN MENGIKUTI SELEKSI DROPDOWN UI (SEPTEMBER 2026)
   const parseAndCombineDate = (val: any, year: number, month: number): string => {
     if (val === undefined || val === null) return '';
     const strVal = String(val).trim();
@@ -127,24 +125,21 @@ export default function ToolsPage() {
 
     const paddedMonth = String(month).padStart(2, '0');
 
+    let dayNum = 1;
     if (/^\d{1,2}$/.test(strVal)) {
-      const dayNum = parseInt(strVal, 10);
-      if (dayNum >= 1 && dayNum <= 31) {
-        const paddedDay = String(dayNum).padStart(2, '0');
-        return `${year}-${paddedMonth}-${paddedDay}`;
-      }
+      dayNum = parseInt(strVal, 10);
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(strVal)) {
+      dayNum = parseInt(strVal.split('-')[2], 10);
+    } else if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(strVal)) {
+      dayNum = parseInt(strVal.split('-')[0], 10);
     }
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(strVal)) {
-      return strVal;
+    if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+      dayNum = 1;
     }
 
-    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(strVal)) {
-      const parts = strVal.split('-');
-      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-    }
-
-    return strVal;
+    const paddedDay = String(dayNum).padStart(2, '0');
+    return `${year}-${paddedMonth}-${paddedDay}`;
   };
 
   const handlePreview = async () => {
@@ -216,7 +211,7 @@ export default function ToolsPage() {
               mappedRef: 0,
               mappedAccountName: '',
               status: 'UNMAPPED',
-              reason: 'Please manually select a DB COA target account',
+              reason: 'Silakan pilih akun pelimpahan COA DB secara manual',
             };
           }
 
@@ -289,7 +284,7 @@ export default function ToolsPage() {
             mappedRef: 0,
             mappedAccountName: '',
             status: 'UNMAPPED',
-            reason: 'Not yet mapped to DB COA',
+            reason: 'Belum dipetakan ke COA DB',
           };
         }
 
@@ -302,7 +297,7 @@ export default function ToolsPage() {
           mappedRef: selectedOption.referenceNumber,
           mappedAccountName: selectedOption.accountName,
           status: isMatchExact ? 'EXACT_MATCH' : 'REALLOCATED_REF',
-          reason: `Reallocated to [${selectedOption.referenceNumber}] ${selectedOption.accountName}`,
+          reason: `Dilimpahkan ke [${selectedOption.referenceNumber}] ${selectedOption.accountName}`,
         };
       }
       return m;
@@ -395,15 +390,15 @@ export default function ToolsPage() {
       const headers = [['Date', 'Account Name', 'Description', 'Ref', 'Debit', 'Credit']];
 
       const sampleGJ = [
-        ['1', 'Main Cash', 'Initial Capital Investment', 101, 15000000, ''],
-        ['', 'Owner Equity', 'Initial Capital Investment', 301, '', 15000000],
-        ['3', 'Electricity Expense', 'PLN Payment', 502, 500000, ''],
-        ['', 'Main Cash', 'PLN Payment', 101, '', 500000],
+        ['1', 'Kas Utama', 'Setoran Modal Awal', 101, 15000000, ''],
+        ['', 'Modal Pemilik', 'Setoran Modal Awal', 301, '', 15000000],
+        ['3', 'Beban Listrik', 'Pembayaran PLN', 502, 500000, ''],
+        ['', 'Kas Utama', 'Pembayaran PLN', 101, '', 500000],
       ];
 
       const sampleAJ = [
-        ['4', 'Rent Expense', 'Accrued Rent', 501, 2500000, ''],
-        ['', 'Accounts Payable', 'Accrued Rent', 201, '', 2500000],
+        ['4', 'Beban Sewa Kantor', 'Akrual Sewa', 501, 2500000, ''],
+        ['', 'Utang Usaha', 'Akrual Sewa', 201, '', 2500000],
       ];
 
       const wb = XLSX.utils.book_new();
@@ -416,7 +411,7 @@ export default function ToolsPage() {
 
       XLSX.writeFile(wb, 'Journal_Import_Template.xlsx');
     } catch (err) {
-      setErrorMessage('Failed to download template. Please check your internet connection.');
+      setErrorMessage('Gagal mengunduh template. Pastikan koneksi internet stabil.');
     }
   };
 
@@ -436,7 +431,10 @@ export default function ToolsPage() {
   ];
 
   return (
-    <div className="container-fluid py-4 px-4 text-white tools-container">
+    <div
+      className="container-fluid py-4 px-4 text-white"
+      style={{ fontFamily: "'Aptos', 'Aptos Display', system-ui, -apple-system, sans-serif" }}
+    >
       {/* Alert Messages */}
       {successMessage && (
         <div className="alert alert-success alert-dismissible fade show shadow-sm rounded-3 mb-4 text-white fw-normal" role="alert">
@@ -454,9 +452,9 @@ export default function ToolsPage() {
 
       {/* SPLIT SCREEN LAYOUT */}
       <div className="row g-4">
-        {/* LEFT PANEL: CONTROL FORM & COA MAPPING DETAILS */}
+        {/* PANEL KIRI: FORM KONTROL & DETAIL PEMETAAN COA */}
         <div className="col-12 col-lg-5 col-xl-4">
-          <div className="card glass-card rounded-4 mb-4">
+          <div className="card glass-card border-0 shadow-sm rounded-4 mb-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 pt-4 pb-3 px-4">
               <h5 className="fw-bold text-white mb-0 d-flex align-items-center">
                 <i className="ti ti-file-spreadsheet me-2 fs-4 text-white"></i> Import Journal Entries
@@ -543,34 +541,32 @@ export default function ToolsPage() {
                   </button>
                 )}
 
-                {/* Warning when unmapped accounts exist */}
                 {mappingSummary && mappingSummary.unmappedCount > 0 && (
                   <div className="mt-2 text-danger small text-center fw-bold">
-                    <i className="ti ti-alert-circle me-1"></i>Some accounts are unmapped. Please map all accounts before proceeding.
+                    <i className="ti ti-alert-circle me-1"></i>Terdapat akun yang belum dipetakan. Silakan pelimpahkan akun terlebih dahulu.
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* EDITABLE ACCOUNT MAPPING TABLE */}
           {accountMappings.length > 0 && (
-            <div className="card glass-card text-white rounded-4 shadow-sm mb-4">
+            <div className="card border-0 glass-card text-white rounded-4 shadow-sm mb-4">
               <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
                 <h6 className="fw-bold mb-0 text-white small d-flex align-items-center">
                   <i className="ti ti-list-check me-2 fs-5 text-info"></i> Account Mapping Status
                 </h6>
                 <span className="badge bg-primary text-white fw-bold">
-                  {accountMappings.length} Unique Accounts
+                  {accountMappings.length} Akun Unik
                 </span>
               </div>
               <div className="card-body p-0">
-                <div className="table-responsive mapping-table-container">
-                  <table className="table table-dark table-hover mb-0 align-middle mapping-table">
+                <div className="table-responsive" style={{ maxHeight: '420px' }}>
+                  <table className="table table-dark table-hover mb-0 align-middle style-table" style={{ fontSize: '0.85rem' }}>
                     <thead>
                       <tr className="text-white fw-bold border-bottom border-secondary border-opacity-25 bg-secondary bg-opacity-20">
-                        <th className="ps-3 text-white col-excel-input">Excel Input</th>
-                        <th className="pe-3 text-white col-master-coa">DB Master COA (Select Manually)</th>
+                        <th className="ps-3 text-white" style={{ width: '45%' }}>Input Excel</th>
+                        <th className="pe-3 text-white" style={{ width: '55%' }}>Master COA DB (Pilih Manual)</th>
                       </tr>
                     </thead>
                     <tbody className="fw-normal text-white">
@@ -585,16 +581,17 @@ export default function ToolsPage() {
                             </td>
                             <td className="pe-3">
                               <select
-                                className={`form-select form-select-sm text-white fw-bold select-mapping ${
+                                className={`form-select form-select-sm text-white fw-bold ${
                                   isMapped
                                     ? 'bg-warning bg-opacity-20 border-warning text-warning'
                                     : 'bg-danger bg-opacity-20 border-danger'
                                 }`}
                                 value={m.mappedRef || 0}
                                 onChange={(e) => handleInlineReallocationChange(m.excelRef, m.excelAccountName, Number(e.target.value))}
+                                style={{ fontSize: '0.8rem' }}
                                 disabled={isLoadingCoa}
                               >
-                                <option value={0}>-- Select Target COA Account --</option>
+                                <option value={0}>-- Pilih Pelimpahan Akun COA --</option>
                                 {dbMasterAccounts.map((opt) => (
                                   <option key={opt.id} value={opt.referenceNumber} className="bg-dark text-white">
                                     [{opt.referenceNumber}] {opt.accountName} ({opt.type})
@@ -613,10 +610,10 @@ export default function ToolsPage() {
           )}
         </div>
 
-        {/* RIGHT PANEL: TRANSACTIONS STREAM PREVIEW */}
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM */}
         <div className="col-12 col-lg-7 col-xl-8">
           {parseResult ? (
-            <div className="d-flex flex-column gap-3 preview-stream-container">
+            <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
               <div className="d-flex justify-content-between align-items-center mb-1">
                 <h6 className="fw-bold text-white mb-0 d-flex align-items-center">
                   <i className="ti ti-file-text me-2 fs-5 text-white"></i> Preview Transactions Stream
@@ -645,12 +642,12 @@ export default function ToolsPage() {
                     <table className="table table-dark table-hover table-striped mb-0 align-middle small text-white">
                       <thead>
                         <tr className="text-white fw-bold">
-                          <th className="text-center text-white col-idx">#</th>
-                          <th className="text-center text-white col-ref">Excel Ref</th>
+                          <th style={{ width: '40px' }} className="text-center text-white">#</th>
+                          <th style={{ width: '90px' }} className="text-center text-white">Ref Excel</th>
                           <th className="text-white">Account Name (Excel vs DB Target)</th>
                           <th className="text-white">Description</th>
-                          <th className="text-end text-white col-amount">Debit</th>
-                          <th className="text-end text-white col-amount">Credit</th>
+                          <th style={{ width: '130px' }} className="text-end text-white">Debit</th>
+                          <th style={{ width: '130px' }} className="text-end text-white">Credit</th>
                         </tr>
                       </thead>
                       <tbody className="fw-normal text-white">
@@ -681,7 +678,7 @@ export default function ToolsPage() {
                                   </span>
                                 ) : (
                                   <span className="badge bg-danger text-white fw-normal">
-                                    <i className="ti ti-alert-triangle me-1"></i>Unmapped
+                                    <i className="ti ti-alert-triangle me-1"></i>Belum Dipetakan
                                   </span>
                                 )}
                               </td>
@@ -713,7 +710,7 @@ export default function ToolsPage() {
               ))}
             </div>
           ) : (
-            <div className="card glass-card rounded-4 shadow-sm h-100 d-flex align-items-center justify-content-center p-5 text-center text-secondary">
+            <div className="card glass-card border-0 rounded-4 shadow-sm h-100 d-flex align-items-center justify-content-center p-5 text-center text-secondary">
               <div>
                 <i className="ti ti-file-upload display-3 d-block mb-3 opacity-50 text-white"></i>
                 <h6 className="fw-bold text-white mb-2">No Preview Generated Yet</h6>
