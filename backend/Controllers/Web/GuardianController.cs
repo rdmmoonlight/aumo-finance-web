@@ -55,9 +55,7 @@ public class GuardianController : ControllerBase
             Security = new SecurityStatusViewModel
             {
                 EmailVerified = user.EmailConfirmed,
-                PasswordProtected = !string.IsNullOrEmpty(user.PasswordHash),
-                MultiFactorEnabled = user.TwoFactorEnabled,
-                RecoveryCodesAvailable = user.TwoFactorEnabled
+                PasswordProtected = !string.IsNullOrEmpty(user.PasswordHash)
             },
             RecentActivities = activities.Select(a => new LoginActivityViewModel
             {
@@ -116,9 +114,8 @@ public class GuardianController : ControllerBase
 
     private static int calculateSecurityScore(ApplicationUser user)
     {
-        int score = 40; // Base score password & account active
-        if (user.EmailConfirmed) score += 30;
-        if (user.TwoFactorEnabled) score += 30;
+        int score = 50; // Base score password & account active
+        if (user.EmailConfirmed) score += 50;
         return score;
     }
 }
