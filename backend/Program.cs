@@ -43,14 +43,19 @@ namespace AumoBackend
                 throw new InvalidOperationException("Database connection string 'DefaultConnection' or 'DATABASE_URL' is missing.");
             }
 
-            builder.Services.AddDbContextFactory<AppDbContext>(options =>
+            // Gunakan registrasi AddDbContext standar agar kompatibel penuh dengan Identity & Services
+            builder.Services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseNpgsql(connectionString);
                 options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             });
 
-            builder.Services.AddScoped<AppDbContext>(sp =>
-                sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
+            // Factory opsional jika Anda membutuhkannya untuk background services/threads
+            builder.Services.AddDbContextFactory<AppDbContext>(options =>
+            {
+                options.UseNpgsql(connectionString);
+                options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+            }, ServiceLifetime.Scoped);
 
             // =====================================
             // 2. DATA PROTECTION & PERSISTENCE
@@ -314,9 +319,10 @@ namespace AumoBackend
                 });
             }
 
-            app.UseRouting();
-
+            // CORS Ditaruh sebelum Routing dan Authentication
             app.UseCors("AllowFrontend");
+
+            app.UseRouting();
 
             app.UseAuthentication();
             app.UseAuthorization();
