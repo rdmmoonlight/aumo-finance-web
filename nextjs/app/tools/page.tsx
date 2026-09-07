@@ -152,7 +152,7 @@ export default function ToolsPage() {
     return strVal;
   };
 
-  // HANDLER PREVIEW ENTRIES: PARSING EXCEL MURNI & SET SETIAP AKUN MENJADI UNMAPPED UNTUK DILIAT USER
+  // HANDLER PREVIEW ENTRIES: PARSING EXCEL MURNI & SET SETIAP AKUN MENJADI UNMAPPED UNTUK USER PILIH MANUAL
   const handlePreview = async () => {
     if (!selectedFile) {
       setErrorMessage('Please select an Excel file first.');
@@ -214,7 +214,6 @@ export default function ToolsPage() {
 
           const refNum = Number(refVal) || 0;
 
-          // KEY MAPPING PRESISI BERBASIS KOMBINAASI PASTI REF + NAMA EXCEL
           const mapKey = `${refNum}|||${accountName}`;
           if (!tempMappings[mapKey]) {
             tempMappings[mapKey] = {
@@ -443,36 +442,6 @@ export default function ToolsPage() {
     { value: 12, label: 'December' },
   ];
 
-  const renderStatusBadge = (status: string) => {
-    switch (status) {
-      case 'EXACT_MATCH':
-        return (
-          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-success border border-light rounded-2 shadow-sm d-inline-flex align-items-center">
-            <i className="ti ti-check me-1 fs-6 text-white"></i> Clean Match
-          </span>
-        );
-      case 'REALLOCATED_NAME':
-      case 'REALLOCATED_REF':
-        return (
-          <span className="badge px-2 py-1 fs-6 fw-bold text-dark bg-warning border border-warning-subtle rounded-2 shadow-sm d-inline-flex align-items-center">
-            <i className="ti ti-arrows-right-left me-1 fs-6 text-dark"></i> Dilimpahkan
-          </span>
-        );
-      case 'UNMAPPED':
-        return (
-          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-danger border border-light rounded-2 shadow-sm d-inline-flex align-items-center">
-            <i className="ti ti-x me-1 fs-6 text-white"></i> Tdk Terdaftar
-          </span>
-        );
-      default:
-        return (
-          <span className="badge px-2 py-1 fs-6 fw-bold text-white bg-secondary border border-secondary-subtle rounded-2 d-inline-flex align-items-center">
-            Offline
-          </span>
-        );
-    }
-  };
-
   return (
     <div
       className="container-fluid py-4 px-4 text-white"
@@ -584,7 +553,7 @@ export default function ToolsPage() {
                   </button>
                 )}
 
-                {/* Peringatan Jika Ada Akun Tdk Terdaftar */}
+                {/* Peringatan Jika Ada Akun Belum Dipetakan */}
                 {mappingSummary && mappingSummary.unmappedCount > 0 && (
                   <div className="mt-2 text-danger small text-center fw-bold">
                     <i className="ti ti-alert-circle me-1"></i>Terdapat akun yang belum dipetakan. Silakan pelimpahkan akun terlebih dahulu.
@@ -594,7 +563,7 @@ export default function ToolsPage() {
             </div>
           </div>
 
-          {/* TABEL EDITABLE PEMETAAN AKUN */}
+          {/* TABEL EDITABLE PEMETAAN AKUN (TANPA KOLOM STATUS) */}
           {accountMappings.length > 0 && (
             <div className="card border-0 glass-card text-white rounded-4 shadow-sm mb-4">
               <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex justify-content-between align-items-center">
@@ -610,9 +579,8 @@ export default function ToolsPage() {
                   <table className="table table-dark table-hover mb-0 align-middle style-table" style={{ fontSize: '0.85rem' }}>
                     <thead>
                       <tr className="text-white fw-bold border-bottom border-secondary border-opacity-25 bg-secondary bg-opacity-20">
-                        <th className="ps-3 text-white" style={{ width: '38%' }}>Input Excel</th>
-                        <th className="text-white" style={{ width: '42%' }}>Master COA DB (Pilih Manual)</th>
-                        <th className="text-center pe-3 text-white" style={{ width: '20%' }}>Status</th>
+                        <th className="ps-3 text-white" style={{ width: '45%' }}>Input Excel</th>
+                        <th className="pe-3 text-white" style={{ width: '55%' }}>Master COA DB (Pilih Manual)</th>
                       </tr>
                     </thead>
                     <tbody className="fw-normal text-white">
@@ -625,7 +593,7 @@ export default function ToolsPage() {
                               <span className="badge bg-secondary text-white me-1 font-monospace">{m.excelRef}</span>
                               <span className="text-white fw-bold">{m.excelAccountName}</span>
                             </td>
-                            <td>
+                            <td className="pe-3">
                               {/* DROPDOWN MANUAL PELIMPAHAN AKUN DARI DATABASE */}
                               <select
                                 className={`form-select form-select-sm text-white fw-bold ${
@@ -646,9 +614,6 @@ export default function ToolsPage() {
                                 ))}
                               </select>
                             </td>
-                            <td className="text-center pe-3">
-                              {renderStatusBadge(isMapped ? 'REALLOCATED_REF' : 'UNMAPPED')}
-                            </td>
                           </tr>
                         );
                       })}
@@ -660,7 +625,7 @@ export default function ToolsPage() {
           )}
         </div>
 
-        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (MEMBACA DATA SUMBER EXCEL DENGAN PRESISI) */}
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM */}
         <div className="col-12 col-lg-7 col-xl-8">
           {parseResult ? (
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
@@ -702,14 +667,12 @@ export default function ToolsPage() {
                       </thead>
                       <tbody className="fw-normal text-white">
                         {tx.lines.map((line, lineIndex) => {
-                          // CARI MAPPING SESUAI DENGAN REF DAN NAMA AKUN EXCEL SECARA PRESISI 100%
                           const mapping = accountMappings.find(
                             (m) => m.excelRef === line.refNumber && m.excelAccountName === line.accountName
                           );
 
                           const currentMappedRef = mapping?.mappedRef ?? 0;
                           
-                          // AMBIL NAMA RESMI COA DB SESUAI PILIHAN DROPDOWN USER
                           const matchedDbAcc = dbMasterAccounts.find((a) => a.referenceNumber === currentMappedRef);
                           const currentMappedName = mapping?.mappedAccountName || matchedDbAcc?.accountName || '';
 
@@ -722,10 +685,8 @@ export default function ToolsPage() {
                                 <span className="badge bg-secondary text-white">{line.refNumber}</span>
                               </td>
                               <td>
-                                {/* NAMA AKUN ASLI DARI EXCEL */}
                                 <span className="text-white fw-bold me-2">{line.accountName}</span>
 
-                                {/* TARGET PELIMPAHAN AKUN DB DARI USER */}
                                 {!isUnmapped ? (
                                   <span className="badge bg-warning text-dark fw-bold">
                                     <i className="ti ti-arrow-right me-1 text-dark"></i>[{currentMappedRef}] {currentMappedName}
