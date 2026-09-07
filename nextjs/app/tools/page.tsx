@@ -699,7 +699,7 @@ export default function ToolsPage() {
           )}
         </div>
 
-        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM */}
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (REALTIME UPDATE) */}
         <div className="col-12 col-lg-7 col-xl-8">
           {parseResult ? (
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
@@ -741,19 +741,37 @@ export default function ToolsPage() {
                       </thead>
                       <tbody className="fw-normal text-white">
                         {tx.lines.map((line, lineIndex) => {
-                          const mapping = accountMappings.find(m => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
-                          const isUnmapped = mapping?.status === 'UNMAPPED' || mapping?.mappedRef === 0;
-                          const isReallocated = mapping?.status.includes('REALLOCATED');
+                          // PERBAIKAN: Cari mapping berdasarkan Ref DAN Nama Akun Excel untuk akurasi presisi
+                          const mapping = accountMappings.find(
+                            m => m.excelRef === line.refNumber && m.excelAccountName === line.accountName
+                          ) || accountMappings.find(m => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
+
+                          const currentMappedRef = mapping?.mappedRef ?? 0;
+                          const currentMappedName = mapping?.mappedAccountName ?? '';
+
+                          const isUnmapped = mapping?.status === 'UNMAPPED' || currentMappedRef === 0;
+                          
+                          // Mengecek apakah dilimpahkan ke akun lain
+                          const isReallocated =
+                            mapping?.status.includes('REALLOCATED') ||
+                            (currentMappedRef > 0 && (currentMappedRef !== line.refNumber || currentMappedName.toLowerCase() !== line.accountName.toLowerCase()));
 
                           return (
                             <tr key={lineIndex} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
                               <td className="text-center text-white">{line.rowIndex}</td>
-                              <td className="text-center fw-bold font-monospace text-white">{line.refNumber}</td>
+                              <td className="text-center fw-bold font-monospace text-white">
+                                {isReallocated ? (
+                                  <span className="text-warning" title={`Asli dari Excel: ${line.refNumber}`}>{currentMappedRef}</span>
+                                ) : (
+                                  line.refNumber
+                                )}
+                              </td>
                               <td>
                                 <span className="text-white fw-bold">{line.accountName}</span>
+                                {/* REALTIME BADGE: Tampilkan pelimpahan akun terbaru */}
                                 {isReallocated && (
-                                  <span className="badge bg-warning text-dark ms-2 fw-bold" title={`Dilimpahkan ke ${mapping?.mappedRef} - ${mapping?.mappedAccountName}`}>
-                                    <i className="ti ti-arrow-right me-1 text-dark"></i>{mapping?.mappedAccountName}
+                                  <span className="badge bg-warning text-dark ms-2 fw-bold" title={`Akun Asal [${line.refNumber}] ${line.accountName}`}>
+                                    <i className="ti ti-arrow-right me-1 text-dark"></i>[{currentMappedRef}] {currentMappedName}
                                   </span>
                                 )}
                                 {isUnmapped && <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini tidak terdaftar di DB COA"></i>}
