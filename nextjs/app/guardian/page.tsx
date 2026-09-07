@@ -40,10 +40,9 @@ export interface LoginActivityDto {
   occurredAt: string;
 }
 
-// SecurityStatusViewModel C# (2FA telah dihapus)
+// SecurityStatusViewModel C# (Password Protection & 2FA telah dihapus)
 export interface SecurityStatusDto {
   emailVerified: boolean;
-  passwordProtected: boolean;
 }
 
 // GuardianDashboardViewModel C#
@@ -290,22 +289,6 @@ export default function GuardianSecurityPage() {
                       <span className="badge bg-success">Verified</span>
                     ) : (
                       <span className="badge bg-warning text-dark">Unverified</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconShieldCheck className="text-warning" size={18} /> Password Protection
-                    </div>
-                    <small className="text-white-50">Account secured with an encrypted password</small>
-                  </div>
-                  <div>
-                    {viewModel?.security?.passwordProtected ? (
-                      <span className="badge bg-success">Protected</span>
-                    ) : (
-                      <span className="badge bg-danger">Not Set</span>
                     )}
                   </div>
                 </div>
