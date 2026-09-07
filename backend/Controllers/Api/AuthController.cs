@@ -2,8 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using AumoFinance.Models;
-using AumoFinance.Models.Guardian;
 using AumoFinance.Models.DTOs;
+using AumoFinance.Models.Guardian;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -63,9 +63,6 @@ public class AuthController : ControllerBase
         }
 
         // Generate JWT Token
-        // IMPORTANT: signing key/issuer must resolve exactly the same way as the
-        // validation side configured in Program.cs (JWT_SIGNING_KEY / JWT_ISSUER),
-        // otherwise every subsequent request fails signature validation (401).
         var jwtSigningKey = _configuration["JWT_SIGNING_KEY"]
             ?? Environment.GetEnvironmentVariable("JWT_SIGNING_KEY");
 
@@ -99,15 +96,13 @@ public class AuthController : ControllerBase
         var tokenString = tokenHandler.WriteToken(token);
 
         // Record User Session
-        var session = new AumoFinance.Models.Security.UserSession
+        var session = new UserSession
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
             RefreshTokenHash = tokenString.Substring(0, Math.Min(250, tokenString.Length)),
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
-            UserAgent = Request.Headers["User-Agent"].ToString() ?? "AumoMobileApp",
             DeviceName = "Mobile Device",
-            OperatingSystem = "Android/iOS",
             Browser = "Mobile Native",
             Country = "ID",
             IsActive = true,
@@ -156,7 +151,6 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public IActionResult Logout()
     {
-        // JWT is stateless on client side, returning success response
         return Ok(new { success = true, message = "Logged out successfully." });
     }
 }
