@@ -54,8 +54,7 @@ public class GuardianController : ControllerBase
             LastLogin = lastLoginActivity?.CreatedAt ?? DateTime.UtcNow,
             Security = new SecurityStatusViewModel
             {
-                EmailVerified = user.EmailConfirmed,
-                PasswordProtected = !string.IsNullOrEmpty(user.PasswordHash)
+                EmailVerified = user.EmailConfirmed
             },
             RecentActivities = activities.Select(a => new LoginActivityViewModel
             {
@@ -114,8 +113,6 @@ public class GuardianController : ControllerBase
 
     private static int calculateSecurityScore(ApplicationUser user)
     {
-        int score = 50; // Base score password & account active
-        if (user.EmailConfirmed) score += 50;
-        return score;
+        return user.EmailConfirmed ? 100 : 50;
     }
 }
