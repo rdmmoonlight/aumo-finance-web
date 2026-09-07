@@ -1,47 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using AumoFinance.Models.Guardian;
-using AumoFinance.Models.Security;
 
-#region 1. Security Entities (Kompatibel dengan AppDbContext)
-
-namespace AumoFinance.Models.Security
-{
-    public class UserSession
-    {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string DeviceName { get; set; } = string.Empty;
-        public string Browser { get; set; } = string.Empty;
-        public string IpAddress { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public string RefreshTokenHash { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public bool IsCurrent { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime LastActivityAt { get; set; }
-        public DateTime? RevokedAt { get; set; }
-    }
-
-    public class LoginActivity
-    {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string ActivityType { get; set; } = string.Empty;
-        public string Device { get; set; } = string.Empty;
-        public string Browser { get; set; } = string.Empty;
-        public string IpAddress { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public bool IsSuccess { get; set; }
-        public DateTime CreatedAt { get; set; }
-    }
-}
-
-#endregion
-
-#region 2. View Models
+// =========================================================================
+// 1. NAMESPACE BARU (Gunakan ini untuk pengembangan ke depan)
+// =========================================================================
 
 namespace AumoFinance.Models.Guardian
 {
+    #region View Models
+
     public class GuardianViewModel
     {
         public List<UserSession> Sessions { get; set; } = new();
@@ -95,14 +61,47 @@ namespace AumoFinance.Models.Guardian
         public string Browser { get; set; } = string.Empty;
         public DateTime AddedOn { get; set; }
     }
+
+    #endregion
+
+    #region Entities
+
+    public class UserSession
+    {
+        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
+        public string DeviceName { get; set; } = string.Empty;
+        public string Browser { get; set; } = string.Empty;
+        public string IpAddress { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public string RefreshTokenHash { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public bool IsCurrent { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime LastActivityAt { get; set; }
+        public DateTime? RevokedAt { get; set; }
+    }
+
+    public class LoginActivity
+    {
+        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
+        public string ActivityType { get; set; } = string.Empty;
+        public string Device { get; set; } = string.Empty;
+        public string Browser { get; set; } = string.Empty;
+        public string IpAddress { get; set; } = string.Empty;
+        public string Country { get; set; } = string.Empty;
+        public bool IsSuccess { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    #endregion
 }
 
-#endregion
-
-#region 3. Service Interface & Implementation
-
-namespace AumoFinance.Services.Security
+namespace AumoFinance.Services.Guardian
 {
+    #region Service Interface & Implementation
+
     public interface IGuardianService
     {
         Task CreateLoginActivityAsync(
@@ -124,7 +123,7 @@ namespace AumoFinance.Services.Security
             string refreshTokenHash
         );
 
-        Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
+        Task<List<AumoFinance.Models.Guardian.UserSession>> GetActiveSessionsAsync(Guid userId);
 
         Task RevokeSessionAsync(Guid sessionId, Guid userId);
 
@@ -133,7 +132,7 @@ namespace AumoFinance.Services.Security
         /// </summary>
         Task RevokeAllSessionsAsync(Guid userId);
 
-        Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId);
+        Task<List<AumoFinance.Models.Guardian.LoginActivity>> GetLoginActivitiesAsync(Guid userId);
     }
 
     public class GuardianService : IGuardianService
@@ -154,7 +153,7 @@ namespace AumoFinance.Services.Security
             string country,
             bool isSuccess)
         {
-            var activity = new LoginActivity
+            var activity = new AumoFinance.Models.Guardian.LoginActivity
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -198,7 +197,7 @@ namespace AumoFinance.Services.Security
                 session.IsCurrent = false;
             }
 
-            var newSession = new UserSession
+            var newSession = new AumoFinance.Models.Guardian.UserSession
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -217,7 +216,7 @@ namespace AumoFinance.Services.Security
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<UserSession>> GetActiveSessionsAsync(Guid userId)
+        public async Task<List<AumoFinance.Models.Guardian.UserSession>> GetActiveSessionsAsync(Guid userId)
         {
             return await _context.UserSessions
                 .Where(x => x.UserId == userId && x.IsActive)
@@ -257,7 +256,7 @@ namespace AumoFinance.Services.Security
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId)
+        public async Task<List<AumoFinance.Models.Guardian.LoginActivity>> GetLoginActivitiesAsync(Guid userId)
         {
             return await _context.LoginActivities
                 .Where(x => x.UserId == userId)
@@ -266,6 +265,28 @@ namespace AumoFinance.Services.Security
                 .ToListAsync();
         }
     }
+
+    #endregion
 }
 
-#endregion
+// =========================================================================
+// 2. BACKWARD COMPATIBILITY ALIAS (Jembatan Transisi Hapus Folder Security)
+// Hapus bagian di bawah ini jika semua file proyek sudah migrasi total!
+// =========================================================================
+
+namespace AumoFinance.Models.Security
+{
+    // Alias ke model baru agar file lama tidak rusak saat folder Security dihapus
+    public class UserSession : AumoFinance.Models.Guardian.UserSession { }
+    public class LoginActivity : AumoFinance.Models.Guardian.LoginActivity { }
+}
+
+namespace AumoFinance.Services.Security
+{
+    // Alias service untuk Program.cs atau controller lama
+    public interface IGuardianService : AumoFinance.Services.Guardian.IGuardianService { }
+    public class GuardianService : AumoFinance.Services.Guardian.GuardianService, IGuardianService
+    {
+        public GuardianService(AppDbContext context) : base(context) { }
+    }
+}
