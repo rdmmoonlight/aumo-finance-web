@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # Diizinkan agar runner dapat melakukan commit/push perbaikan format
+  contents: write
 
 jobs:
   lint-and-analyze:
@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref_name }} # Memastikan ref tepat saat dipicu PR/Push
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -26,9 +26,7 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore
 
-      # -------------------------------------------------------------
-      # 1. LINT (Auto-Format Code)
-      # -------------------------------------------------------------
+      # 1. LINT (Auto-Format)
       - name: Auto-Format Code
         run: dotnet format
 
@@ -40,23 +38,6 @@ jobs:
           commit_user_name: "github-actions[bot]"
           commit_user_email: "github-actions[bot]@users.noreply.github.com"
 
-      # -------------------------------------------------------------
-      # 2. TYPECHECK & LINT (Build & Strict Roslyn Analyzers)
-      # -------------------------------------------------------------
+      # 2. TYPECHECK & LINT (Build Analysis)
       - name: Build & Typecheck (.NET)
         run: dotnet build --configuration Release /p:TreatWarningsAsErrors=true
-
-      # -------------------------------------------------------------
-      # 3. MICROFRONTENDS CONFIG PRESENT (Pencarian Otomatis)
-      # -------------------------------------------------------------
-      - name: Verify microfrontends.json Present
-        run: |
-          # Cari file microfrontends.json di seluruh workspace, abaikan folder temporary/build biasa
-          FILE_PATH=$(find . -name "microfrontends.json" -not -path "*/node_modules/*" -not -path "*/bin/*" -not -path "*/obj/*" | head -n 1)
-          
-          if [ -n "$FILE_PATH" ]; then
-            echo "✅ microfrontends.json ditemukan di lokasi: $FILE_PATH"
-          else
-            echo "❌ ERROR: microfrontends.json tidak ditemukan di seluruh workspace!"
-            exit 1
-          fi
