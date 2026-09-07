@@ -56,6 +56,9 @@ interface DbAccount {
   balance: number;
 }
 
+// Base URL Backend Render
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com';
+
 export default function ToolsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,24 +73,28 @@ export default function ToolsPage() {
   const [accountMappings, setAccountMappings] = useState<AccountMappingDetail[]>([]);
   const [mappingSummary, setMappingSummary] = useState<MappingSummary | null>(null);
 
-  // State untuk menyimpan daftar Chart of Accounts langsung dari Database
+  // State untuk menyimpan daftar Chart of Accounts langsung dari Database Render
   const [dbMasterAccounts, setDbMasterAccounts] = useState<DbAccount[]>([]);
   const [isLoadingCoa, setIsLoadingCoa] = useState<boolean>(false);
 
   // ==========================================
-  // FETCH DB COA DARI CONTROLLER
+  // FETCH DB COA DARI BACKEND RENDER
   // ==========================================
   const fetchDbAccounts = async () => {
     setIsLoadingCoa(true);
     try {
-      const res = await fetch('/web/chart-of-accounts');
+      const res = await fetch(`${API_BASE_URL}/web/chart-of-accounts`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.accounts)) {
           setDbMasterAccounts(data.accounts);
         }
       } else {
-        console.warn('Gagal mengambil daftar Chart of Accounts dari server.');
+        console.warn(`Gagal mengambil COA dari server. Status: ${res.status}`);
       }
     } catch (err) {
       console.error('Error fetching COA:', err);
@@ -206,7 +213,7 @@ export default function ToolsPage() {
 
           const refNum = Number(refVal) || 0;
 
-          // Pencocokan otomatis awal dengan DB COA yang sudah difetch
+          // Pencocokan otomatis awal dengan DB COA dari Render
           const exactDbMatch = dbMasterAccounts.find(
             (a) => a.referenceNumber === refNum || a.accountName.toLowerCase() === accountName.toLowerCase()
           );
@@ -263,9 +270,10 @@ export default function ToolsPage() {
       setAccountMappings(finalMappings);
 
       try {
-        const previewRes = await fetch('/web/tools/preview-journal-import', {
+        const previewRes = await fetch(`${API_BASE_URL}/web/tools/preview-journal-import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             targetMonth: Number(targetMonth),
             targetYear: Number(targetYear),
@@ -318,7 +326,6 @@ export default function ToolsPage() {
     }
   };
 
-  // Mengubah Pelimpahan Akun Berdasarkan Data COA dari DB
   const handleInlineReallocationChange = (excelRef: number, excelName: string, selectedTargetRef: number) => {
     const selectedOption = dbMasterAccounts.find((o) => o.referenceNumber === selectedTargetRef);
 
@@ -369,11 +376,10 @@ export default function ToolsPage() {
 
     setIsBusy(true);
     try {
-      const response = await fetch('/web/tools/import-journal-entries', {
+      const response = await fetch(`${API_BASE_URL}/web/tools/import-journal-entries`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           targetMonth: Number(targetMonth),
           targetYear: Number(targetYear),
@@ -657,7 +663,7 @@ export default function ToolsPage() {
                               <span className="text-white fw-bold">{m.excelAccountName}</span>
                             </td>
                             <td>
-                              {/* DROPDOWN INLINE PELIMPAHAN COA DARI DATABASE */}
+                              {/* DROPDOWN INLINE PELIMPAHAN COA DARI DATABASE RENDER */}
                               <select
                                 className={`form-select form-select-sm text-white fw-bold ${
                                   isReallocated
