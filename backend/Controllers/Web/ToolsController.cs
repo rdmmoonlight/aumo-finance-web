@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
@@ -212,7 +213,7 @@ namespace AumoFinance.Controllers.Web
 
             try
             {
-                // Cek / Buat Periode Akuntansi
+                // Cek / Buat Periode Akuntansi dengan Nama Periode yang Sesuai ("September 2026")
                 var period = await _context.Periods.FirstOrDefaultAsync(p =>
                     p.UserId == userId &&
                     p.StartDate.Year == request.TargetYear &&
@@ -221,10 +222,13 @@ namespace AumoFinance.Controllers.Web
 
                 if (period == null)
                 {
+                    var monthName = new DateTime(request.TargetYear, request.TargetMonth, 1)
+                        .ToString("MMMM yyyy", new CultureInfo("id-ID"));
+
                     period = new Period
                     {
                         UserId = userId,
-                        PeriodName = $"{request.TargetYear}-{request.TargetMonth:D2}",
+                        PeriodName = monthName, // Menggunakan format nama bulan dan tahun (Contoh: "September 2026")
                         StartDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, 1), DateTimeKind.Utc),
                         EndDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, DateTime.DaysInMonth(request.TargetYear, request.TargetMonth)), DateTimeKind.Utc),
                         IsClosed = false,
@@ -251,7 +255,6 @@ namespace AumoFinance.Controllers.Web
                     .Select(j => j.TransactionNumber)
                     .ToHashSetAsync();
 
-                // PERBAIKAN: Gunakan Dictionary Memory untuk Mengelola Counter Tanpa Duplikat
                 var activeCounters = new Dictionary<string, TransactionCounter>();
 
                 int importedEntriesCount = 0;
@@ -268,7 +271,6 @@ namespace AumoFinance.Controllers.Web
                     string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
                     string counterKey = $"{prefix}{txDate:yyMM}";
 
-                    // Ambil counter dari memori terdaftar atau dari DB
                     if (!activeCounters.TryGetValue(counterKey, out var counter))
                     {
                         counter = await _context.TransactionCounters.FirstOrDefaultAsync(c =>
