@@ -1,4 +1,4 @@
-using AumoFinance.Models.Security;
+using AumoFinance.Models.Guardian; // Ditunjuk ke namespace baru
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -28,7 +28,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
     public DbSet<Period> Periods => Set<Period>();
 
-    // Economic Document Repository (BARU)
+    // Economic Document Repository
     public DbSet<EconomicDocument> EconomicDocuments => Set<EconomicDocument>();
 
     // Struktur folder untuk Document Repository
@@ -39,15 +39,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
 
     public DbSet<LoginActivity> LoginActivities => Set<LoginActivity>();
 
-
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
         builder.Entity<ChartOfAccount>(entity =>
         {
-            // Nomor referensi hanya unik DALAM satu user — bukan global lagi,
-            // karena setiap user punya Chart of Accounts sendiri.
             entity.HasIndex(x => new { x.UserId, x.ReferenceNumber })
                 .IsUnique();
         });
@@ -59,18 +56,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .HasForeignKey(x => x.JournalEntryId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Nomor transaksi (GJ26080001 / AJ26080001, format
-            // PREFIX+YYMM+SEQUENCE 4 digit) hanya unik DALAM satu user —
-            // setiap user punya penomoran sendiri.
             entity.HasIndex(x => new { x.UserId, x.TransactionNumber })
                 .IsUnique();
         });
 
         builder.Entity<TransactionCounter>(entity =>
         {
-            // Satu counter per user per (prefix + periode). Unique constraint
-            // ini yang membuat UPSERT atomik di TransactionNumberService aman
-            // terhadap concurrent request — lihat ON CONFLICT (UserId, CounterKey).
             entity.HasIndex(x => new { x.UserId, x.CounterKey })
                 .IsUnique();
         });
@@ -83,7 +74,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Document Repository Indexing (BARU - Mempercepat pencarian)
+        // Document Repository Indexing
         builder.Entity<EconomicDocument>(entity =>
         {
             entity.HasIndex(x => x.Category);
@@ -118,7 +109,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 x.IsActive
             });
 
-            entity.HasOne(x => x.User)
+            entity.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -133,7 +124,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid
                 x.CreatedAt
             });
 
-            entity.HasOne(x => x.User)
+            entity.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
