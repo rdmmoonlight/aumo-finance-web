@@ -1,7 +1,31 @@
 using Microsoft.EntityFrameworkCore;
+using AumoFinance.Data; // Lokasi AppDbContext
+using AumoFinance.Models; // Lokasi AppDbContext alternatif jika ada di root Models
 
 // =========================================================================
-// 1. NAMESPACE BARU (Gunakan ini untuk pengembangan ke depan)
+// 1. BACKWARD COMPATIBILITY ALIAS (Kompatibilitas Namespace Lama)
+// Memastikan folder 'Security' bisa dihapus tanpa merusak file lain / EF Core.
+// =========================================================================
+
+namespace AumoFinance.Models.Security
+{
+    // Alias type memastikan C# memperlakukan tipe data ini identik 100%
+    using UserSession = AumoFinance.Models.Guardian.UserSession;
+    using LoginActivity = AumoFinance.Models.Guardian.LoginActivity;
+}
+
+namespace AumoFinance.Services.Security
+{
+    public interface IGuardianService : AumoFinance.Services.Guardian.IGuardianService { }
+    
+    public class GuardianService : AumoFinance.Services.Guardian.GuardianService, IGuardianService
+    {
+        public GuardianService(AppDbContext context) : base(context) { }
+    }
+}
+
+// =========================================================================
+// 2. NAMESPACE UTAMA (AumoFinance.Models.Guardian)
 // =========================================================================
 
 namespace AumoFinance.Models.Guardian
@@ -98,8 +122,14 @@ namespace AumoFinance.Models.Guardian
     #endregion
 }
 
+// =========================================================================
+// 3. SERVICE UTAMA (AumoFinance.Services.Guardian)
+// =========================================================================
+
 namespace AumoFinance.Services.Guardian
 {
+    using AumoFinance.Models.Guardian;
+
     #region Service Interface & Implementation
 
     public interface IGuardianService
@@ -123,7 +153,7 @@ namespace AumoFinance.Services.Guardian
             string refreshTokenHash
         );
 
-        Task<List<AumoFinance.Models.Guardian.UserSession>> GetActiveSessionsAsync(Guid userId);
+        Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
 
         Task RevokeSessionAsync(Guid sessionId, Guid userId);
 
@@ -132,7 +162,7 @@ namespace AumoFinance.Services.Guardian
         /// </summary>
         Task RevokeAllSessionsAsync(Guid userId);
 
-        Task<List<AumoFinance.Models.Guardian.LoginActivity>> GetLoginActivitiesAsync(Guid userId);
+        Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId);
     }
 
     public class GuardianService : IGuardianService
@@ -153,7 +183,7 @@ namespace AumoFinance.Services.Guardian
             string country,
             bool isSuccess)
         {
-            var activity = new AumoFinance.Models.Guardian.LoginActivity
+            var activity = new LoginActivity
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -197,7 +227,7 @@ namespace AumoFinance.Services.Guardian
                 session.IsCurrent = false;
             }
 
-            var newSession = new AumoFinance.Models.Guardian.UserSession
+            var newSession = new UserSession
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
@@ -216,7 +246,7 @@ namespace AumoFinance.Services.Guardian
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<AumoFinance.Models.Guardian.UserSession>> GetActiveSessionsAsync(Guid userId)
+        public async Task<List<UserSession>> GetActiveSessionsAsync(Guid userId)
         {
             return await _context.UserSessions
                 .Where(x => x.UserId == userId && x.IsActive)
@@ -256,7 +286,7 @@ namespace AumoFinance.Services.Guardian
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<AumoFinance.Models.Guardian.LoginActivity>> GetLoginActivitiesAsync(Guid userId)
+        public async Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId)
         {
             return await _context.LoginActivities
                 .Where(x => x.UserId == userId)
@@ -267,26 +297,4 @@ namespace AumoFinance.Services.Guardian
     }
 
     #endregion
-}
-
-// =========================================================================
-// 2. BACKWARD COMPATIBILITY ALIAS (Jembatan Transisi Hapus Folder Security)
-// Hapus bagian di bawah ini jika semua file proyek sudah migrasi total!
-// =========================================================================
-
-namespace AumoFinance.Models.Security
-{
-    // Alias ke model baru agar file lama tidak rusak saat folder Security dihapus
-    public class UserSession : AumoFinance.Models.Guardian.UserSession { }
-    public class LoginActivity : AumoFinance.Models.Guardian.LoginActivity { }
-}
-
-namespace AumoFinance.Services.Security
-{
-    // Alias service untuk Program.cs atau controller lama
-    public interface IGuardianService : AumoFinance.Services.Guardian.IGuardianService { }
-    public class GuardianService : AumoFinance.Services.Guardian.GuardianService, IGuardianService
-    {
-        public GuardianService(AppDbContext context) : base(context) { }
-    }
 }
