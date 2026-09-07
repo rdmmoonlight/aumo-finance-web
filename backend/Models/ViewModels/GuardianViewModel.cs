@@ -17,7 +17,7 @@ namespace AumoFinance.Models.Security
 namespace AumoFinance.Services.Security
 {
     public interface IGuardianService : AumoFinance.Services.Guardian.IGuardianService { }
-    
+
     public class GuardianService : AumoFinance.Services.Guardian.GuardianService, IGuardianService
     {
         public GuardianService(AppDbContext context) : base(context) { }
