@@ -7,7 +7,7 @@ using AumoFinance.Controllers.Api;
 using AumoFinance.Models;
 using AumoFinance.Models.Guardian;
 using AumoFinance.Services;
-using AumoFinance.Services.Security;
+using AumoFinance.Services.Guardian;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
