@@ -8,7 +8,6 @@ import {
   IconAlertTriangle,
   IconActivity,
   IconDeviceLaptop,
-  IconAdjustments,
   IconAlertOctagon,
   IconLogout,
   IconHistory,
@@ -17,7 +16,7 @@ import {
 
 // Base URL Backend API dari environment variable Vercel atau fallback ke URL Render
 const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+  process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com'
 ).replace(/\/$/, '');
 
 // DTO disesuaikan dengan ActiveSessionViewModel C#
@@ -41,12 +40,10 @@ export interface LoginActivityDto {
   occurredAt: string;
 }
 
-// SecurityStatusViewModel C#
+// SecurityStatusViewModel C# (2FA telah dihapus)
 export interface SecurityStatusDto {
   emailVerified: boolean;
   passwordProtected: boolean;
-  multiFactorEnabled: boolean;
-  recoveryCodesAvailable: boolean;
 }
 
 // GuardianDashboardViewModel C#
@@ -73,10 +70,6 @@ export default function GuardianSecurityPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Settings State
-  const [privacyMode, setPrivacyMode] = useState<boolean>(false);
-  const [autoLockTimeout, setAutoLockTimeout] = useState<string>('5');
-
   // Fetch data dari API endpoint backend
   useEffect(() => {
     const fetchGuardianData = async () => {
@@ -84,13 +77,12 @@ export default function GuardianSecurityPage() {
         setIsLoading(true);
         setErrorMessage(null);
 
-        // Memanggil endpoint backend menggunakan NEXT_PUBLIC_API_URL & credentials
         const response = await fetch(`${API_BASE_URL}/web/guardian`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include', // PENTING: Untuk mengirimkan cookie session ASP.NET Core
+          credentials: 'include',
         });
 
         if (!response.ok) {
@@ -180,7 +172,10 @@ export default function GuardianSecurityPage() {
     );
   }
 
-  const activities = viewModel?.recentActivities || [];
+  // Membatasi Login History Maksimal 5
+  const activities = (viewModel?.recentActivities || []).slice(0, 5);
+  // Membatasi Active Sessions Maksimal 5 untuk display
+  const displayedSessions = activeSessionsList.slice(0, 5);
 
   return (
     <div
@@ -195,7 +190,7 @@ export default function GuardianSecurityPage() {
             Guardian Security
           </h4>
           <p className="text-white-50 small mb-0">
-            Security health monitoring, active sessions, and protection controls
+            Security health monitoring, active sessions, and login logs
           </p>
         </div>
         <div>
@@ -254,18 +249,18 @@ export default function GuardianSecurityPage() {
             onClick={() => setActiveTab('sessions')}
           >
             <IconDeviceLaptop className="text-info" size={18} /> Active Sessions
-            <span className="badge bg-secondary ms-1">{activeSessionsList.length}</span>
+            <span className="badge bg-secondary ms-1">{displayedSessions.length}</span>
           </button>
         </li>
         <li className="nav-item" role="presentation">
           <button
             className={`nav-link fw-bold d-inline-flex align-items-center gap-2 ${
-              activeTab === 'protection' ? 'active bg-primary text-white shadow-sm' : 'text-white-50'
+              activeTab === 'logs' ? 'active bg-primary text-white shadow-sm' : 'text-white-50'
             }`}
             type="button"
-            onClick={() => setActiveTab('protection')}
+            onClick={() => setActiveTab('logs')}
           >
-            <IconAdjustments className="text-warning" size={18} /> Protection &amp; Logs
+            <IconHistory className="text-warning" size={18} /> Login Logs
           </button>
         </li>
       </ul>
@@ -302,15 +297,15 @@ export default function GuardianSecurityPage() {
                 <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                   <div>
                     <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconShieldCheck className="text-warning" size={18} /> Two-Factor Authentication (2FA)
+                      <IconShieldCheck className="text-warning" size={18} /> Password Protection
                     </div>
-                    <small className="text-white-50">Adds an extra layer of security to your account</small>
+                    <small className="text-white-50">Account secured with an encrypted password</small>
                   </div>
                   <div>
-                    {viewModel?.security?.multiFactorEnabled ? (
-                      <span className="badge bg-success">Enabled</span>
+                    {viewModel?.security?.passwordProtected ? (
+                      <span className="badge bg-success">Protected</span>
                     ) : (
-                      <span className="badge bg-secondary">Disabled</span>
+                      <span className="badge bg-danger">Not Set</span>
                     )}
                   </div>
                 </div>
@@ -319,12 +314,12 @@ export default function GuardianSecurityPage() {
           </div>
         </div>
 
-        {/* ==================== TAB 2: ACTIVE SESSIONS ==================== */}
+        {/* ==================== TAB 2: ACTIVE SESSIONS (MAX 5) ==================== */}
         <div className={`tab-pane fade ${activeTab === 'sessions' ? 'show active' : ''}`}>
           <div className="card glass-card border-0 shadow-sm rounded-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
               <strong className="text-white d-flex align-items-center gap-2">
-                <IconDeviceLaptop className="text-info" size={20} /> Active Sessions
+                <IconDeviceLaptop className="text-info" size={20} /> Active Sessions (Max 5)
               </strong>
               <button
                 type="button"
@@ -335,7 +330,7 @@ export default function GuardianSecurityPage() {
               </button>
             </div>
             <div className="card-body p-0">
-              {activeSessionsList.length === 0 ? (
+              {displayedSessions.length === 0 ? (
                 <div className="p-4 text-center text-white-50">No active sessions found.</div>
               ) : (
                 <div className="table-responsive">
@@ -350,7 +345,7 @@ export default function GuardianSecurityPage() {
                       </tr>
                     </thead>
                     <tbody className="border-top-0">
-                      {activeSessionsList.map((session, index) => (
+                      {displayedSessions.map((session, index) => (
                         <tr key={session.id || index}>
                           <td className="ps-4 fw-bold">
                             {session.deviceName}
@@ -384,61 +379,12 @@ export default function GuardianSecurityPage() {
           </div>
         </div>
 
-        {/* ==================== TAB 3: PROTECTION & LOGS ==================== */}
-        <div className={`tab-pane fade ${activeTab === 'protection' ? 'show active' : ''}`}>
-          {/* Quick Settings Card */}
-          <div className="card glass-card border-0 shadow-sm rounded-4 mb-4">
-            <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
-              <strong className="text-white d-flex align-items-center gap-2">
-                <IconAdjustments className="text-warning" size={20} /> Protection Settings
-              </strong>
-            </div>
-            <div className="card-body p-4">
-              <div className="row align-items-center g-3">
-                <div className="col-md-6">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <div className="fw-bold">Privacy Mode (Mask Balances)</div>
-                      <small className="text-white-50">Conceal monetary values across the app ($ &bull;&bull;&bull;&bull;&bull;)</small>
-                    </div>
-                    <div className="form-check form-switch">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        role="switch"
-                        checked={privacyMode}
-                        onChange={(e) => setPrivacyMode(e.target.checked)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-md-6">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <div>
-                      <div className="fw-bold">Auto-Lock Timeout</div>
-                      <small className="text-white-50">Automatically lock screen when idle</small>
-                    </div>
-                    <select
-                      className="form-select form-select-sm bg-body-tertiary text-body border-secondary w-auto"
-                      value={autoLockTimeout}
-                      onChange={(e) => setAutoLockTimeout(e.target.value)}
-                    >
-                      <option value="0">Disabled</option>
-                      <option value="5">5 Minutes</option>
-                      <option value="15">15 Minutes</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Login Activity Log */}
+        {/* ==================== TAB 3: LOGIN LOGS (MAX 5) ==================== */}
+        <div className={`tab-pane fade ${activeTab === 'logs' ? 'show active' : ''}`}>
           <div className="card glass-card border-0 shadow-sm rounded-4">
             <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
               <strong className="text-white d-flex align-items-center gap-2">
-                <IconHistory className="text-info" size={20} /> Recent Login History
+                <IconHistory className="text-info" size={20} /> Recent Login History (Max 5)
               </strong>
               <button
                 type="button"
