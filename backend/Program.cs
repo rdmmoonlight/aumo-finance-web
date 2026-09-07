@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AumoFinance.Controllers.Api;
 using AumoFinance.Models;
+using AumoFinance.Models.Guardian;
 using AumoFinance.Services;
 using AumoFinance.Services.Security;
 using Microsoft.AspNetCore.Authentication.Cookies;
