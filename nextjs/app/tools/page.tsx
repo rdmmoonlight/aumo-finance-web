@@ -152,7 +152,7 @@ export default function ToolsPage() {
     return strVal;
   };
 
-  // HANDLER PREVIEW ENTRIES: TANPA AUTO MATCHING (SEMUA DIAWALI UNMAPPED SEHINGGA USER PILIH MANUAL)
+  // HANDLER PREVIEW ENTRIES: PARSING EXCEL MURNI & SET SETIAP AKUN MENJADI UNMAPPED UNTUK DILIAT USER
   const handlePreview = async () => {
     if (!selectedFile) {
       setErrorMessage('Please select an Excel file first.');
@@ -214,9 +214,8 @@ export default function ToolsPage() {
 
           const refNum = Number(refVal) || 0;
 
-          // SETEL SEMUA MAPPING AWAL MENJADI UNMAPPED (MAPPED_REF = 0)
-          // USER HARUS MEMILIH SECARA MANUAL DARI DROPDOWN
-          const mapKey = `${refNum}-${accountName}`;
+          // KEY MAPPING PRESISI BERBASIS KOMBINAASI PASTI REF + NAMA EXCEL
+          const mapKey = `${refNum}|||${accountName}`;
           if (!tempMappings[mapKey]) {
             tempMappings[mapKey] = {
               excelRef: refNum,
@@ -258,65 +257,25 @@ export default function ToolsPage() {
         throw new Error('No valid transaction entries found in GJ or AJ sheets.');
       }
 
-      let displayTransactions = parsedTransactions;
-      let finalMappings = Object.values(tempMappings);
-
+      const finalMappings = Object.values(tempMappings);
       setAccountMappings(finalMappings);
 
-      // Hitung Summary Awal
       const unmappedCount = finalMappings.filter((m) => m.status === 'UNMAPPED' || m.mappedRef === 0).length;
-      const reallocatedCount = finalMappings.filter((m) => m.status.includes('REALLOCATED')).length;
-      const exactMatchCount = finalMappings.filter((m) => m.status === 'EXACT_MATCH').length;
 
       setMappingSummary({
         totalUniqueAccounts: finalMappings.length,
-        exactMatchCount,
-        reallocatedCount,
+        exactMatchCount: 0,
+        reallocatedCount: 0,
         unmappedCount,
         isPerfectMatch: unmappedCount === 0,
       });
-
-      try {
-        const previewRes = await fetch(`${API_BASE_URL}/web/tools/preview-journal-import`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            targetMonth: Number(targetMonth),
-            targetYear: Number(targetYear),
-            transactions: parsedTransactions.map((tx) => ({
-              date: tx.date,
-              journalType: tx.journalType,
-              lines: tx.lines.map((l) => ({
-                refNumber: l.refNumber,
-                accountName: l.accountName,
-                description: l.description,
-                debit: l.debit,
-                credit: l.credit,
-              })),
-            })),
-          }),
-        });
-
-        const contentType = previewRes.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const previewData = await previewRes.json();
-          if (previewRes.ok) {
-            if (previewData.transactions && previewData.transactions.length > 0) {
-              displayTransactions = previewData.transactions;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('Backend preview endpoint unreachable, displaying client-parsed preview.');
-      }
 
       setParseResult({
         isSuccess: true,
         totalTransactionsRead: parsedTransactions.length,
         totalLinesRead: totalLines,
         warnings: [],
-        transactions: displayTransactions,
+        transactions: parsedTransactions,
       });
 
     } catch (err: any) {
@@ -357,10 +316,8 @@ export default function ToolsPage() {
       return m;
     });
 
-    // PENTING: Pemicu Re-render Realtime
     setAccountMappings([...updated]);
 
-    // Update Summary
     const unmappedCount = updated.filter((m) => m.status === 'UNMAPPED' || m.mappedRef === 0).length;
     const reallocatedCount = updated.filter((m) => m.status.includes('REALLOCATED')).length;
     const exactMatchCount = updated.filter((m) => m.status === 'EXACT_MATCH').length;
@@ -645,7 +602,7 @@ export default function ToolsPage() {
                   <i className="ti ti-list-check me-2 fs-5 text-info"></i> Account Mapping Status
                 </h6>
                 <span className="badge bg-primary text-white fw-bold">
-                  {accountMappings.length} Akun
+                  {accountMappings.length} Akun Unik
                 </span>
               </div>
               <div className="card-body p-0">
@@ -661,10 +618,9 @@ export default function ToolsPage() {
                     <tbody className="fw-normal text-white">
                       {accountMappings.map((m, i) => {
                         const isMapped = m.mappedRef > 0;
-                        const isReallocated = isMapped && (m.status.includes('REALLOCATED') || m.mappedRef !== m.excelRef || m.mappedAccountName.toLowerCase() !== m.excelAccountName.toLowerCase());
 
                         return (
-                          <tr key={i} className={`border-bottom border-secondary border-opacity-25 ${isReallocated ? 'bg-warning bg-opacity-10' : ''}`}>
+                          <tr key={i} className={`border-bottom border-secondary border-opacity-25 ${isMapped ? 'bg-warning bg-opacity-10' : ''}`}>
                             <td className="ps-3">
                               <span className="badge bg-secondary text-white me-1 font-monospace">{m.excelRef}</span>
                               <span className="text-white fw-bold">{m.excelAccountName}</span>
@@ -704,7 +660,7 @@ export default function ToolsPage() {
           )}
         </div>
 
-        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (UPDATE REALTIME 100%) */}
+        {/* PANEL KANAN: PREVIEW TRANSAKSI STREAM (MEMBACA DATA SUMBER EXCEL DENGAN PRESISI) */}
         <div className="col-12 col-lg-7 col-xl-8">
           {parseResult ? (
             <div className="d-flex flex-column gap-3" style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', paddingRight: '4px' }}>
@@ -737,8 +693,8 @@ export default function ToolsPage() {
                       <thead>
                         <tr className="text-white fw-bold">
                           <th style={{ width: '40px' }} className="text-center text-white">#</th>
-                          <th style={{ width: '80px' }} className="text-center text-white">Ref</th>
-                          <th className="text-white">Account Name</th>
+                          <th style={{ width: '90px' }} className="text-center text-white">Ref Excel</th>
+                          <th className="text-white">Account Name (Excel vs DB Target)</th>
                           <th className="text-white">Description</th>
                           <th style={{ width: '130px' }} className="text-end text-white">Debit</th>
                           <th style={{ width: '130px' }} className="text-end text-white">Credit</th>
@@ -746,10 +702,10 @@ export default function ToolsPage() {
                       </thead>
                       <tbody className="fw-normal text-white">
                         {tx.lines.map((line, lineIndex) => {
-                          // CARI MAPPING SESUAI DENGAN REF DAN NAMA AKUN EXCEL
+                          // CARI MAPPING SESUAI DENGAN REF DAN NAMA AKUN EXCEL SECARA PRESISI 100%
                           const mapping = accountMappings.find(
                             (m) => m.excelRef === line.refNumber && m.excelAccountName === line.accountName
-                          ) || accountMappings.find((m) => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
+                          );
 
                           const currentMappedRef = mapping?.mappedRef ?? 0;
                           
@@ -760,30 +716,24 @@ export default function ToolsPage() {
                           const isUnmapped = currentMappedRef === 0;
 
                           return (
-                            <tr key={`${lineIndex}-${currentMappedRef}-${currentMappedName}`} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
+                            <tr key={`tx-${txIndex}-line-${lineIndex}-ref-${currentMappedRef}`} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
                               <td className="text-center text-white">{line.rowIndex}</td>
                               <td className="text-center fw-bold font-monospace text-white">
-                                {!isUnmapped ? (
-                                  <span className="text-warning fw-bold" title={`Nomor Asli Excel: ${line.refNumber}`}>
-                                    {currentMappedRef}
-                                  </span>
-                                ) : (
-                                  line.refNumber
-                                )}
+                                <span className="badge bg-secondary text-white">{line.refNumber}</span>
                               </td>
                               <td>
-                                <span className="text-white fw-bold">{line.accountName}</span>
-                                {/* BADGE PELIMPAHAN AKUN REALTIME DARI PILIHAN DROPDOWN USER */}
-                                {!isUnmapped && (
-                                  <span
-                                    className="badge bg-warning text-dark ms-2 fw-bold"
-                                    title={`Akun Excel Asal: [${line.refNumber}] ${line.accountName}`}
-                                  >
+                                {/* NAMA AKUN ASLI DARI EXCEL */}
+                                <span className="text-white fw-bold me-2">{line.accountName}</span>
+
+                                {/* TARGET PELIMPAHAN AKUN DB DARI USER */}
+                                {!isUnmapped ? (
+                                  <span className="badge bg-warning text-dark fw-bold">
                                     <i className="ti ti-arrow-right me-1 text-dark"></i>[{currentMappedRef}] {currentMappedName}
                                   </span>
-                                )}
-                                {isUnmapped && (
-                                  <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini belum dipetakan ke DB COA"></i>
+                                ) : (
+                                  <span className="badge bg-danger text-white fw-normal">
+                                    <i className="ti ti-alert-triangle me-1"></i>Belum Dipetakan
+                                  </span>
                                 )}
                               </td>
                               <td className="text-white">{line.description}</td>
