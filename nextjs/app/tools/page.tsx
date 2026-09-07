@@ -152,6 +152,7 @@ export default function ToolsPage() {
     return strVal;
   };
 
+  // HANDLER PREVIEW ENTRIES: PENCOCOKAN HANYA JIKA EXACT MATCH (100% SAMA), SISANYA UNMAPPED BIAR USER PILIH MANUAL
   const handlePreview = async () => {
     if (!selectedFile) {
       setErrorMessage('Please select an Excel file first.');
@@ -213,25 +214,33 @@ export default function ToolsPage() {
 
           const refNum = Number(refVal) || 0;
 
-          // Pencocokan otomatis awal dengan DB COA dari Render
+          // HANYA MATCH JIKA REF DAN NAMA AKUN DUA-DUANYA COCOK 100% DENGAN DB
           const exactDbMatch = dbMasterAccounts.find(
-            (a) => a.referenceNumber === refNum || a.accountName.toLowerCase() === accountName.toLowerCase()
+            (a) => a.referenceNumber === refNum && a.accountName.toLowerCase() === accountName.toLowerCase()
           );
 
           const mapKey = `${refNum}-${accountName}`;
           if (!tempMappings[mapKey]) {
-            tempMappings[mapKey] = {
-              excelRef: refNum,
-              excelAccountName: accountName,
-              mappedRef: exactDbMatch ? exactDbMatch.referenceNumber : 0,
-              mappedAccountName: exactDbMatch ? exactDbMatch.accountName : '',
-              status: exactDbMatch
-                ? exactDbMatch.referenceNumber === refNum && exactDbMatch.accountName.toLowerCase() === accountName.toLowerCase()
-                  ? 'EXACT_MATCH'
-                  : 'REALLOCATED_NAME'
-                : 'UNMAPPED',
-              reason: exactDbMatch ? 'Cocok dengan COA DB' : 'Tidak ditemukan di COA DB',
-            };
+            if (exactDbMatch) {
+              tempMappings[mapKey] = {
+                excelRef: refNum,
+                excelAccountName: accountName,
+                mappedRef: exactDbMatch.referenceNumber,
+                mappedAccountName: exactDbMatch.accountName,
+                status: 'EXACT_MATCH',
+                reason: 'Clean Match (Persis 100% di COA DB)',
+              };
+            } else {
+              // Jika tidak 100% sama, WAJIBkan User Memilih Manual (Status UNMAPPED)
+              tempMappings[mapKey] = {
+                excelRef: refNum,
+                excelAccountName: accountName,
+                mappedRef: 0,
+                mappedAccountName: '',
+                status: 'UNMAPPED',
+                reason: 'Silakan pilih akun pelimpahan manual pada dropdown',
+              };
+            }
           }
 
           const line: JournalLineImport = {
@@ -269,6 +278,19 @@ export default function ToolsPage() {
 
       setAccountMappings(finalMappings);
 
+      // Hitung Summary Awal
+      const unmappedCount = finalMappings.filter((m) => m.status === 'UNMAPPED' || m.mappedRef === 0).length;
+      const reallocatedCount = finalMappings.filter((m) => m.status.includes('REALLOCATED')).length;
+      const exactMatchCount = finalMappings.filter((m) => m.status === 'EXACT_MATCH').length;
+
+      setMappingSummary({
+        totalUniqueAccounts: finalMappings.length,
+        exactMatchCount,
+        reallocatedCount,
+        unmappedCount,
+        isPerfectMatch: unmappedCount === 0,
+      });
+
       try {
         const previewRes = await fetch(`${API_BASE_URL}/web/tools/preview-journal-import`, {
           method: 'POST',
@@ -295,13 +317,6 @@ export default function ToolsPage() {
         if (contentType && contentType.includes('application/json')) {
           const previewData = await previewRes.json();
           if (previewRes.ok) {
-            if (previewData.accountMappings && previewData.accountMappings.length > 0) {
-              finalMappings = previewData.accountMappings;
-              setAccountMappings(finalMappings);
-            }
-            if (previewData.summary) {
-              setMappingSummary(previewData.summary);
-            }
             if (previewData.transactions && previewData.transactions.length > 0) {
               displayTransactions = previewData.transactions;
             }
@@ -326,7 +341,7 @@ export default function ToolsPage() {
     }
   };
 
-  // HANDLER PERUBAHAN PELIMPAHAN AKUN REALTIME
+  // HANDLER PERUBAHAN PELIMPAHAN MANUAL USER VIA DROPDOWN (100% REALTIME)
   const handleInlineReallocationChange = (excelRef: number, excelName: string, selectedTargetRef: number) => {
     const selectedOption = dbMasterAccounts.find((o) => o.referenceNumber === selectedTargetRef);
 
@@ -351,15 +366,16 @@ export default function ToolsPage() {
           mappedRef: selectedOption.referenceNumber,
           mappedAccountName: selectedOption.accountName,
           status: isMatchExact ? 'EXACT_MATCH' : 'REALLOCATED_REF',
-          reason: `Dilimpahkan ke ${selectedOption.referenceNumber} - ${selectedOption.accountName}`,
+          reason: `Dilimpahkan ke [${selectedOption.referenceNumber}] ${selectedOption.accountName}`,
         };
       }
       return m;
     });
 
-    // PENTING: Update State dengan new array reference agar React Re-render Realtime
+    // MEMAKSA TRIGGER RE-RENDER DI REACT
     setAccountMappings([...updated]);
 
+    // Update Summary
     const unmappedCount = updated.filter((m) => m.status === 'UNMAPPED' || m.mappedRef === 0).length;
     const reallocatedCount = updated.filter((m) => m.status.includes('REALLOCATED')).length;
     const exactMatchCount = updated.filter((m) => m.status === 'EXACT_MATCH').length;
@@ -746,27 +762,28 @@ export default function ToolsPage() {
                       </thead>
                       <tbody className="fw-normal text-white">
                         {tx.lines.map((line, lineIndex) => {
-                          // PERBAIKAN RE-RENDER REALTIME: Cari mapping secara presisi berdasarkan Ref & Account Name Excel
+                          // CARI MAPPING SESUAI DENGAN REF DAN NAMA AKUN EXCEL SANGAT PRESISI
                           const mapping = accountMappings.find(
                             (m) => m.excelRef === line.refNumber && m.excelAccountName === line.accountName
-                          ) || accountMappings.find(m => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
+                          ) || accountMappings.find((m) => m.excelRef === line.refNumber || m.excelAccountName === line.accountName);
 
                           const currentMappedRef = mapping?.mappedRef ?? 0;
                           
-                          // Cari nama resmi COA DB untuk pelimpahan
-                          const matchedDbAcc = dbMasterAccounts.find(a => a.referenceNumber === currentMappedRef);
+                          // AMBIL NAMA RESMI COA DB DARI DB MASTER STATE
+                          const matchedDbAcc = dbMasterAccounts.find((a) => a.referenceNumber === currentMappedRef);
                           const currentMappedName = mapping?.mappedAccountName || matchedDbAcc?.accountName || '';
 
                           const isUnmapped = mapping?.status === 'UNMAPPED' || currentMappedRef === 0;
 
-                          // REALTIME REALLOCATION CHECK: Jika nomor akun DB beda dari Excel
+                          // KONDISI REALTIME REALLOCATION:
+                          // Peta pelimpahan dianggap aktif jika mappedRef > 0 DAN (nomor ref berbeda ATAU nama akun berbeda dari asal Excel)
                           const isReallocated =
                             currentMappedRef > 0 &&
                             (currentMappedRef !== line.refNumber ||
                               (currentMappedName !== '' && currentMappedName.toLowerCase() !== line.accountName.toLowerCase()));
 
                           return (
-                            <tr key={`${lineIndex}-${currentMappedRef}`} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
+                            <tr key={`${lineIndex}-${currentMappedRef}-${currentMappedName}`} className={isUnmapped ? 'bg-danger bg-opacity-20 text-white' : 'text-white'}>
                               <td className="text-center text-white">{line.rowIndex}</td>
                               <td className="text-center fw-bold font-monospace text-white">
                                 {isReallocated ? (
@@ -789,7 +806,7 @@ export default function ToolsPage() {
                                   </span>
                                 )}
                                 {isUnmapped && (
-                                  <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini tidak terdaftar di DB COA"></i>
+                                  <i className="ti ti-alert-triangle ms-2 text-danger fs-6" title="Akun ini belum dipetakan ke DB COA"></i>
                                 )}
                               </td>
                               <td className="text-white">{line.description}</td>
