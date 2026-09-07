@@ -506,7 +506,7 @@ export default function ToolsPage() {
                   <button
                     type="button"
                     className="btn btn-success fw-bold rounded-3 text-white shadow-sm d-inline-flex align-items-center justify-content-center"
-                    disabled={isBusy || (mappingSummary && mappingSummary.unmappedCount > 0)}
+                    disabled={Boolean(isBusy || (mappingSummary && mappingSummary.unmappedCount > 0))}
                     onClick={handleConfirmImport}
                   >
                     <i className="ti ti-check-all me-1 fs-5"></i> Submit & Import Data
