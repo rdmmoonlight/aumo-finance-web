@@ -1,15 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using AumoFinance.Data; // Lokasi AppDbContext
-using AumoFinance.Models; // Lokasi AppDbContext alternatif jika ada di root Models
+using AumoFinance.Models;
 
 // =========================================================================
-// 1. BACKWARD COMPATIBILITY ALIAS (Kompatibilitas Namespace Lama)
-// Memastikan folder 'Security' bisa dihapus tanpa merusak file lain / EF Core.
+// 1. BACKWARD COMPATIBILITY ALIAS (Jembatan Transisi)
 // =========================================================================
 
 namespace AumoFinance.Models.Security
 {
-    // Alias type memastikan C# memperlakukan tipe data ini identik 100%
     using UserSession = AumoFinance.Models.Guardian.UserSession;
     using LoginActivity = AumoFinance.Models.Guardian.LoginActivity;
 }
