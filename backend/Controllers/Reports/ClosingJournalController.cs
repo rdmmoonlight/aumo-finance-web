@@ -8,16 +8,16 @@ using AumoBackend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/web/reports/closing-journal")]
+[Route("api/v1/reports/closing-journal")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class ClosingJournalWebController : ControllerBase
+public class ClosingJournalController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public ClosingJournalWebController(AppDbContext db)
+    public ClosingJournalController(AppDbContext db)
     {
         _db = db;
     }
@@ -46,7 +46,7 @@ public class ClosingJournalWebController : ControllerBase
         }
 
         var rows = await TrialBalanceController.BuildTrialBalanceRowsAsync(_db, userId, period, includeAdjusting: true);
-        var incomeStatement = IncomeStatementWebController.BuildIncomeStatement(rows, period);
+        var incomeStatement = IncomeStatementController.BuildIncomeStatement(rows, period);
         var reAccountName = rows.Find(r => r.Role == "RetainedEarnings")?.AccountName ?? "Retained Earnings";
         const string incomeSummaryName = "Income Summary";
 

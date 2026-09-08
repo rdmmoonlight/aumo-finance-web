@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("api/v1/web/periods")]
+[Route("api/v1/periods")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class PeriodsController : ControllerBase
 {
@@ -121,7 +121,7 @@ public class PeriodsController : ControllerBase
     // 3. POST: /web/periods (Open New Period)
     // ==========================================
     [HttpPost]
-    public async Task<IActionResult> CreatePeriod([FromBody] CreateWebPeriodRequest request)
+    public async Task<IActionResult> CreatePeriod([FromBody] CreatePeriodRequest request)
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty)
@@ -141,7 +141,7 @@ public class PeriodsController : ControllerBase
         if (periodExists)
             return BadRequest(new { success = false, message = $"Period {periodName} already exists." });
 
-        var isLoadExisting = request.SetupMode == CreateWebPeriodRequest.ModeLoadExisting;
+        var isLoadExisting = request.SetupMode == CreatePeriodRequest.ModeLoadExisting;
 
         if (isLoadExisting)
         {
@@ -389,7 +389,7 @@ public class PeriodsController : ControllerBase
     }
 }
 
-public class CreateWebPeriodRequest
+public class CreatePeriodRequest
 {
     public const string ModeLoadExisting = "LoadExisting";
     public const string ModeCreateNew = "CreateNew";

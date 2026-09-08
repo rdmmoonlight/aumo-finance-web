@@ -9,10 +9,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/web/reports/general-ledger")]
+[Route("api/v1/reports/general-ledger")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class GeneralLedgerController : ControllerBase
 {

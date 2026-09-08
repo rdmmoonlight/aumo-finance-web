@@ -9,16 +9,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/web/reports/adjusting-journal")]
+[Route("api/v1/reports/adjusting-journal")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class AdjustingJournalWebController : ControllerBase
+public class AdjustingJournalController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public AdjustingJournalWebController(AppDbContext db)
+    public AdjustingJournalController(AppDbContext db)
     {
         _db = db;
     }

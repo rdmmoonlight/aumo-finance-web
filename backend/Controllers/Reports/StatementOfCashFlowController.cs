@@ -8,10 +8,10 @@ using AumoBackend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/web/reports/statement-of-cash-flow")]
+[Route("api/v1/reports/statement-of-cash-flow")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class StatementOfCashFlowController : ControllerBase
 {
@@ -54,7 +54,7 @@ public class StatementOfCashFlowController : ControllerBase
         }
 
         var rows = await TrialBalanceController.BuildTrialBalanceRowsAsync(_db, userId, period, includeAdjusting: true);
-        var incomeStatement = IncomeStatementWebController.BuildIncomeStatement(rows, period);
+        var incomeStatement = IncomeStatementController.BuildIncomeStatement(rows, period);
 
         var cashRows = rows.Where(r => r.Role == "CashAndEquivalents").ToList();
         decimal endingCash = cashRows.Sum(r => r.NetBalance);

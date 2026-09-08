@@ -8,16 +8,16 @@ using AumoBackend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/web/reports/income-statement")]
+[Route("api/v1/reports/income-statement")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class IncomeStatementWebController : ControllerBase
+public class IncomeStatementController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public IncomeStatementWebController(AppDbContext db)
+    public IncomeStatementController(AppDbContext db)
     {
         _db = db;
     }

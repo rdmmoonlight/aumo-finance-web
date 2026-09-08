@@ -15,13 +15,13 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web
 {
     [ApiController]
-    [Route("api/v1/web/tools")]
+    [Route("api/v1/tools")]
     [Authorize(AuthenticationSchemes = "Identity.Application")]
-    public class ToolsWebController : ControllerBase
+    public class ToolsController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public ToolsWebController(AppDbContext context)
+        public ToolsController(AppDbContext context)
         {
             _context = context;
         }
