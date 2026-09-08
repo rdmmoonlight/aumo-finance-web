@@ -286,12 +286,12 @@ body {
 
 [data-bs-theme="light"] body,
 [data-bs-theme="light"] #app {
-    background-color: #F8FAFC !important;
+    background-color: #FFFFFF !important;
     color: #0F172A !important;
 }
 
 [data-bs-theme="light"] .sidebar-icons {
-    background-color: #F8FAFC !important;
+    background-color: #FFFFFF !important;
     border-color: #E2E8F0 !important;
 }
 
