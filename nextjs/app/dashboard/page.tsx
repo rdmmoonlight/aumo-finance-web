@@ -77,6 +77,7 @@ export interface DashboardViewModel {
   totalCashOnHand: number;
   bankAccounts: AccountBalanceItem[];
   totalBankBalance: number;
+  expenseAccountsList?: AccountBalanceItem[];
   recentEntries: any[];
 }
 
@@ -150,6 +151,7 @@ function DashboardContent() {
           totalCashOnHand: 0,
           bankAccounts: [],
           totalBankBalance: 0,
+          expenseAccountsList: [],
           recentEntries: [],
         });
         return;
@@ -169,6 +171,7 @@ function DashboardContent() {
         totalCashOnHand: Number(resData?.totalCashOnHand) || 0,
         bankAccounts: Array.isArray(resData?.bankAccounts) ? resData.bankAccounts : [],
         totalBankBalance: Number(resData?.totalBankBalance) || 0,
+        expenseAccountsList: Array.isArray(resData?.expenseAccountsList) ? resData.expenseAccountsList : [],
         recentEntries: Array.isArray(resData?.recentEntries) ? resData.recentEntries : [],
       };
 
@@ -250,6 +253,28 @@ function DashboardContent() {
       {
         data: [data.totalCashOnHand, data.totalBankBalance],
         backgroundColor: ['#0d6efd', '#0dcaf0'],
+        borderWidth: 0,
+      },
+    ],
+  };
+
+  // Konfigurasi Data untuk Expense Composition Chart
+  const expenseChartLabels = data.expenseAccountsList && data.expenseAccountsList.length > 0 
+    ? data.expenseAccountsList.map(item => item.accountName) 
+    : ['No Expenses'];
+
+  const expenseChartValues = data.expenseAccountsList && data.expenseAccountsList.length > 0 
+    ? data.expenseAccountsList.map(item => item.balance) 
+    : [1];
+
+  const expenseColors = ['#dc3545', '#ffc107', '#fd7e14', '#6610f2', '#6c757d', '#20c997', '#e83e8c'];
+
+  const expenseDoughnutChartData = {
+    labels: expenseChartLabels,
+    datasets: [
+      {
+        data: expenseChartValues,
+        backgroundColor: expenseColors.slice(0, expenseChartValues.length),
         borderWidth: 0,
       },
     ],
@@ -396,8 +421,8 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* 3. CHARTS SECTION */}
-      <div className="grid-chart-col mb-16" style={{ gridTemplateColumns: '1fr' }}>
+      {/* 3. CHARTS SECTION (Asset Composition & Expense Composition Berdampingan) */}
+      <div className="grid-chart-col mb-16">
         <div className="dash-card">
           <div className="card-header-flex mb-12">
             <div>
@@ -410,6 +435,21 @@ function DashboardContent() {
           </div>
           <div className="chart-wrapper">
             <Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+          </div>
+        </div>
+
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
+            <div>
+              <h6 className="card-title">Expense Composition</h6>
+              <span className="card-sub">Operating Expense Breakdown</span>
+            </div>
+            <div className="icon-badge danger">
+              <IconChartPie size={20} />
+            </div>
+          </div>
+          <div className="chart-wrapper">
+            <Doughnut data={expenseDoughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
           </div>
         </div>
       </div>
