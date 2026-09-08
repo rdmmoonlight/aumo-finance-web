@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers;
 
 [ApiController]
-[Route("web/dashboard")]
+[Route("api/v1/dashboard")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class DashboardController : ControllerBase
 {

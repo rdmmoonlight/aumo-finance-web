@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("web/chart-of-accounts")]
+[Route("api/v1/chart-of-accounts")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ChartOfAccountsController : ControllerBase
 {
@@ -115,7 +115,7 @@ public class ChartOfAccountsController : ControllerBase
     // 2. POST: /web/chart-of-accounts
     // ==========================================
     [HttpPost]
-    public async Task<IActionResult> CreateAccount([FromBody] CreateWebAccountRequest request)
+    public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequest request)
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
@@ -172,7 +172,7 @@ public class ChartOfAccountsController : ControllerBase
     // 3. PUT: /web/chart-of-accounts/{id}
     // ==========================================
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> UpdateAccount(int id, [FromBody] UpdateWebAccountRequest request)
+    public async Task<IActionResult> UpdateAccount(int id, [FromBody] UpdateAccountRequest request)
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty) return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
@@ -272,7 +272,7 @@ public class ChartOfAccountsController : ControllerBase
     }
 }
 
-public class CreateWebAccountRequest
+public class CreateAccountRequest
 {
     public int ReferenceNumber { get; set; }
     public string AccountName { get; set; } = string.Empty;
@@ -280,7 +280,7 @@ public class CreateWebAccountRequest
     public string Role { get; set; } = "Default";
 }
 
-public class UpdateWebAccountRequest
+public class UpdateAccountRequest
 {
     public int ReferenceNumber { get; set; }
     public string AccountName { get; set; } = string.Empty;
