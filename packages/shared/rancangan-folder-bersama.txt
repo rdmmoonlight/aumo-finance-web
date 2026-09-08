@@ -1,5 +1,0 @@
-shared/          <-- FOLDER BERSAMA
-│       ├── constants/   (colors, typography, spacing)
-│       ├── utils/       (formatRupiah, formatDate)
-│       ├── schemas/     (zod validation schemas)
-│       └── types/       (API response types)
