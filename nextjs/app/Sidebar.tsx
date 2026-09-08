@@ -1,19 +1,20 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   IconHome,
   IconLayoutGrid,
+  IconCalendarEvent,
+  IconSitemap,
   IconRobot,
   IconBook2,
   IconFolder,
-  IconSitemap,
-  IconCalendarEvent,
   IconShieldCheck,
   IconTools,
   IconSettings,
-  IconLogout
+  IconLogout,
+  IconX
 } from '@tabler/icons-react';
 
 interface SidebarProps {
@@ -32,33 +33,70 @@ export default function Sidebar({
   toggleReportsFlyout: externalToggleFlyout,
   closeFlyout: externalCloseFlyout,
 }: SidebarProps) {
-  // State internal sebagai fallback jika tidak di-pass dari induk
   const [internalShowFlyout, setInternalShowFlyout] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  const settingsRef = useRef<HTMLDivElement>(null);
 
   const showReportsFlyout = externalShowFlyout ?? internalShowFlyout;
-  const toggleReportsFlyout = externalToggleFlyout ?? (() => setInternalShowFlyout((prev) => !prev));
-  const closeFlyout = externalCloseFlyout ?? (() => setInternalShowFlyout(false));
+  const toggleReportsFlyout =
+    externalToggleFlyout ?? (() => setInternalShowFlyout((prev) => !prev));
+  const closeFlyout =
+    externalCloseFlyout ?? (() => setInternalShowFlyout(false));
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(event.target as Node)
+      ) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const reportsNavList = [
+    { href: '/reports/general-journal', label: 'General Journal' },
+    { href: '/reports/general-ledger/permanent', label: 'GL (Permanent Accounts)' },
+    { href: '/reports/general-ledger/temporary', label: 'GL (Temporary Accounts)' },
+    { href: '/reports/trial-balance/unadjusted', label: 'Trial Balance' },
+    { href: '/reports/adjusting-journal', label: 'Adjusting Journal' },
+    { href: '/reports/trial-balance/adjusted', label: 'Adjusted Trial Balance' },
+    { href: '/reports/worksheet', label: 'Worksheet' },
+    { href: '/reports/income-statement', label: 'Income Statement' },
+    { href: '/reports/retained-earnings', label: 'Retained Earnings' },
+    { href: '/reports/statement-of-financial-position', label: 'Financial Position' },
+    { href: '/reports/closing-journal', label: 'Closing Journal' },
+    { href: '/reports/trial-balance/post-closing', label: 'Post-Closing TB' },
+    { href: '/reports/statement-of-cash-flow', label: 'Cash Flow' },
+  ];
 
   return (
     <>
-      <div className="sidebar-wrapper d-flex sidebar-sticky-matte">
-        <nav id="sidebar-icons" className="sidebar-icons text-white d-flex flex-column align-items-center py-3">
+      <div className="sidebar-wrapper">
+        <nav className="sidebar-icons">
           <Link
             href="/"
-            className="brand-container text-center text-warning text-decoration-none mb-2"
+            className="brand-container"
             title="Aumo Finance Home"
             onClick={closeFlyout}
           >
             <IconHome size={22} />
           </Link>
 
-          <hr className="hr-matte my-2 w-75" />
+          <div className="hr-matte"></div>
 
-          <ul className="nav flex-column align-items-center w-100 flex-grow-1">
-            <li className="nav-item mb-2">
+          <ul className="nav-list">
+            {/* 1. Dashboard */}
+            <li className="nav-item">
               <Link
                 href="/dashboard"
-                className={`nav-link icon-btn ${pathname === '/dashboard' ? 'active' : ''}`}
+                className={`icon-btn ${pathname === '/dashboard' ? 'active' : ''}`}
                 title="Dashboard"
                 onClick={closeFlyout}
               >
@@ -66,54 +104,11 @@ export default function Sidebar({
               </Link>
             </li>
 
-            <li className="nav-item mb-2">
-              <Link
-                href="/ai-assistant"
-                className={`nav-link icon-btn ${pathname === '/ai-assistant' ? 'active' : ''}`}
-                title="AI Financial Assistant"
-                onClick={closeFlyout}
-              >
-                <IconRobot size={22} />
-              </Link>
-            </li>
-
-            <li className="nav-item mb-2">
-              <Link
-                href="/journal-entry"
-                className={`nav-link icon-btn ${pathname === '/journal-entry' ? 'active' : ''}`}
-                title="Journal Entry"
-                onClick={closeFlyout}
-              >
-                <IconBook2 size={22} />
-              </Link>
-            </li>
-
-            <li className="nav-item mb-2">
-              <button
-                type="button"
-                onClick={toggleReportsFlyout}
-                className={`nav-link icon-btn border-0 bg-transparent ${showReportsFlyout ? 'active' : ''}`}
-                title="Reports"
-              >
-                <IconFolder size={22} />
-              </button>
-            </li>
-
-            <li className="nav-item mb-2">
-              <Link
-                href="/chart-of-accounts"
-                className={`nav-link icon-btn ${pathname === '/chart-of-accounts' ? 'active' : ''}`}
-                title="Chart of Accounts"
-                onClick={closeFlyout}
-              >
-                <IconSitemap size={22} />
-              </Link>
-            </li>
-
-            <li className="nav-item mb-2">
+            {/* 2. Financial Periods (Periods) */}
+            <li className="nav-item">
               <Link
                 href="/periods"
-                className={`nav-link icon-btn ${pathname === '/periods' ? 'active' : ''}`}
+                className={`icon-btn ${pathname === '/periods' ? 'active' : ''}`}
                 title="Financial Periods"
                 onClick={closeFlyout}
               >
@@ -121,10 +116,56 @@ export default function Sidebar({
               </Link>
             </li>
 
-            <li className="nav-item mb-2">
+            {/* 3. Chart of Accounts (CoA) */}
+            <li className="nav-item">
+              <Link
+                href="/chart-of-accounts"
+                className={`icon-btn ${pathname === '/chart-of-accounts' ? 'active' : ''}`}
+                title="Chart of Accounts"
+                onClick={closeFlyout}
+              >
+                <IconSitemap size={22} />
+              </Link>
+            </li>
+
+            {/* Navigasi Lainnya */}
+            <li className="nav-item">
+              <Link
+                href="/ai-assistant"
+                className={`icon-btn ${pathname === '/ai-assistant' ? 'active' : ''}`}
+                title="AI Financial Assistant"
+                onClick={closeFlyout}
+              >
+                <IconRobot size={22} />
+              </Link>
+            </li>
+
+            <li className="nav-item">
+              <Link
+                href="/journal-entry"
+                className={`icon-btn ${pathname === '/journal-entry' ? 'active' : ''}`}
+                title="Journal Entry"
+                onClick={closeFlyout}
+              >
+                <IconBook2 size={22} />
+              </Link>
+            </li>
+
+            <li className="nav-item">
+              <button
+                type="button"
+                onClick={toggleReportsFlyout}
+                className={`icon-btn ${showReportsFlyout ? 'active' : ''}`}
+                title="Reports"
+              >
+                <IconFolder size={22} />
+              </button>
+            </li>
+
+            <li className="nav-item">
               <Link
                 href="/guardian"
-                className={`nav-link icon-btn ${pathname === '/guardian' ? 'active' : ''}`}
+                className={`icon-btn ${pathname === '/guardian' ? 'active' : ''}`}
                 title="Guardian Security"
                 onClick={closeFlyout}
               >
@@ -132,10 +173,10 @@ export default function Sidebar({
               </Link>
             </li>
 
-            <li className="nav-item mb-2">
+            <li className="nav-item">
               <Link
                 href="/tools"
-                className={`nav-link icon-btn ${pathname === '/tools' ? 'active' : ''}`}
+                className={`icon-btn ${pathname === '/tools' ? 'active' : ''}`}
                 title="Tools"
                 onClick={closeFlyout}
               >
@@ -144,183 +185,78 @@ export default function Sidebar({
             </li>
           </ul>
 
-          {/* Menus Bawah (Pilihan Settings & Sign Out) */}
-          <div className="mt-auto dropup position-relative">
+          {/* Settings & Account Dropup */}
+          <div className="bottom-settings-container" ref={settingsRef}>
             <button
-              className="nav-link icon-btn border-0 bg-transparent"
-              id="settingsDropdown"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+              className={`icon-btn ${isSettingsOpen ? 'active' : ''}`}
+              type="button"
               title="Settings & Account"
+              onClick={() => setIsSettingsOpen((prev) => !prev)}
             >
               <IconSettings size={22} />
             </button>
 
-            <ul
-              className="dropdown-menu dropdown-menu-dark shadow ms-2 mb-2 fs-7 border border-secondary border-opacity-10"
-              aria-labelledby="settingsDropdown"
-            >
-              <li>
-                <Link className="dropdown-item d-flex align-items-center gap-2" href="/settings" onClick={closeFlyout}>
+            {isSettingsOpen && (
+              <div className="settings-dropup-menu">
+                <Link
+                  className="dropup-item"
+                  href="/settings"
+                  onClick={() => {
+                    setIsSettingsOpen(false);
+                    closeFlyout();
+                  }}
+                >
                   <IconSettings size={18} />
                   <span>Settings</span>
                 </Link>
-              </li>
-              <li>
                 <button
                   type="button"
-                  className="dropdown-item d-flex align-items-center gap-2 text-danger w-100"
-                  onClick={handleSignOut}
+                  className="dropup-item danger-item"
+                  onClick={() => {
+                    setIsSettingsOpen(false);
+                    handleSignOut();
+                  }}
                 >
                   <IconLogout size={18} />
                   <span>Sign Out</span>
                 </button>
-              </li>
-            </ul>
+              </div>
+            )}
           </div>
         </nav>
 
         {showReportsFlyout && (
-          <div id="reports-flyout" className="sidebar-flyout">
-            <div className="p-3 border-bottom border-secondary border-opacity-10 d-flex justify-content-between align-items-center">
-              <span className="fw-semibold text-body-secondary small text-uppercase tracking-wider" style={{ fontSize: '0.7rem' }}>
-                Reports
-              </span>
+          <div className="sidebar-flyout">
+            <div className="flyout-header">
+              <span className="flyout-title">Reports</span>
               <button
                 type="button"
                 onClick={closeFlyout}
-                className="btn-close btn-close-white btn-sm opacity-50"
+                className="close-btn"
                 aria-label="Close"
-              ></button>
+              >
+                <IconX size={16} />
+              </button>
             </div>
 
-            <div className="list-group list-group-flush p-2 small">
-              <Link
-                href="/reports/general-journal"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/general-journal' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                General Journal
-              </Link>
-              <Link
-                href="/reports/general-ledger/permanent"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/general-ledger/permanent' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                GL (Permanent Accounts)
-              </Link>
-              <Link
-                href="/reports/general-ledger/temporary"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/general-ledger/temporary' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                GL (Temporary Accounts)
-              </Link>
-              <Link
-                href="/reports/trial-balance/unadjusted"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/trial-balance/unadjusted' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Trial Balance
-              </Link>
-              <Link
-                href="/reports/adjusting-journal"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/adjusting-journal' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Adjusting Journal
-              </Link>
-              <Link
-                href="/reports/trial-balance/adjusted"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/trial-balance/adjusted' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Adjusted Trial Balance
-              </Link>
-              <Link
-                href="/reports/worksheet"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/worksheet' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Worksheet
-              </Link>
-              <Link
-                href="/reports/income-statement"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/income-statement' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Income Statement
-              </Link>
-              <Link
-                href="/reports/retained-earnings"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/retained-earnings' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Retained Earnings
-              </Link>
-              <Link
-                href="/reports/statement-of-financial-position"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/statement-of-financial-position' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Financial Position
-              </Link>
-              <Link
-                href="/reports/closing-journal"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/closing-journal' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Closing Journal
-              </Link>
-              <Link
-                href="/reports/trial-balance/post-closing"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/trial-balance/post-closing' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Post-Closing TB
-              </Link>
-              <Link
-                href="/reports/statement-of-cash-flow"
-                className={`list-group-item list-group-item-action py-2 px-3 rounded mb-1 ${
-                  pathname === '/reports/statement-of-cash-flow' ? 'active' : ''
-                }`}
-                onClick={closeFlyout}
-              >
-                Cash Flow
-              </Link>
+            <div className="flyout-list">
+              {reportsNavList.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flyout-item ${pathname === item.href ? 'active' : ''}`}
+                  onClick={closeFlyout}
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
           </div>
         )}
       </div>
 
-      {/* STYLES FOR SIDEBAR */}
       <style jsx global>{`
-        .sidebar-sticky-matte {
-          position: -webkit-sticky;
+        .sidebar-wrapper {
           position: sticky;
           top: 0;
           height: 100vh;
@@ -328,62 +264,186 @@ export default function Sidebar({
           align-self: flex-start;
           z-index: 1030;
           flex-shrink: 0;
+          display: flex;
         }
+
         .sidebar-icons {
           width: 65px;
           height: 100vh;
           background-color: var(--bs-body-bg, #121212);
           border-right: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 0;
-          box-shadow: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 16px 0;
+          color: #ffffff;
         }
+
+        .brand-container {
+          color: #ffc107;
+          text-decoration: none;
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 6px;
+        }
+
+        .hr-matte {
+          width: 75%;
+          height: 1px;
+          background-color: rgba(255, 255, 255, 0.1);
+          margin: 8px 0 16px 0;
+        }
+
+        .nav-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex-grow: 1;
+        }
+
+        .nav-item {
+          margin-bottom: 8px;
+        }
+
+        .icon-btn {
+          color: var(--bs-secondary-color, #888888);
+          padding: 8px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          transition: background-color 0.15s ease, color 0.15s ease;
+          text-decoration: none;
+        }
+
+        .icon-btn:hover {
+          color: var(--bs-body-color, #ffffff);
+          background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .icon-btn.active {
+          color: var(--bs-body-color, #ffffff);
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .bottom-settings-container {
+          margin-top: auto;
+          position: relative;
+        }
+
+        .settings-dropup-menu {
+          position: absolute;
+          bottom: 100%;
+          left: 10px;
+          margin-bottom: 8px;
+          background-color: var(--bs-body-bg, #1e1e1e);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 6px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          padding: 4px;
+          min-width: 150px;
+          z-index: 1040;
+        }
+
+        .dropup-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          padding: 8px 12px;
+          background: transparent;
+          border: none;
+          color: var(--bs-body-color, #ffffff);
+          text-decoration: none;
+          font-size: 0.8rem;
+          border-radius: 4px;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .dropup-item:hover {
+          background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .dropup-item.danger-item {
+          color: #dc3545;
+        }
+
         .sidebar-flyout {
           width: 230px;
           height: 100vh;
           overflow-y: auto;
           background-color: var(--bs-body-bg, #121212);
-          margin-left: 0;
           border-right: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 0;
-          box-shadow: none;
+          display: flex;
+          flex-direction: column;
         }
-        .icon-btn {
-          color: var(--bs-secondary-color, #888888);
-          padding: 0.5rem;
-          border-radius: 0.375rem;
+
+        .flyout-header {
+          padding: 12px 16px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .flyout-title {
+          font-weight: 600;
+          color: var(--bs-secondary-color, #aaa);
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .close-btn {
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.5);
+          cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: background-color 0.15s ease, color 0.15s ease;
+          padding: 2px;
+          border-radius: 4px;
         }
-        .icon-btn:hover {
-          color: var(--bs-body-color, #ffffff);
-          background-color: rgba(255, 255, 255, 0.05);
-          box-shadow: none;
-        }
-        .icon-btn.active {
-          color: var(--bs-body-color, #ffffff);
+
+        .close-btn:hover {
+          color: #ffffff;
           background-color: rgba(255, 255, 255, 0.1);
-          box-shadow: none;
         }
-        .hr-matte {
-          border: none !important;
-          height: 1px !important;
-          background-color: rgba(255, 255, 255, 0.1) !important;
-          opacity: 1 !important;
-          box-shadow: none !important;
+
+        .flyout-list {
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
         }
-        .sidebar-flyout .list-group-item {
-          background-color: transparent;
+
+        .flyout-item {
+          display: block;
+          padding: 8px 12px;
+          border-radius: 4px;
           color: var(--bs-secondary-color, #aaa);
-          border: none;
+          text-decoration: none;
+          font-size: 0.8rem;
           transition: background-color 0.15s ease, color 0.15s ease;
         }
-        .sidebar-flyout .list-group-item:hover {
+
+        .flyout-item:hover {
           background-color: rgba(255, 255, 255, 0.05);
           color: var(--bs-body-color, #ffffff);
         }
-        .sidebar-flyout .list-group-item.active {
+
+        .flyout-item.active {
           background-color: rgba(255, 255, 255, 0.1);
           color: var(--bs-body-color, #ffffff);
           font-weight: 500;
