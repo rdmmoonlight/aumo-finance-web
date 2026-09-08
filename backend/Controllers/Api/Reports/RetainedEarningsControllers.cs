@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Api.Reports;
 
 [ApiController]
-[Route("api/mobile/reports/retained-earnings")]
+[Route("api/v1/mobile/reports/retained-earnings")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class RetainedEarningsControllers : ControllerBase
 {

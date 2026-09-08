@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Web.Reports;
 
 [ApiController]
-[Route("web/reports/closing-journal")]
+[Route("api/v1/web/reports/closing-journal")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ClosingJournalWebController : ControllerBase
 {

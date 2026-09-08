@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("web/chart-of-accounts")]
+[Route("api/v1/web/chart-of-accounts")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ChartOfAccountsController : ControllerBase
 {

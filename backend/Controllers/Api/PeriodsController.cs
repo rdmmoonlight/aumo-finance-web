@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Api;
 
 [ApiController]
-[Route("api/mobile/periods")]
+[Route("api/v1/mobile/periods")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class PeriodsController : ControllerBase
 {

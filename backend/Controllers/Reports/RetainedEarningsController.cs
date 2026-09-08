@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Web.Reports;
 
 [ApiController]
-[Route("web/reports/retained-earnings")]
+[Route("api/v1/web/reports/retained-earnings")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class RetainedEarningsWebController : ControllerBase
 {

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("web/auth")]
+[Route("api/v1/web/auth")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class AuthController : ControllerBase
 {

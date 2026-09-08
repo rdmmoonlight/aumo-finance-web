@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web.Reports;
 
 [ApiController]
-[Route("web/reports/general-journal")]
+[Route("api/v1/web/reports/general-journal")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class GeneralJournalWebController : ControllerBase
 {

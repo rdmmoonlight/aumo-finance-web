@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Api.Reports;
 
 [ApiController]
-[Route("api/mobile/reports/general-ledger")]
+[Route("api/v1/mobile/reports/general-ledger")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class GeneralLedgerControllers : ControllerBase
 {

@@ -15,7 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace AumoBackend.Controllers.Api;
 
 [ApiController]
-[Route("api/mobile/auth")]
+[Route("api/v1/mobile/auth")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AuthController : ControllerBase
 {

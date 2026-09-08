@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web
 {
     [ApiController]
-    [Route("web/tools")]
+    [Route("api/v1/web/tools")]
     [Authorize(AuthenticationSchemes = "Identity.Application")]
     public class ToolsWebController : ControllerBase
     {

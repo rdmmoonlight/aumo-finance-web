@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Api.Reports;
 
 [ApiController]
-[Route("api/mobile/reports/worksheet")]
+[Route("api/v1/mobile/reports/worksheet")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class WorksheetControllers : ControllerBase
 {

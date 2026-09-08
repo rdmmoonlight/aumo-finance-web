@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web.Reports;
 
 [ApiController]
-[Route("web/reports/trial-balance")]
+[Route("api/v1/web/reports/trial-balance")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class TrialBalanceController : ControllerBase
 {

@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Api;
 
 [ApiController]
-[Route("api/mobile/dashboard")]
+[Route("api/v1/mobile/dashboard")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class DashboardControllers : ControllerBase
 {
@@ -62,7 +62,7 @@ public class DashboardControllers : ControllerBase
             accountName = a.AccountName,
             balance = journalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
             // Tidak ada field khusus Kas vs Bank di ChartOfAccount, jadi dipisah
-            // via nama akun — pola yang sama dipakai CashFlowControllers untuk
+            // via nama akun — pola yang sama dipakai StatementOfCashFlowControllers untuk
             // membedakan "Bank Loan" dari akun lain berdasarkan AccountName.
             isBank = a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase)
         }).ToList();

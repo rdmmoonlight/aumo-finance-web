@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Web.Reports;
 
 [ApiController]
-[Route("web/reports/income-statement")]
+[Route("api/v1/web/reports/income-statement")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class IncomeStatementWebController : ControllerBase
 {

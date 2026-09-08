@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Api;
 
 [ApiController]
-[Route("api/mobile/chart-of-accounts")]
+[Route("api/v1/mobile/chart-of-accounts")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ChartOfAccountsController : ControllerBase
 {

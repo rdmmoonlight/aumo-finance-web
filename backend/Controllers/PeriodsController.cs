@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("web/periods")]
+[Route("api/v1/web/periods")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class PeriodsController : ControllerBase
 {

@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Api;
 
 [ApiController]
-[Route("api/mobile/journal-entry")]
+[Route("api/v1/mobile/journal-entry")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class JournalEntryController : ControllerBase
 {

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Api;
 
 [ApiController]
-[Route("api/test-email")]
+[Route("api/v1/web/test-email")]
 public class TestEmailController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;

@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Api.Reports;
 
 [ApiController]
-[Route("api/mobile/reports/statement-of-financial-position")]
+[Route("api/v1/mobile/reports/statement-of-financial-position")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class StatementOfFinancialPositionControllers : ControllerBase
 {

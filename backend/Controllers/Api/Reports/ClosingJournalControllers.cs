@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Api.Reports;
 
 [ApiController]
-[Route("api/mobile/reports/closing-journal")]
+[Route("api/v1/mobile/reports/closing-journal")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class ClosingJournalControllers : ControllerBase
 {

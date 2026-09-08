@@ -12,13 +12,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Api.Reports;
 
 [ApiController]
-[Route("api/mobile/reports/cash-flow")]
+[Route("api/v1/mobile/reports/statement-of-cash-flow")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class CashFlowControllers : ControllerBase
+public class StatementOfCashFlowControllers : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public CashFlowControllers(AppDbContext db)
+    public StatementOfCashFlowControllers(AppDbContext db)
     {
         _db = db;
     }

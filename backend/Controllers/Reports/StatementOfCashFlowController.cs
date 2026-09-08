@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Web.Reports;
 
 [ApiController]
-[Route("web/reports/statement-of-cash-flow")]
+[Route("api/v1/web/reports/statement-of-cash-flow")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class StatementOfCashFlowController : ControllerBase
 {

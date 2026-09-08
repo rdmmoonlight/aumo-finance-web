@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web.Reports;
 
 [ApiController]
-[Route("web/reports/general-ledger")]
+[Route("api/v1/web/reports/general-ledger")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class GeneralLedgerController : ControllerBase
 {
