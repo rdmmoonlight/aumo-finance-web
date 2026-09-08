@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import './chart-of-accounts.css';
 
-// Chart of Account Data Model
 export interface ChartOfAccount {
   id: number;
   referenceNumber: number;
@@ -16,7 +15,6 @@ export interface ChartOfAccount {
   isActive: boolean;
 }
 
-// Category Constants & Account Coding Utilities
 const ACCOUNT_TYPES = [
   'Assets',
   'Liabilities',
@@ -45,7 +43,6 @@ const validateReferenceNumber = (type: string, refNum: number) => {
   return refNum >= range.start && refNum <= range.end;
 };
 
-// Target base URL untuk Web API
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://my-authentic-web-api.onrender.com';
 const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
@@ -58,17 +55,17 @@ function ChartOfAccountsContent() {
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedPeriodName, setSelectedPeriodName] = useState<string | null>(null);
 
-  // Filter & Search State
   const [searchText, setSearchText] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
 
-  // Notification State
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
 
-  // Form Modals State
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+
   const [newAccount, setNewAccount] = useState<Partial<ChartOfAccount>>({
     type: '',
     referenceNumber: 0,
@@ -78,7 +75,6 @@ function ChartOfAccountsContent() {
 
   const [editAccount, setEditAccount] = useState<ChartOfAccount | null>(null);
 
-  // Redirect handler untuk 401 Unauthorized
   const handleUnauthorized = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('userId');
@@ -86,7 +82,6 @@ function ChartOfAccountsContent() {
     }
   };
 
-  // Fetch / Sync Data from Backend Web API (/chart-of-accounts)
   const fetchAccounts = async () => {
     setLoading(true);
     setErrorMessage(null);
@@ -96,7 +91,7 @@ function ChartOfAccountsContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Mengirim Cookie Session
+        credentials: 'include',
       });
 
       if (response.status === 401) {
@@ -125,7 +120,6 @@ function ChartOfAccountsContent() {
     fetchAccounts();
   }, []);
 
-  // Filtered Accounts list computation
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
       const matchSearch =
@@ -139,7 +133,6 @@ function ChartOfAccountsContent() {
     });
   }, [accounts, searchText, categoryFilter]);
 
-  // Handle Action: Create Account via Web API (POST /chart-of-accounts)
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError(null);
@@ -191,24 +184,20 @@ function ChartOfAccountsContent() {
 
       setSuccessMessage(resData.message || `Account '${payload.accountName}' was successfully created.`);
       setNewAccount({ type: '', referenceNumber: 0, accountName: '', role: 'Default' });
-      
-      const addModalCloseBtn = document.getElementById('addAccountModalClose');
-      addModalCloseBtn?.click();
+      setIsAddModalOpen(false);
 
-      // Refresh data
       await fetchAccounts();
     } catch (err: any) {
       setCreateError(err.message || 'An error occurred while creating the account.');
     }
   };
 
-  // Handle Action: Open Edit Modal
   const openEditModal = (account: ChartOfAccount) => {
     setEditError(null);
     setEditAccount({ ...account });
+    setIsEditModalOpen(true);
   };
 
-  // Handle Action: Update Account via Web API (PUT /chart-of-accounts/{id})
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editAccount) return;
@@ -258,18 +247,14 @@ function ChartOfAccountsContent() {
       }
 
       setSuccessMessage(resData.message || `Account '${editAccount.accountName}' was successfully updated.`);
+      setIsEditModalOpen(false);
 
-      const editModalCloseBtn = document.getElementById('editAccountModalClose');
-      editModalCloseBtn?.click();
-
-      // Refresh data
       await fetchAccounts();
     } catch (err: any) {
       setEditError(err.message || 'An error occurred while updating the account.');
     }
   };
 
-  // Handle Action: Delete Account via Web API (DELETE /chart-of-accounts/{id})
   const confirmAndDelete = async (account: ChartOfAccount) => {
     if (!window.confirm(`Delete account "${account.accountName}"? This action cannot be undone.`)) {
       return;
@@ -307,71 +292,69 @@ function ChartOfAccountsContent() {
   };
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
+    <div className="coa-container">
       {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <div className="coa-header">
         <div>
-          <h2 className="fw-bold mb-1 text-white d-flex align-items-center">
-            <i className="ti ti-sitemap me-2 text-warning fs-2"></i> Chart of Accounts
+          <h2 className="coa-title">
+            <i className="ti ti-sitemap coa-title-icon"></i> Chart of Accounts
           </h2>
-          <p className="text-white-50 mb-0">
+          <p className="coa-subtitle">
             Master list of financial accounts {selectedPeriodName ? `(Viewing Period: ${selectedPeriodName})` : ''}.
           </p>
         </div>
         <div>
           <button
-            className="btn btn-warning fw-semibold shadow-sm d-inline-flex align-items-center"
-            data-bs-toggle="modal"
-            data-bs-target="#addAccountModal"
+            className="btn-warning-custom"
+            onClick={() => {
+              setCreateError(null);
+              setIsAddModalOpen(true);
+            }}
           >
-            <i className="ti ti-plus me-1"></i> New Account
+            <i className="ti ti-plus"></i> New Account
           </button>
         </div>
       </div>
 
-      {/* Alert Notifications */}
+      {/* Alerts */}
       {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show shadow-sm d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle-filled me-2 fs-5 flex-shrink-0"></i>
+        <div className="coa-alert coa-alert-danger">
+          <div className="coa-alert-content">
+            <i className="ti ti-alert-triangle-filled"></i>
             <span>{errorMessage}</span>
           </div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setErrorMessage(null)}
-          ></button>
+          <button type="button" className="coa-alert-close" onClick={() => setErrorMessage(null)}>
+            <i className="ti ti-x"></i>
+          </button>
         </div>
       )}
 
       {successMessage && (
-        <div className="alert alert-success alert-dismissible fade show shadow-sm d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-circle-check-filled me-2 fs-5 flex-shrink-0"></i>
+        <div className="coa-alert coa-alert-success">
+          <div className="coa-alert-content">
+            <i className="ti ti-circle-check-filled"></i>
             <span>{successMessage}</span>
           </div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setSuccessMessage(null)}
-          ></button>
+          <button type="button" className="coa-alert-close" onClick={() => setSuccessMessage(null)}>
+            <i className="ti ti-x"></i>
+          </button>
         </div>
       )}
 
       {/* COA Table Card */}
-      <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary">
-        <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <div className="d-flex gap-2 flex-wrap">
+      <div className="coa-card">
+        <div className="coa-card-header">
+          <div className="coa-controls">
             <input
               type="text"
-              className="form-control form-control-sm bg-dark text-white border-secondary"
-              style={{ width: '250px' }}
+              className="coa-input"
+              style={{ width: '240px' }}
               placeholder="Search accounts..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
             <select
-              className="form-select form-select-sm bg-dark text-white border-secondary"
+              className="coa-select"
               style={{ width: '180px' }}
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -384,30 +367,30 @@ function ChartOfAccountsContent() {
               ))}
             </select>
           </div>
-          <span className="text-white-50 small fw-semibold">
+          <span className="coa-subtitle" style={{ fontWeight: 600 }}>
             Total Accounts: {filteredAccounts.length}
           </span>
         </div>
 
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-dark table-hover align-middle mb-0">
-              <thead className="table-light text-secondary">
+        <div className="coa-card-body">
+          <div className="coa-table-wrapper">
+            <table className="coa-table">
+              <thead>
                 <tr>
-                  <th className="ps-4" style={{ width: '120px' }}>Ref No.</th>
+                  <th style={{ paddingLeft: '1.5rem', width: '120px' }}>Ref No.</th>
                   <th>Account Name</th>
                   <th>Category</th>
                   <th>Role</th>
-                  <th className="text-end">Current Balance</th>
-                  <th className="text-center" style={{ width: '100px' }}>Status</th>
-                  <th className="text-center pe-4" style={{ width: '130px' }}>Action</th>
+                  <th style={{ textAlign: 'right' }}>Current Balance</th>
+                  <th style={{ textAlign: 'center', width: '100px' }}>Status</th>
+                  <th style={{ textAlign: 'center', paddingRight: '1.5rem', width: '130px' }}>Action</th>
                 </tr>
               </thead>
-              <tbody className="border-top-0">
+              <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-4 text-white-50">
-                      <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem 0', color: '#ffffff' }}>
+                      <span className="coa-spinner" style={{ marginRight: '0.5rem' }}></span>
                       Loading account data from server...
                     </td>
                   </tr>
@@ -416,58 +399,56 @@ function ChartOfAccountsContent() {
                     <tr
                       key={account.id}
                       id={`account-${account.id}`}
-                      className={highlightId === String(account.id) ? 'table-warning' : ''}
+                      className={highlightId === String(account.id) ? 'highlight-row' : ''}
                     >
-                      <td className="ps-4">
-                        <code className="text-info">{account.referenceNumber}</code>
+                      <td style={{ paddingLeft: '1.5rem' }}>
+                        <code style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{account.referenceNumber}</code>
                       </td>
-                      <td className="fw-bold text-white">{account.accountName}</td>
+                      <td style={{ fontWeight: 700 }}>{account.accountName}</td>
                       <td>
-                        <span className="badge bg-secondary text-light">{account.type}</span>
+                        <span className="badge-custom badge-sec">{account.type}</span>
                       </td>
                       <td>
                         {account.role !== 'Default' ? (
-                          <span className="badge bg-info text-dark">{account.role}</span>
+                          <span className="badge-custom badge-info">{account.role}</span>
                         ) : (
-                          <span className="text-white-50 small">Standard</span>
+                          <span className="coa-subtitle" style={{ fontSize: '0.75rem' }}>Standard</span>
                         )}
                       </td>
                       <td
-                        className={`text-end fw-semibold ${
-                          account.balance >= 0 ? 'text-success' : 'text-danger'
-                        }`}
+                        style={{
+                          textAlign: 'right',
+                          fontWeight: 600,
+                          color: account.balance >= 0 ? '#4ade80' : '#fca5a5',
+                        }}
                       >
                         Rp {account.balance.toLocaleString('en-US')}
                       </td>
-                      <td className="text-center">
-                        <span
-                          className={`badge ${account.isActive ? 'bg-success' : 'bg-danger'}`}
-                        >
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`badge-custom ${account.isActive ? 'badge-active' : 'badge-inactive'}`}>
                           {account.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td className="text-center pe-4">
-                        <div className="btn-group shadow-sm">
+                      <td style={{ textAlign: 'center', paddingRight: '1.5rem' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-secondary"
+                            className="btn-icon-custom"
                             title="Edit Account"
-                            data-bs-toggle="modal"
-                            data-bs-target="#editAccountModal"
                             onClick={() => openEditModal(account)}
                           >
                             <i className="ti ti-pencil"></i>
                           </button>
                           <Link
                             href={getLedgerUrl(account)}
-                            className="btn btn-sm btn-outline-info"
+                            className="btn-icon-custom btn-icon-info"
                             title="View General Ledger"
                           >
                             <i className="ti ti-notebook"></i>
                           </Link>
                           <button
                             type="button"
-                            className="btn btn-sm btn-outline-danger"
+                            className="btn-icon-custom btn-icon-danger"
                             title="Delete Account"
                             onClick={() => confirmAndDelete(account)}
                           >
@@ -479,8 +460,8 @@ function ChartOfAccountsContent() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-5 text-white-50">
-                      <i className="ti ti-sitemap mb-3 d-block mx-auto text-white-50" style={{ fontSize: '2.5rem' }}></i>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '3rem 0', color: '#ffffff' }}>
+                      <i className="ti ti-sitemap" style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}></i>
                       No accounts found. Add a new account to get started.
                     </td>
                   </tr>
@@ -491,30 +472,30 @@ function ChartOfAccountsContent() {
         </div>
       </div>
 
-      {/* MODAL: ADD ACCOUNT */}
-      <div className="modal fade" id="addAccountModal" tabIndex={-1} aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content border-0 shadow bg-dark text-white border border-secondary border-opacity-25">
-            <div className="modal-header border-bottom border-secondary border-opacity-25">
-              <h5 className="modal-title fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-circle-plus me-2 text-warning fs-4"></i> Add New Account
+      {/* REACT MODAL: ADD ACCOUNT */}
+      {isAddModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
+          <div className="modal-dialog-custom" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-custom">
+              <h5 className="modal-title-custom">
+                <i className="ti ti-circle-plus" style={{ color: '#f59e0b' }}></i> Add New Account
               </h5>
               <button
-                id="addAccountModalClose"
                 type="button"
-                className="btn-close btn-close-white"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
+                className="coa-alert-close"
+                onClick={() => setIsAddModalOpen(false)}
+              >
+                <i className="ti ti-x"></i>
+              </button>
             </div>
             <form onSubmit={handleCreate}>
-              <div className="modal-body p-4">
-                {createError && <div className="alert alert-danger py-2 small">{createError}</div>}
+              <div className="modal-body-custom">
+                {createError && <div className="coa-alert coa-alert-danger">{createError}</div>}
 
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small text-white-50">Account Category</label>
+                <div className="form-group-custom">
+                  <label className="form-label-custom">Account Category</label>
                   <select
-                    className="form-select bg-dark text-white border-secondary"
+                    className="coa-select"
                     value={newAccount.type}
                     onChange={(e) =>
                       setNewAccount({
@@ -534,13 +515,11 @@ function ChartOfAccountsContent() {
                   </select>
                 </div>
 
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small text-white-50">
-                    Reference Number (Account Code)
-                  </label>
+                <div className="form-group-custom">
+                  <label className="form-label-custom">Reference Number (Account Code)</label>
                   <input
                     type="number"
-                    className="form-control bg-dark text-white border-secondary"
+                    className="coa-input"
                     value={newAccount.referenceNumber || ''}
                     disabled={!newAccount.type}
                     onChange={(e) =>
@@ -549,40 +528,32 @@ function ChartOfAccountsContent() {
                     required
                   />
                   {newAccount.type ? (
-                    <div className="form-text text-info d-flex align-items-center mt-1">
-                      <i className="ti ti-info-circle me-1"></i> Valid range for this category:{' '}
-                      <strong className="ms-1">
-                        {ACCOUNT_RANGES[newAccount.type]?.start} -{' '}
-                        {ACCOUNT_RANGES[newAccount.type]?.end}
-                      </strong>
+                    <div className="form-hint-custom">
+                      <i className="ti ti-info-circle"></i> Valid range: {ACCOUNT_RANGES[newAccount.type]?.start} - {ACCOUNT_RANGES[newAccount.type]?.end}
                     </div>
                   ) : (
-                    <div className="form-text text-white-50">
-                      Please select an account category to see the valid numbering range.
+                    <div className="coa-subtitle" style={{ fontSize: '0.75rem' }}>
+                      Please select a category to view the valid numbering range.
                     </div>
                   )}
                 </div>
 
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small text-white-50">Account Name</label>
+                <div className="form-group-custom">
+                  <label className="form-label-custom">Account Name</label>
                   <input
                     type="text"
-                    className="form-control bg-dark text-white border-secondary"
+                    className="coa-input"
                     placeholder="e.g. Rent Expense"
                     value={newAccount.accountName || ''}
-                    onChange={(e) =>
-                      setNewAccount({ ...newAccount, accountName: e.target.value })
-                    }
+                    onChange={(e) => setNewAccount({ ...newAccount, accountName: e.target.value })}
                     required
                   />
                 </div>
 
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small text-white-50">
-                    System Role (Special Calculations)
-                  </label>
+                <div className="form-group-custom">
+                  <label className="form-label-custom">System Role (Special Calculations)</label>
                   <select
-                    className="form-select bg-dark text-white border-secondary"
+                    className="coa-select"
                     value={newAccount.role}
                     onChange={(e) => setNewAccount({ ...newAccount, role: e.target.value })}
                   >
@@ -593,150 +564,131 @@ function ChartOfAccountsContent() {
                   </select>
                 </div>
               </div>
-              <div className="modal-footer border-top border-secondary border-opacity-25 bg-dark">
-                <button type="button" className="btn btn-outline-secondary" data-bs-dismiss="modal">
+              <div className="modal-footer-custom">
+                <button
+                  type="button"
+                  className="btn-secondary-custom"
+                  onClick={() => setIsAddModalOpen(false)}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary fw-semibold px-4">
+                <button type="submit" className="btn-primary-custom">
                   Save Account
                 </button>
               </div>
             </form>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* MODAL: EDIT ACCOUNT */}
-      <div className="modal fade" id="editAccountModal" tabIndex={-1} aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content border-0 shadow bg-dark text-white border border-secondary border-opacity-25">
-            <div className="modal-header border-bottom border-secondary border-opacity-25">
-              <h5 className="modal-title fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-edit me-2 text-warning fs-4"></i> Edit Account
+      {/* REACT MODAL: EDIT ACCOUNT */}
+      {isEditModalOpen && editAccount && (
+        <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
+          <div className="modal-dialog-custom" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-custom">
+              <h5 className="modal-title-custom">
+                <i className="ti ti-edit" style={{ color: '#f59e0b' }}></i> Edit Account
               </h5>
               <button
-                id="editAccountModalClose"
                 type="button"
-                className="btn-close btn-close-white"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
+                className="coa-alert-close"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                <i className="ti ti-x"></i>
+              </button>
             </div>
-            {editAccount && (
-              <form onSubmit={handleEdit}>
-                <div className="modal-body p-4">
-                  {editError && <div className="alert alert-danger py-2 small">{editError}</div>}
+            <form onSubmit={handleEdit}>
+              <div className="modal-body-custom">
+                {editError && <div className="coa-alert coa-alert-danger">{editError}</div>}
 
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold small text-white-50">Account Category</label>
-                    <select
-                      className="form-select bg-dark text-white border-secondary"
-                      value={editAccount.type}
-                      onChange={(e) =>
-                        setEditAccount({ ...editAccount, type: e.target.value })
-                      }
-                      required
-                    >
-                      <option value="">-- Select Category --</option>
-                      {ACCOUNT_TYPES.map((type) => (
-                        <option key={type} value={type}>
-                          {formatCategoryLabel(type)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold small text-white-50">
-                      Reference Number (Account Code)
-                    </label>
-                    <input
-                      type="number"
-                      className="form-control bg-dark text-white border-secondary"
-                      value={editAccount.referenceNumber}
-                      onChange={(e) =>
-                        setEditAccount({
-                          ...editAccount,
-                          referenceNumber: Number(e.target.value),
-                        })
-                      }
-                      required
-                    />
-                    {editAccount.type && (
-                      <div className="form-text text-info d-flex align-items-center mt-1">
-                        <i className="ti ti-info-circle me-1"></i> Valid range for this category:{' '}
-                        <strong className="ms-1">
-                          {ACCOUNT_RANGES[editAccount.type]?.start} -{' '}
-                          {ACCOUNT_RANGES[editAccount.type]?.end}
-                        </strong>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold small text-white-50">Account Name</label>
-                    <input
-                      type="text"
-                      className="form-control bg-dark text-white border-secondary"
-                      value={editAccount.accountName}
-                      onChange={(e) =>
-                        setEditAccount({ ...editAccount, accountName: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold small text-white-50">
-                      System Role (Special Calculations)
-                    </label>
-                    <select
-                      className="form-select bg-dark text-white border-secondary"
-                      value={editAccount.role}
-                      onChange={(e) =>
-                        setEditAccount({ ...editAccount, role: e.target.value })
-                      }
-                    >
-                      <option value="Default">Standard / Default</option>
-                      <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
-                      <option value="RetainedEarnings">Retained Earnings</option>
-                      <option value="TaxPayable">Tax Payable</option>
-                    </select>
-                  </div>
-
-                  <div className="form-check form-switch">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      role="switch"
-                      id="editIsActive"
-                      checked={editAccount.isActive}
-                      onChange={(e) =>
-                        setEditAccount({ ...editAccount, isActive: e.target.checked })
-                      }
-                    />
-                    <label className="form-check-label fw-semibold small text-white-50" htmlFor="editIsActive">
-                      Active Account
-                    </label>
-                  </div>
-                </div>
-                <div className="modal-footer border-top border-secondary border-opacity-25 bg-dark">
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    data-bs-dismiss="modal"
+                <div className="form-group-custom">
+                  <label className="form-label-custom">Account Category</label>
+                  <select
+                    className="coa-select"
+                    value={editAccount.type}
+                    onChange={(e) => setEditAccount({ ...editAccount, type: e.target.value })}
+                    required
                   >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary fw-semibold px-4">
-                    Update Account
-                  </button>
+                    <option value="">-- Select Category --</option>
+                    {ACCOUNT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {formatCategoryLabel(type)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              </form>
-            )}
+
+                <div className="form-group-custom">
+                  <label className="form-label-custom">Reference Number (Account Code)</label>
+                  <input
+                    type="number"
+                    className="coa-input"
+                    value={editAccount.referenceNumber}
+                    onChange={(e) =>
+                      setEditAccount({
+                        ...editAccount,
+                        referenceNumber: Number(e.target.value),
+                      })
+                    }
+                    required
+                  />
+                  {editAccount.type && (
+                    <div className="form-hint-custom">
+                      <i className="ti ti-info-circle"></i> Valid range: {ACCOUNT_RANGES[editAccount.type]?.start} - {ACCOUNT_RANGES[editAccount.type]?.end}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-group-custom">
+                  <label className="form-label-custom">Account Name</label>
+                  <input
+                    type="text"
+                    className="coa-input"
+                    value={editAccount.accountName}
+                    onChange={(e) => setEditAccount({ ...editAccount, accountName: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label className="form-label-custom">System Role (Special Calculations)</label>
+                  <select
+                    className="coa-select"
+                    value={editAccount.role}
+                    onChange={(e) => setEditAccount({ ...editAccount, role: e.target.value })}
+                  >
+                    <option value="Default">Standard / Default</option>
+                    <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
+                    <option value="RetainedEarnings">Retained Earnings</option>
+                    <option value="TaxPayable">Tax Payable</option>
+                  </select>
+                </div>
+
+                <label className="form-switch-custom">
+                  <input
+                    type="checkbox"
+                    checked={editAccount.isActive}
+                    onChange={(e) => setEditAccount({ ...editAccount, isActive: e.target.checked })}
+                  />
+                  <span className="form-label-custom">Active Account</span>
+                </label>
+              </div>
+              <div className="modal-footer-custom">
+                <button
+                  type="button"
+                  className="btn-secondary-custom"
+                  onClick={() => setIsEditModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary-custom">
+                  Update Account
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -745,8 +697,8 @@ export default function ChartOfAccountsPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-center py-5 my-5 text-white-50">
-          <div className="spinner-border text-primary me-2" role="status"></div>
+        <div style={{ textAlign: 'center', padding: '5rem 0', color: '#ffffff' }}>
+          <span className="coa-spinner" style={{ width: '1.5rem', height: '1.5rem', marginRight: '0.5rem' }}></span>
           <span>Loading chart of accounts...</span>
         </div>
       }
