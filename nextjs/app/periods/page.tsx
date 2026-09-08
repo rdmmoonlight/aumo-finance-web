@@ -23,9 +23,7 @@ const MONTH_NAMES = [
 ];
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
-  .replace(/\/+$/, '')
-  ;
+const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
 export default function PeriodsMainPage() {
   const router = useRouter();
@@ -106,11 +104,9 @@ export default function PeriodsMainPage() {
 
       setPeriods(periodsData);
 
-      // SINKRONISASI DATABASE: Ambil id yang dipilih dari DB (selectedPeriodId)
       if (periodsRaw?.selectedPeriodId) {
         setSelectedPeriodId(periodsRaw.selectedPeriodId);
       } else {
-        // Jika DB mengembalikan null, baru gunakan default active/first
         const activePeriod = periodsData.find(p => !p.isClosed) || periodsData[0];
         if (activePeriod) {
           setSelectedPeriodId(activePeriod.id);
@@ -174,11 +170,8 @@ export default function PeriodsMainPage() {
     fetchPeriodsAndAccounts();
   }, []);
 
-  // Memilih periode (Mengubah kolom IsSelected di DB)
   const selectPeriod = async (period: AccountingPeriod) => {
     setErrorMessage(null);
-
-    // Ubah state UI lokal agar cepat merespons
     setSelectedPeriodId(period.id);
 
     try {
@@ -202,7 +195,6 @@ export default function PeriodsMainPage() {
       notifyPeriodChanged();
     } catch (err: any) {
       setErrorMessage(err.message || 'An error occurred while updating the selected period in database.');
-      // Kembalikan/Re-fetch dari DB jika gagal
       fetchPeriodsAndAccounts();
     }
   };
@@ -220,7 +212,7 @@ export default function PeriodsMainPage() {
         return;
       }
     } catch {
-      // Ignore network errors
+      // Ignore
     } finally {
       setSelectedPeriodId(null);
       setSuccessMessage('No period selected. Reports and journals are hidden until you view a period.');
@@ -356,24 +348,28 @@ export default function PeriodsMainPage() {
   const totalOpeningBalance = (Number(cashBalance) || 0) + (Number(bankBalance) || 0);
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
+    <div className="periods-container">
       {/* Alert Notifications */}
       {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle-filled me-2 fs-5 flex-shrink-0"></i>
+        <div className="periods-alert periods-alert-danger">
+          <div className="periods-alert-content">
+            <i className="ti ti-alert-triangle-filled"></i>
             <span>{errorMessage}</span>
           </div>
-          <button type="button" className="btn-close ms-auto" onClick={() => setErrorMessage(null)}></button>
+          <button type="button" className="periods-alert-close" onClick={() => setErrorMessage(null)}>
+            <i className="ti ti-x"></i>
+          </button>
         </div>
       )}
       {successMessage && (
-        <div className="alert alert-success alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-circle-check-filled me-2 fs-5 flex-shrink-0"></i>
+        <div className="periods-alert periods-alert-success">
+          <div className="periods-alert-content">
+            <i className="ti ti-circle-check-filled"></i>
             <span>{successMessage}</span>
           </div>
-          <button type="button" className="btn-close ms-auto" onClick={() => setSuccessMessage(null)}></button>
+          <button type="button" className="periods-alert-close" onClick={() => setSuccessMessage(null)}>
+            <i className="ti ti-x"></i>
+          </button>
         </div>
       )}
 
@@ -381,94 +377,93 @@ export default function PeriodsMainPage() {
       {viewMode === 'list' && (
         <>
           {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
+          <div className="periods-header">
             <div>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-calendar me-2 text-primary fs-2"></i> Accounting Periods
+              <h2 className="periods-title">
+                <i className="ti ti-calendar periods-title-icon"></i> Accounting Periods
               </h2>
-              <p className="text-white-50 mb-0 d-flex align-items-center flex-wrap gap-1">
-                Manage your financial reporting cycles. Click <i className="ti ti-eye mx-1"></i> to view a period &mdash; the whole app (Dashboard, journals, reports) will follow it.
+              <p className="periods-subtitle">
+                Manage your financial reporting cycles. Click <i className="ti ti-eye"></i> to view a period &mdash; the whole app (Dashboard, journals, reports) will follow it.
               </p>
             </div>
-            <div className="d-flex gap-2">
+            <div className="periods-header-actions">
               {selectedPeriodId !== null && (
-                <button className="btn btn-outline-secondary fw-semibold shadow-sm d-inline-flex align-items-center" onClick={clearSelection}>
-                  <i className="ti ti-eye-off me-1"></i> Stop Viewing
+                <button className="btn-secondary-custom" onClick={clearSelection}>
+                  <i className="ti ti-eye-off"></i> Stop Viewing
                 </button>
               )}
               <button
-                className="btn btn-primary fw-semibold shadow-sm d-inline-flex align-items-center"
+                className="btn-primary-custom"
                 onClick={() => {
                   setErrorMessage(null);
                   setViewMode('create');
                 }}
               >
-                <i className="ti ti-plus me-1"></i> Open New Period
+                <i className="ti ti-plus"></i> Open New Period
               </button>
             </div>
           </div>
 
           {/* Data Table */}
-          <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary">
-            <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center px-4">
-              <h5 className="mb-0 fw-bold text-white">Period List</h5>
-              <span className="text-white-50 small fw-semibold">Total Periods: {periods.length}</span>
+          <div className="periods-card">
+            <div className="periods-card-header">
+              <h5 className="periods-card-title">Period List</h5>
+              <span className="periods-subtitle" style={{ fontWeight: 600 }}>
+                Total Periods: {periods.length}
+              </span>
             </div>
 
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-dark table-hover align-middle mb-0 periods-table">
-                  <thead className="table-light text-secondary">
+            <div className="periods-card-body" style={{ padding: 0 }}>
+              <div className="periods-table-wrapper">
+                <table className="periods-table">
+                  <thead>
                     <tr>
-                      <th className="ps-4">Period Name</th>
+                      <th style={{ paddingLeft: '1.5rem' }}>Period Name</th>
                       <th>Start Date</th>
                       <th>End Date</th>
-                      <th className="text-center">Status</th>
-                      <th className="text-center pe-4">Action</th>
+                      <th style={{ textAlign: 'center' }}>Status</th>
+                      <th style={{ textAlign: 'center', paddingRight: '1.5rem' }}>Action</th>
                     </tr>
                   </thead>
-                  <tbody className="border-top-0">
+                  <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={5} className="text-center py-4 text-white-50">
-                          <div className="spinner-border spinner-border-sm me-2" role="status"></div> Loading data from server...
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '2rem 0', color: '#ffffff' }}>
+                          <span className="periods-spinner" style={{ marginRight: '0.5rem' }}></span>
+                          Loading data from server...
                         </td>
                       </tr>
                     ) : periods.length > 0 ? (
                       periods.map((period) => {
                         const isSelected = selectedPeriodId === period.id;
                         return (
-                          <tr key={period.id} className={isSelected ? 'table-primary' : ''}>
-                            <td className="ps-4 fw-bold text-white">
+                          <tr key={period.id} className={isSelected ? 'selected-row' : ''}>
+                            <td style={{ paddingLeft: '1.5rem', fontWeight: 700 }}>
                               {period.periodName}
                               {isSelected && (
-                                <span className="badge bg-primary-subtle text-primary border border-primary-subtle ms-2 small d-inline-flex align-items-center">
-                                  <i className="ti ti-eye me-1"></i>Viewing
+                                <span className="badge-custom badge-viewing" style={{ marginLeft: '0.5rem' }}>
+                                  <i className="ti ti-eye"></i> Viewing
                                 </span>
                               )}
                             </td>
-                            <td>
-                              <span className="text-white-50">{period.startDate}</span>
-                            </td>
-                            <td>
-                              <span className="text-white-50">{period.endDate}</span>
-                            </td>
-                            <td className="text-center">
+                            <td style={{ color: '#ffffff' }}>{period.startDate}</td>
+                            <td style={{ color: '#ffffff' }}>{period.endDate}</td>
+                            <td style={{ textAlign: 'center' }}>
                               {period.isClosed ? (
-                                <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1 d-inline-flex align-items-center">
-                                  <i className="ti ti-lock me-1"></i> Closed
+                                <span className="badge-custom badge-closed">
+                                  <i className="ti ti-lock"></i> Closed
                                 </span>
                               ) : (
-                                <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 d-inline-flex align-items-center">
-                                  <i className="ti ti-lock-open me-1"></i> Active
+                                <span className="badge-custom badge-active">
+                                  <i className="ti ti-lock-open"></i> Active
                                 </span>
                               )}
                             </td>
-                            <td className="text-center pe-4">
-                              <div className="btn-group shadow-sm">
+                            <td style={{ textAlign: 'center', paddingRight: '1.5rem' }}>
+                              <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
                                 <button
                                   type="button"
-                                  className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                  className={`btn-icon-custom ${isSelected ? 'active' : ''}`}
                                   title="View this period"
                                   onClick={() => selectPeriod(period)}
                                 >
@@ -477,7 +472,7 @@ export default function PeriodsMainPage() {
                                 {!period.isClosed && (
                                   <button
                                     type="button"
-                                    className="btn btn-sm btn-outline-warning"
+                                    className="btn-warning-custom"
                                     title="Close Period"
                                     onClick={() => confirmAndClosePeriod(period)}
                                   >
@@ -491,10 +486,10 @@ export default function PeriodsMainPage() {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={5} className="text-center py-5 text-white-50">
-                          <i className="ti ti-calendar-off mb-3 d-block mx-auto text-white-50" style={{ fontSize: '2.5rem' }}></i>
-                          <p className="mb-0">No accounting periods have been initialized yet.</p>
-                          <small>Click &quot;Open New Period&quot; to start your first accounting cycle.</small>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '3rem 0', color: '#ffffff' }}>
+                          <i className="ti ti-calendar-off" style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}></i>
+                          <p style={{ margin: 0 }}>No accounting periods have been initialized yet.</p>
+                          <small style={{ color: '#ffffff' }}>Click &quot;Open New Period&quot; to start your first accounting cycle.</small>
                         </td>
                       </tr>
                     )}
@@ -508,41 +503,41 @@ export default function PeriodsMainPage() {
 
       {/* VIEW 2: OPEN NEW PERIOD FORM */}
       {viewMode === 'create' && (
-        <div className="create-period-container">
+        <div>
           {/* Form Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="periods-header">
             <div>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-calendar-plus me-2 text-primary fs-2"></i> Open New Period
+              <h2 className="periods-title">
+                <i className="ti ti-calendar-plus periods-title-icon"></i> Open New Period
               </h2>
-              <p className="text-white-50 mb-0">
+              <p className="periods-subtitle">
                 Start a new monthly accounting cycle. The opening balance entry is posted on day 1 of the period and will appear at the top of the General Journal.
               </p>
             </div>
             <button
               type="button"
-              className="btn btn-outline-secondary fw-semibold shadow-sm d-inline-flex align-items-center"
+              className="btn-secondary-custom"
               onClick={() => {
                 setErrorMessage(null);
                 setViewMode('list');
               }}
             >
-              <i className="ti ti-arrow-left me-1"></i> Back
+              <i className="ti ti-arrow-left"></i> Back
             </button>
           </div>
 
           <form onSubmit={handleCreateSubmit}>
             {/* Period Month/Year */}
-            <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-3 border border-secondary border-opacity-25">
-              <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4">
-                <h5 className="mb-0 fw-bold text-white">Period</h5>
+            <div className="periods-card">
+              <div className="periods-card-header">
+                <h5 className="periods-card-title">Period</h5>
               </div>
-              <div className="card-body p-4 text-white">
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold text-white-50">Month</label>
+              <div className="periods-card-body">
+                <div className="periods-grid grid-col-2">
+                  <div className="form-group">
+                    <label className="form-label">Month</label>
                     <select
-                      className="form-select bg-dark text-white border-secondary"
+                      className="form-select"
                       value={month}
                       onChange={(e) => setMonth(Number(e.target.value))}
                     >
@@ -553,11 +548,11 @@ export default function PeriodsMainPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-semibold text-white-50">Year</label>
+                  <div className="form-group">
+                    <label className="form-label">Year</label>
                     <input
                       type="number"
-                      className="form-control bg-dark text-white border-secondary"
+                      className="form-input"
                       value={year}
                       onChange={(e) => setYear(Number(e.target.value))}
                       required
@@ -568,55 +563,59 @@ export default function PeriodsMainPage() {
             </div>
 
             {/* Permanent Accounts Setup */}
-            <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-3 border border-secondary border-opacity-25">
-              <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 px-4">
-                <h5 className="mb-0 fw-bold text-white">Permanent Accounts Setup</h5>
+            <div className="periods-card">
+              <div className="periods-card-header">
+                <h5 className="periods-card-title">Permanent Accounts Setup</h5>
               </div>
-              <div className="card-body p-4 text-white">
-                <div className="btn-group w-100 mb-3" role="group">
-                  <input
-                    type="radio"
-                    className="btn-check"
-                    name="setupMode"
-                    id="modeLoad"
-                    checked={setupMode === 'LoadExisting'}
-                    disabled={!hasExistingPermanentAccounts}
-                    onChange={() => setSetupMode('LoadExisting')}
-                  />
-                  <label className="btn btn-outline-primary d-inline-flex align-items-center justify-content-center" htmlFor="modeLoad">
-                    <i className="ti ti-refresh me-1"></i> Use Existing Accounts
-                  </label>
+              <div className="periods-card-body">
+                <div className="radio-toggle-group">
+                  <div className="radio-toggle-btn">
+                    <input
+                      type="radio"
+                      id="modeLoad"
+                      name="setupMode"
+                      checked={setupMode === 'LoadExisting'}
+                      disabled={!hasExistingPermanentAccounts}
+                      onChange={() => setSetupMode('LoadExisting')}
+                    />
+                    <label className="radio-toggle-label" htmlFor="modeLoad">
+                      <i className="ti ti-refresh"></i> Use Existing Accounts
+                    </label>
+                  </div>
 
-                  <input
-                    type="radio"
-                    className="btn-check"
-                    name="setupMode"
-                    id="modeNew"
-                    checked={setupMode === 'CreateNew'}
-                    onChange={() => setSetupMode('CreateNew')}
-                  />
-                  <label className="btn btn-outline-primary d-inline-flex align-items-center justify-content-center" htmlFor="modeNew">
-                    <i className="ti ti-circle-plus me-1"></i> Register New Accounts
-                  </label>
+                  <div className="radio-toggle-btn">
+                    <input
+                      type="radio"
+                      id="modeNew"
+                      name="setupMode"
+                      checked={setupMode === 'CreateNew'}
+                      onChange={() => setSetupMode('CreateNew')}
+                    />
+                    <label className="radio-toggle-label" htmlFor="modeNew">
+                      <i className="ti ti-circle-plus"></i> Register New Accounts
+                    </label>
+                  </div>
                 </div>
 
                 {!hasExistingPermanentAccounts && (
-                  <div className="alert alert-info py-2 small mb-3 d-flex align-items-center">
-                    <i className="ti ti-info-circle me-2 fs-5 flex-shrink-0"></i>
-                    <span>No existing Cash/Bank &amp; Retained Earnings accounts found yet &mdash; this looks like your first period, so new accounts are required.</span>
+                  <div className="periods-alert periods-alert-info" style={{ marginBottom: '1rem' }}>
+                    <div className="periods-alert-content">
+                      <i className="ti ti-info-circle"></i>
+                      <span>No existing Cash/Bank &amp; Retained Earnings accounts found yet &mdash; this looks like your first period, so new accounts are required.</span>
+                    </div>
                   </div>
                 )}
 
                 {setupMode === 'LoadExisting' ? (
                   <>
-                    <p className="text-white-50 small mb-3">
+                    <p className="periods-subtitle" style={{ marginBottom: '1rem' }}>
                       Balances carry forward automatically from the ledger &mdash; no opening journal entry is posted.
                     </p>
-                    <div className="row g-3">
-                      <div className="col-md-4">
-                        <label className="form-label fw-semibold text-white-50">Cash Account</label>
+                    <div className="periods-grid grid-col-3">
+                      <div className="form-group">
+                        <label className="form-label">Cash Account</label>
                         <select
-                          className="form-select bg-dark text-white border-secondary"
+                          className="form-select"
                           value={cashAccountId}
                           onChange={(e) => setCashAccountId(e.target.value)}
                         >
@@ -627,10 +626,10 @@ export default function PeriodsMainPage() {
                           ))}
                         </select>
                       </div>
-                      <div className="col-md-4">
-                        <label className="form-label fw-semibold text-white-50">Bank Account</label>
+                      <div className="form-group">
+                        <label className="form-label">Bank Account</label>
                         <select
-                          className="form-select bg-dark text-white border-secondary"
+                          className="form-select"
                           value={bankAccountId}
                           onChange={(e) => setBankAccountId(e.target.value)}
                         >
@@ -641,10 +640,10 @@ export default function PeriodsMainPage() {
                           ))}
                         </select>
                       </div>
-                      <div className="col-md-4">
-                        <label className="form-label fw-semibold text-white-50">Retained Earnings Account</label>
+                      <div className="form-group">
+                        <label className="form-label">Retained Earnings Account</label>
                         <select
-                          className="form-select bg-dark text-white border-secondary"
+                          className="form-select"
                           value={retainedEarningsAccountId}
                           onChange={(e) => setRetainedEarningsAccountId(e.target.value)}
                         >
@@ -659,102 +658,109 @@ export default function PeriodsMainPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-white-50 small mb-3">
+                    <p className="periods-subtitle" style={{ marginBottom: '1rem' }}>
                       An opening balance journal entry (General) will be posted on{' '}
                       <strong>01 {MONTH_NAMES[month - 1]} {year}</strong>, debiting Cash &amp; Bank and crediting Retained Earnings.
                     </p>
-                    <div className="row g-3 mb-3">
-                      <div className="col-md-3">
-                        <label className="form-label fw-semibold text-white-50">Cash Ref #</label>
+
+                    <div className="periods-grid grid-col-12" style={{ marginBottom: '1rem' }}>
+                      <div className="form-group" style={{ gridColumn: 'span 3' }}>
+                        <label className="form-label">Cash Ref #</label>
                         <input
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           placeholder="101"
                           value={cashAccountCode}
                           onChange={(e) => setCashAccountCode(e.target.value)}
                         />
                       </div>
-                      <div className="col-md-5">
-                        <label className="form-label fw-semibold text-white-50">Cash Account Name</label>
+                      <div className="form-group" style={{ gridColumn: 'span 5' }}>
+                        <label className="form-label">Cash Account Name</label>
                         <input
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           placeholder="Cash on Hand"
                           value={cashAccountName}
                           onChange={(e) => setCashAccountName(e.target.value)}
                         />
                       </div>
-                      <div className="col-md-4">
-                        <label className="form-label fw-semibold text-white-50">Cash Opening Balance</label>
+                      <div className="form-group" style={{ gridColumn: 'span 4' }}>
+                        <label className="form-label">Cash Opening Balance</label>
                         <input
                           type="number"
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           value={cashBalance}
                           onChange={(e) => setCashBalance(e.target.value === '' ? '' : Number(e.target.value))}
                         />
                       </div>
 
-                      <div className="col-md-3">
-                        <label className="form-label fw-semibold text-white-50">Bank Ref #</label>
+                      <div className="form-group" style={{ gridColumn: 'span 3' }}>
+                        <label className="form-label">Bank Ref #</label>
                         <input
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           placeholder="102"
                           value={bankAccountCode}
                           onChange={(e) => setBankAccountCode(e.target.value)}
                         />
                       </div>
-                      <div className="col-md-5">
-                        <label className="form-label fw-semibold text-white-50">Bank Account Name</label>
+                      <div className="form-group" style={{ gridColumn: 'span 5' }}>
+                        <label className="form-label">Bank Account Name</label>
                         <input
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           placeholder="Bank Account"
                           value={bankAccountName}
                           onChange={(e) => setBankAccountName(e.target.value)}
                         />
                       </div>
-                      <div className="col-md-4">
-                        <label className="form-label fw-semibold text-white-50">Bank Opening Balance</label>
+                      <div className="form-group" style={{ gridColumn: 'span 4' }}>
+                        <label className="form-label">Bank Opening Balance</label>
                         <input
                           type="number"
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           value={bankBalance}
                           onChange={(e) => setBankBalance(e.target.value === '' ? '' : Number(e.target.value))}
                         />
                       </div>
 
-                      <div className="col-md-3">
-                        <label className="form-label fw-semibold text-white-50">Retained Earnings Ref #</label>
+                      <div className="form-group" style={{ gridColumn: 'span 3' }}>
+                        <label className="form-label">Retained Earnings Ref #</label>
                         <input
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           placeholder="301"
                           value={retainedAccountCode}
                           onChange={(e) => setRetainedAccountCode(e.target.value)}
                         />
                       </div>
-                      <div className="col-md-9">
-                        <label className="form-label fw-semibold text-white-50">Retained Earnings Account Name</label>
+                      <div className="form-group" style={{ gridColumn: 'span 9' }}>
+                        <label className="form-label">Retained Earnings Account Name</label>
                         <input
-                          className="form-control bg-dark text-white border-secondary"
+                          className="form-input"
                           placeholder="Retained Earnings"
                           value={retainedAccountName}
                           onChange={(e) => setRetainedAccountName(e.target.value)}
                         />
                       </div>
                     </div>
-                    <div className="alert alert-secondary py-2 small mb-0 bg-dark text-white border border-secondary">
-                      Opening credit to Retained Earnings will be:{' '}
-                      <strong>Rp {totalOpeningBalance.toLocaleString('en-US')}</strong>
+
+                    <div className="periods-alert periods-alert-info" style={{ marginBottom: 0 }}>
+                      <div className="periods-alert-content">
+                        <i className="ti ti-info-circle"></i>
+                        <span>
+                          Opening credit to Retained Earnings will be:{' '}
+                          <strong>Rp {totalOpeningBalance.toLocaleString('en-US')}</strong>
+                        </span>
+                      </div>
                     </div>
                   </>
                 )}
 
                 {permanentAccounts.length > 0 && (
                   <>
-                    <hr className="my-3 border-secondary" />
-                    <p className="fw-semibold small text-white-50 mb-2">
+                    <hr style={{ border: 'none', borderTop: '1px solid #2a313c', margin: '1.25rem 0' }} />
+                    <p className="form-label" style={{ marginBottom: '0.5rem' }}>
                       Existing permanent accounts (for reference):
                     </p>
-                    <div className="d-flex flex-wrap gap-2">
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                       {permanentAccounts.map((a) => (
-                        <span key={a.id} className="badge bg-dark text-info border border-secondary px-2 py-1">
+                        <span key={a.id} className="badge-tag">
                           {a.displayLabel}
                         </span>
                       ))}
@@ -765,23 +771,23 @@ export default function PeriodsMainPage() {
             </div>
 
             {/* Form Actions */}
-            <div className="d-flex justify-content-end gap-2">
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
                 type="button"
-                className="btn btn-outline-secondary fw-semibold"
+                className="btn-secondary-custom"
                 onClick={() => setViewMode('list')}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="btn btn-primary fw-semibold shadow-sm d-inline-flex align-items-center"
+                className="btn-primary-custom"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  <span className="spinner-border spinner-border-sm me-1"></span>
+                  <span className="periods-spinner"></span>
                 ) : (
-                  <i className="ti ti-check me-1"></i>
+                  <i className="ti ti-check"></i>
                 )}
                 Open Period
               </button>
