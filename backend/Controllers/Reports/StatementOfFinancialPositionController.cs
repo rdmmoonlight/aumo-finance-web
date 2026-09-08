@@ -8,16 +8,16 @@ using AumoBackend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("web/reports/statement-of-financial-position")]
+[Route("api/v1/reports/statement-of-financial-position")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class StatementOfFinancialPositionWebController : ControllerBase
+public class StatementOfFinancialPositionController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public StatementOfFinancialPositionWebController(AppDbContext db)
+    public StatementOfFinancialPositionController(AppDbContext db)
     {
         _db = db;
     }
@@ -80,7 +80,7 @@ public class StatementOfFinancialPositionWebController : ControllerBase
     public static async Task<StatementOfFinancialPositionWebApiResponse> BuildSofpAsync(AppDbContext db, Guid userId, Period period, bool isPostClosing)
     {
         var rows = await TrialBalanceController.BuildTrialBalanceRowsAsync(db, userId, period, includeAdjusting: true);
-        var re = await RetainedEarningsWebController.BuildRetainedEarningsAsync(db, userId, period);
+        var re = await RetainedEarningsController.BuildRetainedEarningsAsync(db, userId, period);
 
         FinancialPositionLineWebApiResponse ToLine(TrialBalanceRow r) => new()
         {

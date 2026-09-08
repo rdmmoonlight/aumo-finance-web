@@ -6,16 +6,16 @@ using AumoBackend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("web/reports/retained-earnings")]
+[Route("api/v1/reports/retained-earnings")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class RetainedEarningsWebController : ControllerBase
+public class RetainedEarningsController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public RetainedEarningsWebController(AppDbContext db)
+    public RetainedEarningsController(AppDbContext db)
     {
         _db = db;
     }
@@ -69,7 +69,7 @@ public class RetainedEarningsWebController : ControllerBase
     public static async Task<RetainedEarningsWebApiResponse> BuildRetainedEarningsAsync(AppDbContext db, Guid userId, Period period)
     {
         var rows = await TrialBalanceController.BuildTrialBalanceRowsAsync(db, userId, period, includeAdjusting: true);
-        var incomeStatement = IncomeStatementWebController.BuildIncomeStatement(rows, period);
+        var incomeStatement = IncomeStatementController.BuildIncomeStatement(rows, period);
         var reAccount = rows.Find(r => r.Role == "RetainedEarnings");
 
         decimal beginningBalance = reAccount?.NetBalance ?? 0m;

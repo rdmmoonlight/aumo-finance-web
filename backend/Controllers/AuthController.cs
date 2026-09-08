@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("web/auth")]
+[Route("api/v1/auth")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class AuthController : ControllerBase
 {
@@ -32,7 +32,7 @@ public class AuthController : ControllerBase
     // ==========================================
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] WebLoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
         {
@@ -119,7 +119,7 @@ public class AuthController : ControllerBase
 }
 
 // DTO khusus untuk Web Login
-public class WebLoginRequest
+public class LoginRequest
 {
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;

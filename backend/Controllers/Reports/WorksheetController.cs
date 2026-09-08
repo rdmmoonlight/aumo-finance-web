@@ -9,16 +9,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoBackend.Controllers.Web.Reports;
+namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("web/reports/worksheet")]
+[Route("api/v1/reports/worksheet")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class WorksheetWebController : ControllerBase
+public class WorksheetController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public WorksheetWebController(AppDbContext db)
+    public WorksheetController(AppDbContext db)
     {
         _db = db;
     }

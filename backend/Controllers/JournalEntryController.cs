@@ -12,14 +12,14 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("web/journal-entries")]
+[Route("api/v1/journal-entry")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class JournalEntryWebController : ControllerBase
+public class JournalEntryController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ITransactionNumberService _transactionNumberService;
 
-    public JournalEntryWebController(AppDbContext db, ITransactionNumberService transactionNumberService)
+    public JournalEntryController(AppDbContext db, ITransactionNumberService transactionNumberService)
     {
         _db = db;
         _transactionNumberService = transactionNumberService;
@@ -77,7 +77,7 @@ public class JournalEntryWebController : ControllerBase
     // 2. POST: /web/journal-entries/create
     // ==========================================
     [HttpPost("create")]
-    public async Task<IActionResult> Create([FromBody] CreateJournalEntryWebRequest request)
+    public async Task<IActionResult> Create([FromBody] CreateJournalEntryRequest request)
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty)
@@ -158,7 +158,7 @@ public class JournalEntryWebController : ControllerBase
     // 3. PUT: /web/journal-entries/edit/{id}
     // ==========================================
     [HttpPut("edit/{id:int}")]
-    public async Task<IActionResult> Edit(int id, [FromBody] UpdateJournalEntryWebRequest request)
+    public async Task<IActionResult> Edit(int id, [FromBody] UpdateJournalEntryRequest request)
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty)
@@ -332,23 +332,23 @@ public class JournalEntryWebController : ControllerBase
     }
 }
 
-public class CreateJournalEntryWebRequest
+public class CreateJournalEntryRequest
 {
     public string JournalType { get; set; } = "General";
     public DateTime EntryDate { get; set; } = DateTime.Today;
     public DateTime CreatedAt { get; set; }
-    public List<JournalEntryLineWebRequest> Lines { get; set; } = new();
+    public List<JournalEntryLineRequest> Lines { get; set; } = new();
 }
 
-public class UpdateJournalEntryWebRequest
+public class UpdateJournalEntryRequest
 {
     public string JournalType { get; set; } = "General";
     public DateTime EntryDate { get; set; } = DateTime.Today;
     public DateTime UpdatedAt { get; set; }
-    public List<JournalEntryLineWebRequest> Lines { get; set; } = new();
+    public List<JournalEntryLineRequest> Lines { get; set; } = new();
 }
 
-public class JournalEntryLineWebRequest
+public class JournalEntryLineRequest
 {
     public int AccountId { get; set; }
     public string? LineDescription { get; set; }

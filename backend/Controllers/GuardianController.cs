@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("web/guardian")]
+[Route("api/v1/guardian")]
 [Authorize]
 public class GuardianController : ControllerBase
 {
