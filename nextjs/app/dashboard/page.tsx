@@ -118,7 +118,7 @@ function DashboardContent() {
     };
   }, []);
 
-  // Fetch Dashboard data dari Backend API Web Controller dengan query parameter period
+  // Fetch Dashboard data dari Backend API dengan menyertakan query parameter period
   const fetchDashboardData = useCallback(async (type: string) => {
     setLoading(true);
     setErrorMessage(null);
@@ -186,10 +186,11 @@ function DashboardContent() {
     }
   }, []);
 
-  // Membaca URL searchParams dan mere-fetch data sesuai tipe periode aktif
+  // Sinkronisasi state lokal dengan URL searchParams saat parameter berubah
   useEffect(() => {
     const periodParam = searchParams.get('period');
-    const activePeriod = (periodParam && periodParam.toLowerCase() === 'annual') ? 'annual' : 'monthly';
+    const activePeriod = periodParam && periodParam.toLowerCase() === 'annual' ? 'annual' : 'monthly';
+    
     setPeriodType(activePeriod);
     fetchDashboardData(activePeriod);
 
@@ -204,12 +205,11 @@ function DashboardContent() {
     };
   }, [searchParams, fetchDashboardData]);
 
-  // Handler perpindahan tab (Monthly / Annual)
+  // Handler saat tombol pill-toggle diklik
   const handlePeriodSwitch = (type: string) => {
     if (periodType === type) return;
     setPeriodType(type);
     router.push(`/dashboard?period=${type}`);
-    fetchDashboardData(type);
   };
 
   const healthScore = useMemo(() => {
@@ -223,7 +223,7 @@ function DashboardContent() {
     return 40;
   }, [data]);
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="loader-box">
         <div className="spinner"></div>
