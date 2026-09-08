@@ -102,30 +102,30 @@ export default function AiAssistantPage() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className="ai-container">
       {/* Header */}
-      <div className={styles.header}>
+      <div className="ai-header">
         <div>
-          <h3 className={styles.title}>
-            <i className={`ti ti-robot ${styles.titleIcon}`}></i> AI Financial Assistant
+          <h3 className="ai-title">
+            <i className="ti ti-robot ai-title-icon"></i> AI Financial Assistant
           </h3>
-          <p className={styles.subtitle}>Business analysis, expense detection, and instant financial advice.</p>
+          <p className="ai-subtitle">Business analysis, expense detection, and instant financial advice.</p>
         </div>
       </div>
 
       {/* 1. AI LIVE INSIGHT (Auto Summary Box) */}
-      <div className={styles.summaryCard}>
-        <div className={styles.summaryHeader}>
-          <span className={styles.summaryBadge}>
+      <div className="ai-summary-card">
+        <div className="ai-summary-header">
+          <span className="ai-summary-badge">
             <i className="ti ti-bolt"></i> LIVE SUMMARY
           </span>
-          {summaryLoaded && <span className={styles.summaryTime}>Updated just now</span>}
+          {summaryLoaded && <span className="ai-summary-time">Updated just now</span>}
         </div>
 
-        <p className={styles.summaryText}>
+        <p className="ai-summary-text">
           {!summaryLoaded ? (
             <>
-              <span className={styles.spinner}></span>
+              <span className="ai-spinner"></span>
               Analyzing your current cash flow &amp; transactions...
             </>
           ) : (
@@ -135,78 +135,78 @@ export default function AiAssistantPage() {
       </div>
 
       {/* 2. PRESET PROMPT CARDS (Quick Questions) */}
-      <div className={styles.quickSectionHeader}>
-        <h6 className={styles.quickSectionTitle}>Recommended Quick Questions:</h6>
-        <span className={styles.quickSectionHint}>Click a card to ask instantly</span>
+      <div className="ai-quick-header">
+        <h6 className="ai-quick-title">Recommended Quick Questions:</h6>
+        <span className="ai-quick-hint">Click a card to ask instantly</span>
       </div>
 
-      <div className={styles.presetGrid}>
+      <div className="ai-preset-grid">
         <button
-          className={styles.presetCard}
+          className="ai-preset-card"
           disabled={isLoading}
           onClick={() => handleSendMessage('How is my cash position and liquidity looking right now?')}
         >
-          <div className={`${styles.iconBadge} ${styles.iconPrimary}`}>
+          <div className="ai-icon-badge ai-icon-primary">
             <i className="ti ti-cash-banknote"></i>
           </div>
-          <div className={styles.presetTitle}>Cash Health</div>
-          <div className={styles.presetDesc}>Check current liquid cash safety</div>
+          <div className="ai-preset-title">Cash Health</div>
+          <div className="ai-preset-desc">Check current liquid cash safety</div>
         </button>
 
         <button
-          className={styles.presetCard}
+          className="ai-preset-card"
           disabled={isLoading}
           onClick={() => handleSendMessage('Are there any overspending areas or expenses that need review?')}
         >
-          <div className={`${styles.iconBadge} ${styles.iconDanger}`}>
+          <div className="ai-icon-badge ai-icon-danger">
             <i className="ti ti-trending-up"></i>
           </div>
-          <div className={styles.presetTitle}>Overspending Alert</div>
-          <div className={styles.presetDesc}>Detect highest expense categories</div>
+          <div className="ai-preset-title">Overspending Alert</div>
+          <div className="ai-preset-desc">Detect highest expense categories</div>
         </button>
 
         <button
-          className={styles.presetCard}
+          className="ai-preset-card"
           disabled={isLoading}
           onClick={() => handleSendMessage('What is the estimated net income and revenue trend for this period?')}
         >
-          <div className={`${styles.iconBadge} ${styles.iconSuccess}`}>
+          <div className="ai-icon-badge ai-icon-success">
             <i className="ti ti-chart-pie"></i>
           </div>
-          <div className={styles.presetTitle}>Profit Forecast</div>
-          <div className={styles.presetDesc}>Project net profit for active period</div>
+          <div className="ai-preset-title">Profit Forecast</div>
+          <div className="ai-preset-desc">Project net profit for active period</div>
         </button>
 
         <button
-          className={styles.presetCard}
+          className="ai-preset-card"
           disabled={isLoading}
           onClick={() => handleSendMessage('Give me 3 actionable tips to optimize financial performance.')}
         >
-          <div className={`${styles.iconBadge} ${styles.iconWarning}`}>
+          <div className="ai-icon-badge ai-icon-warning">
             <i className="ti ti-bulb"></i>
           </div>
-          <div className={styles.presetTitle}>Efficiency Tips</div>
-          <div className={styles.presetDesc}>Pragmatic cost-saving insights</div>
+          <div className="ai-preset-title">Efficiency Tips</div>
+          <div className="ai-preset-desc">Pragmatic cost-saving insights</div>
         </button>
       </div>
 
       {/* 3. INTERACTIVE CHAT BOX */}
-      <div className={styles.chatCard}>
-        <div className={styles.chatHeader}>
-          <h6 className={styles.chatTitle}>
+      <div className="ai-chat-card">
+        <div className="ai-chat-header">
+          <h6 className="ai-chat-title">
             <i className="ti ti-messages" style={{ color: '#3b82f6' }}></i> Conversation
           </h6>
-          <button className={styles.clearBtn} onClick={clearChat}>
+          <button className="ai-clear-btn" onClick={clearChat}>
             <i className="ti ti-trash"></i> Clear
           </button>
         </div>
 
-        <div className={styles.chatBody}>
+        <div className="ai-chat-body">
           {/* Chat Container */}
-          <div className={styles.messageContainer}>
+          <div className="ai-message-container">
             {messages.length === 0 && (
-              <div className={styles.emptyState}>
-                <i className={`ti ti-robot ${styles.emptyIcon}`}></i>
+              <div className="ai-empty-state">
+                <i className="ti ti-robot ai-empty-icon"></i>
                 <p style={{ fontSize: '0.85rem', margin: 0 }}>
                   Click any card above or type a question below to start the discussion.
                 </p>
@@ -216,19 +216,19 @@ export default function AiAssistantPage() {
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`${styles.messageRow} ${msg.isUser ? styles.userRow : styles.aiRow}`}
+                className={`ai-message-row ${msg.isUser ? 'ai-user-row' : 'ai-ai-row'}`}
               >
-                <div className={`${styles.bubble} ${msg.isUser ? styles.userBubble : styles.aiBubble}`}>
+                <div className={`ai-bubble ${msg.isUser ? 'ai-user-bubble' : 'ai-ai-bubble'}`}>
                   <div dangerouslySetInnerHTML={formatMarkdown(msg.text)}></div>
                 </div>
               </div>
             ))}
 
             {isLoading && (
-              <div className={`${styles.messageRow} ${styles.aiRow}`}>
-                <div className={`${styles.bubble} ${styles.aiBubble}`}>
+              <div className="ai-message-row ai-ai-row">
+                <div className="ai-bubble ai-ai-bubble">
                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.5rem', opacity: 0.8 }}>
-                    <span className={styles.spinner}></span> AI is analyzing data...
+                    <span className="ai-spinner"></span> AI is analyzing data...
                   </div>
                 </div>
               </div>
@@ -236,10 +236,10 @@ export default function AiAssistantPage() {
           </div>
 
           {/* Input Box */}
-          <div className={styles.inputWrapper}>
+          <div className="ai-input-wrapper">
             <input
               type="text"
-              className={styles.chatInput}
+              className="ai-chat-input"
               placeholder="Ask anything or request custom analysis..."
               disabled={isLoading}
               value={userInput}
@@ -247,7 +247,7 @@ export default function AiAssistantPage() {
               onKeyDown={handleInputKeyDown}
             />
             <button
-              className={styles.sendBtn}
+              className="ai-send-btn"
               type="button"
               disabled={isLoading}
               onClick={() => handleSendMessage()}
