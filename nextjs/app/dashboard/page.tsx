@@ -34,6 +34,9 @@ import {
   IconX,
 } from '@tabler/icons-react';
 
+// Import CSS Terpisah
+import './dashboard.css';
+
 // Registrasi modul Chart.js
 ChartJS.register(
   CategoryScale,
@@ -223,24 +226,24 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div>
-        <div></div>
-        <p>Loading dashboard data...</p>
+      <div className="loader-box">
+        <div className="spinner"></div>
+        <p className="loading-text">Loading dashboard data...</p>
       </div>
     );
   }
 
   if (!data || !data.hasPeriodSelected) {
     return (
-      <div>
-        <IconEyeOff size={48} />
-        <h4>No Period Selected</h4>
-        <p>
+      <div className="empty-state-box">
+        <IconEyeOff size={48} className="empty-icon" />
+        <h4 className="empty-title">No Period Selected</h4>
+        <p className="empty-desc">
           The Dashboard follows whichever period you&apos;re viewing.
           <br />
           Go to <strong>Periods</strong> to view or select an active accounting period.
         </p>
-        <Link href="/periods">
+        <Link href="/periods" className="btn-action primary">
           <IconCalendar size={18} /> Go to Periods
         </Link>
       </div>
@@ -281,208 +284,210 @@ function DashboardContent() {
   };
 
   return (
-    <div>
+    <div className="dashboard-container">
       {errorMessage && (
-        <div>
-          <div>
-            <IconAlertTriangle size={20} />
+        <div className="alert-banner danger">
+          <div className="alert-content">
+            <IconAlertTriangle size={20} className="alert-icon" />
             <span>{errorMessage}</span>
           </div>
-          <button type="button" onClick={() => setErrorMessage(null)}>
+          <button type="button" className="close-btn" onClick={() => setErrorMessage(null)}>
             <IconX size={16} />
           </button>
         </div>
       )}
 
       {/* 1. HEADER CONTROLS SECTION */}
-      <div>
+      <div className="header-section">
         <div>
-          <h4>Financial Overview</h4>
-          <p>
-            Active Period: <span>{data.selectedPeriodName}</span>
+          <h4 className="header-title">Financial Overview</h4>
+          <p className="header-subtitle">
+            Active Period: <span className="period-highlight">{data.selectedPeriodName}</span>
             <span> (In IDR, unless otherwise stated)</span>
           </p>
         </div>
 
-        <div>
-          <div>
+        <div className="header-actions">
+          <div className="pill-toggle">
             <button
               type="button"
               onClick={() => handlePeriodSwitch('monthly')}
+              className={`pill-btn ${periodType === 'monthly' ? 'active' : ''}`}
             >
               Monthly
             </button>
             <button
               type="button"
               onClick={() => handlePeriodSwitch('annual')}
+              className={`pill-btn ${periodType === 'annual' ? 'active' : ''}`}
             >
               Annual
             </button>
           </div>
 
-          <Link href="/journal-entries/create">
+          <Link href="/journal-entries/create" className="btn-action warning">
             <IconPlus size={18} /> New Entry
           </Link>
-          <Link href="/reports/income-statement">
+          <Link href="/reports/income-statement" className="btn-action outline">
             <IconReport size={18} /> Report
           </Link>
         </div>
       </div>
 
       {/* 2. METRICS & FINANCIAL HEALTH GRID */}
-      <div>
+      <div className="grid-2-col mb-16">
         {/* Financial Health Index */}
-        <div>
-          <div>
-            <span>Financial Health Index</span>
-            <IconActivity size={20} />
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Financial Health Index</span>
+            <IconActivity size={20} className="text-primary" />
           </div>
-          <div>
-            <div>
-              <span>{healthScore}</span>
+          <div className="health-body">
+            <div className="score-circle">
+              <span className="score-num">{healthScore}</span>
             </div>
             <div>
-              <h6>
+              <h6 className="health-status">
                 {healthScore >= 80 ? (
-                  <span>Excellent Condition</span>
+                  <span className="text-success">Excellent Condition</span>
                 ) : healthScore >= 60 ? (
-                  <span>Stable Operations</span>
+                  <span className="text-info">Stable Operations</span>
                 ) : (
-                  <span>Attention Required</span>
+                  <span className="text-warning">Attention Required</span>
                 )}
               </h6>
-              <p>Calculated based on net profit margin and liquidity position.</p>
+              <p className="health-desc">Calculated based on net profit margin and liquidity position.</p>
             </div>
           </div>
         </div>
 
         {/* Cash & Bank Summary */}
-        <div>
-          <div>
-            <span>Total Cash &amp; Bank Reserves</span>
-            <IconWallet size={20} />
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Total Cash &amp; Bank Reserves</span>
+            <IconWallet size={20} className="text-warning" />
           </div>
-          <div>{formatNumber(data.totalAssets)}</div>
-          <div>
+          <div className="reserve-amount font-mono">{formatNumber(data.totalAssets)}</div>
+          <div className="reserve-breakdown">
             <span>
-              Cash: <strong>{formatNumber(data.totalCashOnHand)}</strong>
+              Cash: <strong className="font-mono">{formatNumber(data.totalCashOnHand)}</strong>
             </span>
             <span>
-              Bank: <strong>{formatNumber(data.totalBankBalance)}</strong>
+              Bank: <strong className="font-mono">{formatNumber(data.totalBankBalance)}</strong>
             </span>
           </div>
         </div>
       </div>
 
       {/* 4 CARDS: REVENUE, EXPENSES, NET INCOME, LIABILITIES */}
-      <div>
-        <div>
-          <div>
-            <span>Revenue</span>
-            <div>
+      <div className="grid-4-col mb-16">
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Revenue</span>
+            <div className="icon-badge success">
               <IconTrendingUp size={20} />
             </div>
           </div>
-          <div>{formatNumber(data.totalRevenue)}</div>
-          <div>Total Operating Revenue</div>
+          <div className="card-val font-mono">{formatNumber(data.totalRevenue)}</div>
+          <div className="card-sub">Total Operating Revenue</div>
         </div>
 
-        <div>
-          <div>
-            <span>Expenses</span>
-            <div>
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Expenses</span>
+            <div className="icon-badge danger">
               <IconTrendingDown size={20} />
             </div>
           </div>
-          <div>{formatNumber(data.totalExpenses)}</div>
-          <div>Total Operating Expenses</div>
+          <div className="card-val font-mono">{formatNumber(data.totalExpenses)}</div>
+          <div className="card-sub">Total Operating Expenses</div>
         </div>
 
-        <div>
-          <div>
-            <span>Net Income</span>
-            <IconShieldCheck size={20} />
+        <div className="dash-card primary-gradient">
+          <div className="card-header-flex">
+            <span className="card-label light">Net Income</span>
+            <IconShieldCheck size={20} className="text-warning" />
           </div>
-          <div>{formatNumber(data.netIncome)}</div>
-          <div>Net Income for Period</div>
+          <div className="card-val light font-mono">{formatNumber(data.netIncome)}</div>
+          <div className="card-sub light">Net Income for Period</div>
         </div>
 
-        <div>
-          <div>
-            <span>Liabilities</span>
-            <div>
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Liabilities</span>
+            <div className="icon-badge warning">
               <IconCreditCard size={20} />
             </div>
           </div>
-          <div>{formatNumber(data.totalLiabilities)}</div>
-          <div>Total Liabilities</div>
+          <div className="card-val font-mono">{formatNumber(data.totalLiabilities)}</div>
+          <div className="card-sub">Total Liabilities</div>
         </div>
       </div>
 
       {/* 3. CHARTS SECTION */}
-      <div>
-        <div>
-          <div>
+      <div className="grid-chart-col mb-16">
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
             <div>
-              <h6>Financial Trend</h6>
-              <span>Revenue vs Operating Expenses</span>
+              <h6 className="card-title">Financial Trend</h6>
+              <span className="card-sub">Revenue vs Operating Expenses</span>
             </div>
-            <div>
+            <div className="icon-badge primary">
               <IconChartLine size={20} />
             </div>
           </div>
-          <div>
+          <div className="chart-wrapper">
             <Line data={lineChartData} options={{ responsive: true, maintainAspectRatio: false }} />
           </div>
         </div>
 
-        <div>
-          <div>
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
             <div>
-              <h6>Asset Composition</h6>
-              <span>Cash vs Bank Reserves</span>
+              <h6 className="card-title">Asset Composition</h6>
+              <span className="card-sub">Cash vs Bank Reserves</span>
             </div>
-            <div>
+            <div className="icon-badge info">
               <IconChartPie size={20} />
             </div>
           </div>
-          <div>
+          <div className="chart-wrapper">
             <Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
           </div>
         </div>
       </div>
 
       {/* 4. RECENT TABLES SECTION */}
-      <div>
+      <div className="grid-2-col">
         {/* Cash Accounts Breakdown */}
-        <div>
-          <div>
-            <h6>Cash &amp; Bank Accounts</h6>
-            <Link href="/chart-of-accounts">
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
+            <h6 className="card-title">Cash &amp; Bank Accounts</h6>
+            <Link href="/chart-of-accounts" className="link-more">
               View All
             </Link>
           </div>
-          <div>
-            <table>
+          <div className="table-responsive">
+            <table className="custom-table">
               <thead>
                 <tr>
                   <th>REF</th>
                   <th>ACCOUNT NAME</th>
-                  <th>BALANCE</th>
+                  <th className="text-right">BALANCE</th>
                 </tr>
               </thead>
               <tbody>
                 {[...data.cashAccounts, ...data.bankAccounts].length > 0 ? (
                   [...data.cashAccounts, ...data.bankAccounts].map((item, idx) => (
                     <tr key={idx}>
-                      <td>{item.referenceNumber}</td>
-                      <td>{item.accountName}</td>
-                      <td>{formatNumber(item.balance)}</td>
+                      <td className="font-mono text-muted bold">{item.referenceNumber}</td>
+                      <td className="bold">{item.accountName}</td>
+                      <td className="text-right font-mono bold">{formatNumber(item.balance)}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={3}>
+                    <td colSpan={3} className="empty-table-cell">
                       No cash or bank accounts found.
                     </td>
                   </tr>
@@ -493,33 +498,33 @@ function DashboardContent() {
         </div>
 
         {/* Equity Breakdown */}
-        <div>
-          <div>
-            <h6>Equity &amp; Capital Position</h6>
-            <Link href="/reports/statement-of-financial-position">
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
+            <h6 className="card-title">Equity &amp; Capital Position</h6>
+            <Link href="/reports/statement-of-financial-position" className="link-more">
               Balance Sheet
             </Link>
           </div>
-          <div>
-            <table>
+          <div className="table-responsive">
+            <table className="custom-table">
               <thead>
                 <tr>
                   <th>COMPONENT</th>
-                  <th>AMOUNT</th>
+                  <th className="text-right">AMOUNT</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Total Liabilities</td>
-                  <td>{formatNumber(data.totalLiabilities)}</td>
+                  <td className="text-muted">Total Liabilities</td>
+                  <td className="text-right font-mono bold text-warning">{formatNumber(data.totalLiabilities)}</td>
                 </tr>
                 <tr>
-                  <td>Total Equity</td>
-                  <td>{formatNumber(data.totalEquity)}</td>
+                  <td className="text-muted">Total Equity</td>
+                  <td className="text-right font-mono bold text-info">{formatNumber(data.totalEquity)}</td>
                 </tr>
-                <tr>
-                  <td>Net Income (Current Period)</td>
-                  <td>{formatNumber(data.netIncome)}</td>
+                <tr className="border-top-line">
+                  <td className="bold">Net Income (Current Period)</td>
+                  <td className="text-right font-mono bold text-success">{formatNumber(data.netIncome)}</td>
                 </tr>
               </tbody>
             </table>
@@ -534,9 +539,9 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <div>
-          <div></div>
-          <span>Loading dashboard...</span>
+        <div className="loader-box">
+          <div className="spinner"></div>
+          <span className="loading-text">Loading dashboard...</span>
         </div>
       }
     >
