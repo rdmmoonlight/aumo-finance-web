@@ -24,10 +24,10 @@ public class DashboardWebController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/dashboard
+    // 1. GET: /web/dashboard?period=monthly|annual
     // ==========================================
     [HttpGet]
-    public async Task<IActionResult> GetDashboardData()
+    public async Task<IActionResult> GetDashboardData([FromQuery] string period = "monthly")
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty)
@@ -36,11 +36,27 @@ public class DashboardWebController : ControllerBase
         // 1. Ambil periode yang sedang dipilih
         var activePeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
 
-        // 2. Filter Jurnal Berdasarkan Periode Aktif
-        DateTime startDate = activePeriod?.StartDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-        DateTime endDate = activePeriod?.EndDate ?? startDate.AddMonths(1).AddDays(-1);
+        DateTime startDate;
+        DateTime endDate;
+        string displayPeriodName;
 
-        var journalLines = await _db.JournalEntryLines
+        // 2. Evaluasi Filter Berdasarkan Query Parameter "period"
+        if (string.Equals(period, "annual", StringComparison.OrdinalIgnoreCase))
+        {
+            int year = activePeriod?.StartDate.Year ?? DateTime.UtcNow.Year;
+            startDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            endDate = new DateTime(year, 12, 31, 23, 59, 59, DateTimeKind.Utc);
+            displayPeriodName = $"Annual {year}";
+        }
+        else
+        {
+            startDate = activePeriod?.StartDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            endDate = activePeriod?.EndDate ?? startDate.AddMonths(1).AddDays(-1);
+            displayPeriodName = activePeriod?.PeriodName ?? "Current Period";
+        }
+
+        // 3. Ambil Transaksi Jurnal dalam Rentang Periode (untuk Laba Rugi)
+        var periodJournalLines = await _db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Include(l => l.Account)
             .Where(l => l.JournalEntry!.UserId == userId
@@ -48,7 +64,14 @@ public class DashboardWebController : ControllerBase
                      && l.JournalEntry.EntryDate <= endDate)
             .ToListAsync();
 
-        // 3. Hitung Kas & Bank (Role == "CashAndEquivalents")
+        // 4. Ambil Transaksi Jurnal Kumulatif s.d. EndDate (untuk Neraca/Balance Sheet)
+        var cumulativeJournalLines = await _db.JournalEntryLines
+            .Include(l => l.JournalEntry)
+            .Where(l => l.JournalEntry!.UserId == userId
+                     && l.JournalEntry.EntryDate <= endDate)
+            .ToListAsync();
+
+        // 5. Hitung Kas & Bank (Role == "CashAndEquivalents")
         var cashAndBankAccounts = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Role == "CashAndEquivalents")
             .OrderBy(a => a.ReferenceNumber)
@@ -60,7 +83,7 @@ public class DashboardWebController : ControllerBase
             accountId = a.Id,
             referenceNumber = a.ReferenceNumber,
             accountName = a.AccountName,
-            balance = journalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
+            balance = cumulativeJournalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
             isBank = a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase)
         }).ToList();
 
@@ -68,36 +91,36 @@ public class DashboardWebController : ControllerBase
         var cashOnlyAccounts = cashAndBankBreakdown.Where(a => !a.isBank).ToList();
         var bankOnlyAccounts = cashAndBankBreakdown.Where(a => a.isBank).ToList();
 
-        // 4. Hitung Total Pendapatan (Type == "OperatingIncome")
+        // 6. Hitung Total Pendapatan (Type == "OperatingIncome")
         var incomeAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Type == "OperatingIncome")
             .Select(a => a.Id)
             .ToListAsync();
 
-        var totalIncome = journalLines
+        var totalIncome = periodJournalLines
             .Where(l => incomeAccountIds.Contains(l.AccountId))
             .Sum(l => l.Credit - l.Debit);
 
-        // 5. Hitung Total Beban (Type == "OperatingExpenses")
+        // 7. Hitung Total Beban (Type == "OperatingExpenses")
         var expenseAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Type == "OperatingExpenses")
             .Select(a => a.Id)
             .ToListAsync();
 
-        var totalExpense = journalLines
+        var totalExpense = periodJournalLines
             .Where(l => expenseAccountIds.Contains(l.AccountId))
             .Sum(l => l.Debit - l.Credit);
 
-        // 6. Hitung Laba Bersih
+        // 8. Hitung Laba Bersih
         var netIncome = totalIncome - totalExpense;
 
-        // 7. Hitung Total Liabilities & Equity
+        // 9. Hitung Total Liabilities & Equity (Kumulatif)
         var liabilityAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Type == "Liabilities")
             .Select(a => a.Id)
             .ToListAsync();
 
-        var totalLiabilities = journalLines
+        var totalLiabilities = cumulativeJournalLines
             .Where(l => liabilityAccountIds.Contains(l.AccountId))
             .Sum(l => l.Credit - l.Debit);
 
@@ -106,7 +129,7 @@ public class DashboardWebController : ControllerBase
             .Select(a => a.Id)
             .ToListAsync();
 
-        var totalEquity = journalLines
+        var totalEquity = cumulativeJournalLines
             .Where(l => equityAccountIds.Contains(l.AccountId))
             .Sum(l => l.Credit - l.Debit);
 
@@ -114,7 +137,7 @@ public class DashboardWebController : ControllerBase
         {
             success = true,
             hasPeriodSelected = activePeriod != null,
-            selectedPeriodName = activePeriod?.PeriodName,
+            selectedPeriodName = displayPeriodName,
             isPeriodClosed = activePeriod?.IsClosed ?? false,
             totalAssets = totalCashBalance,
             totalLiabilities = totalLiabilities,
