@@ -17,6 +17,22 @@ import {
   Filler,
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
+import {
+  IconEyeOff,
+  IconCalendar,
+  IconAlertTriangle,
+  IconPlus,
+  IconReport,
+  IconActivity,
+  IconWallet,
+  IconTrendingUp,
+  IconTrendingDown,
+  IconShieldCheck,
+  IconCreditCard,
+  IconChartLine,
+  IconChartPie,
+  IconX,
+} from '@tabler/icons-react';
 
 // Registrasi modul Chart.js
 ChartJS.register(
@@ -87,9 +103,8 @@ function DashboardContent() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         const cmdModalEl = document.getElementById('commandPaletteModal');
-        if (cmdModalEl && typeof window !== 'undefined' && (window as any).bootstrap) {
-          const modalInstance = new (window as any).bootstrap.Modal(cmdModalEl);
-          modalInstance.show();
+        if (cmdModalEl) {
+          cmdModalEl.style.display = 'block';
         }
       }
     };
@@ -115,7 +130,7 @@ function DashboardContent() {
       const response = await fetch(`${API_BASE_URL}/web/dashboard`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Untuk Identity Cookie Session
+        credentials: 'include',
       });
 
       if (response.status === 401) {
@@ -149,7 +164,6 @@ function DashboardContent() {
         return;
       }
 
-      // Safe extraction DTO dari DashboardWebController
       const safeData: DashboardViewModel = {
         hasPeriodSelected: true,
         selectedPeriodName: resData?.selectedPeriodName || 'Current Period',
@@ -179,7 +193,6 @@ function DashboardContent() {
   useEffect(() => {
     fetchDashboardData();
 
-    // Listener otomatis saat periode diganti lewat navbar/topbar
     const handlePeriodChanged = () => {
       fetchDashboardData();
     };
@@ -197,12 +210,10 @@ function DashboardContent() {
     router.push(`/dashboard?period=${type}`);
   };
 
-  // Kalkulasi Skor Kesehatan Keuangan (Financial Health Score)
   const healthScore = useMemo(() => {
     if (!data) return 0;
     if (data.totalRevenue === 0 && data.totalExpenses === 0) return 100;
-    
-    // Profit margin ratio calculation
+
     const margin = data.totalRevenue > 0 ? (data.netIncome / data.totalRevenue) * 100 : 0;
     if (margin >= 20) return 90;
     if (margin >= 10) return 75;
@@ -212,33 +223,30 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="text-center py-5 my-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="text-white-50 mt-3">Loading dashboard data...</p>
+      <div className="loader-box">
+        <div className="spinner"></div>
+        <p className="loading-text">Loading dashboard data...</p>
       </div>
     );
   }
 
   if (!data || !data.hasPeriodSelected) {
     return (
-      <div className="text-center py-5 my-5">
-        <i className="ti ti-eye-off text-secondary mb-3 d-block mx-auto" style={{ fontSize: '3rem' }}></i>
-        <h4 className="fw-bold text-white mb-2">No Period Selected</h4>
-        <p className="text-white-50 mb-4">
+      <div className="empty-state-box">
+        <IconEyeOff size={48} className="empty-icon" />
+        <h4 className="empty-title">No Period Selected</h4>
+        <p className="empty-desc">
           The Dashboard follows whichever period you&apos;re viewing.
           <br />
           Go to <strong>Periods</strong> to view or select an active accounting period.
         </p>
-        <Link href="/periods" className="btn btn-primary fw-semibold shadow-sm px-4">
-          <i className="ti ti-calendar me-1"></i> Go to Periods
+        <Link href="/periods" className="btn-action primary">
+          <IconCalendar size={18} /> Go to Periods
         </Link>
       </div>
     );
   }
 
-  // Visualisasi Line Chart (Trend Pendapatan vs Beban)
   const lineChartData = {
     labels: ['Overview'],
     datasets: [
@@ -261,7 +269,6 @@ function DashboardContent() {
     ],
   };
 
-  // Visualisasi Doughnut Chart (Aset: Cash vs Bank)
   const doughnutChartData = {
     labels: ['Cash on Hand', 'Bank Balance'],
     datasets: [
@@ -274,296 +281,700 @@ function DashboardContent() {
   };
 
   return (
-    <div className="container-fluid px-0 text-white">
+    <div className="dashboard-container">
       {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show shadow-sm py-2 mb-4 d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle-filled me-2 fs-5 flex-shrink-0"></i>
+        <div className="alert-banner danger">
+          <div className="alert-content">
+            <IconAlertTriangle size={20} className="alert-icon" />
             <span>{errorMessage}</span>
           </div>
-          <button type="button" className="btn-close ms-auto" onClick={() => setErrorMessage(null)}></button>
+          <button type="button" className="close-btn" onClick={() => setErrorMessage(null)}>
+            <IconX size={16} />
+          </button>
         </div>
       )}
 
       {/* 1. HEADER CONTROLS SECTION */}
-      <div className="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+      <div className="header-section">
         <div>
-          <div className="d-flex align-items-center gap-2 mb-1">
-            <h4 className="fw-bold mb-0 text-white">Financial Overview</h4>
-          </div>
-          <p className="text-white-50 small mb-0">
-            Active Period: <span className="fw-semibold text-white">{data.selectedPeriodName}</span>
-            <span className="ms-1"> (In IDR, unless otherwise stated)</span>
+          <h4 className="header-title">Financial Overview</h4>
+          <p className="header-subtitle">
+            Active Period: <span className="period-highlight">{data.selectedPeriodName}</span>
+            <span> (In IDR, unless otherwise stated)</span>
           </p>
         </div>
 
-        <div className="d-flex flex-wrap align-items-center gap-2">
-          <div
-            className="btn-group btn-group-sm p-1 bg-dark border border-secondary border-opacity-25 rounded-pill shadow-sm"
-            role="group"
-          >
+        <div className="header-actions">
+          <div className="pill-toggle">
             <button
               type="button"
               onClick={() => handlePeriodSwitch('monthly')}
-              className={`btn btn-sm rounded-pill px-3 fw-semibold transition-all ${
-                periodType === 'monthly' ? 'btn-primary shadow-sm' : 'btn-link text-white text-decoration-none opacity-75'
-              }`}
+              className={`pill-btn ${periodType === 'monthly' ? 'active' : ''}`}
             >
               Monthly
             </button>
             <button
               type="button"
               onClick={() => handlePeriodSwitch('annual')}
-              className={`btn btn-sm rounded-pill px-3 fw-semibold transition-all ${
-                periodType === 'annual' ? 'btn-primary shadow-sm' : 'btn-link text-white text-decoration-none opacity-75'
-              }`}
+              className={`pill-btn ${periodType === 'annual' ? 'active' : ''}`}
             >
               Annual
             </button>
           </div>
 
-          <Link
-            href="/journal-entries/create"
-            className="btn btn-warning btn-sm fw-semibold shadow-sm d-flex align-items-center gap-2 px-3 rounded-3"
-          >
-            <i className="ti ti-plus"></i> New Entry
+          <Link href="/journal-entries/create" className="btn-action warning">
+            <IconPlus size={18} /> New Entry
           </Link>
-          <Link
-            href="/reports/income-statement"
-            className="btn btn-outline-light btn-sm d-flex align-items-center gap-2 px-3 rounded-3"
-          >
-            <i className="ti ti-report"></i> Report
+          <Link href="/reports/income-statement" className="btn-action outline">
+            <IconReport size={18} /> Report
           </Link>
         </div>
       </div>
 
       {/* 2. METRICS & FINANCIAL HEALTH GRID */}
-      <div className="row g-3 mb-4">
+      <div className="grid-2-col mb-16">
         {/* Financial Health Index */}
-        <div className="col-12 col-md-6">
-          <div className="card bg-dark border-secondary text-white shadow-sm border border-opacity-25 rounded-4 h-100 p-3">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <span className="text-white-50 small fw-semibold text-uppercase tracking-wider">
-                Financial Health Index
-              </span>
-              <i className="ti ti-activity text-primary fs-5"></i>
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Financial Health Index</span>
+            <IconActivity size={20} className="text-primary" />
+          </div>
+          <div className="health-body">
+            <div className="score-circle">
+              <span className="score-num">{healthScore}</span>
             </div>
-            <div className="d-flex align-items-center gap-3">
-              <div className="position-relative d-inline-flex align-items-center justify-content-center">
-                <div
-                  className="rounded-circle border border-3 border-primary d-flex align-items-center justify-content-center"
-                  style={{ width: '60px', height: '60px' }}
-                >
-                  <span className="fw-bold fs-4 text-white">{healthScore}</span>
-                </div>
-              </div>
-              <div>
-                <h6 className="fw-bold mb-1">
-                  {healthScore >= 80 ? (
-                    <span className="text-success">Excellent Condition</span>
-                  ) : healthScore >= 60 ? (
-                    <span className="text-info">Stable Operations</span>
-                  ) : (
-                    <span className="text-warning">Attention Required</span>
-                  )}
-                </h6>
-                <p className="text-white-50 fs-8 mb-0">Calculated based on net profit margin and liquidity position.</p>
-              </div>
+            <div>
+              <h6 className="health-status">
+                {healthScore >= 80 ? (
+                  <span className="text-success">Excellent Condition</span>
+                ) : healthScore >= 60 ? (
+                  <span className="text-info">Stable Operations</span>
+                ) : (
+                  <span className="text-warning">Attention Required</span>
+                )}
+              </h6>
+              <p className="health-desc">Calculated based on net profit margin and liquidity position.</p>
             </div>
           </div>
         </div>
 
         {/* Cash & Bank Summary */}
-        <div className="col-12 col-md-6">
-          <div className="card bg-dark border-secondary text-white shadow-sm border border-opacity-25 rounded-4 h-100 p-3">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <span className="text-white-50 small fw-semibold text-uppercase tracking-wider">
-                Total Cash &amp; Bank Reserves
-              </span>
-              <i className="ti ti-wallet text-warning fs-5"></i>
-            </div>
-            <div className="d-flex justify-content-between align-items-baseline mb-2">
-              <h4 className="fw-bold mb-0 text-white font-monospace">
-                {formatNumber(data.totalAssets)}
-              </h4>
-            </div>
-            <div className="d-flex gap-3 small text-white-50">
-              <span>Cash: <strong className="text-white font-monospace">{formatNumber(data.totalCashOnHand)}</strong></span>
-              <span>Bank: <strong className="text-white font-monospace">{formatNumber(data.totalBankBalance)}</strong></span>
-            </div>
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Total Cash &amp; Bank Reserves</span>
+            <IconWallet size={20} className="text-warning" />
+          </div>
+          <div className="reserve-amount font-mono">{formatNumber(data.totalAssets)}</div>
+          <div className="reserve-breakdown">
+            <span>
+              Cash: <strong className="font-mono">{formatNumber(data.totalCashOnHand)}</strong>
+            </span>
+            <span>
+              Bank: <strong className="font-mono">{formatNumber(data.totalBankBalance)}</strong>
+            </span>
           </div>
         </div>
       </div>
 
       {/* 4 CARDS: REVENUE, EXPENSES, NET INCOME, LIABILITIES */}
-      <div className="row g-3 mb-3">
-        <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card bg-dark border-secondary text-white shadow-sm h-100 rounded-4 p-3 border border-opacity-25">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <span className="text-white-50 small fw-semibold text-uppercase tracking-wider">Revenue</span>
-              <div className="bg-success bg-opacity-10 text-success rounded-3 p-2">
-                <i className="ti ti-trending-up fs-5"></i>
-              </div>
+      <div className="grid-4-col mb-16">
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Revenue</span>
+            <div className="icon-badge success">
+              <IconTrendingUp size={20} />
             </div>
-            <h4 className="fw-bold text-white mb-1 font-monospace">{formatNumber(data.totalRevenue)}</h4>
-            <div className="small text-white-50 fs-8">Total Operating Revenue</div>
           </div>
+          <div className="card-val font-mono">{formatNumber(data.totalRevenue)}</div>
+          <div className="card-sub">Total Operating Revenue</div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card bg-dark border-secondary text-white shadow-sm h-100 rounded-4 p-3 border border-opacity-25">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <span className="text-white-50 small fw-semibold text-uppercase tracking-wider">Expenses</span>
-              <div className="bg-danger bg-opacity-10 text-danger rounded-3 p-2">
-                <i className="ti ti-trending-down fs-5"></i>
-              </div>
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Expenses</span>
+            <div className="icon-badge danger">
+              <IconTrendingDown size={20} />
             </div>
-            <h4 className="fw-bold text-white mb-1 font-monospace">{formatNumber(data.totalExpenses)}</h4>
-            <div className="small text-white-50 fs-8">Total Operating Expenses</div>
           </div>
+          <div className="card-val font-mono">{formatNumber(data.totalExpenses)}</div>
+          <div className="card-sub">Total Operating Expenses</div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card bg-primary bg-gradient text-white shadow-sm h-100 rounded-4 p-3 border-0">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <span className="small fw-semibold text-white-50 text-uppercase tracking-wider">Net Income</span>
-              <i className="ti ti-shield-check text-warning fs-5"></i>
-            </div>
-            <h4 className="fw-bold mb-1 text-white font-monospace">{formatNumber(data.netIncome)}</h4>
-            <div className="small text-white-50 fs-8">Net Income for Period</div>
+        <div className="dash-card primary-gradient">
+          <div className="card-header-flex">
+            <span className="card-label light">Net Income</span>
+            <IconShieldCheck size={20} className="text-warning" />
           </div>
+          <div className="card-val light font-mono">{formatNumber(data.netIncome)}</div>
+          <div className="card-sub light">Net Income for Period</div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-3">
-          <div className="card bg-dark border-secondary text-white shadow-sm h-100 rounded-4 p-3 border border-opacity-25">
-            <div className="d-flex align-items-center justify-content-between mb-2">
-              <span className="text-white-50 small fw-semibold text-uppercase tracking-wider">Liabilities</span>
-              <div className="bg-warning bg-opacity-10 text-warning rounded-3 p-2">
-                <i className="ti ti-credit-card fs-5"></i>
-              </div>
+        <div className="dash-card">
+          <div className="card-header-flex">
+            <span className="card-label">Liabilities</span>
+            <div className="icon-badge warning">
+              <IconCreditCard size={20} />
             </div>
-            <h4 className="fw-bold text-white mb-1 font-monospace">{formatNumber(data.totalLiabilities)}</h4>
-            <div className="small text-white-50 fs-8">Total Liabilities</div>
           </div>
+          <div className="card-val font-mono">{formatNumber(data.totalLiabilities)}</div>
+          <div className="card-sub">Total Liabilities</div>
         </div>
       </div>
 
       {/* 3. CHARTS SECTION */}
-      <div className="row g-3 mb-4">
-        <div className="col-12 col-xl-8">
-          <div className="card bg-dark border-secondary text-white shadow-sm rounded-4 h-100 p-3 border border-opacity-25">
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <div>
-                <h6 className="fw-bold mb-0 text-white">Financial Trend</h6>
-                <span className="text-white-50 fs-8">Revenue vs Operating Expenses</span>
-              </div>
-              <div className="bg-primary bg-opacity-10 text-primary rounded-3 p-2">
-                <i className="ti ti-chart-line fs-5"></i>
-              </div>
+      <div className="grid-chart-col mb-16">
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
+            <div>
+              <h6 className="card-title">Financial Trend</h6>
+              <span className="card-sub">Revenue vs Operating Expenses</span>
             </div>
-            <div className="chart-container" style={{ position: 'relative', height: '280px' }}>
-              <Line data={lineChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+            <div className="icon-badge primary">
+              <IconChartLine size={20} />
             </div>
+          </div>
+          <div className="chart-wrapper">
+            <Line data={lineChartData} options={{ responsive: true, maintainAspectRatio: false }} />
           </div>
         </div>
 
-        <div className="col-12 col-xl-4">
-          <div className="card bg-dark border-secondary text-white shadow-sm rounded-4 h-100 p-3 border border-opacity-25">
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <div>
-                <h6 className="fw-bold mb-0 text-white">Asset Composition</h6>
-                <span className="text-white-50 fs-8">Cash vs Bank Reserves</span>
-              </div>
-              <div className="bg-info bg-opacity-10 text-info rounded-3 p-2">
-                <i className="ti ti-chart-pie fs-5"></i>
-              </div>
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
+            <div>
+              <h6 className="card-title">Asset Composition</h6>
+              <span className="card-sub">Cash vs Bank Reserves</span>
             </div>
-
-            <div className="chart-container" style={{ position: 'relative', height: '280px' }}>
-              <Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
+            <div className="icon-badge info">
+              <IconChartPie size={20} />
             </div>
+          </div>
+          <div className="chart-wrapper">
+            <Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
           </div>
         </div>
       </div>
 
       {/* 4. RECENT TABLES SECTION */}
-      <div className="row g-3">
+      <div className="grid-2-col">
         {/* Cash Accounts Breakdown */}
-        <div className="col-12 col-xl-6">
-          <div className="card bg-dark border-secondary text-white shadow-sm rounded-4 h-100 p-3 border border-opacity-25">
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <h6 className="fw-bold mb-0 text-white">Cash &amp; Bank Accounts</h6>
-              <Link href="/chart-of-accounts" className="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold text-info">
-                View All
-              </Link>
-            </div>
-            <div className="table-responsive">
-              <table className="table table-dark table-hover table-borderless align-middle mb-0 text-white">
-                <thead className="text-white-50 fs-8 border-bottom border-secondary">
-                  <tr>
-                    <th>REF</th>
-                    <th>ACCOUNT NAME</th>
-                    <th className="text-end">BALANCE</th>
-                  </tr>
-                </thead>
-                <tbody className="small">
-                  {[...data.cashAccounts, ...data.bankAccounts].length > 0 ? (
-                    [...data.cashAccounts, ...data.bankAccounts].map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="fw-bold text-white-50 font-monospace">{item.referenceNumber}</td>
-                        <td className="fw-semibold text-white">{item.accountName}</td>
-                        <td className="text-end fw-bold text-white font-monospace">{formatNumber(item.balance)}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className="text-center text-white-50 py-3">
-                        No cash or bank accounts found.
-                      </td>
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
+            <h6 className="card-title">Cash &amp; Bank Accounts</h6>
+            <Link href="/chart-of-accounts" className="link-more">
+              View All
+            </Link>
+          </div>
+          <div className="table-responsive">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>REF</th>
+                  <th>ACCOUNT NAME</th>
+                  <th className="text-right">BALANCE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...data.cashAccounts, ...data.bankAccounts].length > 0 ? (
+                  [...data.cashAccounts, ...data.bankAccounts].map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="font-mono text-muted bold">{item.referenceNumber}</td>
+                      <td className="bold">{item.accountName}</td>
+                      <td className="text-right font-mono bold">{formatNumber(item.balance)}</td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="empty-table-cell">
+                      No cash or bank accounts found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
         {/* Equity Breakdown */}
-        <div className="col-12 col-xl-6">
-          <div className="card bg-dark border-secondary text-white shadow-sm rounded-4 h-100 p-3 border border-opacity-25">
-            <div className="d-flex align-items-center justify-content-between mb-3">
-              <h6 className="fw-bold mb-0 text-white">Equity &amp; Capital Position</h6>
-              <Link href="/reports/statement-of-financial-position" className="btn btn-link btn-sm text-decoration-none p-0 fs-8 fw-semibold text-info">
-                Balance Sheet
-              </Link>
-            </div>
-            <div className="table-responsive">
-              <table className="table table-dark table-hover table-borderless align-middle mb-0 text-white">
-                <thead className="text-white-50 fs-8 border-bottom border-secondary">
-                  <tr>
-                    <th>COMPONENT</th>
-                    <th className="text-end">AMOUNT</th>
-                  </tr>
-                </thead>
-                <tbody className="small">
-                  <tr>
-                    <td className="text-white-50">Total Liabilities</td>
-                    <td className="text-end fw-bold text-warning font-monospace">{formatNumber(data.totalLiabilities)}</td>
-                  </tr>
-                  <tr>
-                    <td className="text-white-50">Total Equity</td>
-                    <td className="text-end fw-bold text-info font-monospace">{formatNumber(data.totalEquity)}</td>
-                  </tr>
-                  <tr className="border-top border-secondary">
-                    <td className="fw-bold text-white">Net Income (Current Period)</td>
-                    <td className="text-end fw-bold text-success font-monospace">{formatNumber(data.netIncome)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+        <div className="dash-card">
+          <div className="card-header-flex mb-12">
+            <h6 className="card-title">Equity &amp; Capital Position</h6>
+            <Link href="/reports/statement-of-financial-position" className="link-more">
+              Balance Sheet
+            </Link>
+          </div>
+          <div className="table-responsive">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>COMPONENT</th>
+                  <th className="text-right">AMOUNT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="text-muted">Total Liabilities</td>
+                  <td className="text-right font-mono bold text-warning">{formatNumber(data.totalLiabilities)}</td>
+                </tr>
+                <tr>
+                  <td className="text-muted">Total Equity</td>
+                  <td className="text-right font-mono bold text-info">{formatNumber(data.totalEquity)}</td>
+                </tr>
+                <tr className="border-top-line">
+                  <td className="bold">Net Income (Current Period)</td>
+                  <td className="text-right font-mono bold text-success">{formatNumber(data.netIncome)}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        /* APTOS FONT FAMILY DECLARATION */
+        .dashboard-container,
+        .dashboard-container button,
+        .dashboard-container input,
+        .dashboard-container select,
+        .dashboard-container textarea {
+          font-family: 'Aptos', 'Aptos Display', 'Aptos Narrow', 'Segoe UI', system-ui, -apple-system, sans-serif;
+          color: var(--bs-body-color, #ffffff);
+        }
+
+        .dashboard-container {
+          width: 100%;
+          padding: 0;
+        }
+
+        .font-mono {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+
+        /* LAYOUT & GRIDS */
+        .mb-12 {
+          margin-bottom: 12px;
+        }
+        .mb-16 {
+          margin-bottom: 16px;
+        }
+
+        .grid-2-col {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 16px;
+        }
+
+        .grid-4-col {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 16px;
+        }
+
+        .grid-chart-col {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 16px;
+        }
+
+        @media (max-width: 992px) {
+          .grid-chart-col {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        /* HEADER SECTION */
+        .header-section {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 16px;
+          margin-bottom: 24px;
+        }
+
+        .header-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          margin: 0 0 4px 0;
+        }
+
+        .header-subtitle {
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.6);
+          margin: 0;
+        }
+
+        .period-highlight {
+          font-weight: 600;
+          color: #ffffff;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        /* BUTTONS & PILLS */
+        .pill-toggle {
+          display: flex;
+          background-color: #121212;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 50px;
+          padding: 3px;
+        }
+
+        .pill-btn {
+          background: transparent;
+          border: none;
+          color: rgba(255, 255, 255, 0.7);
+          padding: 4px 14px;
+          border-radius: 50px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .pill-btn.active {
+          background-color: #0d6efd;
+          color: #ffffff;
+        }
+
+        .btn-action {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          border-radius: 6px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-decoration: none;
+          cursor: pointer;
+          border: none;
+          transition: background-color 0.15s ease, transform 0.15s ease;
+        }
+
+        .btn-action:hover {
+          transform: translateY(-1px);
+        }
+
+        .btn-action.primary {
+          background-color: #0d6efd;
+          color: #ffffff;
+        }
+
+        .btn-action.warning {
+          background-color: #ffc107;
+          color: #000000;
+        }
+
+        .btn-action.outline {
+          background-color: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+        }
+
+        .btn-action.outline:hover {
+          background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* CARDS STYLING */
+        .dash-card {
+          background-color: var(--bs-body-bg, #1e1e1e);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .dash-card.primary-gradient {
+          background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+          border: none;
+        }
+
+        .card-header-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .card-label {
+          font-size: 0.7rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .card-label.light {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .card-title {
+          font-size: 0.9rem;
+          font-weight: 700;
+          margin: 0;
+        }
+
+        .card-val {
+          font-size: 1.25rem;
+          font-weight: 700;
+          margin: 6px 0 2px 0;
+        }
+
+        .card-val.light {
+          color: #ffffff;
+        }
+
+        .card-sub {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .card-sub.light {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .icon-badge {
+          padding: 6px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .icon-badge.success {
+          background-color: rgba(25, 135, 84, 0.15);
+          color: #198754;
+        }
+
+        .icon-badge.danger {
+          background-color: rgba(220, 53, 69, 0.15);
+          color: #dc3545;
+        }
+
+        .icon-badge.warning {
+          background-color: rgba(255, 193, 7, 0.15);
+          color: #ffc107;
+        }
+
+        .icon-badge.primary {
+          background-color: rgba(13, 110, 253, 0.15);
+          color: #0d6efd;
+        }
+
+        .icon-badge.info {
+          background-color: rgba(13, 202, 240, 0.15);
+          color: #0dcaf0;
+        }
+
+        /* HEALTH SCORE & RESERVES */
+        .health-body {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-top: 8px;
+        }
+
+        .score-circle {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          border: 3px solid #0d6efd;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .score-num {
+          font-size: 1.25rem;
+          font-weight: 700;
+        }
+
+        .health-status {
+          font-weight: 700;
+          margin: 0 0 2px 0;
+          font-size: 0.9rem;
+        }
+
+        .health-desc {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.5);
+          margin: 0;
+        }
+
+        .reserve-amount {
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 8px 0 6px 0;
+        }
+
+        .reserve-breakdown {
+          display: flex;
+          gap: 16px;
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* CHARTS & TABLES */
+        .chart-wrapper {
+          position: relative;
+          height: 260px;
+          width: 100%;
+        }
+
+        .link-more {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #0dcaf0;
+          text-decoration: none;
+        }
+
+        .link-more:hover {
+          text-decoration: underline;
+        }
+
+        .table-responsive {
+          overflow-x: auto;
+        }
+
+        .custom-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.8rem;
+          text-align: left;
+        }
+
+        .custom-table th {
+          padding: 8px;
+          font-size: 0.7rem;
+          color: rgba(255, 255, 255, 0.5);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .custom-table td {
+          padding: 10px 8px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .custom-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .border-top-line td {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .empty-table-cell {
+          text-align: center;
+          padding: 24px !important;
+          color: rgba(255, 255, 255, 0.5);
+        }
+
+        .text-right {
+          text-align: right;
+        }
+        .bold {
+          font-weight: 600;
+        }
+        .text-muted {
+          color: rgba(255, 255, 255, 0.6);
+        }
+        .text-success {
+          color: #198754;
+        }
+        .text-info {
+          color: #0dcaf0;
+        }
+        .text-warning {
+          color: #ffc107;
+        }
+        .text-primary {
+          color: #0d6efd;
+        }
+
+        /* STATES & ALERTS */
+        .loader-box,
+        .empty-state-box {
+          text-align: center;
+          padding: 64px 16px;
+        }
+
+        .spinner {
+          width: 36px;
+          height: 36px;
+          border: 3px solid rgba(255, 255, 255, 0.1);
+          border-top-color: #0d6efd;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          margin: 0 auto 16px auto;
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        .loading-text {
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.85rem;
+        }
+
+        .empty-icon {
+          color: rgba(255, 255, 255, 0.4);
+          margin-bottom: 12px;
+        }
+
+        .empty-title {
+          font-size: 1.2rem;
+          font-weight: 700;
+          margin-bottom: 8px;
+        }
+
+        .empty-desc {
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 0.85rem;
+          margin-bottom: 20px;
+          line-height: 1.5;
+        }
+
+        .alert-banner {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 16px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          font-size: 0.85rem;
+        }
+
+        .alert-banner.danger {
+          background-color: rgba(220, 53, 69, 0.15);
+          border: 1px solid rgba(220, 53, 69, 0.3);
+          color: #f8d7da;
+        }
+
+        .alert-content {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .close-btn {
+          background: transparent;
+          border: none;
+          color: inherit;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          padding: 2px;
+        }
+      `}</style>
     </div>
   );
 }
@@ -572,9 +983,9 @@ export default function DashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-center py-5 my-5 text-white-50">
-          <div className="spinner-border text-primary me-2" role="status"></div>
-          <span>Loading dashboard...</span>
+        <div className="loader-box">
+          <div className="spinner"></div>
+          <span className="loading-text">Loading dashboard...</span>
         </div>
       }
     >
