@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import styles from './ai-assistant.css';
+import './ai-assistant.css';
 
 // Interface for chat messages
 interface ChatMessage {
