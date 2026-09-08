@@ -9,16 +9,16 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoBackend.Controllers.Web;
+namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("web/dashboard")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class DashboardWebController : ControllerBase
+public class DashboardController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public DashboardWebController(AppDbContext db)
+    public DashboardController(AppDbContext db)
     {
         _db = db;
     }
@@ -85,7 +85,6 @@ public class DashboardWebController : ControllerBase
             accountId = a.Id,
             referenceNumber = a.ReferenceNumber,
             accountName = a.AccountName,
-            // Menggunakan periodJournalLines agar nilainya ikut berubah sesuai scope Monthly / Annual
             balance = periodJournalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
             isBank = a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase) || a.AccountName.Contains("Rekening", StringComparison.OrdinalIgnoreCase)
         }).ToList();
@@ -107,14 +106,21 @@ public class DashboardWebController : ControllerBase
 
         // 7. Hitung Total Beban (OperatingExpenses / Expense / Expenses)
         var expenseTypes = new[] { "OperatingExpenses", "Expense", "Expenses" };
-        var expenseAccountIds = await _db.ChartOfAccounts
+        var expenseAccounts = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && expenseTypes.Contains(a.Type))
-            .Select(a => a.Id)
+            .OrderBy(a => a.ReferenceNumber)
+            .Select(a => new { a.Id, a.ReferenceNumber, a.AccountName })
             .ToListAsync();
 
-        var totalExpense = periodJournalLines
-            .Where(l => expenseAccountIds.Contains(l.AccountId))
-            .Sum(l => l.Debit - l.Credit);
+        var expenseAccountBreakdown = expenseAccounts.Select(a => new
+        {
+            accountId = a.Id,
+            referenceNumber = a.ReferenceNumber,
+            accountName = a.AccountName,
+            balance = periodJournalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit)
+        }).Where(a => a.balance > 0).ToList();
+
+        var totalExpense = expenseAccountBreakdown.Sum(a => a.balance);
 
         // 8. Hitung Laba Bersih
         var netIncome = totalIncome - totalExpense;
@@ -156,6 +162,7 @@ public class DashboardWebController : ControllerBase
             totalCashOnHand = cashOnlyAccounts.Sum(a => a.balance),
             bankAccounts = bankOnlyAccounts.Select(a => new { accountId = a.accountId, referenceNumber = a.referenceNumber, accountName = a.accountName, balance = a.balance }),
             totalBankBalance = bankOnlyAccounts.Sum(a => a.balance),
+            expenseAccountsList = expenseAccountBreakdown.Select(a => new { accountId = a.accountId, referenceNumber = a.referenceNumber, accountName = a.accountName, balance = a.balance }),
             recentEntries = Array.Empty<object>()
         });
     }
