@@ -50,7 +50,7 @@ const formatNumber = (amount: number) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function WorksheetReportPage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -58,12 +58,12 @@ export default function WorksheetReportPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [vm, setVm] = useState<WorksheetViewModel>({ rows: [], netIncome: 0 });
 
-  // Memuat data Worksheet 10-Kolom dari API Backend Web (/web/reports/worksheet)
+  // Memuat data Worksheet 10-Kolom dari API Backend Web (/reports/worksheet)
   const fetchWorksheetData = useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/worksheet`, {
+      const response = await fetch(`${API_BASE_URL}/reports/worksheet`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Menggunakan Session Cookie

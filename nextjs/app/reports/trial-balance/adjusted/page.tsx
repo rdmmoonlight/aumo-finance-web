@@ -38,7 +38,7 @@ const formatNumber = (amount: number) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function AdjustedTrialBalancePage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -51,7 +51,7 @@ export default function AdjustedTrialBalancePage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/trial-balance/adjusted`, {
+      const response = await fetch(`${API_BASE_URL}/reports/trial-balance/adjusted`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

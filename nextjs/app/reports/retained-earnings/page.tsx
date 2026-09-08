@@ -47,7 +47,7 @@ const formatDateDisplay = (dateString?: string) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function RetainedEarningsReportPage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -67,7 +67,7 @@ export default function RetainedEarningsReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-    const response = await fetch(`${API_BASE_URL}/web/reports/retained-earnings`, {
+    const response = await fetch(`${API_BASE_URL}/reports/retained-earnings`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Untuk Identity Cookie Session

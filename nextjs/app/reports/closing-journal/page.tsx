@@ -44,7 +44,7 @@ const formatNumber = (amount: number) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function ClosingJournalReportPage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -61,7 +61,7 @@ export default function ClosingJournalReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/closing-journal`, {
+      const response = await fetch(`${API_BASE_URL}/reports/closing-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Identity Cookie Session

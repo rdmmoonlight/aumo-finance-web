@@ -85,7 +85,7 @@ export interface DashboardViewModel {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 function DashboardContent() {
   const router = useRouter();
@@ -119,7 +119,7 @@ function DashboardContent() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/dashboard?period=${type}`, {
+      const response = await fetch(`${API_BASE_URL}/dashboard?period=${type}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

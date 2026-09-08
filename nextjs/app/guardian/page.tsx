@@ -76,7 +76,7 @@ export default function GuardianSecurityPage() {
         setIsLoading(true);
         setErrorMessage(null);
 
-        const response = await fetch(`${API_BASE_URL}/web/guardian`, {
+        const response = await fetch(`${API_BASE_URL}/guardian`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ export default function GuardianSecurityPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/web/guardian/revoke-session/${sessionId}`, {
+      const response = await fetch(`${API_BASE_URL}/guardian/revoke-session/${sessionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ export default function GuardianSecurityPage() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/web/guardian/revoke-all`, {
+      const response = await fetch(`${API_BASE_URL}/guardian/revoke-all`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

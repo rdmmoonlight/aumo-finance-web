@@ -57,8 +57,8 @@ export default function SettingsPage() {
     const fetchUserProfile = async () => {
       setLoading(true);
       try {
-        // Panggil /web/auth/me dengan credentials: 'include' agar Identity Cookie terkirim
-        const res = await fetch(`${API_BASE_URL}/web/auth/me`, {
+        // Panggil /auth/me dengan credentials: 'include' agar Identity Cookie terkirim
+        const res = await fetch(`${API_BASE_URL}/auth/me`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ export default function SettingsPage() {
 
     setIsSendingEmail(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/auth/resend-verification`, {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

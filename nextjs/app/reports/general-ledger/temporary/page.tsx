@@ -44,7 +44,7 @@ const formatNumber = (amount: number) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function TemporaryGeneralLedgerPage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -57,7 +57,7 @@ export default function TemporaryGeneralLedgerPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/general-ledger/temporary`, {
+      const response = await fetch(`${API_BASE_URL}/reports/general-ledger/temporary`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

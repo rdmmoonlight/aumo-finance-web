@@ -86,12 +86,12 @@ function ChartOfAccountsContent() {
     }
   };
 
-  // Fetch / Sync Data from Backend Web API (/web/chart-of-accounts)
+  // Fetch / Sync Data from Backend Web API (/chart-of-accounts)
   const fetchAccounts = async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/chart-of-accounts`, {
+      const response = await fetch(`${API_BASE_URL}/chart-of-accounts`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ function ChartOfAccountsContent() {
     });
   }, [accounts, searchText, categoryFilter]);
 
-  // Handle Action: Create Account via Web API (POST /web/chart-of-accounts)
+  // Handle Action: Create Account via Web API (POST /chart-of-accounts)
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError(null);
@@ -169,7 +169,7 @@ function ChartOfAccountsContent() {
         role: newAccount.role || 'Default',
       };
 
-      const response = await fetch(`${API_BASE_URL}/web/chart-of-accounts`, {
+      const response = await fetch(`${API_BASE_URL}/chart-of-accounts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +208,7 @@ function ChartOfAccountsContent() {
     setEditAccount({ ...account });
   };
 
-  // Handle Action: Update Account via Web API (PUT /web/chart-of-accounts/{id})
+  // Handle Action: Update Account via Web API (PUT /chart-of-accounts/{id})
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editAccount) return;
@@ -237,7 +237,7 @@ function ChartOfAccountsContent() {
         isActive: editAccount.isActive,
       };
 
-      const response = await fetch(`${API_BASE_URL}/web/chart-of-accounts/${editAccount.id}`, {
+      const response = await fetch(`${API_BASE_URL}/chart-of-accounts/${editAccount.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -269,14 +269,14 @@ function ChartOfAccountsContent() {
     }
   };
 
-  // Handle Action: Delete Account via Web API (DELETE /web/chart-of-accounts/{id})
+  // Handle Action: Delete Account via Web API (DELETE /chart-of-accounts/{id})
   const confirmAndDelete = async (account: ChartOfAccount) => {
     if (!window.confirm(`Delete account "${account.accountName}"? This action cannot be undone.`)) {
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/web/chart-of-accounts/${account.id}`, {
+      const response = await fetch(`${API_BASE_URL}/chart-of-accounts/${account.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

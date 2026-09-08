@@ -67,7 +67,7 @@ const formatDateTimeDisplay = (dateTimeString?: string) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function GeneralJournalPage() {
   const router = useRouter();
@@ -86,12 +86,12 @@ export default function GeneralJournalPage() {
     }
   };
 
-  // Fetch Daftar Jurnal Umum dari Backend Web Controller (/web/general-journal)
+  // Fetch Daftar Jurnal Umum dari Backend Web Controller (/general-journal)
   const fetchJournalData = async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/general-journal`, {
+      const response = await fetch(`${API_BASE_URL}/reports/general-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Mengirim Session Cookie secara otomatis
@@ -147,7 +147,7 @@ export default function GeneralJournalPage() {
 
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/general-journal/${entry.id}`, {
+      const response = await fetch(`${API_BASE_URL}/reports/general-journal/${entry.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

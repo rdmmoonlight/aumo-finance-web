@@ -53,7 +53,7 @@ const formatDateDisplay = (dateString?: string) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function StatementOfFinancialPositionReportPage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -73,7 +73,7 @@ export default function StatementOfFinancialPositionReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/statement-of-financial-position`, {
+      const response = await fetch(`${API_BASE_URL}/reports/statement-of-financial-position`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Cookie Session Identity

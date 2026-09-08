@@ -61,7 +61,7 @@ function AuthContent() {
   const handleVerifyEmailBackend = async (email: string, token: string) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/web/auth/verify-email?email=${encodeURIComponent(
+        `${API_BASE_URL}/auth/verify-email?email=${encodeURIComponent(
           email.trim()
         )}&token=${encodeURIComponent(token)}`,
         {
@@ -101,7 +101,7 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/web/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Penting untuk menyimpan Session Cookie
@@ -141,7 +141,7 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/web/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -183,7 +183,7 @@ function AuthContent() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/web/auth/resend-verification`,
+        `${API_BASE_URL}/auth/resend-verification`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

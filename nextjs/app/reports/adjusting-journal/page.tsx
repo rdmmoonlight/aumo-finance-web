@@ -66,7 +66,7 @@ const formatDateTimeDisplay = (dateTimeString?: string) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function AdjustingJournalPage() {
   const router = useRouter();
@@ -84,12 +84,12 @@ export default function AdjustingJournalPage() {
     }
   }, [router]);
 
-  // Fetch Daftar Jurnal Penyesuaian dari Endpoint (/web/reports/adjusting-journal)
+  // Fetch Daftar Jurnal Penyesuaian dari Endpoint (/reports/adjusting-journal)
   const fetchJournalData = useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/adjusting-journal`, {
+      const response = await fetch(`${API_BASE_URL}/reports/adjusting-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -145,7 +145,7 @@ export default function AdjustingJournalPage() {
 
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/adjusting-journal/${entry.id}`, {
+      const response = await fetch(`${API_BASE_URL}/reports/adjusting-journal/${entry.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

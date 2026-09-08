@@ -38,7 +38,7 @@ const formatNumber = (amount: number) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function CashFlowReportPage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -56,7 +56,7 @@ export default function CashFlowReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/web/reports/statement-of-cash-flow`, {
+      const response = await fetch(`${API_BASE_URL}/reports/statement-of-cash-flow`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Untuk Identity Cookie Session
@@ -74,7 +74,7 @@ export default function CashFlowReportPage() {
       }
 
       if (response.status === 404) {
-        setErrorMessage('The requested endpoint /web/reports/statement-of-cash-flow was not found on the backend server.');
+        setErrorMessage('The requested endpoint /reports/statement-of-cash-flow was not found on the backend server.');
         return;
       }
 

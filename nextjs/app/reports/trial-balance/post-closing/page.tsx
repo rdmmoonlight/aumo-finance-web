@@ -52,7 +52,7 @@ const formatDateDisplay = (dateString?: string) => {
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
-  .replace(/\/api$/, '');
+  ;
 
 export default function PostClosingTrialBalanceReportPage() {
   const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
@@ -72,7 +72,7 @@ export default function PostClosingTrialBalanceReportPage() {
     setErrorMessage(null);
     try {
       // Menggunakan endpoint Web Controller
-      const response = await fetch(`${API_BASE_URL}/web/reports/statement-of-financial-position?isPostClosing=true`, {
+      const response = await fetch(`${API_BASE_URL}/reports/statement-of-financial-position?isPostClosing=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Cookie Session Identity
