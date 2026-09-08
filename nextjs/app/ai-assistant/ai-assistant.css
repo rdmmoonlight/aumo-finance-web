@@ -1,11 +1,6 @@
-/* =========================================================
-   AUMO FINANCE — AI ASSISTANT CUSTOM STYLES
-   Font: Aptos Family | Pure CSS Grid & Flexbox
-   ========================================================= */
-
 @import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css');
 
-.container {
+.ai-container {
   width: 100%;
   padding: 1.5rem;
   color: #ffffff;
@@ -14,7 +9,7 @@
 }
 
 /* Header */
-.header {
+.ai-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -23,7 +18,7 @@
   gap: 0.75rem;
 }
 
-.title {
+.ai-title {
   font-size: 1.5rem;
   font-weight: 700;
   color: #ffffff;
@@ -33,19 +28,19 @@
   gap: 0.5rem;
 }
 
-.titleIcon {
+.ai-title-icon {
   color: #3b82f6;
   font-size: 1.75rem;
 }
 
-.subtitle {
+.ai-subtitle {
   color: #ffffff;
   font-size: 0.875rem;
   margin: 0;
 }
 
-/* 1. Live Summary Card */
-.summaryCard {
+/* Live Summary Card */
+.ai-summary-card {
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
   border-radius: 1rem;
   padding: 1.25rem 1.5rem;
@@ -54,14 +49,14 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.summaryHeader {
+.ai-summary-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
 
-.summaryBadge {
+.ai-summary-badge {
   background-color: #ffffff;
   color: #2563eb;
   font-weight: 700;
@@ -74,38 +69,37 @@
   letter-spacing: 0.5px;
 }
 
-.summaryTime {
+.ai-summary-time {
   color: #ffffff;
   font-size: 0.75rem;
 }
 
-.summaryText {
+.ai-summary-text {
   font-size: 0.95rem;
   line-height: 1.6;
   color: #ffffff;
   margin: 0;
 }
 
-/* Loading Spinner */
-.spinner {
+.ai-spinner {
   display: inline-block;
   width: 0.875rem;
   height: 0.875rem;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   border-top-color: #ffffff;
-  animation: spin 0.8s linear infinite;
+  animation: ai-spin 0.8s linear infinite;
   margin-right: 0.5rem;
 }
 
-@keyframes spin {
+@keyframes ai-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-/* 2. Quick Questions Section */
-.quickSectionHeader {
+/* Quick Questions Section */
+.ai-quick-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -114,19 +108,19 @@
   gap: 0.5rem;
 }
 
-.quickSectionTitle {
+.ai-quick-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0;
 }
 
-.quickSectionHint {
+.ai-quick-hint {
   color: #ffffff;
   font-size: 0.8rem;
 }
 
-.presetGrid {
+.ai-preset-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
@@ -134,18 +128,18 @@
 }
 
 @media (max-width: 992px) {
-  .presetGrid {
+  .ai-preset-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 576px) {
-  .presetGrid {
+  .ai-preset-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.presetCard {
+.ai-preset-card {
   background-color: #161b22;
   border: 1px solid #2a313c;
   border-radius: 1rem;
@@ -158,18 +152,18 @@
   width: 100%;
 }
 
-.presetCard:hover:not(:disabled) {
+.ai-preset-card:hover:not(:disabled) {
   transform: translateY(-4px);
   border-color: rgba(255, 255, 255, 0.25);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-.presetCard:disabled {
+.ai-preset-card:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.iconBadge {
+.ai-icon-badge {
   width: 36px;
   height: 36px;
   border-radius: 0.5rem;
@@ -180,34 +174,34 @@
   margin-bottom: 0.75rem;
 }
 
-.iconPrimary {
+.ai-icon-primary {
   background-color: rgba(59, 130, 246, 0.15);
   color: #3b82f6;
 }
 
-.iconDanger {
+.ai-icon-danger {
   background-color: rgba(239, 68, 68, 0.15);
   color: #ef4444;
 }
 
-.iconSuccess {
+.ai-icon-success {
   background-color: rgba(34, 197, 94, 0.15);
   color: #22c55e;
 }
 
-.iconWarning {
+.ai-icon-warning {
   background-color: rgba(245, 158, 11, 0.15);
   color: #f59e0b;
 }
 
-.presetTitle {
+.ai-preset-title {
   font-weight: 700;
   color: #ffffff;
   font-size: 0.875rem;
   margin-bottom: 0.25rem;
 }
 
-.presetDesc {
+.ai-preset-desc {
   color: #ffffff;
   font-size: 0.75rem;
   white-space: nowrap;
@@ -215,8 +209,8 @@
   text-overflow: ellipsis;
 }
 
-/* 3. Chat Panel */
-.chatCard {
+/* Chat Panel */
+.ai-chat-card {
   background-color: #161b22;
   border: 1px solid #2a313c;
   border-radius: 1rem;
@@ -224,7 +218,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-.chatHeader {
+.ai-chat-header {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #2a313c;
   display: flex;
@@ -232,7 +226,7 @@
   justify-content: space-between;
 }
 
-.chatTitle {
+.ai-chat-title {
   font-size: 0.95rem;
   font-weight: 700;
   color: #ffffff;
@@ -242,7 +236,7 @@
   gap: 0.5rem;
 }
 
-.clearBtn {
+.ai-clear-btn {
   background: transparent;
   border: 1px solid #2a313c;
   color: #ffffff;
@@ -256,17 +250,17 @@
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.clearBtn:hover {
+.ai-clear-btn:hover {
   background-color: rgba(239, 68, 68, 0.15);
   color: #ef4444;
   border-color: rgba(239, 68, 68, 0.3);
 }
 
-.chatBody {
+.ai-chat-body {
   padding: 1.25rem;
 }
 
-.messageContainer {
+.ai-message-container {
   height: 380px;
   overflow-y: auto;
   padding-right: 0.5rem;
@@ -276,41 +270,41 @@
   gap: 0.85rem;
 }
 
-.messageContainer::-webkit-scrollbar {
+.ai-message-container::-webkit-scrollbar {
   width: 6px;
 }
 
-.messageContainer::-webkit-scrollbar-thumb {
+.ai-message-container::-webkit-scrollbar-thumb {
   background-color: #2a313c;
   border-radius: 10px;
 }
 
-.emptyState {
+.ai-empty-state {
   text-align: center;
   color: #ffffff;
   margin: 3rem 0;
 }
 
-.emptyIcon {
+.ai-empty-icon {
   font-size: 2.5rem;
   color: #ffffff;
   margin-bottom: 0.5rem;
 }
 
-.messageRow {
+.ai-message-row {
   display: flex;
   width: 100%;
 }
 
-.userRow {
+.ai-user-row {
   justify-content: flex-end;
 }
 
-.aiRow {
+.ai-ai-row {
   justify-content: flex-start;
 }
 
-.bubble {
+.ai-bubble {
   padding: 0.85rem 1.1rem;
   border-radius: 1rem;
   max-width: 85%;
@@ -319,13 +313,13 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.userBubble {
+.ai-user-bubble {
   background-color: #2563eb;
   color: #ffffff;
   border-bottom-right-radius: 4px;
 }
 
-.aiBubble {
+.ai-ai-bubble {
   background-color: #1c222b;
   border: 1px solid #2a313c;
   color: #ffffff;
@@ -333,7 +327,7 @@
 }
 
 /* Input Bar */
-.inputWrapper {
+.ai-input-wrapper {
   display: flex;
   background-color: #1c222b;
   border: 1px solid #2a313c;
@@ -343,11 +337,11 @@
   gap: 0.5rem;
 }
 
-.inputWrapper:focus-within {
+.ai-input-wrapper:focus-within {
   border-color: #3b82f6;
 }
 
-.chatInput {
+.ai-chat-input {
   flex: 1;
   background: transparent;
   border: none;
@@ -357,11 +351,11 @@
   font-size: 0.875rem;
 }
 
-.chatInput::placeholder {
+.ai-chat-input::placeholder {
   color: #ffffff;
 }
 
-.sendBtn {
+.ai-send-btn {
   background-color: #2563eb;
   color: #ffffff;
   border: none;
@@ -376,11 +370,11 @@
   transition: background-color 0.2s ease;
 }
 
-.sendBtn:hover:not(:disabled) {
+.ai-send-btn:hover:not(:disabled) {
   background-color: #1d4ed8;
 }
 
-.sendBtn:disabled {
+.ai-send-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
