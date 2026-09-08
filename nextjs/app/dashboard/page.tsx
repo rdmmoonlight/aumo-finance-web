@@ -34,7 +34,7 @@ import {
 // Import CSS Terpisah
 import './dashboard.css';
 
-// Registrasi modul Chart.js (LineElement dan BarElement dihapus karena chart trend dihilangkan)
+// Registrasi modul Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -396,7 +396,7 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* 3. CHARTS SECTION (Financial Trend dihilangkan, menyisakan Asset Composition saja) */}
+      {/* 3. CHARTS SECTION */}
       <div className="grid-chart-col mb-16" style={{ gridTemplateColumns: '1fr' }}>
         <div className="dash-card">
           <div className="card-header-flex mb-12">
