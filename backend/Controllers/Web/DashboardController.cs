@@ -57,7 +57,7 @@ public class DashboardWebController : ControllerBase
             displayPeriodName = activePeriod?.PeriodName ?? "Current Period";
         }
 
-        // 3. Ambil Transaksi Jurnal dalam Rentang Tanggal (untuk Pendapatan & Beban)
+        // 3. Ambil Transaksi Jurnal dalam Rentang Tanggal (untuk Pendapatan, Beban, & Kas/Bank per-scope)
         var periodJournalLines = await _db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Include(l => l.Account)
@@ -66,14 +66,14 @@ public class DashboardWebController : ControllerBase
                      && l.JournalEntry.EntryDate <= endDate)
             .ToListAsync();
 
-        // 4. Ambil Transaksi Jurnal Kumulatif s.d. EndDate (untuk Neraca: Kas, Bank, Utang, Modal)
+        // 4. Ambil Transaksi Jurnal Kumulatif s.d. EndDate (khusus untuk Neraca posisi modal/utang kumulatif)
         var cumulativeJournalLines = await _db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Where(l => l.JournalEntry!.UserId == userId
                      && l.JournalEntry.EntryDate <= endDate)
             .ToListAsync();
 
-        // 5. Hitung Kas & Bank (Role == "CashAndEquivalents")
+        // 5. Hitung Kas & Bank (Role == "CashAndEquivalents") -> Dihitung berdasarkan rentang waktu scope yang aktif
         var cashAndBankAccounts = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Role == "CashAndEquivalents")
             .OrderBy(a => a.ReferenceNumber)
@@ -85,7 +85,8 @@ public class DashboardWebController : ControllerBase
             accountId = a.Id,
             referenceNumber = a.ReferenceNumber,
             accountName = a.AccountName,
-            balance = cumulativeJournalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
+            // Menggunakan periodJournalLines agar nilainya ikut berubah sesuai scope Monthly / Annual
+            balance = periodJournalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
             isBank = a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase) || a.AccountName.Contains("Rekening", StringComparison.OrdinalIgnoreCase)
         }).ToList();
 
@@ -118,7 +119,7 @@ public class DashboardWebController : ControllerBase
         // 8. Hitung Laba Bersih
         var netIncome = totalIncome - totalExpense;
 
-        // 9. Hitung Total Liabilities / Utang
+        // 9. Hitung Total Liabilities / Utang (Kumulatif)
         var liabilityTypes = new[] { "Liabilities", "Liability" };
         var liabilityAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && liabilityTypes.Contains(a.Type))
@@ -129,7 +130,7 @@ public class DashboardWebController : ControllerBase
             .Where(l => liabilityAccountIds.Contains(l.AccountId))
             .Sum(l => l.Credit - l.Debit);
 
-        // 10. Hitung Total Equity / Modal
+        // 10. Hitung Total Equity / Modal (Kumulatif)
         var equityAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Type == "Equity")
             .Select(a => a.Id)
