@@ -33,16 +33,17 @@ public class DashboardWebController : ControllerBase
         if (userId == Guid.Empty)
             return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
 
-        // 1. Ambil periode yang sedang dipilih
+        // 1. Ambil periode aktif yang sedang dipilih (yang diatur dari halaman Periods / COA)
         var activePeriod = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
 
         DateTime startDate;
         DateTime endDate;
         string displayPeriodName;
 
-        // 2. Evaluasi Rentang Tanggal Berdasarkan Filter "period"
+        // 2. Tentukan Tanggal Berdasarkan Mode Tab (Monthly vs Annual)
         if (string.Equals(period, "annual", StringComparison.OrdinalIgnoreCase))
         {
+            // Jika Annual: Full 12 bulan di tahun dari periode aktif (atau tahun sekarang jika belum ada periode aktif)
             int year = activePeriod?.StartDate.Year ?? DateTime.UtcNow.Year;
             startDate = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             endDate = new DateTime(year, 12, 31, 23, 59, 59, DateTimeKind.Utc);
@@ -50,12 +51,13 @@ public class DashboardWebController : ControllerBase
         }
         else
         {
+            // Jika Monthly: Mengikuti persis rentang tanggal periode yang dipilih di page COA/Periods
             startDate = activePeriod?.StartDate ?? new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             endDate = activePeriod?.EndDate ?? startDate.AddMonths(1).AddDays(-1);
             displayPeriodName = activePeriod?.PeriodName ?? "Current Period";
         }
 
-        // 3. Ambil Transaksi Jurnal dalam Rentang Periode (untuk Laba Rugi / Pendapatan & Beban)
+        // 3. Ambil Transaksi Jurnal dalam Rentang Tanggal (untuk Pendapatan & Beban)
         var periodJournalLines = await _db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Include(l => l.Account)
@@ -71,30 +73,27 @@ public class DashboardWebController : ControllerBase
                      && l.JournalEntry.EntryDate <= endDate)
             .ToListAsync();
 
-        // 5. Hitung Kas & Bank (Role == "CashAndEquivalents" atau Type == "Assets" yang terkait kas/bank)
+        // 5. Hitung Kas & Bank (Role == "CashAndEquivalents")
         var cashAndBankAccounts = await _db.ChartOfAccounts
-            .Where(a => a.UserId == userId && a.IsActive && (a.Role == "CashAndEquivalents" || a.Type == "Assets"))
+            .Where(a => a.UserId == userId && a.IsActive && a.Role == "CashAndEquivalents")
             .OrderBy(a => a.ReferenceNumber)
-            .Select(a => new { a.Id, a.ReferenceNumber, a.AccountName, a.Role })
+            .Select(a => new { a.Id, a.ReferenceNumber, a.AccountName })
             .ToListAsync();
 
-        // Filter khusus untuk kas & bank agar lebih fleksibel
-        var cashAndBankBreakdown = cashAndBankAccounts
-            .Where(a => a.Role == "CashAndEquivalents" || a.AccountName.Contains("Kas", StringComparison.OrdinalIgnoreCase) || a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase) || a.AccountName.Contains("Cash", StringComparison.OrdinalIgnoreCase))
-            .Select(a => new
-            {
-                accountId = a.Id,
-                referenceNumber = a.ReferenceNumber,
-                accountName = a.AccountName,
-                balance = cumulativeJournalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
-                isBank = a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase) || a.AccountName.Contains("Rekening", StringComparison.OrdinalIgnoreCase)
-            }).ToList();
+        var cashAndBankBreakdown = cashAndBankAccounts.Select(a => new
+        {
+            accountId = a.Id,
+            referenceNumber = a.ReferenceNumber,
+            accountName = a.AccountName,
+            balance = cumulativeJournalLines.Where(l => l.AccountId == a.Id).Sum(l => l.Debit - l.Credit),
+            isBank = a.AccountName.Contains("Bank", StringComparison.OrdinalIgnoreCase) || a.AccountName.Contains("Rekening", StringComparison.OrdinalIgnoreCase)
+        }).ToList();
 
         var totalCashBalance = cashAndBankBreakdown.Sum(a => a.balance);
         var cashOnlyAccounts = cashAndBankBreakdown.Where(a => !a.isBank).ToList();
         var bankOnlyAccounts = cashAndBankBreakdown.Where(a => a.isBank).ToList();
 
-        // 6. Hitung Total Pendapatan (Mendukung berbagai variasi nama tipe: OperatingIncome, Income, Revenue)
+        // 6. Hitung Total Pendapatan (OperatingIncome / Income / Revenue)
         var incomeTypes = new[] { "OperatingIncome", "Income", "Revenue" };
         var incomeAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && incomeTypes.Contains(a.Type))
@@ -105,7 +104,7 @@ public class DashboardWebController : ControllerBase
             .Where(l => incomeAccountIds.Contains(l.AccountId))
             .Sum(l => l.Credit - l.Debit);
 
-        // 7. Hitung Total Beban (Mendukung berbagai variasi nama tipe: OperatingExpenses, Expense, Expenses)
+        // 7. Hitung Total Beban (OperatingExpenses / Expense / Expenses)
         var expenseTypes = new[] { "OperatingExpenses", "Expense", "Expenses" };
         var expenseAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && expenseTypes.Contains(a.Type))
@@ -119,7 +118,7 @@ public class DashboardWebController : ControllerBase
         // 8. Hitung Laba Bersih
         var netIncome = totalIncome - totalExpense;
 
-        // 9. Hitung Total Liabilities / Utang (Variasi: Liabilities, Liability)
+        // 9. Hitung Total Liabilities / Utang
         var liabilityTypes = new[] { "Liabilities", "Liability" };
         var liabilityAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && liabilityTypes.Contains(a.Type))
@@ -130,7 +129,7 @@ public class DashboardWebController : ControllerBase
             .Where(l => liabilityAccountIds.Contains(l.AccountId))
             .Sum(l => l.Credit - l.Debit);
 
-        // 10. Hitung Total Equity / Modal (Variasi: Equity)
+        // 10. Hitung Total Equity / Modal
         var equityAccountIds = await _db.ChartOfAccounts
             .Where(a => a.UserId == userId && a.IsActive && a.Type == "Equity")
             .Select(a => a.Id)
