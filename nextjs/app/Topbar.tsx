@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -88,8 +88,11 @@ function QuranVerse() {
 
   return (
     <div
-      className="w-100 px-1 text-center mx-auto"
       style={{
+        width: '100%',
+        padding: '0 4px',
+        textAlign: 'center',
+        margin: '0 auto',
         maxWidth: '95%',
         display: '-webkit-box',
         WebkitLineClamp: 2,
@@ -98,12 +101,21 @@ function QuranVerse() {
         lineHeight: 1.4,
       }}
     >
-      <span className="text-body-secondary fst-italic" style={{ fontSize: '0.75rem' }}>
+      <span style={{ fontSize: '0.75rem', fontStyle: 'italic', opacity: 0.8 }}>
         {verseText}
       </span>
       <span
-        className="badge bg-primary-subtle text-primary fw-semibold ms-1 align-baseline"
-        style={{ fontSize: '0.675rem' }}
+        style={{
+          fontSize: '0.675rem',
+          fontWeight: 600,
+          marginLeft: '4px',
+          verticalAlign: 'baseline',
+          backgroundColor: 'rgba(13, 110, 253, 0.15)',
+          color: '#0d6efd',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          display: 'inline-block',
+        }}
       >
         {verseRef}
       </span>
@@ -126,6 +138,33 @@ export default function Topbar({
   const [isViewingClosed, setIsViewingClosed] = useState<boolean>(false);
   const [periodText, setPeriodText] = useState<string>('No Period Selected');
   const [loadingPeriod, setLoadingPeriod] = useState<boolean>(false);
+
+  // State Toggle Dropdown Custom React
+  const [isPeriodOpen, setIsPeriodOpen] = useState<boolean>(false);
+  const [isThemeOpen, setIsThemeOpen] = useState<boolean>(false);
+
+  const periodDropdownRef = useRef<HTMLDivElement>(null);
+  const themeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown saat klik di luar area
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        periodDropdownRef.current &&
+        !periodDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsPeriodOpen(false);
+      }
+      if (
+        themeDropdownRef.current &&
+        !themeDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsThemeOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchSelectedPeriod = async () => {
     if (!isAuthenticated) return;
@@ -200,6 +239,7 @@ export default function Topbar({
 
         window.dispatchEvent(new Event('periodChanged'));
         if (onPeriodChanged) onPeriodChanged();
+        setIsPeriodOpen(false);
         router.refresh();
       }
     } catch (err) {
@@ -216,157 +256,145 @@ export default function Topbar({
   return (
     <>
       {/* BARIS PERTAMA: QURAN VERSE */}
-      <header
-        className="navbar navbar-expand topbar-solid py-2 sticky-top border-bottom border-secondary border-opacity-10"
-        style={{ minHeight: '56px' }}
-      >
-        <div className="container-xxl px-3 d-flex align-items-center justify-content-center text-center">
+      <header className="topbar-solid">
+        <div className="topbar-container">
           <QuranVerse />
         </div>
       </header>
 
       {/* BARIS KEDUA: STATUS STRIP & AKSES FITUR */}
       {isAuthenticated && (
-        <div
-          className="status-strip px-3 py-1 d-flex justify-content-center align-items-center gap-3 text-nowrap border-bottom border-secondary border-opacity-10"
-          style={{ minHeight: '36px', fontSize: '0.75rem' }}
-        >
+        <div className="status-strip">
           {/* Dropdown Period */}
-          <div className="dropdown">
+          <div className="dropdown-container" ref={periodDropdownRef}>
             <button
-              className="btn btn-sm btn-link text-decoration-none p-0 fw-medium d-flex align-items-center gap-2 dropdown-toggle shadow-none status-badge"
+              className="status-btn"
               type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
+              onClick={() => setIsPeriodOpen(!isPeriodOpen)}
             >
-              <i className={`${iconClass} fs-6`}></i>
-              <span className={`text-body fw-semibold ${!hasActivePeriod ? 'text-danger' : ''}`}>
+              <i className={`${iconClass}`} style={{ fontSize: '1rem' }}></i>
+              <span
+                style={{
+                  fontWeight: 600,
+                  color: !hasActivePeriod ? '#dc3545' : 'inherit',
+                }}
+              >
                 {loadingPeriod ? 'Loading period...' : periodText}
               </span>
-              {isViewingClosed && (
-                <span
-                  className="badge bg-secondary-subtle text-secondary border border-secondary-subtle font-monospace"
-                  style={{ fontSize: '0.65rem' }}
-                >
-                  LOCKED
-                </span>
-              )}
+              {isViewingClosed && <span className="locked-badge">LOCKED</span>}
             </button>
 
-            <ul
-              className="dropdown-menu shadow border border-secondary border-opacity-10 mt-1"
-              style={{ fontSize: '0.75rem', minWidth: '190px' }}
-            >
-              <li>
-                <h6 className="dropdown-header py-1 text-uppercase" style={{ fontSize: '0.65rem' }}>
-                  Accounting Period
-                </h6>
-              </li>
-              <li>
+            {isPeriodOpen && (
+              <div className="custom-dropdown-menu left-align">
+                <div className="dropdown-header">Accounting Period</div>
                 <Link
-                  className="dropdown-item py-1 text-primary fw-semibold d-flex align-items-center gap-2"
+                  className="custom-dropdown-item primary-text"
                   href="/periods"
+                  onClick={() => setIsPeriodOpen(false)}
                 >
                   <i className="ti ti-circle-plus"></i> Open New Period
                 </Link>
-              </li>
-              <li>
-                <hr className="dropdown-divider my-1" />
-              </li>
-              <li>
-                <Link className="dropdown-item py-1 d-flex align-items-center gap-2" href="/periods">
+                <div className="dropdown-divider"></div>
+                <Link
+                  className="custom-dropdown-item"
+                  href="/periods"
+                  onClick={() => setIsPeriodOpen(false)}
+                >
                   <i className="ti ti-list"></i> Manage All Periods
                 </Link>
-              </li>
-              {hasActivePeriod && (
-                <li>
+                {hasActivePeriod && (
                   <button
                     type="button"
-                    className="dropdown-item py-1 text-danger d-flex align-items-center gap-2 border-0 bg-transparent w-100 text-start"
+                    className="custom-dropdown-item danger-text"
                     onClick={handleClearSelection}
                   >
                     <i className="ti ti-eye-off"></i> Stop Viewing
                   </button>
-                </li>
-              )}
-            </ul>
+                )}
+              </div>
+            )}
           </div>
 
-          <span className="text-secondary opacity-25">|</span>
+          <span className="divider-bar">|</span>
 
           {/* Akses Fitur: Search, Theme, Guardian, & Sync */}
-          <div className="d-flex align-items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
-              className="btn btn-sm topbar-btn text-secondary p-0 border-0 shadow-none lh-1 d-flex align-items-center"
+              className="icon-btn"
               type="button"
-              data-bs-toggle="modal"
-              data-bs-target="#searchModal"
               aria-label="Search"
               title="Search"
             >
               <i className="ti ti-search" style={{ fontSize: '1.1rem' }}></i>
             </button>
 
-            <span className="text-secondary opacity-25">/</span>
+            <span className="divider-bar">/</span>
 
-            <div className="dropdown">
+            <div className="dropdown-container" ref={themeDropdownRef}>
               <button
-                className="btn btn-sm topbar-btn text-secondary p-0 border-0 shadow-none lh-1 d-flex align-items-center"
+                className="icon-btn"
                 type="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
                 aria-label="More Options"
                 title="Theme Settings"
+                onClick={() => setIsThemeOpen(!isThemeOpen)}
               >
                 <i className="ti ti-dots-vertical" style={{ fontSize: '1.1rem' }}></i>
               </button>
-              <ul
-                className="dropdown-menu dropdown-menu-end shadow border border-secondary border-opacity-10"
-                style={{ fontSize: '0.8rem', minWidth: '150px' }}
-              >
-                <li>
-                  <h6 className="dropdown-header py-1 text-uppercase tracking-wider" style={{ fontSize: '0.65rem' }}>
-                    Theme Interface
-                  </h6>
-                </li>
-                <li>
+
+              {isThemeOpen && (
+                <div className="custom-dropdown-menu right-align">
+                  <div className="dropdown-header">Theme Interface</div>
                   <button
                     type="button"
-                    className="dropdown-item py-1 d-flex align-items-center gap-2"
-                    onClick={() => changeTheme('dark')}
+                    className="custom-dropdown-item"
+                    onClick={() => {
+                      changeTheme('dark');
+                      setIsThemeOpen(false);
+                    }}
                   >
-                    <i className="ti ti-moon-stars text-warning"></i> Dark Matte
+                    <i
+                      className="ti ti-moon-stars"
+                      style={{ color: '#ffc107' }}
+                    ></i>{' '}
+                    Dark Matte
                   </button>
-                </li>
-                <li>
                   <button
                     type="button"
-                    className="dropdown-item py-1 d-flex align-items-center gap-2"
-                    onClick={() => changeTheme('light')}
+                    className="custom-dropdown-item"
+                    onClick={() => {
+                      changeTheme('light');
+                      setIsThemeOpen(false);
+                    }}
                   >
-                    <i className="ti ti-sun text-warning"></i> Light Minimal
+                    <i
+                      className="ti ti-sun"
+                      style={{ color: '#ffc107' }}
+                    ></i>{' '}
+                    Light Minimal
                   </button>
-                </li>
-              </ul>
+                </div>
+              )}
             </div>
 
-            <span className="text-secondary opacity-25">/</span>
+            <span className="divider-bar">/</span>
 
             <button
-              className="btn btn-sm btn-link text-success p-0 border-0 shadow-none lh-1 d-flex align-items-center"
+              className="icon-btn"
               type="button"
               title="Guardian Security: Protected & Active"
+              style={{ color: '#198754' }}
             >
-              <i className="ti ti-shield-check-filled text-success" style={{ fontSize: '1.15rem' }}></i>
+              <i className="ti ti-shield-check-filled" style={{ fontSize: '1.15rem' }}></i>
             </button>
 
-            <span className="text-secondary opacity-25">/</span>
+            <span className="divider-bar">/</span>
 
             <button
               id="syncBtn"
-              className="btn btn-sm btn-link text-info p-0 border-0 shadow-none lh-1 d-flex align-items-center"
+              className="icon-btn"
               type="button"
               title="Sync: Up to date"
+              style={{ color: '#0dcaf0' }}
               onClick={fetchSelectedPeriod}
             >
               <i
@@ -382,26 +410,160 @@ export default function Topbar({
       <style jsx global>{`
         .topbar-solid {
           background-color: var(--bs-body-bg, #121212);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          position: sticky;
+          top: 0;
           z-index: 1020;
+          min-height: 56px;
+          padding: 8px 0;
+          border-bottom: 1px solid rgba(108, 117, 125, 0.2);
+        }
+        .topbar-container {
+          max-width: 1320px;
+          margin: 0 auto;
+          padding: 0 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
         }
         .status-strip {
-          background-color: rgba(0, 0, 0, 0.15);
-          backdrop-filter: blur(8px);
+          background-color: var(--bs-body-bg, #121212);
+          padding: 4px 16px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 12px;
+          white-space: nowrap;
+          min-height: 36px;
+          font-size: 0.75rem;
+          border-bottom: 1px solid rgba(108, 117, 125, 0.2);
         }
-        .topbar-btn {
-          transition: color 0.15s ease-in-out, transform 0.15s ease-in-out;
+
+        /* Dropdown Styling - Solid Background (Bukan Transparan) */
+        .dropdown-container {
+          position: relative;
+          display: inline-block;
         }
-        .topbar-btn:hover {
-          color: var(--bs-body-color, #ffffff) !important;
+        .custom-dropdown-menu {
+          position: absolute;
+          top: 100%;
+          margin-top: 4px;
+          background-color: var(--bs-body-bg, #1e1e1e);
+          color: var(--bs-body-color, #ffffff);
+          border: 1px solid rgba(108, 117, 125, 0.25);
+          border-radius: 6px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+          padding: 4px 0;
+          z-index: 1050;
+          font-size: 0.75rem;
+          min-width: 190px;
+        }
+        .custom-dropdown-menu.left-align {
+          left: 0;
+        }
+        .custom-dropdown-menu.right-align {
+          right: 0;
+        }
+        .dropdown-header {
+          padding: 4px 12px;
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          opacity: 0.6;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+        .custom-dropdown-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          padding: 6px 12px;
+          background: transparent;
+          border: none;
+          color: inherit;
+          text-decoration: none;
+          text-align: left;
+          cursor: pointer;
+          font-size: 0.75rem;
+        }
+        .custom-dropdown-item:hover {
+          background-color: rgba(255, 255, 255, 0.08);
+        }
+        .dropdown-divider {
+          height: 1px;
+          background-color: rgba(108, 117, 125, 0.2);
+          margin: 4px 0;
+        }
+
+        /* Utility Elements */
+        .status-btn {
+          background: transparent;
+          border: none;
+          color: inherit;
+          cursor: pointer;
+          font-size: 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 0;
+        }
+        .status-btn:hover {
+          opacity: 0.85;
+        }
+        .icon-btn {
+          background: transparent;
+          border: none;
+          color: #6c757d;
+          cursor: pointer;
+          padding: 0;
+          display: flex;
+          align-items: center;
+          transition: color 0.15s ease, transform 0.15s ease;
+        }
+        .icon-btn:hover {
+          color: var(--bs-body-color, #ffffff);
           transform: translateY(-1px);
         }
-        .status-badge {
-          transition: opacity 0.15s ease-in-out;
+        .locked-badge {
+          font-size: 0.65rem;
+          padding: 1px 5px;
+          border-radius: 3px;
+          background-color: rgba(108, 117, 125, 0.2);
+          color: #6c757d;
+          border: 1px solid rgba(108, 117, 125, 0.3);
+          font-family: monospace;
         }
-        .status-badge:hover {
-          opacity: 0.85;
+        .divider-bar {
+          color: #6c757d;
+          opacity: 0.3;
+        }
+        .primary-text {
+          color: #0d6efd;
+          font-weight: 600;
+        }
+        .danger-text {
+          color: #dc3545;
+        }
+        .text-warning {
+          color: #ffc107;
+        }
+        .text-secondary {
+          color: #6c757d;
+        }
+        .text-success {
+          color: #198754;
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .spin {
+          animation: spin 1s linear infinite;
         }
       `}</style>
     </>
