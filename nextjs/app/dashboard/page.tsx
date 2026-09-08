@@ -8,15 +8,13 @@ import {
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
-  BarElement,
   ArcElement,
   Title,
   Tooltip,
   Legend,
   Filler,
 } from 'chart.js';
-import { Line, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import {
   IconEyeOff,
   IconCalendar,
@@ -29,7 +27,6 @@ import {
   IconTrendingDown,
   IconShieldCheck,
   IconCreditCard,
-  IconChartLine,
   IconChartPie,
   IconX,
 } from '@tabler/icons-react';
@@ -37,13 +34,11 @@ import {
 // Import CSS Terpisah
 import './dashboard.css';
 
-// Registrasi modul Chart.js
+// Registrasi modul Chart.js (LineElement dan BarElement dihapus karena chart trend dihilangkan)
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
-  LineElement,
-  BarElement,
   ArcElement,
   Title,
   Tooltip,
@@ -249,28 +244,6 @@ function DashboardContent() {
     );
   }
 
-  const lineChartData = {
-    labels: ['Overview'],
-    datasets: [
-      {
-        label: 'Revenue',
-        data: [data.totalRevenue],
-        borderColor: '#198754',
-        backgroundColor: 'rgba(25, 135, 84, 0.15)',
-        fill: true,
-        tension: 0.4,
-      },
-      {
-        label: 'Expenses',
-        data: [data.totalExpenses],
-        borderColor: '#dc3545',
-        backgroundColor: 'rgba(220, 53, 69, 0.15)',
-        fill: true,
-        tension: 0.4,
-      },
-    ],
-  };
-
   const doughnutChartData = {
     labels: ['Cash on Hand', 'Bank Balance'],
     datasets: [
@@ -423,23 +396,8 @@ function DashboardContent() {
         </div>
       </div>
 
-      {/* 3. CHARTS SECTION */}
-      <div className="grid-chart-col mb-16">
-        <div className="dash-card">
-          <div className="card-header-flex mb-12">
-            <div>
-              <h6 className="card-title">Financial Trend</h6>
-              <span className="card-sub">Revenue vs Operating Expenses</span>
-            </div>
-            <div className="icon-badge primary">
-              <IconChartLine size={20} />
-            </div>
-          </div>
-          <div className="chart-wrapper">
-            <Line data={lineChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-          </div>
-        </div>
-
+      {/* 3. CHARTS SECTION (Financial Trend dihilangkan, menyisakan Asset Composition saja) */}
+      <div className="grid-chart-col mb-16" style={{ gridTemplateColumns: '1fr' }}>
         <div className="dash-card">
           <div className="card-header-flex mb-12">
             <div>
@@ -452,81 +410,6 @@ function DashboardContent() {
           </div>
           <div className="chart-wrapper">
             <Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-          </div>
-        </div>
-      </div>
-
-      {/* 4. RECENT TABLES SECTION */}
-      <div className="grid-2-col">
-        {/* Cash Accounts Breakdown */}
-        <div className="dash-card">
-          <div className="card-header-flex mb-12">
-            <h6 className="card-title">Cash &amp; Bank Accounts</h6>
-            <Link href="/chart-of-accounts" className="link-more">
-              View All
-            </Link>
-          </div>
-          <div className="table-responsive">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>REF</th>
-                  <th>ACCOUNT NAME</th>
-                  <th className="text-right">BALANCE</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...data.cashAccounts, ...data.bankAccounts].length > 0 ? (
-                  [...data.cashAccounts, ...data.bankAccounts].map((item, idx) => (
-                    <tr key={idx}>
-                      <td className="font-mono text-muted bold">{item.referenceNumber}</td>
-                      <td className="bold">{item.accountName}</td>
-                      <td className="text-right font-mono bold">{formatNumber(item.balance)}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={3} className="empty-table-cell">
-                      No cash or bank accounts found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Equity Breakdown */}
-        <div className="dash-card">
-          <div className="card-header-flex mb-12">
-            <h6 className="card-title">Equity &amp; Capital Position</h6>
-            <Link href="/reports/statement-of-financial-position" className="link-more">
-              Balance Sheet
-            </Link>
-          </div>
-          <div className="table-responsive">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>COMPONENT</th>
-                  <th className="text-right">AMOUNT</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="text-muted">Total Liabilities</td>
-                  <td className="text-right font-mono bold text-warning">{formatNumber(data.totalLiabilities)}</td>
-                </tr>
-                <tr>
-                  <td className="text-muted">Total Equity</td>
-                  <td className="text-right font-mono bold text-info">{formatNumber(data.totalEquity)}</td>
-                </tr>
-                <tr className="border-top-line">
-                  <td className="bold">Net Income (Current Period)</td>
-                  <td className="text-right font-mono bold text-success">{formatNumber(data.netIncome)}</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
