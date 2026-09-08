@@ -446,8 +446,8 @@ export default function PeriodsMainPage() {
                                 </span>
                               )}
                             </td>
-                            <td style={{ color: '#ffffff' }}>{period.startDate}</td>
-                            <td style={{ color: '#ffffff' }}>{period.endDate}</td>
+                            <td>{period.startDate}</td>
+                            <td>{period.endDate}</td>
                             <td style={{ textAlign: 'center' }}>
                               {period.isClosed ? (
                                 <span className="badge-custom badge-closed">
@@ -489,7 +489,7 @@ export default function PeriodsMainPage() {
                         <td colSpan={5} style={{ textAlign: 'center', padding: '3rem 0', color: '#ffffff' }}>
                           <i className="ti ti-calendar-off" style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}></i>
                           <p style={{ margin: 0 }}>No accounting periods have been initialized yet.</p>
-                          <small style={{ color: '#ffffff' }}>Click &quot;Open New Period&quot; to start your first accounting cycle.</small>
+                          <span className="periods-subtitle">Click &quot;Open New Period&quot; to start your first accounting cycle.</span>
                         </td>
                       </tr>
                     )}
@@ -503,7 +503,7 @@ export default function PeriodsMainPage() {
 
       {/* VIEW 2: OPEN NEW PERIOD FORM */}
       {viewMode === 'create' && (
-        <div>
+        <div className="create-period-container">
           {/* Form Header */}
           <div className="periods-header">
             <div>
