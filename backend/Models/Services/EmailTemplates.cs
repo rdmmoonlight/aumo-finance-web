@@ -1,4 +1,4 @@
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     /// <summary>
     /// Builds the HTML body for transactional auth emails (account

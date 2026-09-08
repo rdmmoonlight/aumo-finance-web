@@ -1,11 +1,12 @@
+using AumoBackend.Models.Guardian;
 using Microsoft.EntityFrameworkCore;
-using AumoFinance.Models;
+using AumoBackend.Models;
 
 // =========================================================================
-// 1. NAMESPACE UTAMA (AumoFinance.Models.Guardian)
+// 1. NAMESPACE UTAMA (AumoBackend.Models.Guardian)
 // =========================================================================
 
-namespace AumoFinance.Models.Guardian
+namespace AumoBackend.Models.Guardian
 {
     #region View Models
 
@@ -100,12 +101,11 @@ namespace AumoFinance.Models.Guardian
 }
 
 // =========================================================================
-// 2. SERVICE UTAMA (AumoFinance.Services.Guardian)
+// 2. SERVICE UTAMA (AumoBackend.Services.Guardian)
 // =========================================================================
 
-namespace AumoFinance.Services.Guardian
+namespace AumoBackend.Services.Guardian
 {
-    using global::AumoFinance.Models.Guardian;
 
     #region Services
 
@@ -277,18 +277,18 @@ namespace AumoFinance.Services.Guardian
 // 3. KOMPATIBILITAS NAMESPACE LAMA (Model & Service Jembatan Transisi)
 // =========================================================================
 
-namespace AumoFinance.Models.Security
+namespace AumoBackend.Models.Guardian
 {
-    using UserSession = global::AumoFinance.Models.Guardian.UserSession;
-    using LoginActivity = global::AumoFinance.Models.Guardian.LoginActivity;
+    using UserSession = AumoBackend.Models.Guardian.UserSession;
+    using LoginActivity = AumoBackend.Models.Guardian.LoginActivity;
 }
 
-namespace AumoFinance.Services.Security
+namespace AumoBackend.Services.Security
 {
-    public interface IGuardianService : global::AumoFinance.Services.Guardian.IGuardianService { }
+    public interface IGuardianService : AumoBackend.Services.Guardian.IGuardianService { }
 
-    public class GuardianService : global::AumoFinance.Services.Guardian.GuardianService, IGuardianService
+    public class GuardianService : AumoBackend.Services.Guardian.GuardianService, IGuardianService
     {
-        public GuardianService(AumoFinance.Models.AppDbContext context) : base(context) { }
+        public GuardianService(AumoBackend.Models.AppDbContext context) : base(context) { }
     }
 }

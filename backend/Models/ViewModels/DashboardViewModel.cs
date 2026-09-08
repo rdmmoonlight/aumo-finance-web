@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     public class DashboardViewModel
     {

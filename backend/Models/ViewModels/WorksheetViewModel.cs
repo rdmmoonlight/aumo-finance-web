@@ -1,4 +1,4 @@
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     // Worksheet akuntansi 10 kolom: Neraca Saldo (belum disesuaikan),
     // Penyesuaian, Neraca Saldo Disesuaikan, Laporan Laba Rugi, dan

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     public class ChartOfAccount
     {

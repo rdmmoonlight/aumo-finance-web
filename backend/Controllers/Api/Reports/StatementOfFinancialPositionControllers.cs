@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using AumoFinance.Models;
-using AumoFinance.Services;
+using AumoBackend.Models;
+using AumoBackend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoFinance.Controllers.Api.Reports;
+namespace AumoBackend.Controllers.Api.Reports;
 
 [ApiController]
 [Route("api/mobile/reports/statement-of-financial-position")]

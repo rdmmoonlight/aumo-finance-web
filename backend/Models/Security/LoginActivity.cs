@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace AumoFinance.Models.Security;
+namespace AumoBackend.Models.Security;
 
 public class LoginActivity
 {

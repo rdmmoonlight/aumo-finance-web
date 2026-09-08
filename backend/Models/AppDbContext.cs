@@ -1,10 +1,10 @@
-using AumoFinance.Models.Guardian; // Ditunjuk ke namespace baru
+using AumoBackend.Models.Guardian; // Ditunjuk ke namespace baru
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Models;
+namespace AumoBackend.Models;
 
 public class AppDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IDataProtectionKeyContext
 {

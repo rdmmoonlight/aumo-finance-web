@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     public static class SelectedPeriodHelper
     {

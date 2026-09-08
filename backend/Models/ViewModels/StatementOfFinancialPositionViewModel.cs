@@ -1,4 +1,4 @@
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     public class FinancialPositionLine
     {

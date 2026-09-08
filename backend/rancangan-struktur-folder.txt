@@ -5,3 +5,16 @@ AumoBackend/
 │   └── JournalEntry.cs
 ├── AumoBackend.csproj   --> File 1: Konfigurasi Proyek .NET
 └── Program.cs           --> File 2: Entry point & pendaftaran DB/Controller
+
+Struktu folder Models yg baru:
+Models
+├── AccountingDomain.cs
+├── AppDbContext.cs
+├── DTOs.cs
+├── EconomicDocument.cs
+├── Folder.cs
+├── IdentityAndSecurity.cs
+├── SelectedPeriodHelper.cs
+├── Services.cs
+├── SmtpSettings.cs
+└── ViewModels.cs

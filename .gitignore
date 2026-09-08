@@ -62,6 +62,7 @@ bld/
 appsettings.Local.json
 appsettings.Secrets.json
 appsettings.Production.json
+appsettings.Development.json
 
 # Environment variables & kunci SSL/Sertifikat
 *.env

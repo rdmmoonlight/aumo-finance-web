@@ -1,4 +1,4 @@
-namespace AumoFinance.Models.DTOs;
+namespace AumoBackend.Models.DTOs;
 
 public class MobileLoginRequest
 {

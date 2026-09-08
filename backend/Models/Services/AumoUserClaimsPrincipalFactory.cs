@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using AumoFinance.Models;
+using AumoBackend.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     /// <summary>
     /// Adds the user's FullName as the principal's ClaimTypes.Name (falling

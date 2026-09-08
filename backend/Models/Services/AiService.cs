@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     public interface IAiService
     {

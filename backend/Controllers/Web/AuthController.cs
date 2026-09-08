@@ -1,12 +1,12 @@
-using AumoFinance.Models;
-using AumoFinance.Models.DTOs;
-using AumoFinance.Models.Guardian;
+using AumoBackend.Models;
+using AumoBackend.Models.DTOs;
+using AumoBackend.Models.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Controllers.Web;
+namespace AumoBackend.Controllers.Web;
 
 [ApiController]
 [Route("web/auth")]

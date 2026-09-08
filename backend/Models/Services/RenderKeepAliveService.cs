@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace AumoFinance.Services;
+namespace AumoBackend.Services;
 
 public class RenderKeepAliveService : BackgroundService
 {

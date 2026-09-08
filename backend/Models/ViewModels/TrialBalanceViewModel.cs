@@ -1,4 +1,4 @@
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     // Satu baris Neraca Saldo per akun. Dipakai bersama oleh Trial Balance
     // (hanya JournalType "General") dan Adjusted Trial Balance (General +

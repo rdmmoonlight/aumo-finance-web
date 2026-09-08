@@ -1,8 +1,8 @@
-using AumoFinance.Models;
+using AumoBackend.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoFinance.Controllers.Api;
+namespace AumoBackend.Controllers.Api;
 
 [ApiController]
 [Route("api/test-email")]

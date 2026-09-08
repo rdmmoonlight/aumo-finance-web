@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     /// <summary>
     /// The application's user record, owned entirely by ASP.NET Core Identity.

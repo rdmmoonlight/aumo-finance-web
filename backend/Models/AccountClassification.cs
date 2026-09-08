@@ -1,4 +1,4 @@
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     // Aturan klasifikasi akun akuntansi dipusatkan di satu tempat, supaya
     // Chart of Accounts, Journal Entry, General Journal, General Ledger, dan

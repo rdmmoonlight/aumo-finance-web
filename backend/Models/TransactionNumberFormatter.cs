@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     // Database menyimpan TransactionNumber tanpa separator (GJ26080001).
     // UI menampilkannya dengan separator agar lebih enak dibaca

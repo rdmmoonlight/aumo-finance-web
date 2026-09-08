@@ -1,4 +1,4 @@
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     // Util untuk memeriksa apakah sebuah tanggal transaksi berada di dalam
     // periode yang sudah ditutup (Closed). Dipakai di General Journal,

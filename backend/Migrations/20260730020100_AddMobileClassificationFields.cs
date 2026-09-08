@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace AumoFinance.Migrations
+namespace AumoBackend.Migrations
 {
     /// <inheritdoc />
     public partial class AddMobileClassificationFields : Migration

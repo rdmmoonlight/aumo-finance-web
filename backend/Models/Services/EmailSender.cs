@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Mail;
 
-namespace AumoFinance.Services;
+namespace AumoBackend.Services;
 
 public class EmailSender : IEmailSender
 {

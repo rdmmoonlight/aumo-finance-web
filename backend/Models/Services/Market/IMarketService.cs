@@ -1,4 +1,4 @@
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     public interface IMarketService
     {

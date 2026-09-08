@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     public class MarketService : IMarketService
     {

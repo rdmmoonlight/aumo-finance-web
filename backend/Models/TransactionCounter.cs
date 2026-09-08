@@ -1,6 +1,6 @@
 using System;
 
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     // Counter atomik untuk penomoran transaksi (GJ/AJ). Satu baris per
     // kombinasi user + jenis transaksi + periode (CounterKey = prefix +

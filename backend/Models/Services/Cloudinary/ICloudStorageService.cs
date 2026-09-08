@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     public interface ICloudStorageService
     {

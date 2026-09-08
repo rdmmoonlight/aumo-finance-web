@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     public class JournalEntry
     {

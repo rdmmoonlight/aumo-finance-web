@@ -1,9 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AumoFinance.Models;
-using AumoFinance.Models.DTOs;
-using AumoFinance.Models.Guardian;
+using AumoBackend.Models;
+using AumoBackend.Models.DTOs;
+using AumoBackend.Models.Guardian;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
-namespace AumoFinance.Controllers.Api;
+namespace AumoBackend.Controllers.Api;
 
 [ApiController]
 [Route("api/mobile/auth")]

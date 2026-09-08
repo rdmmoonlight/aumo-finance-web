@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     public class ResendEmailSender : IEmailSender
     {

@@ -1,4 +1,4 @@
-namespace AumoFinance.Models.Security;
+namespace AumoBackend.Models.Security;
 
 public class TrustedDevice
 {

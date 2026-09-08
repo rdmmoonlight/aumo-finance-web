@@ -1,12 +1,12 @@
 using System.Security.Claims;
-using AumoFinance.Models;
-using AumoFinance.Models.Guardian;
-using AumoFinance.Services.Guardian;
+using AumoBackend.Models;
+using AumoBackend.Models.Guardian;
+using AumoBackend.Services.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoFinance.Controllers.Web;
+namespace AumoBackend.Controllers.Web;
 
 [ApiController]
 [Route("web/guardian")]

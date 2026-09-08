@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Identity;
-using AumoFinance.Models;
+using AumoBackend.Models;
 
-namespace AumoFinance.Services;
+namespace AumoBackend.Services;
 
 public class IdentityEmailSender : IEmailSender<ApplicationUser>
 {

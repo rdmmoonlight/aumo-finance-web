@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AumoFinance.Models;
+namespace AumoBackend.Models;
 
 public class ResendVerificationModel
 {

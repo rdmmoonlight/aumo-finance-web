@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using AumoFinance.Models;
+using AumoBackend.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Controllers.Api;
+namespace AumoBackend.Controllers.Api;
 
 [ApiController]
 [Route("api/mobile/dashboard")]

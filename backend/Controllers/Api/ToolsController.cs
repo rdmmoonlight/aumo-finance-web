@@ -2,7 +2,7 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AumoFinance.Controllers;
+namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

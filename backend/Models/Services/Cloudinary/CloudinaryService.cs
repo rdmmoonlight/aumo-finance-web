@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     public class CloudinaryService : ICloudStorageService
     {

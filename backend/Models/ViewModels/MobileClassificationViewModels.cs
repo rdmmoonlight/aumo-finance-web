@@ -1,4 +1,4 @@
-namespace AumoFinance.Models;
+namespace AumoBackend.Models;
 
 // Baris daftar di halaman index verifikasi (gabungan Simple + Manual).
 public class MobilePendingListItemViewModel

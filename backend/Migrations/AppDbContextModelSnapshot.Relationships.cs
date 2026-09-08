@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #nullable disable
 
-namespace AumoFinance.Migrations
+namespace AumoBackend.Migrations
 {
     partial class AppDbContextModelSnapshot
     {

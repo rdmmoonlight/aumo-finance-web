@@ -1,6 +1,6 @@
-namespace AumoFinance.Services;
+namespace AumoBackend.Services;
 
-using AumoFinance.Models;
+using AumoBackend.Models;
 using Microsoft.EntityFrameworkCore;
 
 public class DashboardDataService

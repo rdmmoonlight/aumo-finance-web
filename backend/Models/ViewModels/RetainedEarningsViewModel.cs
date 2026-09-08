@@ -1,4 +1,4 @@
-namespace AumoFinance.Models
+namespace AumoBackend.Models
 {
     // Retained Earnings Statement: bridges the Income Statement with the
     // Equity section on the Balance Sheet (US GAAP / ASC 210).

@@ -6,7 +6,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AumoFinance.Migrations
+namespace AumoBackend.Migrations
 {
     partial class AppDbContextModelSnapshot
     {

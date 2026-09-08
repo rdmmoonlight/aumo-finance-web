@@ -1,10 +1,10 @@
 using System;
 using System.Data;
 using System.Threading.Tasks;
-using AumoFinance.Models;
+using AumoBackend.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoFinance.Services
+namespace AumoBackend.Services
 {
     // Satu-satunya sumber logika penomoran transaksi di seluruh aplikasi.
     // Sebelumnya logika ini diduplikasi terpisah di enam tempat (mobile API,
