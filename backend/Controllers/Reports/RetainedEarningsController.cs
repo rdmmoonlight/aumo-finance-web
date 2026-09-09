@@ -98,7 +98,7 @@ public class RetainedEarningsController : ControllerBase
     }
 }
 
-public class RetainedEarningsWebApiResponse
+public class RetainedEarningsApiResponse
 {
     public string AccountName { get; set; } = "Retained Earnings";
     public DateTime StartDate { get; set; }
