@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/general-journal")]
+[Route("/api/v1/reports/general-journal")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class GeneralJournalController : ControllerBase
 {
@@ -24,7 +24,7 @@ public class GeneralJournalController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/reports/general-journal (General Journal Report)
+    // 1. GET: /api/v1/reports/general-journal (General Journal Report)
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetGeneralJournal()
@@ -47,16 +47,17 @@ public class GeneralJournalController : ControllerBase
             });
         }
 
-        var start = selectedPeriod.StartDate.Date;
-        var end = selectedPeriod.EndDate.Date;
+        // Pengoptimalan kueri tanggal agar mendukung PostgreSQL Index Scan
+        var startUtc = selectedPeriod.StartDate.Date;
+        var endUtc = selectedPeriod.EndDate.Date.AddDays(1).AddTicks(-1);
 
         var entries = await _db.JournalEntries
             .Include(j => j.Lines)
                 .ThenInclude(l => l.Account)
             .Where(j => j.UserId == userId
                      && j.JournalType == "General"
-                     && j.EntryDate.Date >= start
-                     && j.EntryDate.Date <= end)
+                     && j.EntryDate >= startUtc
+                     && j.EntryDate <= endUtc)
             .OrderBy(j => j.EntryDate)
             .ThenBy(j => j.CreatedAt)
             .ThenBy(j => j.Id)
