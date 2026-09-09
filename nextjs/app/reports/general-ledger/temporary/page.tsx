@@ -57,7 +57,7 @@ export default function TemporaryGeneralLedgerPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-ledger/temporary`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/general-ledger/temporary`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

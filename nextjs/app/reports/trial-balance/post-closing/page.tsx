@@ -72,7 +72,7 @@ export default function PostClosingTrialBalanceReportPage() {
     setErrorMessage(null);
     try {
       // Menggunakan endpoint Web Controller
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/statement-of-financial-position?isPostClosing=true`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/statement-of-financial-position?isPostClosing=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Cookie Session Identity

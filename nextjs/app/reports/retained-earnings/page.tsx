@@ -67,7 +67,7 @@ export default function RetainedEarningsReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/reports/retained-earnings`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/retained-earnings`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Untuk Identity Cookie Session

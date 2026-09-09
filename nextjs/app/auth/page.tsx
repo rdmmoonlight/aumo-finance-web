@@ -61,7 +61,7 @@ function AuthContent() {
   const handleVerifyEmailBackend = async (email: string, token: string) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/verify-email?email=${encodeURIComponent(
+        `${API_BASE_URL}/api/v1/api/v1/auth/verify-email?email=${encodeURIComponent(
           email.trim()
         )}&token=${encodeURIComponent(token)}`,
         {
@@ -101,7 +101,7 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -141,7 +141,7 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -183,7 +183,7 @@ function AuthContent() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/resend-verification`,
+        `${API_BASE_URL}/api/v1/api/v1/auth/resend-verification`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -58,7 +58,7 @@ export default function SettingsPage() {
       setLoading(true);
       try {
         // Panggil /auth/me dengan credentials: 'include' agar Identity Cookie terkirim
-        const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+        const res = await fetch(`${API_BASE_URL}/api/v1/api/v1/auth/me`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ export default function SettingsPage() {
 
     setIsSendingEmail(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/resend-verification`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -170,7 +170,7 @@ export default function Topbar({
     if (!isAuthenticated) return;
     setLoadingPeriod(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/periods`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/periods`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -226,7 +226,7 @@ export default function Topbar({
 
   const handleClearSelection = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/periods/clear-selection`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/periods/clear-selection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

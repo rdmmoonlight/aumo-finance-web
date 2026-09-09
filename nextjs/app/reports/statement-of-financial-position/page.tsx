@@ -73,7 +73,7 @@ export default function StatementOfFinancialPositionReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/statement-of-financial-position`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/statement-of-financial-position`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Cookie Session Identity
