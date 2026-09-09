@@ -54,14 +54,17 @@ public class AuthController : ControllerBase
             isPersistent: request.RememberMe,
             lockoutOnFailure: false);
 
+        // Ambil User-Agent dari request header untuk deteksi & disimpan ke session
+        var rawUserAgent = Request.Headers["User-Agent"].ToString();
+        var safeUserAgent = string.IsNullOrWhiteSpace(rawUserAgent) ? "Aumo Client / Web" : rawUserAgent;
+
         if (!result.Succeeded)
         {
             // Catat log login gagal
-            var userAgentFail = Request.Headers["User-Agent"].ToString();
-            var isMobileFail = !string.IsNullOrEmpty(userAgentFail) && 
-                               (userAgentFail.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
-                                userAgentFail.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
-                                userAgentFail.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
+            var isMobileFail = !string.IsNullOrEmpty(rawUserAgent) && 
+                               (rawUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+                                rawUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                                rawUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
 
             await _guardianService.CreateLoginActivityAsync(
                 user.Id,
@@ -77,24 +80,24 @@ public class AuthController : ControllerBase
         }
 
         // Deteksi Perangkat: Mobile vs Web
-        var userAgent = Request.Headers["User-Agent"].ToString();
-        var isMobile = !string.IsNullOrEmpty(userAgent) && 
-                       (userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
-                        userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
-                        userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
+        var isMobile = !string.IsNullOrEmpty(rawUserAgent) && 
+                       (rawUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+                        rawUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                        rawUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
 
         string deviceCategory = isMobile ? "Mobile" : "Web";
         string ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
 
-        // 1. Buat Sesi Login Baru
+        // 1. Buat Sesi Login Baru (Menyertakan userAgent untuk mencegah error NOT NULL constraint)
         await _guardianService.CreateSessionAsync(
             user.Id,
             deviceName: deviceCategory,
-            operatingSystem: deviceCategory, // Mengisi "Web" atau "Mobile" (Pasti NOT NULL)
+            operatingSystem: deviceCategory, // Mengisi "Web" atau "Mobile"
             browser: isMobile ? "Mobile App/Browser" : "Web Browser",
             ipAddress: ip,
             country: "ID",
-            refreshTokenHash: "COOKIE_SESSION"
+            refreshTokenHash: "COOKIE_SESSION",
+            userAgent: safeUserAgent // Terkirim dengan aman ke database
         );
 
         // 2. Catat Log Aktivitas Login Sukses
