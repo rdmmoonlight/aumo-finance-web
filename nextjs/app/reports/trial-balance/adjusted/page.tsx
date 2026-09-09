@@ -51,7 +51,7 @@ export default function AdjustedTrialBalancePage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/trial-balance/adjusted`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/trial-balance/adjusted`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

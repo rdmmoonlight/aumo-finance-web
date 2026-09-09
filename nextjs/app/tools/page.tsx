@@ -77,7 +77,7 @@ export default function ToolsPage() {
   const fetchDbAccounts = async () => {
     setIsLoadingCoa(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/api/v1/chart-of-accounts`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -326,7 +326,7 @@ export default function ToolsPage() {
 
     setIsBusy(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/tools/import-journal-entries`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/tools/import-journal-entries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

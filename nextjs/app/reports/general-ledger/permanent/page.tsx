@@ -55,7 +55,7 @@ export default function PermanentGeneralLedgerPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/general-ledger/permanent`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-ledger/permanent`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

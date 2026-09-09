@@ -86,7 +86,7 @@ function ChartOfAccountsContent() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/chart-of-accounts`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +162,7 @@ function ChartOfAccountsContent() {
         role: newAccount.role || 'Default',
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/chart-of-accounts`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ function ChartOfAccountsContent() {
         isActive: editAccount.isActive,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/chart-of-accounts/${editAccount.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts/${editAccount.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -261,7 +261,7 @@ function ChartOfAccountsContent() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/chart-of-accounts/${account.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts/${account.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

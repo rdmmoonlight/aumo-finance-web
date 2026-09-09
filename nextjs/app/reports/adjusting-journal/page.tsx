@@ -89,7 +89,7 @@ export default function AdjustingJournalPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/adjusting-journal`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/adjusting-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -145,7 +145,7 @@ export default function AdjustingJournalPage() {
 
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/adjusting-journal/${entry.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/adjusting-journal/${entry.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

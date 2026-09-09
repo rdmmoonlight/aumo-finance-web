@@ -119,7 +119,7 @@ function DashboardContent() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/dashboard?period=${type}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/dashboard?period=${type}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -63,7 +63,7 @@ export default function WorksheetReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/api/v1/reports/worksheet`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/worksheet`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Menggunakan Session Cookie
