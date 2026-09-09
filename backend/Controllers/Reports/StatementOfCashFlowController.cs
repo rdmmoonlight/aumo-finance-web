@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/statement-of-cash-flow")]
+[Route("/api/v1/reports/statement-of-cash-flow")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class StatementOfCashFlowController : ControllerBase
 {
@@ -23,7 +23,7 @@ public class StatementOfCashFlowController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/reports/statement-of-cash-flow
+    // 1. GET: /api/v1/reports/statement-of-cash-flow
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetCashFlowStatement()
