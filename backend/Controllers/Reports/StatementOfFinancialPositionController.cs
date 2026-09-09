@@ -128,7 +128,7 @@ public class StatementOfFinancialPositionController : ControllerBase
     }
 }
 
-public class StatementOfFinancialPositionWebApiResponse
+public class StatementOfFinancialPositionApiResponse
 {
     public DateTime AsOfDate { get; set; }
     public bool IsPostClosing { get; set; }
@@ -143,7 +143,7 @@ public class StatementOfFinancialPositionWebApiResponse
     public bool IsBalanced { get; set; }
 }
 
-public class FinancialPositionLineWebApiResponse
+public class FinancialPositionLineApiResponse
 {
     public int ReferenceNumber { get; set; }
     public string AccountName { get; set; } = string.Empty;
