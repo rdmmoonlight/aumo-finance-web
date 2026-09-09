@@ -71,11 +71,11 @@ function AuthContent() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || (data.success !== undefined && !data.success)) {
         throw new Error(
-          errorData.message ||
-            'Failed to verify email. Link may have expired.'
+          data.message || 'Failed to verify email. Link may have expired.'
         );
       }
 
@@ -154,7 +154,7 @@ function AuthContent() {
 
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok) {
+      if (!response.ok || (data.success !== undefined && !data.success)) {
         throw new Error(
           data.message || 'An unexpected error occurred during registration.'
         );
@@ -196,7 +196,7 @@ function AuthContent() {
 
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok) {
+      if (!response.ok || (data.success !== undefined && !data.success)) {
         throw new Error(
           data.message || 'Failed to send verification email.'
         );
