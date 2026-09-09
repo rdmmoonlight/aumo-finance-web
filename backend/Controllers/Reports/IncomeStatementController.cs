@@ -118,7 +118,7 @@ public class IncomeStatementController : ControllerBase
     }
 }
 
-public class IncomeStatementWebApiResponse
+public class IncomeStatementApiResponse
 {
     public DateTime AsOfDate { get; set; }
     public List<IncomeStatementLineWebApiResponse> Revenues { get; set; } = new();
@@ -133,7 +133,7 @@ public class IncomeStatementWebApiResponse
     public decimal NetIncome { get; set; }
 }
 
-public class IncomeStatementLineWebApiResponse
+public class IncomeStatementLineApiResponse
 {
     public int ReferenceNumber { get; set; }
     public string AccountName { get; set; } = string.Empty;
