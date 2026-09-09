@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/income-statement")]
+[Route("/api/v1/reports/income-statement")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class IncomeStatementController : ControllerBase
 {
@@ -23,7 +23,7 @@ public class IncomeStatementController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/reports/income-statement
+    // 1. GET: /api/v1/reports/income-statement
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetIncomeStatement()
