@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/trial-balance")]
+[Route("/api/v1/reports/trial-balance")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class TrialBalanceController : ControllerBase
 {
@@ -24,7 +24,7 @@ public class TrialBalanceController : ControllerBase
     }
 
     // =========================================================================
-    // 1. GET: /web/reports/trial-balance?type=unadjusted|adjusted|post-closing
+    // 1. GET: /api/v1/reports/trial-balance?type=unadjusted|adjusted|post-closing
     // =========================================================================
     [HttpGet]
     public async Task<IActionResult> GetTrialBalance([FromQuery] string type = "unadjusted")
@@ -33,7 +33,7 @@ public class TrialBalanceController : ControllerBase
     }
 
     // =========================================================================
-    // 2. GET: /web/reports/trial-balance/unadjusted
+    // 2. GET: /api/v1/reports/trial-balance/unadjusted
     // =========================================================================
     [HttpGet("unadjusted")]
     public async Task<IActionResult> GetUnadjustedTrialBalance()
@@ -42,7 +42,7 @@ public class TrialBalanceController : ControllerBase
     }
 
     // =========================================================================
-    // 3. GET: /web/reports/trial-balance/adjusted
+    // 3. GET: /api/v1/reports/trial-balance/adjusted
     // =========================================================================
     [HttpGet("adjusted")]
     public async Task<IActionResult> GetAdjustedTrialBalance()
@@ -51,7 +51,7 @@ public class TrialBalanceController : ControllerBase
     }
 
     // =========================================================================
-    // 4. GET: /web/reports/trial-balance/post-closing
+    // 4. GET: /api/v1/reports/trial-balance/post-closing
     // =========================================================================
     [HttpGet("post-closing")]
     public async Task<IActionResult> GetPostClosingTrialBalance()
@@ -162,15 +162,15 @@ public class TrialBalanceController : ControllerBase
 
         var accountIds = accounts.Select(a => a.Id).ToList();
 
-        var start = period.StartDate.Date;
-        var end = period.EndDate.Date;
+        var startUtc = period.StartDate.Date;
+        var endUtc = period.EndDate.Date.AddDays(1).AddTicks(-1);
 
         var linesQuery = db.JournalEntryLines
             .Include(l => l.JournalEntry)
             .Where(l => accountIds.Contains(l.AccountId)
                      && l.JournalEntry!.UserId == userId
-                     && l.JournalEntry!.EntryDate.Date >= start
-                     && l.JournalEntry!.EntryDate.Date <= end);
+                     && l.JournalEntry!.EntryDate >= startUtc
+                     && l.JournalEntry!.EntryDate <= endUtc);
 
         bool includeAdjustingLines = includeAdjusting || reportType == "adjusted" || reportType == "post-closing";
 
