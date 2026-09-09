@@ -32,6 +32,7 @@ namespace AumoBackend.Models.Guardian
     public class ActiveSessionViewModel
     {
         public string DeviceName { get; set; } = string.Empty;
+        public string OperatingSystem { get; set; } = string.Empty;
         public string Browser { get; set; } = string.Empty;
         public string IpAddress { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
@@ -73,6 +74,10 @@ namespace AumoBackend.Models.Guardian
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
         public string DeviceName { get; set; } = string.Empty;
+        
+        // --- PROPERTI BARU (NOT NULL) ---
+        public string OperatingSystem { get; set; } = string.Empty; 
+        
         public string Browser { get; set; } = string.Empty;
         public string IpAddress { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
@@ -106,7 +111,6 @@ namespace AumoBackend.Models.Guardian
 
 namespace AumoBackend.Services.Guardian
 {
-
     #region Services
 
     public interface IGuardianService
@@ -124,6 +128,7 @@ namespace AumoBackend.Services.Guardian
         Task CreateSessionAsync(
             Guid userId,
             string deviceName,
+            string operatingSystem,
             string browser,
             string ipAddress,
             string country,
@@ -177,6 +182,7 @@ namespace AumoBackend.Services.Guardian
         public async Task CreateSessionAsync(
             Guid userId,
             string deviceName,
+            string operatingSystem,
             string browser,
             string ipAddress,
             string country,
@@ -206,6 +212,7 @@ namespace AumoBackend.Services.Guardian
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 DeviceName = deviceName,
+                OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
                 Browser = browser,
                 IpAddress = ipAddress,
                 Country = country,
