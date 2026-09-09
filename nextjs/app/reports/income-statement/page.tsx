@@ -59,7 +59,7 @@ export default function IncomeStatementReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/income-statement`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/income-statement`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Cookie Session Identity

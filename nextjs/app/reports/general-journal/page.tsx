@@ -91,7 +91,7 @@ export default function GeneralJournalPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/general-journal`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Mengirim Session Cookie secara otomatis
@@ -147,7 +147,7 @@ export default function GeneralJournalPage() {
 
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/general-journal/${entry.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-journal/${entry.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

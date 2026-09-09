@@ -133,7 +133,7 @@ function JournalEntryContent() {
         const headers = getAuthHeaders();
 
         // 1. Fetch Chart of Accounts
-        const accountsRes = await fetch(`${API_BASE_URL}/chart-of-accounts`, {
+        const accountsRes = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
           method: 'GET',
           headers,
         });
@@ -159,7 +159,7 @@ function JournalEntryContent() {
 
         // 2. Fetch data jika Edit Mode
         if (isEdit && entryIdParam) {
-          const journalRes = await fetch(`${API_BASE_URL}/journals/${entryIdParam}`, {
+          const journalRes = await fetch(`${API_BASE_URL}/api/v1/journals/${entryIdParam}`, {
             method: 'GET',
             headers,
           });
@@ -353,8 +353,8 @@ function JournalEntryContent() {
       };
 
       const url = isEdit
-        ? `${API_BASE_URL}/journals/${entryIdParam}`
-        : `${API_BASE_URL}/journals`;
+        ? `${API_BASE_URL}/api/v1/journals/${entryIdParam}`
+        : `${API_BASE_URL}/api/v1/journals`;
       const method = isEdit ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

@@ -61,7 +61,7 @@ export default function ClosingJournalReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/reports/closing-journal`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/reports/closing-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Identity Cookie Session
