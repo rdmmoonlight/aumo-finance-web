@@ -74,13 +74,9 @@ namespace AumoBackend.Models.Guardian
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
         public string DeviceName { get; set; } = string.Empty;
-        
         public string OperatingSystem { get; set; } = string.Empty; 
         public string Browser { get; set; } = string.Empty;
-        
-        // --- PROPERTI TAMBAHAN (Mencegah NOT NULL Constraint Violation) ---
         public string UserAgent { get; set; } = string.Empty;
-        
         public string IpAddress { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
         public string RefreshTokenHash { get; set; } = string.Empty;
@@ -97,6 +93,7 @@ namespace AumoBackend.Models.Guardian
         public Guid UserId { get; set; }
         public string ActivityType { get; set; } = string.Empty;
         public string Device { get; set; } = string.Empty;
+        public string OperatingSystem { get; set; } = "Web"; // Guarding default value
         public string Browser { get; set; } = string.Empty;
         public string IpAddress { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
@@ -124,7 +121,8 @@ namespace AumoBackend.Services.Guardian
             string browser,
             string ipAddress,
             string country,
-            bool isSuccess
+            bool isSuccess,
+            string operatingSystem = "Web"
         );
 
         Task CreateSessionAsync(
@@ -135,7 +133,7 @@ namespace AumoBackend.Services.Guardian
             string ipAddress,
             string country,
             string refreshTokenHash,
-            string userAgent = "Web" // Parameter opsional dengan default value
+            string userAgent = "Web"
         );
 
         Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
@@ -163,17 +161,19 @@ namespace AumoBackend.Services.Guardian
             string browser,
             string ipAddress,
             string country,
-            bool isSuccess)
+            bool isSuccess,
+            string operatingSystem = "Web")
         {
             var activity = new LoginActivity
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 ActivityType = activityType,
-                Device = device,
-                Browser = browser,
-                IpAddress = ipAddress,
-                Country = country,
+                Device = string.IsNullOrWhiteSpace(device) ? "Web" : device,
+                OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem, // Mencegah violation NULL
+                Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
+                IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
+                Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
                 IsSuccess = isSuccess,
                 CreatedAt = DateTime.UtcNow
             };
@@ -218,7 +218,7 @@ namespace AumoBackend.Services.Guardian
                 DeviceName = string.IsNullOrWhiteSpace(deviceName) ? "Web" : deviceName,
                 OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
                 Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
-                UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent, // Safety fallback
+                UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent,
                 IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
                 Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
                 RefreshTokenHash = string.IsNullOrWhiteSpace(refreshTokenHash) ? "COOKIE_SESSION" : refreshTokenHash,
@@ -286,7 +286,7 @@ namespace AumoBackend.Services.Guardian
 }
 
 // =========================================================================
-// 3. KOMPATIBILITAS NAMESPACE LAMA (Model & Service Jembatan Transisi)
+// 3. KOMPATIBILITAS NAMESPACE LAMA
 // =========================================================================
 
 namespace AumoBackend.Models.Guardian
