@@ -1,4 +1,7 @@
+using System;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using AumoBackend.Models;
 using AumoBackend.Models.Guardian;
 using AumoBackend.Services.Guardian;
@@ -9,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("api/v1/guardian")]
+[Route("/api/v1/guardian")]
 [Authorize]
 public class GuardianController : ControllerBase
 {
@@ -24,6 +27,9 @@ public class GuardianController : ControllerBase
         _userManager = userManager;
     }
 
+    // ==========================================
+    // 1. GET: /api/v1/guardian
+    // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetDashboardData()
     {
@@ -85,6 +91,9 @@ public class GuardianController : ControllerBase
         });
     }
 
+    // ==========================================
+    // 2. POST: /api/v1/guardian/revoke-session/{sessionId}
+    // ==========================================
     [HttpPost("revoke-session/{sessionId:guid}")]
     public async Task<IActionResult> RevokeSession(Guid sessionId)
     {
@@ -98,6 +107,9 @@ public class GuardianController : ControllerBase
         return Ok(new { success = true, message = "Session revoked successfully." });
     }
 
+    // ==========================================
+    // 3. POST: /api/v1/guardian/revoke-all
+    // ==========================================
     [HttpPost("revoke-all")]
     public async Task<IActionResult> RevokeAllSessions()
     {
