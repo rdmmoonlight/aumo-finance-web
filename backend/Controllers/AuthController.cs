@@ -54,17 +54,18 @@ public class AuthController : ControllerBase
             isPersistent: request.RememberMe,
             lockoutOnFailure: false);
 
-        // Ambil User-Agent dari request header secara aman
-        var rawUserAgent = Request.Headers["User-Agent"].ToString();
-        var safeUserAgent = string.IsNullOrWhiteSpace(rawUserAgent) ? "Aumo Client / Web" : rawUserAgent;
+        // Prioritaskan UserAgent dari Body JSON Request (jika dikirim FE), lalu Header, lalu Fallback
+        var headerUserAgent = Request.Headers["User-Agent"].ToString();
+        var safeUserAgent = !string.IsNullOrWhiteSpace(request.UserAgent) 
+            ? request.UserAgent 
+            : (!string.IsNullOrWhiteSpace(headerUserAgent) ? headerUserAgent : "Aumo Client / Web");
 
         if (!result.Succeeded)
         {
             // Catat log login gagal
-            var isMobileFail = !string.IsNullOrEmpty(rawUserAgent) && 
-                               (rawUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
-                                rawUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
-                                rawUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
+            var isMobileFail = safeUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+                               safeUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                               safeUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase);
 
             string deviceCategoryFail = isMobileFail ? "Mobile" : "Web";
 
@@ -76,26 +77,27 @@ public class AuthController : ControllerBase
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
                 "ID",
                 false,
-                operatingSystem: deviceCategoryFail // Terkirim eksplisit (Pasti NOT NULL)
+                operatingSystem: !string.IsNullOrWhiteSpace(request.OperatingSystem) ? request.OperatingSystem : deviceCategoryFail,
+                userAgent: safeUserAgent // Terkirim eksplisit (Mencegah error NOT NULL UserAgent di LoginActivities)
             );
 
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
         // Deteksi Perangkat: Mobile vs Web
-        var isMobile = !string.IsNullOrEmpty(rawUserAgent) && 
-                       (rawUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
-                        rawUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
-                        rawUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
+        var isMobile = safeUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+                       safeUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                       safeUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase);
 
         string deviceCategory = isMobile ? "Mobile" : "Web";
         string ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
+        string osValue = !string.IsNullOrWhiteSpace(request.OperatingSystem) ? request.OperatingSystem : deviceCategory;
 
-        // 1. Buat Sesi Login Baru (Mengirim userAgent secara eksplisit)
+        // 1. Buat Sesi Login Baru
         await _guardianService.CreateSessionAsync(
             user.Id,
             deviceName: deviceCategory,
-            operatingSystem: deviceCategory,
+            operatingSystem: osValue,
             browser: isMobile ? "Mobile App/Browser" : "Web Browser",
             ipAddress: ip,
             country: "ID",
@@ -103,7 +105,7 @@ public class AuthController : ControllerBase
             userAgent: safeUserAgent
         );
 
-        // 2. Catat Log Aktivitas Login Sukses (Mengirim operatingSystem secara eksplisit)
+        // 2. Catat Log Aktivitas Login Sukses
         await _guardianService.CreateLoginActivityAsync(
             user.Id,
             "Interactive Login",
@@ -112,7 +114,8 @@ public class AuthController : ControllerBase
             ip,
             "ID",
             true,
-            operatingSystem: deviceCategory // Terkirim eksplisit (Pasti NOT NULL)
+            operatingSystem: osValue,
+            userAgent: safeUserAgent // Terkirim eksplisit (Mencegah error NOT NULL UserAgent di LoginActivities)
         );
 
         return Ok(new
@@ -160,4 +163,6 @@ public class LoginRequest
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public bool RememberMe { get; set; } = false;
+    public string? UserAgent { get; set; }
+    public string? OperatingSystem { get; set; }
 }
