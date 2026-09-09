@@ -77,12 +77,12 @@ public class StatementOfFinancialPositionController : ControllerBase
         });
     }
 
-    public static async Task<StatementOfFinancialPositionWebApiResponse> BuildSofpAsync(AppDbContext db, Guid userId, Period period, bool isPostClosing)
+    public static async Task<StatementOfFinancialPositionApiResponse> BuildSofpAsync(AppDbContext db, Guid userId, Period period, bool isPostClosing)
     {
         var rows = await TrialBalanceController.BuildTrialBalanceRowsAsync(db, userId, period, includeAdjusting: true);
         var re = await RetainedEarningsController.BuildRetainedEarningsAsync(db, userId, period);
 
-        FinancialPositionLineWebApiResponse ToLine(TrialBalanceRow r) => new()
+        FinancialPositionLineApiResponse ToLine(TrialBalanceRow r) => new()
         {
             ReferenceNumber = r.ReferenceNumber,
             AccountName = r.AccountName,
@@ -103,7 +103,7 @@ public class StatementOfFinancialPositionController : ControllerBase
 
         bool isBalanced = Math.Round(totalAssets - totalLiabilitiesAndEquity, 2) == 0;
 
-        return new StatementOfFinancialPositionWebApiResponse
+        return new StatementOfFinancialPositionApiResponse
         {
             AsOfDate = period.EndDate,
             IsPostClosing = isPostClosing,
@@ -132,11 +132,11 @@ public class StatementOfFinancialPositionApiResponse
 {
     public DateTime AsOfDate { get; set; }
     public bool IsPostClosing { get; set; }
-    public List<FinancialPositionLineWebApiResponse> Assets { get; set; } = new();
+    public List<FinancialPositionLineApiResponse> Assets { get; set; } = new();
     public decimal TotalAssets { get; set; }
-    public List<FinancialPositionLineWebApiResponse> Liabilities { get; set; } = new();
+    public List<FinancialPositionLineApiResponse> Liabilities { get; set; } = new();
     public decimal TotalLiabilities { get; set; }
-    public List<FinancialPositionLineWebApiResponse> EquityExcludingRetainedEarnings { get; set; } = new();
+    public List<FinancialPositionLineApiResponse> EquityExcludingRetainedEarnings { get; set; } = new();
     public decimal RetainedEarningsEnding { get; set; }
     public decimal TotalEquity { get; set; }
     public decimal TotalLiabilitiesAndEquity { get; set; }

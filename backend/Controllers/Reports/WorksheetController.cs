@@ -55,7 +55,7 @@ public class WorksheetController : ControllerBase
             .OrderBy(a => a.ReferenceNumber)
             .ToListAsync();
 
-        var worksheetRows = new List<WorksheetRowWebApiResponse>();
+        var worksheetRows = new List<WorksheetRowApiResponse>();
         var allAccountIds = unadjusted.Select(r => r.AccountId)
             .Union(adjusted.Select(r => r.AccountId))
             .ToList();
@@ -76,7 +76,7 @@ public class WorksheetController : ControllerBase
 
             var adjNet = (aDebit - aCredit) - (uDebit - uCredit);
 
-            var row = new WorksheetRowWebApiResponse
+            var row = new WorksheetRowApiResponse
             {
                 AccountId = accountId,
                 ReferenceNumber = account.ReferenceNumber,

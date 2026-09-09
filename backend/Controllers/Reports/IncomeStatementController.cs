@@ -70,9 +70,9 @@ public class IncomeStatementController : ControllerBase
         });
     }
 
-    public static IncomeStatementWebApiResponse BuildIncomeStatement(List<TrialBalanceRow> rows, Period period)
+    public static IncomeStatementApiResponse BuildIncomeStatement(List<TrialBalanceRow> rows, Period period)
     {
-        IncomeStatementLineWebApiResponse ToLine(TrialBalanceRow r) => new()
+        IncomeStatementLineApiResponse ToLine(TrialBalanceRow r) => new()
         {
             ReferenceNumber = r.ReferenceNumber,
             AccountName = r.AccountName,
@@ -93,7 +93,7 @@ public class IncomeStatementController : ControllerBase
 
         decimal netIncome = operatingIncome + totalOtherIncome - totalOtherExpenses;
 
-        return new IncomeStatementWebApiResponse
+        return new IncomeStatementApiResponse
         {
             AsOfDate = period.EndDate,
             Revenues = revenues,
@@ -121,14 +121,14 @@ public class IncomeStatementController : ControllerBase
 public class IncomeStatementApiResponse
 {
     public DateTime AsOfDate { get; set; }
-    public List<IncomeStatementLineWebApiResponse> Revenues { get; set; } = new();
+    public List<IncomeStatementLineApiResponse> Revenues { get; set; } = new();
     public decimal TotalRevenue { get; set; }
-    public List<IncomeStatementLineWebApiResponse> OperatingExpenses { get; set; } = new();
+    public List<IncomeStatementLineApiResponse> OperatingExpenses { get; set; } = new();
     public decimal TotalOperatingExpenses { get; set; }
     public decimal OperatingIncome { get; set; }
-    public List<IncomeStatementLineWebApiResponse> OtherIncome { get; set; } = new();
+    public List<IncomeStatementLineApiResponse> OtherIncome { get; set; } = new();
     public decimal TotalOtherIncome { get; set; }
-    public List<IncomeStatementLineWebApiResponse> OtherExpenses { get; set; } = new();
+    public List<IncomeStatementLineApiResponse> OtherExpenses { get; set; } = new();
     public decimal TotalOtherExpenses { get; set; }
     public decimal NetIncome { get; set; }
 }

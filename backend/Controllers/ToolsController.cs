@@ -13,8 +13,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AumoBackend.Controllers;
-{
-    [ApiController]
+
+[ApiController]
 [Route("/api/v1/tools")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ToolsController : ControllerBase
@@ -406,5 +406,4 @@ public class AccountMappingDetailDto
     public string MappedAccountName { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string Reason { get; set; } = string.Empty;
-}
 }

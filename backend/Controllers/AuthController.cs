@@ -59,15 +59,15 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
-        // Catat Sesi Web User ke Database
+        // Catat Sesi User ke Database
         var session = new UserSession
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
-            RefreshTokenHash = "WEB_COOKIE_SESSION",
+            RefreshTokenHash = "COOKIE_SESSION",
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
-            DeviceName = "Web Client",
-            Browser = "Web Browser",
+            DeviceName = "Client",
+            Browser = "Browser",
             Country = "ID",
             IsActive = true,
             IsCurrent = true,
@@ -112,13 +112,12 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        // Menghapus session cookie pada browser
+        // Menghapus session cookie
         await _signInManager.SignOutAsync();
         return Ok(new { success = true, message = "Logged out successfully." });
     }
 }
 
-// DTO khusus untuk Web Login
 public class LoginRequest
 {
     public string Email { get; set; } = string.Empty;

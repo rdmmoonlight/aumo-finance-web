@@ -42,10 +42,10 @@ public class TestEmailController : ControllerBase
             var encodedToken = Microsoft.AspNetCore.WebUtilities.WebEncoders.Base64UrlEncode(
                 System.Text.Encoding.UTF8.GetBytes(token));
 
-            // 3. Susun URL verifikasi ke domain Render
+            // 3. Susun URL verifikasi
             var verificationUrl = $"https://aumo.onrender.com/auth/verify-email?Email={Uri.EscapeDataString(user.Email!)}&Token={encodedToken}";
 
-            // 4. Kirim email lewat IEmailSender<ApplicationUser> yang terhubung ke MailKit
+            // 4. Kirim email lewat IEmailSender<ApplicationUser>
             await _identityEmailSender.SendConfirmationLinkAsync(user, user.Email!, verificationUrl);
 
             _logger.LogInformation("Verification email test sent to {Email}", user.Email);
@@ -54,7 +54,7 @@ public class TestEmailController : ControllerBase
             {
                 success = true,
                 message = $"Verification email triggered for {user.Email}",
-                generatedLink = verificationUrl // Menampilkan link di Postman untuk cek manual jika email gagal
+                generatedLink = verificationUrl
             });
         }
         catch (Exception ex)

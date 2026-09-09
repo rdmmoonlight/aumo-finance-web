@@ -23,17 +23,12 @@ namespace AumoBackend.Models
         [Required]
         public DateTime EntryDate { get; set; }
 
-        // Waktu pencatatan — diisi otomatis oleh sistem berdasarkan jam
-        // dinding PERANGKAT pengguna saat entri diinput (bukan jam
-        // server saat baris tersimpan ke database). Web: diambil lewat
-        // JS interop (aumoTime.getLocalTimestamp). Mobile: dikirim oleh
-        // client Android (DateTime.Now perangkat) di field CreatedAt.
+        // Waktu pencatatan — diisi otomatis berdasarkan jam lokal perangkat
+        // pengguna saat entri diinput (bukan jam server saat tersimpan ke database).
         public DateTime CreatedAt { get; set; }
 
-        // Waktu terakhir entri ini diedit — diisi otomatis dengan pola yang
-        // sama seperti CreatedAt (jam dinding perangkat saat edit disimpan,
-        // bukan jam server). Null selama entri belum pernah diedit sejak
-        // dibuat (baru EntryDate + CreatedAt yang terisi).
+        // Waktu terakhir entri ini diedit — diisi otomatis berdasarkan jam lokal
+        // perangkat pengguna saat edit disimpan. Null jika belum pernah diedit.
         public DateTime? UpdatedAt { get; set; }
 
         public List<JournalEntryLine> Lines { get; set; } = new();

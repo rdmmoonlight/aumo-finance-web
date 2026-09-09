@@ -66,7 +66,7 @@ public class RetainedEarningsController : ControllerBase
         });
     }
 
-    public static async Task<RetainedEarningsWebApiResponse> BuildRetainedEarningsAsync(AppDbContext db, Guid userId, Period period)
+    public static async Task<RetainedEarningsApiResponse> BuildRetainedEarningsAsync(AppDbContext db, Guid userId, Period period)
     {
         var rows = await TrialBalanceController.BuildTrialBalanceRowsAsync(db, userId, period, includeAdjusting: true);
         var incomeStatement = IncomeStatementController.BuildIncomeStatement(rows, period);
@@ -77,7 +77,7 @@ public class RetainedEarningsController : ControllerBase
         decimal dividends = 0m;
         decimal endingBalance = beginningBalance + netIncome - dividends;
 
-        return new RetainedEarningsWebApiResponse
+        return new RetainedEarningsApiResponse
         {
             AccountName = reAccount?.AccountName ?? "Retained Earnings",
             StartDate = period.StartDate,

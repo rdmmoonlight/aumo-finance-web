@@ -43,14 +43,14 @@ namespace AumoBackend
                 throw new InvalidOperationException("Database connection string 'DefaultConnection' or 'DATABASE_URL' is missing.");
             }
 
-            // Gunakan registrasi AddDbContext standar agar kompatibel penuh dengan Identity & Services
+            // Registrasi AddDbContext standar
             builder.Services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseNpgsql(connectionString);
                 options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
             });
 
-            // Factory opsional jika Anda membutuhkannya untuk background services/threads
+            // DbContextFactory
             builder.Services.AddDbContextFactory<AppDbContext>(options =>
             {
                 options.UseNpgsql(connectionString);
@@ -200,7 +200,7 @@ namespace AumoBackend
                 "http://localhost:3000",
                 "http://localhost:5000",
                 "https://localhost:7000",
-                "https://my-authentic-web.vercel.app"
+                "https://my-authentic-app.vercel.app"
             };
 
             if (!string.IsNullOrWhiteSpace(frontendUrl))
@@ -319,7 +319,6 @@ namespace AumoBackend
                 });
             }
 
-            // CORS Ditaruh sebelum Routing dan Authentication
             app.UseCors("AllowFrontend");
 
             app.UseRouting();
@@ -332,7 +331,7 @@ namespace AumoBackend
             // =====================================
             app.MapGet("/", () => Results.Ok(new
             {
-                service = "AumoFinance Web & Mobile API",
+                service = "AumoFinance API",
                 status = "Online",
                 timestamp = DateTime.UtcNow
             }));

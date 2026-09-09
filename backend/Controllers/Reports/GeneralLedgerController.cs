@@ -12,21 +12,55 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("/api/v1/reports/general-ledger/temporary")]
+[Route("/api/v1/reports/general-ledger")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class GeneralLedgerTemporaryController : ControllerBase
+public class GeneralLedgerController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public GeneralLedgerTemporaryController(AppDbContext db)
+    public GeneralLedgerController(AppDbContext db)
     {
         _db = db;
     }
 
     // ==========================================
-    // 1. GET: /api/v1/reports/general-ledger/temporary
+    // 1. GET: /api/v1/reports/general-ledger/permanent
     // ==========================================
-    [HttpGet]
+    [HttpGet("permanent")]
+    public async Task<IActionResult> GetPermanentGeneralLedger()
+    {
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty)
+            return Unauthorized(new { success = false, message = "User identity is invalid or expired." });
+
+        var period = await SelectedPeriodHelper.GetSelectedPeriodAsync(_db, userId);
+        if (period == null)
+        {
+            return NotFound(new
+            {
+                success = false,
+                hasPeriodSelected = false,
+                message = "No accounting period selected."
+            });
+        }
+
+        var ledgers = await BuildLedgersAsync(userId, period, isTemporary: false);
+
+        return Ok(new
+        {
+            success = true,
+            hasPeriodSelected = true,
+            selectedPeriodName = period.PeriodName,
+            isTemporary = false,
+            netIncomeBeforeClosing = 0m,
+            ledgers = ledgers
+        });
+    }
+
+    // ==========================================
+    // 2. GET: /api/v1/reports/general-ledger/temporary
+    // ==========================================
+    [HttpGet("temporary")]
     public async Task<IActionResult> GetTemporaryGeneralLedger()
     {
         var userId = GetCurrentUserId();
@@ -44,8 +78,7 @@ public class GeneralLedgerTemporaryController : ControllerBase
             });
         }
 
-        var ledgers = await BuildTemporaryLedgersAsync(userId, period);
-
+        var ledgers = await BuildLedgersAsync(userId, period, isTemporary: true);
         decimal netTotal = ledgers.Sum(l => l.NormalBalanceIsDebit ? -l.EndingBalance : l.EndingBalance);
 
         return Ok(new
@@ -59,14 +92,16 @@ public class GeneralLedgerTemporaryController : ControllerBase
         });
     }
 
-    private async Task<List<TemporaryLedgerAccountWebResponse>> BuildTemporaryLedgersAsync(Guid userId, Period period)
+    private async Task<List<LedgerAccountResponse>> BuildLedgersAsync(Guid userId, Period period, bool isTemporary)
     {
-        var accounts = (await _db.ChartOfAccounts
-                .Where(a => a.IsActive && a.UserId == userId)
-                .OrderBy(a => a.ReferenceNumber)
-                .ToListAsync())
-            .Where(a => AccountClassification.IsTemporary(a.Type))
-            .ToList();
+        var allAccounts = await _db.ChartOfAccounts
+            .Where(a => a.IsActive && a.UserId == userId)
+            .OrderBy(a => a.ReferenceNumber)
+            .ToListAsync();
+
+        var accounts = isTemporary
+            ? allAccounts.Where(a => AccountClassification.IsTemporary(a.Type)).ToList()
+            : allAccounts.Where(a => AccountClassification.IsPermanent(a.Type)).ToList();
 
         var accountIds = accounts.Select(a => a.Id).ToList();
 
@@ -78,7 +113,7 @@ public class GeneralLedgerTemporaryController : ControllerBase
             .ThenBy(l => l.LineOrder)
             .ToListAsync();
 
-        var result = new List<TemporaryLedgerAccountWebResponse>();
+        var result = new List<LedgerAccountResponse>();
 
         foreach (var account in accounts)
         {
@@ -89,11 +124,11 @@ public class GeneralLedgerTemporaryController : ControllerBase
                 && l.JournalEntry!.EntryDate >= period.StartDate
                 && l.JournalEntry!.EntryDate <= period.EndDate);
 
-            var ledgerLines = new List<TemporaryLedgerLineWebResponse>();
+            var ledgerLines = new List<LedgerLineResponse>();
             foreach (var line in accountLines)
             {
                 running += normalDebit ? (line.Debit - line.Credit) : (line.Credit - line.Debit);
-                ledgerLines.Add(new TemporaryLedgerLineWebResponse
+                ledgerLines.Add(new LedgerLineResponse
                 {
                     JournalEntryId = line.JournalEntryId,
                     EntryDate = line.JournalEntry!.EntryDate.ToString("yyyy-MM-dd"),
@@ -104,17 +139,14 @@ public class GeneralLedgerTemporaryController : ControllerBase
                 });
             }
 
-            // Periode sudah ditutup: hitung ayat penutup di sini saja
-            // (tidak disimpan ke tabel JournalEntry/JournalEntryLine).
-            // Tampilkan sebagai baris paling bawah supaya saldo akhir
-            // akun sementara ini menjadi 0.
-            if (period.IsClosed && running != 0)
+            // Periode sudah ditutup untuk akun sementara (temporary)
+            if (isTemporary && period.IsClosed && running != 0)
             {
                 var closingDebit = normalDebit ? Math.Max(-running, 0) : Math.Max(running, 0);
                 var closingCredit = normalDebit ? Math.Max(running, 0) : Math.Max(-running, 0);
                 running = 0m;
 
-                ledgerLines.Add(new TemporaryLedgerLineWebResponse
+                ledgerLines.Add(new LedgerLineResponse
                 {
                     JournalEntryId = 0,
                     EntryDate = period.EndDate.ToString("yyyy-MM-dd"),
@@ -125,7 +157,7 @@ public class GeneralLedgerTemporaryController : ControllerBase
                 });
             }
 
-            result.Add(new TemporaryLedgerAccountWebResponse
+            result.Add(new LedgerAccountResponse
             {
                 AccountId = account.Id,
                 ReferenceNumber = account.ReferenceNumber,
@@ -149,7 +181,7 @@ public class GeneralLedgerTemporaryController : ControllerBase
     }
 }
 
-public class TemporaryLedgerAccountResponse
+public class LedgerAccountResponse
 {
     public int AccountId { get; set; }
     public int ReferenceNumber { get; set; }
@@ -157,10 +189,10 @@ public class TemporaryLedgerAccountResponse
     public string Type { get; set; } = string.Empty;
     public bool NormalBalanceIsDebit { get; set; }
     public decimal EndingBalance { get; set; }
-    public List<TemporaryLedgerLineWebResponse> Lines { get; set; } = new();
+    public List<LedgerLineResponse> Lines { get; set; } = new();
 }
 
-public class TemporaryLedgerLineResponse
+public class LedgerLineResponse
 {
     public int JournalEntryId { get; set; }
     public string EntryDate { get; set; } = string.Empty;

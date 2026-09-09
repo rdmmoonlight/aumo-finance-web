@@ -41,11 +41,11 @@ public class StatementOfCashFlowController : ControllerBase
                 hasPeriodSelected = false,
                 message = "No accounting period selected.",
                 selectedPeriodName = (string?)null,
-                operatingActivities = new List<StatementOfCashFlowLineWebResponse>(),
+                operatingActivities = new List<StatementOfCashFlowLineResponse>(),
                 netCashFromOperating = 0m,
-                investingActivities = new List<StatementOfCashFlowLineWebResponse>(),
+                investingActivities = new List<StatementOfCashFlowLineResponse>(),
                 netCashFromInvesting = 0m,
-                financingActivities = new List<StatementOfCashFlowLineWebResponse>(),
+                financingActivities = new List<StatementOfCashFlowLineResponse>(),
                 netCashFromFinancing = 0m,
                 netChangeInCash = 0m,
                 beginningCash = 0m,
@@ -59,17 +59,17 @@ public class StatementOfCashFlowController : ControllerBase
         var cashRows = rows.Where(r => r.Role == "CashAndEquivalents").ToList();
         decimal endingCash = cashRows.Sum(r => r.NetBalance);
 
-        var operatingActivities = new List<StatementOfCashFlowLineWebResponse>
+        var operatingActivities = new List<StatementOfCashFlowLineResponse>
         {
-            new StatementOfCashFlowLineWebResponse
+            new StatementOfCashFlowLineResponse
             {
                 Description = "Net Income per Income Statement",
                 Amount = incomeStatement.NetIncome
             }
         };
 
-        var investingActivities = new List<StatementOfCashFlowLineWebResponse>();
-        var financingActivities = new List<StatementOfCashFlowLineWebResponse>();
+        var investingActivities = new List<StatementOfCashFlowLineResponse>();
+        var financingActivities = new List<StatementOfCashFlowLineResponse>();
 
         foreach (var r in rows)
         {
@@ -87,9 +87,9 @@ public class StatementOfCashFlowController : ControllerBase
                                     r.AccountName.Contains("Asset", StringComparison.OrdinalIgnoreCase);
 
                 if (isFixedAsset)
-                    investingActivities.Add(new StatementOfCashFlowLineWebResponse { Description = $"Capital expenditure / Sale of {r.AccountName}", Amount = -r.NetBalance });
+                    investingActivities.Add(new StatementOfCashFlowLineResponse { Description = $"Capital expenditure / Sale of {r.AccountName}", Amount = -r.NetBalance });
                 else
-                    operatingActivities.Add(new StatementOfCashFlowLineWebResponse { Description = $"Change in {r.AccountName}", Amount = -r.NetBalance });
+                    operatingActivities.Add(new StatementOfCashFlowLineResponse { Description = $"Change in {r.AccountName}", Amount = -r.NetBalance });
             }
             else if (r.Type == "Liabilities" || (r.ReferenceNumber >= 200 && r.ReferenceNumber <= 299))
             {
@@ -98,17 +98,17 @@ public class StatementOfCashFlowController : ControllerBase
                                       r.AccountName.Contains("Long Term", StringComparison.OrdinalIgnoreCase);
 
                 if (isLongTermDebt)
-                    financingActivities.Add(new StatementOfCashFlowLineWebResponse { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
+                    financingActivities.Add(new StatementOfCashFlowLineResponse { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
                 else
-                    operatingActivities.Add(new StatementOfCashFlowLineWebResponse { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
+                    operatingActivities.Add(new StatementOfCashFlowLineResponse { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
             }
             else if (r.Type == "Equity" || (r.ReferenceNumber >= 300 && r.ReferenceNumber <= 399))
             {
-                financingActivities.Add(new StatementOfCashFlowLineWebResponse { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
+                financingActivities.Add(new StatementOfCashFlowLineResponse { Description = $"Change in {r.AccountName}", Amount = r.NetBalance });
             }
             else
             {
-                operatingActivities.Add(new StatementOfCashFlowLineWebResponse { Description = $"Adjustment for {r.AccountName}", Amount = -r.NetBalance });
+                operatingActivities.Add(new StatementOfCashFlowLineResponse { Description = $"Adjustment for {r.AccountName}", Amount = -r.NetBalance });
             }
         }
 
