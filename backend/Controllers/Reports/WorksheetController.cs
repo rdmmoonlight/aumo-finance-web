@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/worksheet")]
+[Route("/api/v1/reports/worksheet")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class WorksheetController : ControllerBase
 {
@@ -24,7 +24,7 @@ public class WorksheetController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/reports/worksheet
+    // 1. GET: /api/v1/reports/worksheet
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetWorksheet()
@@ -170,7 +170,7 @@ public class WorksheetController : ControllerBase
     }
 }
 
-public class WorksheetRowWebApiResponse
+public class WorksheetRowApiResponse
 {
     public int AccountId { get; set; }
     public int ReferenceNumber { get; set; }
