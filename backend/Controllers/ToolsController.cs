@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web
 {
     [ApiController]
-    [Route("api/v1/tools")]
+    [Route("/api/v1/tools")]
     [Authorize(AuthenticationSchemes = "Identity.Application")]
     public class ToolsController : ControllerBase
     {
@@ -26,6 +26,9 @@ namespace AumoBackend.Controllers.Web
             _context = context;
         }
 
+        // ==========================================
+        // 1. GET: /api/v1/tools/download-journal-template
+        // ==========================================
         [HttpGet("download-journal-template")]
         public IActionResult DownloadJournalTemplate()
         {
@@ -61,7 +64,7 @@ namespace AumoBackend.Controllers.Web
         }
 
         // ==========================================
-        // 1. POST: /web/tools/preview-journal-import
+        // 2. POST: /api/v1/tools/preview-journal-import
         // ==========================================
         [HttpPost("preview-journal-import")]
         public async Task<IActionResult> PreviewJournalImport([FromBody] JournalImportRequestDto request)
@@ -190,7 +193,7 @@ namespace AumoBackend.Controllers.Web
         }
 
         // ==========================================
-        // 2. POST: /web/tools/import-journal-entries
+        // 3. POST: /api/v1/tools/import-journal-entries
         // ==========================================
         [HttpPost("import-journal-entries")]
         public async Task<IActionResult> ImportJournalEntries([FromBody] JournalImportRequestDto request)
@@ -273,7 +276,7 @@ namespace AumoBackend.Controllers.Web
                     var txDate = DateTime.SpecifyKind(new DateTime(request.TargetYear, request.TargetMonth, day), DateTimeKind.Utc);
 
                     string prefix = txDto.JournalType.Equals("Adjusting", StringComparison.OrdinalIgnoreCase) ? "AJ" : "GJ";
-                    string counterKey = $"{prefix}{txDate:yyMM}"; // Akan Selalu Menjadi GJ2609!
+                    string counterKey = $"{prefix}{txDate:yyMM}";
 
                     if (!activeCounters.TryGetValue(counterKey, out var counter))
                     {
