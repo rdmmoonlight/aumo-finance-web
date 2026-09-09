@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Web;
 
 [ApiController]
-[Route("api/v1/auth")]
+[Route("/api/v1/auth")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class AuthController : ControllerBase
 {
@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
     // ==========================================
     // 1. POST: /web/auth/login
     // ==========================================
-    [HttpPost("login")]
+    [HttpPost("/login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -89,7 +89,7 @@ public class AuthController : ControllerBase
     // ==========================================
     // 2. GET: /web/auth/me (Current Web User Profile)
     // ==========================================
-    [HttpGet("me")]
+    [HttpGet("/me")]
     public async Task<IActionResult> GetProfile()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -109,7 +109,7 @@ public class AuthController : ControllerBase
     // ==========================================
     // 3. POST: /web/auth/logout
     // ==========================================
-    [HttpPost("logout")]
+    [HttpPost("/logout")]
     public async Task<IActionResult> Logout()
     {
         // Menghapus session cookie pada browser
