@@ -149,7 +149,7 @@ public class GeneralLedgerTemporaryController : ControllerBase
     }
 }
 
-public class TemporaryLedgerAccountWebResponse
+public class TemporaryLedgerAccountResponse
 {
     public int AccountId { get; set; }
     public int ReferenceNumber { get; set; }
@@ -160,7 +160,7 @@ public class TemporaryLedgerAccountWebResponse
     public List<TemporaryLedgerLineWebResponse> Lines { get; set; } = new();
 }
 
-public class TemporaryLedgerLineWebResponse
+public class TemporaryLedgerLineResponse
 {
     public int JournalEntryId { get; set; }
     public string EntryDate { get; set; } = string.Empty;
