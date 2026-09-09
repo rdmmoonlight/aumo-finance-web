@@ -57,31 +57,41 @@ function AuthContent() {
     }
   }, [searchParams]);
 
+  // Helper aman untuk membaca String User-Agent Client Browser
+  const getClientUserAgent = (): string => {
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.userAgent) {
+      return window.navigator.userAgent;
+    }
+    return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AumoWebClient/1.0';
+  };
+
   // Handler API: Verifikasi Email ke Backend
   const handleVerifyEmailBackend = async (email: string, token: string) => {
     try {
+      const userAgentStr = getClientUserAgent();
       const response = await fetch(
         `${API_BASE_URL}/api/v1/auth/verify-email?email=${encodeURIComponent(
           email.trim()
         )}&token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Agent': userAgentStr
+          },
           credentials: 'include',
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || (data.success !== undefined && !data.success)) {
         throw new Error(
-          errorData.message ||
-            'Failed to verify email. Link may have expired.'
+          data.message || 'Failed to verify email. Link may have expired.'
         );
       }
 
-      setSuccessMessage(
-        'Email verified successfully! You can now sign in.'
-      );
+      setSuccessMessage('Email verified successfully! You can now sign in.');
       setCurrentView('login');
     } catch (err: any) {
       setErrorMessage(
@@ -91,7 +101,7 @@ function AuthContent() {
     }
   };
 
-  // Handler API: Login (Web Auth via Cookie)
+  // Handler API: Login (Mengirim userAgent di body & X-User-Agent di headers)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -101,14 +111,21 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
+      const userAgentStr = getClientUserAgent();
+
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Agent': userAgentStr
+        },
         credentials: 'include',
         body: JSON.stringify({
           email: loginEmail.trim(),
           password: loginPassword,
           rememberMe,
+          userAgent: userAgentStr,
+          operatingSystem: 'Web Browser'
         }),
       });
 
@@ -141,20 +158,27 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
+      const userAgentStr = getClientUserAgent();
+
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Agent': userAgentStr
+        },
         credentials: 'include',
         body: JSON.stringify({
           fullName: regFullName,
           email: regEmail.trim(),
           password: regPassword,
+          userAgent: userAgentStr,
+          operatingSystem: 'Web Browser'
         }),
       });
 
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok) {
+      if (!response.ok || (data.success !== undefined && !data.success)) {
         throw new Error(
           data.message || 'An unexpected error occurred during registration.'
         );
@@ -182,21 +206,28 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
+      const userAgentStr = getClientUserAgent();
+
       const response = await fetch(
         `${API_BASE_URL}/api/v1/auth/resend-verification`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Agent': userAgentStr
+          },
           credentials: 'include',
           body: JSON.stringify({
             email: resendEmail.trim(),
+            userAgent: userAgentStr,
+            operatingSystem: 'Web Browser'
           }),
         }
       );
 
       const data = await response.json().catch(() => ({}));
 
-      if (!response.ok) {
+      if (!response.ok || (data.success !== undefined && !data.success)) {
         throw new Error(
           data.message || 'Failed to send verification email.'
         );

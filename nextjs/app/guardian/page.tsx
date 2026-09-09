@@ -23,38 +23,51 @@ const API_BASE_URL = (
 export interface UserSessionDto {
   id?: string;
   deviceName: string;
+  operatingSystem?: string;
   browser: string;
   ipAddress: string;
   country: string;
-  lastActivity: string;
+  lastActivityAt?: string;
+  lastActivity?: string;
   isCurrent: boolean;
 }
 
 // DTO disesuaikan dengan LoginActivityViewModel C#
 export interface LoginActivityDto {
-  activity: string;
+  id?: string;
+  activityType?: string;
+  activity?: string;
   device: string;
+  operatingSystem?: string;
   browser: string;
   country: string;
   ipAddress: string;
-  occurredAt: string;
+  createdAt?: string;
+  occurredAt?: string;
+  isSuccess?: boolean;
 }
 
-// SecurityStatusViewModel C# (Password Protection & 2FA telah dihapus)
+// SecurityStatusViewModel C#
 export interface SecurityStatusDto {
-  emailVerified: boolean;
+  statusLevel?: string;
+  activeSessionsCount?: number;
+  failedAttemptsLast24Hours?: number;
+  lastSuccessfulLogin?: string;
+  emailVerified?: boolean;
 }
 
 // GuardianDashboardViewModel C#
 export interface GuardianViewModel {
-  username: string;
-  email: string;
-  securityScore: number;
-  activeSessions: number;
-  trustedDevices: number;
-  lastLogin: string;
-  security: SecurityStatusDto;
-  recentActivities: LoginActivityDto[];
+  username?: string;
+  email?: string;
+  securityScore?: number;
+  activeSessionsCount?: number;
+  trustedDevices?: number;
+  lastLogin?: string;
+  securityStatus?: SecurityStatusDto;
+  security?: SecurityStatusDto;
+  recentActivities?: LoginActivityDto[];
+  activeSessions?: UserSessionDto[];
 }
 
 export default function GuardianSecurityPage() {
@@ -69,14 +82,15 @@ export default function GuardianSecurityPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Fetch data dari API endpoint backend
+  // Fetch data dari API endpoint backend (/api/v1/guardian/dashboard)
   useEffect(() => {
     const fetchGuardianData = async () => {
       try {
         setIsLoading(true);
         setErrorMessage(null);
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/guardian`, {
+        // Solusi 1: Pemanggilan endpoint diarahkan ke /api/v1/guardian/dashboard
+        const response = await fetch(`${API_BASE_URL}/api/v1/guardian/dashboard`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -91,8 +105,12 @@ export default function GuardianSecurityPage() {
         const json = await response.json();
 
         if (json.success && json.data) {
-          setViewModel(json.data);
-          setActiveSessionsList(json.activeSessions || []);
+          const data = json.data;
+          setViewModel(data);
+
+          // Mendukung struktur data dari GuardianDashboardViewModel maupun array langsung
+          const sessions = data.activeSessions || json.activeSessions || [];
+          setActiveSessionsList(sessions);
         } else {
           throw new Error(json.message || 'Gagal memuat data keamanan.');
         }
@@ -141,7 +159,8 @@ export default function GuardianSecurityPage() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/guardian/revoke-all`, {
+      // Diselaraskan dengan endpoint [HttpPost("revoke-all-sessions")] di C#
+      const response = await fetch(`${API_BASE_URL}/api/v1/guardian/revoke-all-sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,6 +195,10 @@ export default function GuardianSecurityPage() {
   // Membatasi Active Sessions Maksimal 5 untuk display
   const displayedSessions = activeSessionsList.slice(0, 5);
 
+  // Kalkulasi Skor Keamanan jika tidak ada field eksplisit dari BE
+  const statusLevel = viewModel?.securityStatus?.statusLevel || 'Good';
+  const calculatedScore = viewModel?.securityScore ?? (statusLevel === 'Warning' ? 60 : 95);
+
   return (
     <div
       className="container-fluid py-4 px-4 text-white"
@@ -194,9 +217,9 @@ export default function GuardianSecurityPage() {
         </div>
         <div>
           <span
-            className={`badge ${(viewModel?.securityScore ?? 0) >= 70 ? 'bg-success' : 'bg-warning'} fs-6 px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2`}
+            className={`badge ${calculatedScore >= 70 ? 'bg-success' : 'bg-warning'} fs-6 px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2`}
           >
-            <IconHeartbeat size={20} /> Security Score: {viewModel?.securityScore ?? 0}%
+            <IconHeartbeat size={20} /> Security Score: {calculatedScore}%
           </span>
         </div>
       </div>
@@ -280,16 +303,28 @@ export default function GuardianSecurityPage() {
                 <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                   <div>
                     <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconDeviceLaptop className="text-info" size={18} /> Email Verification Status
+                      <IconDeviceLaptop className="text-info" size={18} /> Account Security Level
                     </div>
-                    <small className="text-white-50">Primary account email confirmation</small>
+                    <small className="text-white-50">Overall account threat and status evaluation</small>
                   </div>
                   <div>
-                    {viewModel?.security?.emailVerified ? (
-                      <span className="badge bg-success">Verified</span>
-                    ) : (
-                      <span className="badge bg-warning text-dark">Unverified</span>
-                    )}
+                    <span className={`badge ${statusLevel === 'Warning' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                      {statusLevel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <div>
+                    <div className="fw-bold d-flex align-items-center gap-2">
+                      <IconAlertTriangle className="text-warning" size={18} /> Failed Login Attempts (24h)
+                    </div>
+                    <small className="text-white-50">Failed authentication tries within last 24 hours</small>
+                  </div>
+                  <div>
+                    <span className="badge bg-secondary">
+                      {viewModel?.securityStatus?.failedAttemptsLast24Hours ?? 0} Attempts
+                    </span>
                   </div>
                 </div>
               </div>
@@ -328,32 +363,35 @@ export default function GuardianSecurityPage() {
                       </tr>
                     </thead>
                     <tbody className="border-top-0">
-                      {displayedSessions.map((session, index) => (
-                        <tr key={session.id || index}>
-                          <td className="ps-4 fw-bold">
-                            {session.deviceName}
-                            {session.isCurrent && <span className="badge bg-success ms-2">Current</span>}
-                          </td>
-                          <td className="text-white-50">{session.browser}</td>
-                          <td className="font-monospace text-info">{session.ipAddress}</td>
-                          <td className="text-white-50 small">
-                            {session.lastActivity ? new Date(session.lastActivity).toLocaleString('id-ID') : '-'}
-                          </td>
-                          <td className="text-end pe-4">
-                            {!session.isCurrent ? (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 ms-auto"
-                                onClick={() => handleRevokeSession(session.id, session.deviceName)}
-                              >
-                                <IconLogout size={16} /> Sign Out
-                              </button>
-                            ) : (
-                              <span className="badge bg-success">Active now</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {displayedSessions.map((session, index) => {
+                        const activityDate = session.lastActivityAt || session.lastActivity;
+                        return (
+                          <tr key={session.id || index}>
+                            <td className="ps-4 fw-bold">
+                              {session.deviceName}
+                              {session.isCurrent && <span className="badge bg-success ms-2">Current</span>}
+                            </td>
+                            <td className="text-white-50">{session.browser}</td>
+                            <td className="font-monospace text-info">{session.ipAddress}</td>
+                            <td className="text-white-50 small">
+                              {activityDate ? new Date(activityDate).toLocaleString('id-ID') : '-'}
+                            </td>
+                            <td className="text-end pe-4">
+                              {!session.isCurrent ? (
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 ms-auto"
+                                  onClick={() => handleRevokeSession(session.id, session.deviceName)}
+                                >
+                                  <IconLogout size={16} /> Sign Out
+                                </button>
+                              ) : (
+                                <span className="badge bg-success">Active now</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -393,19 +431,25 @@ export default function GuardianSecurityPage() {
                       </tr>
                     </thead>
                     <tbody className="border-top-0">
-                      {activities.map((act, idx) => (
-                        <tr key={idx}>
-                          <td className="ps-4 fw-semibold">{act.activity}</td>
-                          <td className="text-white-50">{act.device}</td>
-                          <td className="font-monospace text-info">{act.ipAddress}</td>
-                          <td className="text-white-50 small">
-                            {act.occurredAt ? new Date(act.occurredAt).toLocaleString('id-ID') : '-'}
-                          </td>
-                          <td className="text-end pe-4">
-                            <span className="badge bg-success">Success</span>
-                          </td>
-                        </tr>
-                      ))}
+                      {activities.map((act, idx) => {
+                        const actDate = act.createdAt || act.occurredAt;
+                        const isSuccess = act.isSuccess ?? true;
+                        return (
+                          <tr key={act.id || idx}>
+                            <td className="ps-4 fw-semibold">{act.activityType || act.activity || 'Interactive Login'}</td>
+                            <td className="text-white-50">{act.device}</td>
+                            <td className="font-monospace text-info">{act.ipAddress}</td>
+                            <td className="text-white-50 small">
+                              {actDate ? new Date(actDate).toLocaleString('id-ID') : '-'}
+                            </td>
+                            <td className="text-end pe-4">
+                              <span className={`badge ${isSuccess ? 'bg-success' : 'bg-danger'}`}>
+                                {isSuccess ? 'Success' : 'Failed'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
