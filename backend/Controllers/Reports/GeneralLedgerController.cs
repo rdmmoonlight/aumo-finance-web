@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/general-ledger")]
+[Route("/api/v1/reports/general-ledger")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class GeneralLedgerController : ControllerBase
 {
@@ -24,7 +24,7 @@ public class GeneralLedgerController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /reports/general-ledger/permanent
+    // 1. GET: /api/v1/reports/general-ledger/permanent
     // ==========================================
     [HttpGet("permanent")]
     public async Task<IActionResult> GetPermanentGeneralLedger()
@@ -33,7 +33,7 @@ public class GeneralLedgerController : ControllerBase
     }
 
     // ==========================================
-    // 2. GET: /reports/general-ledger/temporary
+    // 2. GET: /api/v1/reports/general-ledger/temporary
     // ==========================================
     [HttpGet("temporary")]
     public async Task<IActionResult> GetTemporaryGeneralLedger()
@@ -42,7 +42,7 @@ public class GeneralLedgerController : ControllerBase
     }
 
     // ==========================================
-    // 3. GET: /reports/general-ledger?isTemporary=false
+    // 3. GET: /api/v1/reports/general-ledger?isTemporary=false
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetGeneralLedger([FromQuery] bool isTemporary = false)
