@@ -57,12 +57,12 @@ function AuthContent() {
     }
   }, [searchParams]);
 
-  // Helper untuk mendapatkan User-Agent client yang valid
-  const getUserAgentHeader = () => {
+  // Helper untuk mendapatkan User-Agent dari browser secara aman
+  const getBrowserUserAgent = (): string => {
     if (typeof window !== 'undefined' && window.navigator) {
-      return window.navigator.userAgent || 'Aumo Web Client';
+      return window.navigator.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebClient/1.0';
     }
-    return 'Aumo Web Client';
+    return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebClient/1.0';
   };
 
   // Handler API: Verifikasi Email ke Backend
@@ -74,10 +74,7 @@ function AuthContent() {
         )}&token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
-          headers: { 
-            'Content-Type': 'application/json',
-            'User-Agent': getUserAgentHeader()
-          },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
         }
       );
@@ -114,15 +111,13 @@ function AuthContent() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'User-Agent': getUserAgentHeader()
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           email: loginEmail.trim(),
           password: loginPassword,
           rememberMe,
+          userAgent: getBrowserUserAgent(), // Dikirim langsung di body payload
         }),
       });
 
@@ -157,15 +152,13 @@ function AuthContent() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'User-Agent': getUserAgentHeader()
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           fullName: regFullName,
           email: regEmail.trim(),
           password: regPassword,
+          userAgent: getBrowserUserAgent(), // Dikirim langsung di body payload
         }),
       });
 
@@ -203,13 +196,11 @@ function AuthContent() {
         `${API_BASE_URL}/api/v1/auth/resend-verification`,
         {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'User-Agent': getUserAgentHeader()
-          },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             email: resendEmail.trim(),
+            userAgent: getBrowserUserAgent(),
           }),
         }
       );
