@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers;
 
 [ApiController]
-[Route("api/v1/dashboard")]
+[Route("/api/v1/dashboard")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class DashboardController : ControllerBase
 {
@@ -24,7 +24,7 @@ public class DashboardController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/dashboard?period=monthly|annual
+    // 1. GET: /api/v1/dashboard?period=monthly|annual
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetDashboardData([FromQuery] string period = "monthly")
