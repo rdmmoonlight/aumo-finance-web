@@ -126,7 +126,7 @@ public class GeneralLedgerPermanentController : ControllerBase
     }
 }
 
-public class PermanentLedgerAccountWebResponse
+public class PermanentLedgerAccountResponse
 {
     public int AccountId { get; set; }
     public int ReferenceNumber { get; set; }
@@ -137,7 +137,7 @@ public class PermanentLedgerAccountWebResponse
     public List<PermanentLedgerLineWebResponse> Lines { get; set; } = new();
 }
 
-public class PermanentLedgerLineWebResponse
+public class PermanentLedgerLineResponse
 {
     public int JournalEntryId { get; set; }
     public string EntryDate { get; set; } = string.Empty;
