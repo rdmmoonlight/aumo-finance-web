@@ -13,8 +13,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace AumoBackend.Controllers;
-{
-    [ApiController]
+
+[ApiController]
 [Route("/api/v1/tools")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ToolsController : ControllerBase
