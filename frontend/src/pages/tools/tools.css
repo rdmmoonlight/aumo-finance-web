@@ -1,0 +1,55 @@
+/* tools.css */
+
+/* Base Layout & Typography */
+.tools-container {
+  font-family: 'Aptos', 'Aptos Display', system-ui, -apple-system, sans-serif;
+}
+
+/* Glassmorphism Card Style */
+.glass-card {
+  background: rgba(33, 37, 41, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Custom Scrollbar for Preview Streams & Tables */
+.mapping-table-container {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.preview-stream-container {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Table Column Widths & Utility Styles */
+.mapping-table {
+  font-size: 0.85rem;
+}
+
+.col-excel-input {
+  width: 45%;
+}
+
+.col-master-coa {
+  width: 55%;
+}
+
+.col-idx {
+  width: 40px;
+}
+
+.col-ref {
+  width: 90px;
+}
+
+.col-amount {
+  width: 130px;
+}
+
+.select-mapping {
+  font-size: 0.8rem;
+}

@@ -1,0 +1,25 @@
+/* ============================================================================
+ * JOURNAL ENTRY STYLES (CREATE & EDIT)
+ * Location: app/journal-entry/journal-entry.css
+ * ============================================================================ */
+
+/* Autocomplete suggestion dropdown positioning */
+.journal-line-description-container {
+  position: relative;
+}
+
+.journal-suggestions-menu {
+  position: absolute;
+  z-index: 1060;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.journal-line-table tfoot {
+  background-color: var(--bs-light-bg-subtle, rgba(255, 255, 255, 0.02));
+}
