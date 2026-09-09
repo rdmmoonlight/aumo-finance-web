@@ -27,9 +27,6 @@ public class AuthController : ControllerBase
         _guardianService = guardianService;
     }
 
-    // ==========================================
-    // 1. POST: /api/v1/auth/login
-    // ==========================================
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -47,14 +44,12 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
-        // Sign-in berbasis Cookie Identity
         var result = await _signInManager.PasswordSignInAsync(
             user.UserName ?? user.Email!,
             request.Password,
             isPersistent: request.RememberMe,
             lockoutOnFailure: false);
 
-        // Prioritaskan UserAgent dari Body JSON Request (jika dikirim FE), lalu Header, lalu Fallback
         var headerUserAgent = Request.Headers["User-Agent"].ToString();
         var safeUserAgent = !string.IsNullOrWhiteSpace(request.UserAgent) 
             ? request.UserAgent 
@@ -62,7 +57,6 @@ public class AuthController : ControllerBase
 
         if (!result.Succeeded)
         {
-            // Catat log login gagal
             var isMobileFail = safeUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
                                safeUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
                                safeUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase);
@@ -78,13 +72,12 @@ public class AuthController : ControllerBase
                 "ID",
                 false,
                 operatingSystem: !string.IsNullOrWhiteSpace(request.OperatingSystem) ? request.OperatingSystem : deviceCategoryFail,
-                userAgent: safeUserAgent // Terkirim eksplisit (Mencegah error NOT NULL UserAgent di LoginActivities)
+                userAgent: safeUserAgent
             );
 
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
-        // Deteksi Perangkat: Mobile vs Web
         var isMobile = safeUserAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
                        safeUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
                        safeUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase);
@@ -93,7 +86,6 @@ public class AuthController : ControllerBase
         string ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
         string osValue = !string.IsNullOrWhiteSpace(request.OperatingSystem) ? request.OperatingSystem : deviceCategory;
 
-        // 1. Buat Sesi Login Baru
         await _guardianService.CreateSessionAsync(
             user.Id,
             deviceName: deviceCategory,
@@ -105,7 +97,6 @@ public class AuthController : ControllerBase
             userAgent: safeUserAgent
         );
 
-        // 2. Catat Log Aktivitas Login Sukses
         await _guardianService.CreateLoginActivityAsync(
             user.Id,
             "Interactive Login",
@@ -115,7 +106,7 @@ public class AuthController : ControllerBase
             "ID",
             true,
             operatingSystem: osValue,
-            userAgent: safeUserAgent // Terkirim eksplisit (Mencegah error NOT NULL UserAgent di LoginActivities)
+            userAgent: safeUserAgent
         );
 
         return Ok(new
@@ -127,9 +118,6 @@ public class AuthController : ControllerBase
         });
     }
 
-    // ==========================================
-    // 2. GET: /api/v1/auth/me
-    // ==========================================
     [HttpGet("me")]
     public async Task<IActionResult> GetProfile()
     {
@@ -147,9 +135,6 @@ public class AuthController : ControllerBase
         });
     }
 
-    // ==========================================
-    // 3. POST: /api/v1/auth/logout
-    // ==========================================
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
