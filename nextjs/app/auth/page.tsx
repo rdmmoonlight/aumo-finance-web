@@ -57,24 +57,28 @@ function AuthContent() {
     }
   }, [searchParams]);
 
-  // Helper untuk mendapatkan User-Agent dari browser secara aman
-  const getBrowserUserAgent = (): string => {
-    if (typeof window !== 'undefined' && window.navigator) {
-      return window.navigator.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebClient/1.0';
+  // Helper aman untuk membaca String User-Agent Client Browser
+  const getClientUserAgent = (): string => {
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.userAgent) {
+      return window.navigator.userAgent;
     }
-    return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebClient/1.0';
+    return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AumoWebClient/1.0';
   };
 
   // Handler API: Verifikasi Email ke Backend
   const handleVerifyEmailBackend = async (email: string, token: string) => {
     try {
+      const userAgentStr = getClientUserAgent();
       const response = await fetch(
         `${API_BASE_URL}/api/v1/auth/verify-email?email=${encodeURIComponent(
           email.trim()
         )}&token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Agent': userAgentStr
+          },
           credentials: 'include',
         }
       );
@@ -87,9 +91,7 @@ function AuthContent() {
         );
       }
 
-      setSuccessMessage(
-        'Email verified successfully! You can now sign in.'
-      );
+      setSuccessMessage('Email verified successfully! You can now sign in.');
       setCurrentView('login');
     } catch (err: any) {
       setErrorMessage(
@@ -99,7 +101,7 @@ function AuthContent() {
     }
   };
 
-  // Handler API: Login (Web Auth via Cookie)
+  // Handler API: Login (Mengirim userAgent di body & X-User-Agent di headers)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -109,15 +111,21 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
+      const userAgentStr = getClientUserAgent();
+
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Agent': userAgentStr
+        },
         credentials: 'include',
         body: JSON.stringify({
           email: loginEmail.trim(),
           password: loginPassword,
           rememberMe,
-          userAgent: getBrowserUserAgent(), // Dikirim langsung di body payload
+          userAgent: userAgentStr,
+          operatingSystem: 'Web Browser'
         }),
       });
 
@@ -150,15 +158,21 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
+      const userAgentStr = getClientUserAgent();
+
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Agent': userAgentStr
+        },
         credentials: 'include',
         body: JSON.stringify({
           fullName: regFullName,
           email: regEmail.trim(),
           password: regPassword,
-          userAgent: getBrowserUserAgent(), // Dikirim langsung di body payload
+          userAgent: userAgentStr,
+          operatingSystem: 'Web Browser'
         }),
       });
 
@@ -192,15 +206,21 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
+      const userAgentStr = getClientUserAgent();
+
       const response = await fetch(
         `${API_BASE_URL}/api/v1/auth/resend-verification`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-User-Agent': userAgentStr
+          },
           credentials: 'include',
           body: JSON.stringify({
             email: resendEmail.trim(),
-            userAgent: getBrowserUserAgent(),
+            userAgent: userAgentStr,
+            operatingSystem: 'Web Browser'
           }),
         }
       );
