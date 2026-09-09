@@ -57,6 +57,14 @@ function AuthContent() {
     }
   }, [searchParams]);
 
+  // Helper untuk mendapatkan User-Agent client yang valid
+  const getUserAgentHeader = () => {
+    if (typeof window !== 'undefined' && window.navigator) {
+      return window.navigator.userAgent || 'Aumo Web Client';
+    }
+    return 'Aumo Web Client';
+  };
+
   // Handler API: Verifikasi Email ke Backend
   const handleVerifyEmailBackend = async (email: string, token: string) => {
     try {
@@ -66,7 +74,10 @@ function AuthContent() {
         )}&token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'User-Agent': getUserAgentHeader()
+          },
           credentials: 'include',
         }
       );
@@ -103,7 +114,10 @@ function AuthContent() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'User-Agent': getUserAgentHeader()
+        },
         credentials: 'include',
         body: JSON.stringify({
           email: loginEmail.trim(),
@@ -143,7 +157,10 @@ function AuthContent() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'User-Agent': getUserAgentHeader()
+        },
         credentials: 'include',
         body: JSON.stringify({
           fullName: regFullName,
@@ -186,7 +203,10 @@ function AuthContent() {
         `${API_BASE_URL}/api/v1/auth/resend-verification`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'User-Agent': getUserAgentHeader()
+          },
           credentials: 'include',
           body: JSON.stringify({
             email: resendEmail.trim(),
