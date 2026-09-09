@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoBackend.Controllers.Web;
+namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("/api/v1/auth")]
