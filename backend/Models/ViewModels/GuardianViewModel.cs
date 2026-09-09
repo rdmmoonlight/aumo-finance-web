@@ -2,116 +2,8 @@ using AumoBackend.Models.Guardian;
 using Microsoft.EntityFrameworkCore;
 using AumoBackend.Models;
 
-// =========================================================================
-// 1. NAMESPACE UTAMA (AumoBackend.Models.Guardian)
-// =========================================================================
-
-namespace AumoBackend.Models.Guardian
-{
-    #region View Models
-
-    public class GuardianViewModel
-    {
-        public List<UserSession> Sessions { get; set; } = new();
-        public List<LoginActivity> Activities { get; set; } = new();
-    }
-
-    public class GuardianDashboardViewModel
-    {
-        public string Username { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public int SecurityScore { get; set; }
-        public int ActiveSessions { get; set; }
-        public int TrustedDevices { get; set; }
-        public DateTime LastLogin { get; set; }
-
-        public SecurityStatusViewModel Security { get; set; } = new();
-        public List<LoginActivityViewModel> RecentActivities { get; set; } = new();
-    }
-
-    public class ActiveSessionViewModel
-    {
-        public string DeviceName { get; set; } = string.Empty;
-        public string OperatingSystem { get; set; } = string.Empty;
-        public string Browser { get; set; } = string.Empty;
-        public string IpAddress { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public DateTime LastActivity { get; set; }
-        public bool IsCurrent { get; set; }
-    }
-
-    public class LoginActivityViewModel
-    {
-        public string Activity { get; set; } = string.Empty;
-        public string Device { get; set; } = string.Empty;
-        public string Browser { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public string IpAddress { get; set; } = string.Empty;
-        public DateTime OccurredAt { get; set; }
-    }
-
-    public class SecurityStatusViewModel
-    {
-        public bool EmailVerified { get; set; }
-        public bool PasswordProtected { get; set; }
-        public bool MultiFactorEnabled { get; set; }
-        public bool RecoveryCodesAvailable { get; set; }
-    }
-
-    public class TrustedDeviceViewModel
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Browser { get; set; } = string.Empty;
-        public DateTime AddedOn { get; set; }
-    }
-
-    #endregion
-
-    #region Entities
-
-    public class UserSession
-    {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string DeviceName { get; set; } = string.Empty;
-        public string OperatingSystem { get; set; } = string.Empty; 
-        public string Browser { get; set; } = string.Empty;
-        public string UserAgent { get; set; } = string.Empty;
-        public string IpAddress { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public string RefreshTokenHash { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
-        public bool IsCurrent { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime LastActivityAt { get; set; }
-        public DateTime? RevokedAt { get; set; }
-    }
-
-    public class LoginActivity
-    {
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public string ActivityType { get; set; } = string.Empty;
-        public string Device { get; set; } = string.Empty;
-        public string OperatingSystem { get; set; } = "Web"; // Guarding default value
-        public string Browser { get; set; } = string.Empty;
-        public string IpAddress { get; set; } = string.Empty;
-        public string Country { get; set; } = string.Empty;
-        public bool IsSuccess { get; set; }
-        public DateTime CreatedAt { get; set; }
-    }
-
-    #endregion
-}
-
-// =========================================================================
-// 2. SERVICE UTAMA (AumoBackend.Services.Guardian)
-// =========================================================================
-
 namespace AumoBackend.Services.Guardian
 {
-    #region Services
-
     public interface IGuardianService
     {
         Task CreateLoginActivityAsync(
@@ -122,7 +14,8 @@ namespace AumoBackend.Services.Guardian
             string ipAddress,
             string country,
             bool isSuccess,
-            string operatingSystem = "Web"
+            string operatingSystem = "Web",
+            string userAgent = "Web" // <--- DITAMBAHKAN PARAMETER INI
         );
 
         Task CreateSessionAsync(
@@ -137,11 +30,8 @@ namespace AumoBackend.Services.Guardian
         );
 
         Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
-
         Task RevokeSessionAsync(Guid sessionId, Guid userId);
-
         Task RevokeAllSessionsAsync(Guid userId);
-
         Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId);
     }
 
@@ -162,7 +52,8 @@ namespace AumoBackend.Services.Guardian
             string ipAddress,
             string country,
             bool isSuccess,
-            string operatingSystem = "Web")
+            string operatingSystem = "Web",
+            string userAgent = "Web")
         {
             var activity = new LoginActivity
             {
@@ -170,7 +61,8 @@ namespace AumoBackend.Services.Guardian
                 UserId = userId,
                 ActivityType = activityType,
                 Device = string.IsNullOrWhiteSpace(device) ? "Web" : device,
-                OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem, // Mencegah violation NULL
+                OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
+                UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent, // <--- DISIMPAN KE DATABASE
                 Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
                 IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
                 Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
@@ -280,27 +172,5 @@ namespace AumoBackend.Services.Guardian
                 .Take(50)
                 .ToListAsync();
         }
-    }
-
-    #endregion
-}
-
-// =========================================================================
-// 3. KOMPATIBILITAS NAMESPACE LAMA
-// =========================================================================
-
-namespace AumoBackend.Models.Guardian
-{
-    using UserSession = AumoBackend.Models.Guardian.UserSession;
-    using LoginActivity = AumoBackend.Models.Guardian.LoginActivity;
-}
-
-namespace AumoBackend.Services.Security
-{
-    public interface IGuardianService : AumoBackend.Services.Guardian.IGuardianService { }
-
-    public class GuardianService : AumoBackend.Services.Guardian.GuardianService, IGuardianService
-    {
-        public GuardianService(AumoBackend.Models.AppDbContext context) : base(context) { }
     }
 }
