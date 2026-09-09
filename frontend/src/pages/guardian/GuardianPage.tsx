@@ -13,9 +13,8 @@ import {
   IconLoader2,
 } from '@tabler/icons-react';
 
-// Mendukung Vite (import.meta.env) & Next.js/CRA (process.env) secara aman
+// Karena tidak pakai Vite, langsung gunakan process.env atau fallback URL
 const getApiUrl = () => {
-(import.meta as any).env...
   if (typeof process !== 'undefined' && process.env?.API_URL) {
     return process.env.API_URL;
   }
