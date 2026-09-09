@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Api;
 
 [ApiController]
-[Route("api/v1/test-email")]
+[Route("/api/v1/test-email")]
 public class TestEmailController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -22,6 +22,9 @@ public class TestEmailController : ControllerBase
         _logger = logger;
     }
 
+    // ==========================================
+    // 1. POST: /api/v1/test-email/resend-verification
+    // ==========================================
     [HttpPost("resend-verification")]
     public async Task<IActionResult> ResendVerification([FromBody] ResendRequest request)
     {
