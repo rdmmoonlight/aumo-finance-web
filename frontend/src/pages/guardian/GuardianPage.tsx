@@ -15,9 +15,7 @@ import {
 
 // Mendukung Vite (import.meta.env) & Next.js/CRA (process.env) secara aman
 const getApiUrl = () => {
-  if (typeof import.meta !== 'undefined' && import.meta.env?.API_URL) {
-    return import.meta.env.API_URL;
-  }
+(import.meta as any).env...
   if (typeof process !== 'undefined' && process.env?.API_URL) {
     return process.env.API_URL;
   }
