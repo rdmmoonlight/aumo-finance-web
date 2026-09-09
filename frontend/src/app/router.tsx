@@ -31,7 +31,12 @@ import WorksheetPage from '../pages/reports/worksheet/WorksheetPage';
 
 export default function AppRouter() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Public Route */}
         <Route path="/auth" element={<AuthPage />} />

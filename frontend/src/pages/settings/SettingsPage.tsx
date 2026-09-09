@@ -23,7 +23,7 @@ export interface UserProfile {
   twoFactorEnabled: boolean;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.API_URL || 'http://localhost:5000/api';
 
 export default function SettingsPage() {
   // State Profile Dinamis dari Backend Database

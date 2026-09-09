@@ -34,7 +34,7 @@ const formatNumber = (amount: number) => {
   return amount < 0 ? `(${formatted})` : formatted;
 };
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const rawApiUrl = process.env.API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;

@@ -54,7 +54,7 @@ interface DbAccount {
   balance: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com';
+const API_BASE_URL = process.env.API_URL || 'https://aumonext-api.onrender.com';
 
 export default function ToolsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

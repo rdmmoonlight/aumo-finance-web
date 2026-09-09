@@ -53,7 +53,7 @@ const generateTxNumber = (journalType: string, dateStr: string): string => {
   return `${prefix}${yy}${mm}0001`;
 };
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const rawApiUrl = process.env.API_URL || 'http://localhost:5000/api';
 const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 function JournalEntryContent() {

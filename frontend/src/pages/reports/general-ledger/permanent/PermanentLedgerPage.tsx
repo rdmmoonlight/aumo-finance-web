@@ -38,7 +38,7 @@ const formatNumber = (amount: number) => {
   }).format(Math.abs(amount));
 };
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const rawApiUrl = process.env.API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;

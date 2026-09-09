@@ -63,7 +63,7 @@ const formatDateTimeDisplay = (dateTimeString?: string) => {
 };
 
 // Sanitasi aman untuk URL API tanpa tumpukan /api
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const rawApiUrl = process.env.API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;

@@ -1,97 +1,156 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import {
+  IconLayoutDashboard,
+  IconListDetails,
+  IconFilePencil,
+  IconCalendarTime,
+  IconRobot,
+  IconShieldCheck,
+  IconTools,
+  IconSettings,
+  IconBook,
+  IconFileCheck,
+  IconLock,
+  IconNotebook,
+  IconScale,
+  IconScaleOutline,
+  IconReceipt2,
+  IconPigMoney,
+  IconBuildingBank,
+  IconCash,
+  IconTable,
+  IconBuildingStore,
+} from '@tabler/icons-react';
 
 interface MenuItem {
   label: string;
   path: string;
-  icon?: string;
+  icon: React.ElementType;
 }
 
 const mainNavItems: MenuItem[] = [
-  { label: 'Dashboard', path: '/dashboard' },
-  { label: 'Chart of Accounts', path: '/chart-of-accounts' },
-  { label: 'Journal Entry', path: '/journal-entry' },
-  { label: 'Periods', path: '/periods' },
-  { label: 'AI Assistant', path: '/ai-assistant' },
-  { label: 'Guardian', path: '/guardian' },
-  { label: 'Tools', path: '/tools' },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Dashboard', path: '/dashboard', icon: IconLayoutDashboard },
+  { label: 'Chart of Accounts', path: '/chart-of-accounts', icon: IconListDetails },
+  { label: 'Journal Entry', path: '/journal-entry', icon: IconFilePencil },
+  { label: 'Periods', path: '/periods', icon: IconCalendarTime },
+  { label: 'AI Assistant', path: '/ai-assistant', icon: IconRobot }, // ✅ Ganti di sini
+  { label: 'Guardian', path: '/guardian', icon: IconShieldCheck },
+  { label: 'Tools', path: '/tools', icon: IconTools },
+  { label: 'Settings', path: '/settings', icon: IconSettings },
 ];
 
 const reportNavItems: MenuItem[] = [
-  { label: 'General Journal', path: '/reports/general-journal' },
-  { label: 'Adjusting Journal', path: '/reports/adjusting-journal' },
-  { label: 'Closing Journal', path: '/reports/closing-journal' },
-  { label: 'Permanent Ledger', path: '/reports/general-ledger/permanent' },
-  { label: 'Temporary Ledger', path: '/reports/general-ledger/temporary' },
-  { label: 'Unadjusted Trial Balance', path: '/reports/trial-balance/unadjusted' },
-  { label: 'Adjusted Trial Balance', path: '/reports/trial-balance/adjusted' },
-  { label: 'Post-Closing Trial Balance', path: '/reports/trial-balance/post-closing' },
-  { label: 'Income Statement', path: '/reports/income-statement' },
-  { label: 'Retained Earnings', path: '/reports/retained-earnings' },
-  { label: 'Financial Position', path: '/reports/statement-of-financial-position' },
-  { label: 'Cash Flow', path: '/reports/statement-of-cash-flow' },
-  { label: 'Worksheet', path: '/reports/worksheet' },
+  { label: 'General Journal', path: '/reports/general-journal', icon: IconBook },
+  { label: 'Adjusting Journal', path: '/reports/adjusting-journal', icon: IconFileCheck },
+  { label: 'Closing Journal', path: '/reports/closing-journal', icon: IconLock },
+  { label: 'Permanent Ledger', path: '/reports/general-ledger/permanent', icon: IconNotebook },
+  { label: 'Temporary Ledger', path: '/reports/general-ledger/temporary', icon: IconNotebook },
+  { label: 'Unadjusted Trial Balance', path: '/reports/trial-balance/unadjusted', icon: IconScale },
+  { label: 'Adjusted Trial Balance', path: '/reports/trial-balance/adjusted', icon: IconScaleOutline },
+  { label: 'Post-Closing Trial Balance', path: '/reports/trial-balance/post-closing', icon: IconReceipt2 },
+  { label: 'Income Statement', path: '/reports/income-statement', icon: IconPigMoney },
+  { label: 'Retained Earnings', path: '/reports/retained-earnings', icon: IconBuildingBank },
+  { label: 'Financial Position', path: '/reports/statement-of-financial-position', icon: IconBuildingStore },
+  { label: 'Cash Flow', path: '/reports/statement-of-cash-flow', icon: IconCash },
+  { label: 'Worksheet', path: '/reports/worksheet', icon: IconTable },
 ];
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800">
+    <aside className="w-64 bg-zinc-900 text-zinc-400 flex flex-col h-screen border-r border-zinc-800/80 font-sans antialiased selection:bg-zinc-800">
       {/* Brand Header */}
-      <div className="p-4 border-b border-slate-800 flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white">
+      <div className="p-5 border-b border-zinc-800/80 flex items-center space-x-3">
+        <div className="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700/60 flex items-center justify-center font-bold text-zinc-100 shadow-sm">
           A
         </div>
-        <span className="font-semibold text-white text-lg tracking-wide">Aumo Finance</span>
+        <div className="flex flex-col">
+          <span className="font-semibold text-zinc-100 text-base tracking-wide leading-none">
+            Aumo Finance
+          </span>
+          <span className="text-[10px] text-zinc-500 font-medium tracking-wider uppercase mt-1">
+            Accounting Suite
+          </span>
+        </div>
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800">
+        {/* Main Domain Group */}
         <div>
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          <div className="px-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
             Main Domain
           </div>
           <ul className="space-y-1">
-            {mainNavItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
+            {mainNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 group ${
+                        isActive
+                          ? 'bg-zinc-800 text-zinc-100 border border-zinc-700/50 shadow-sm'
+                          : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon
+                          size={18}
+                          className={`transition-colors ${
+                            isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'
+                          }`}
+                          stroke={1.8}
+                        />
+                        <span>{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
+        {/* Reports & Statements Group */}
         <div>
-          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          <div className="px-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
             Reports & Statements
           </div>
           <ul className="space-y-1">
-            {reportNavItems.map((item) => (
-              <li key={item.path}>
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
+            {reportNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 group ${
+                        isActive
+                          ? 'bg-zinc-800 text-zinc-100 border border-zinc-700/50 shadow-sm'
+                          : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon
+                          size={18}
+                          className={`transition-colors ${
+                            isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'
+                          }`}
+                          stroke={1.8}
+                        />
+                        <span>{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </nav>

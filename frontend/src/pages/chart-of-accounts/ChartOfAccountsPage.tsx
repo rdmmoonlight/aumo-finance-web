@@ -42,7 +42,7 @@ const validateReferenceNumber = (type: string, refNum: number) => {
   return refNum >= range.start && refNum <= range.end;
 };
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://my-authentic-web-api.onrender.com';
+const rawApiUrl = process.env.API_URL || 'https://my-authentic-web-api.onrender.com';
 const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 function ChartOfAccountsContent() {

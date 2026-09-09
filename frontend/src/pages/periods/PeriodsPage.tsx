@@ -21,7 +21,7 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const rawApiUrl = process.env.API_URL || 'http://localhost:5000';
 const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
 
 export default function PeriodsMainPage() {
