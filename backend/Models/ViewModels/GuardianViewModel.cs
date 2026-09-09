@@ -75,10 +75,12 @@ namespace AumoBackend.Models.Guardian
         public Guid UserId { get; set; }
         public string DeviceName { get; set; } = string.Empty;
         
-        // --- PROPERTI BARU (NOT NULL) ---
         public string OperatingSystem { get; set; } = string.Empty; 
-        
         public string Browser { get; set; } = string.Empty;
+        
+        // --- PROPERTI TAMBAHAN (Mencegah NOT NULL Constraint Violation) ---
+        public string UserAgent { get; set; } = string.Empty;
+        
         public string IpAddress { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
         public string RefreshTokenHash { get; set; } = string.Empty;
@@ -132,7 +134,8 @@ namespace AumoBackend.Services.Guardian
             string browser,
             string ipAddress,
             string country,
-            string refreshTokenHash
+            string refreshTokenHash,
+            string userAgent = "Web" // Parameter opsional dengan default value
         );
 
         Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
@@ -186,7 +189,8 @@ namespace AumoBackend.Services.Guardian
             string browser,
             string ipAddress,
             string country,
-            string refreshTokenHash)
+            string refreshTokenHash,
+            string userAgent = "Web")
         {
             var activeSessions = await _context.UserSessions
                 .Where(x => x.UserId == userId && x.IsActive)
@@ -211,12 +215,13 @@ namespace AumoBackend.Services.Guardian
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                DeviceName = deviceName,
+                DeviceName = string.IsNullOrWhiteSpace(deviceName) ? "Web" : deviceName,
                 OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
-                Browser = browser,
-                IpAddress = ipAddress,
-                Country = country,
-                RefreshTokenHash = refreshTokenHash,
+                Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
+                UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent, // Safety fallback
+                IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
+                Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
+                RefreshTokenHash = string.IsNullOrWhiteSpace(refreshTokenHash) ? "COOKIE_SESSION" : refreshTokenHash,
                 IsActive = true,
                 IsCurrent = true,
                 CreatedAt = DateTime.UtcNow,
