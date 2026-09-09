@@ -1,10 +1,10 @@
 using AumoBackend.Models;
 using AumoBackend.Models.DTOs;
 using AumoBackend.Models.Guardian;
+using AumoBackend.Services.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace AumoBackend.Controllers;
 
@@ -15,16 +15,16 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly AppDbContext _db;
+    private readonly IGuardianService _guardianService;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        AppDbContext db)
+        IGuardianService guardianService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
-        _db = db;
+        _guardianService = guardianService;
     }
 
     // ==========================================
@@ -47,7 +47,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
-        // Sign-in berbasis Cookie Identity (IsPersistent sesuai dengan RememberMe)
+        // Sign-in berbasis Cookie Identity
         var result = await _signInManager.PasswordSignInAsync(
             user.UserName ?? user.Email!,
             request.Password,
@@ -56,36 +56,57 @@ public class AuthController : ControllerBase
 
         if (!result.Succeeded)
         {
+            // Catat log login gagal
+            var userAgentFail = Request.Headers["User-Agent"].ToString();
+            var isMobileFail = !string.IsNullOrEmpty(userAgentFail) && 
+                               (userAgentFail.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+                                userAgentFail.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                                userAgentFail.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
+
+            await _guardianService.CreateLoginActivityAsync(
+                user.Id,
+                "Failed Login",
+                isMobileFail ? "Mobile" : "Web",
+                isMobileFail ? "Mobile App/Browser" : "Web Browser",
+                HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
+                "ID",
+                false
+            );
+
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
-        // Deteksi apakah akses dari Mobile atau Web
+        // Deteksi Perangkat: Mobile vs Web
         var userAgent = Request.Headers["User-Agent"].ToString();
         var isMobile = !string.IsNullOrEmpty(userAgent) && 
                        (userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
                         userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
                         userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
 
-        string deviceType = isMobile ? "Mobile" : "Web";
+        string deviceCategory = isMobile ? "Mobile" : "Web";
+        string ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
 
-        // Catat Sesi User ke Database
-        var session = new UserSession
-        {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            RefreshTokenHash = "COOKIE_SESSION",
-            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
-            OperatingSystem = deviceType, // Diisi "Web" atau "Mobile" (Dijamin NOT NULL)
-            DeviceName = deviceType,
-            Browser = isMobile ? "Mobile App/Browser" : "Web Browser",
-            Country = "ID",
-            IsActive = true,
-            IsCurrent = true,
-            CreatedAt = DateTime.UtcNow,
-            LastActivityAt = DateTime.UtcNow
-        };
-        _db.UserSessions.Add(session);
-        await _db.SaveChangesAsync();
+        // 1. Buat Sesi Login Baru
+        await _guardianService.CreateSessionAsync(
+            user.Id,
+            deviceName: deviceCategory,
+            operatingSystem: deviceCategory, // Mengisi "Web" atau "Mobile" (Pasti NOT NULL)
+            browser: isMobile ? "Mobile App/Browser" : "Web Browser",
+            ipAddress: ip,
+            country: "ID",
+            refreshTokenHash: "COOKIE_SESSION"
+        );
+
+        // 2. Catat Log Aktivitas Login Sukses
+        await _guardianService.CreateLoginActivityAsync(
+            user.Id,
+            "Interactive Login",
+            deviceCategory,
+            isMobile ? "Mobile App/Browser" : "Web Browser",
+            ip,
+            "ID",
+            true
+        );
 
         return Ok(new
         {
@@ -122,7 +143,6 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        // Menghapus session cookie
         await _signInManager.SignOutAsync();
         return Ok(new { success = true, message = "Logged out successfully." });
     }
