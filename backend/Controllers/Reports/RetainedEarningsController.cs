@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/retained-earnings")]
+[Route("/api/v1/reports/retained-earnings")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class RetainedEarningsController : ControllerBase
 {
@@ -21,7 +21,7 @@ public class RetainedEarningsController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/reports/retained-earnings
+    // 1. GET: /api/v1/reports/retained-earnings
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetRetainedEarnings()
