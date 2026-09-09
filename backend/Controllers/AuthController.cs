@@ -28,9 +28,9 @@ public class AuthController : ControllerBase
     }
 
     // ==========================================
-    // 1. POST: /web/auth/login
+    // 1. POST: /api/v1/auth/login
     // ==========================================
-    [HttpPost("/login")]
+    [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -87,9 +87,9 @@ public class AuthController : ControllerBase
     }
 
     // ==========================================
-    // 2. GET: /web/auth/me (Current Web User Profile)
+    // 2. GET: /api/v1/auth/me
     // ==========================================
-    [HttpGet("/me")]
+    [HttpGet("me")]
     public async Task<IActionResult> GetProfile()
     {
         var user = await _userManager.GetUserAsync(User);
@@ -107,9 +107,9 @@ public class AuthController : ControllerBase
     }
 
     // ==========================================
-    // 3. POST: /web/auth/logout
+    // 3. POST: /api/v1/auth/logout
     // ==========================================
-    [HttpPost("/logout")]
+    [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
         // Menghapus session cookie pada browser
