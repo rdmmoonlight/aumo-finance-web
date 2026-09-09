@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/adjusting-journal")]
+[Route("/api/v1/reports/adjusting-journal")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class AdjustingJournalController : ControllerBase
 {
@@ -24,7 +24,7 @@ public class AdjustingJournalController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/reports/adjusting-journal
+    // 1. GET: /api/v1/reports/adjusting-journal
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetAdjustingJournal()
@@ -94,7 +94,7 @@ public class AdjustingJournalController : ControllerBase
     }
 
     // ==========================================
-    // 2. DELETE: /web/reports/adjusting-journal/{id}
+    // 2. DELETE: /api/v1/reports/adjusting-journal/{id}
     // ==========================================
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteAdjustingJournal(int id)
