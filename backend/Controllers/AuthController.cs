@@ -54,7 +54,7 @@ public class AuthController : ControllerBase
             isPersistent: request.RememberMe,
             lockoutOnFailure: false);
 
-        // Ambil User-Agent dari request header untuk deteksi & disimpan ke session
+        // Ambil User-Agent dari request header secara aman
         var rawUserAgent = Request.Headers["User-Agent"].ToString();
         var safeUserAgent = string.IsNullOrWhiteSpace(rawUserAgent) ? "Aumo Client / Web" : rawUserAgent;
 
@@ -88,16 +88,16 @@ public class AuthController : ControllerBase
         string deviceCategory = isMobile ? "Mobile" : "Web";
         string ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
 
-        // 1. Buat Sesi Login Baru (Menyertakan userAgent untuk mencegah error NOT NULL constraint)
+        // 1. Buat Sesi Login Baru (Mengirim userAgent secara eksplisit)
         await _guardianService.CreateSessionAsync(
             user.Id,
             deviceName: deviceCategory,
-            operatingSystem: deviceCategory, // Mengisi "Web" atau "Mobile"
+            operatingSystem: deviceCategory,
             browser: isMobile ? "Mobile App/Browser" : "Web Browser",
             ipAddress: ip,
             country: "ID",
             refreshTokenHash: "COOKIE_SESSION",
-            userAgent: safeUserAgent // Terkirim dengan aman ke database
+            userAgent: safeUserAgent // Terkirim secara eksplisit ke service & database
         );
 
         // 2. Catat Log Aktivitas Login Sukses
