@@ -370,7 +370,6 @@ public class ToolsController : ControllerBase
             await dbTransaction.RollbackAsync();
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"Failed to save data: {ex.Message}" });
         }
-    }
 }
 
 public class JournalImportRequestDto
