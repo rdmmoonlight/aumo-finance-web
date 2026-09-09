@@ -370,39 +370,39 @@ public class ToolsController : ControllerBase
             await dbTransaction.RollbackAsync();
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"Failed to save data: {ex.Message}" });
         }
-}
+    }
 
-public class JournalImportRequestDto
-{
-    public int TargetMonth { get; set; }
-    public int TargetYear { get; set; }
-    public List<JournalTransactionDto> Transactions { get; set; } = new();
-    public List<AccountMappingDetailDto>? CustomMappings { get; set; } = new();
-}
+    public class JournalImportRequestDto
+    {
+        public int TargetMonth { get; set; }
+        public int TargetYear { get; set; }
+        public List<JournalTransactionDto> Transactions { get; set; } = new();
+        public List<AccountMappingDetailDto>? CustomMappings { get; set; } = new();
+    }
 
-public class JournalTransactionDto
-{
-    public string TransactionNumber { get; set; } = string.Empty;
-    public string Date { get; set; } = string.Empty;
-    public string JournalType { get; set; } = string.Empty;
-    public List<JournalLineDto> Lines { get; set; } = new();
-}
+    public class JournalTransactionDto
+    {
+        public string TransactionNumber { get; set; } = string.Empty;
+        public string Date { get; set; } = string.Empty;
+        public string JournalType { get; set; } = string.Empty;
+        public List<JournalLineDto> Lines { get; set; } = new();
+    }
 
-public class JournalLineDto
-{
-    public int RefNumber { get; set; }
-    public string AccountName { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public decimal? Debit { get; set; }
-    public decimal? Credit { get; set; }
-}
+    public class JournalLineDto
+    {
+        public int RefNumber { get; set; }
+        public string AccountName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal? Debit { get; set; }
+        public decimal? Credit { get; set; }
+    }
 
-public class AccountMappingDetailDto
-{
-    public int ExcelRef { get; set; }
-    public string ExcelAccountName { get; set; } = string.Empty;
-    public int MappedRef { get; set; }
-    public string MappedAccountName { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string Reason { get; set; } = string.Empty;
-}
+    public class AccountMappingDetailDto
+    {
+        public int ExcelRef { get; set; }
+        public string ExcelAccountName { get; set; } = string.Empty;
+        public int MappedRef { get; set; }
+        public string MappedAccountName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+    }
