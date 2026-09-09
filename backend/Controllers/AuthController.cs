@@ -59,6 +59,15 @@ public class AuthController : ControllerBase
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
         }
 
+        // Deteksi apakah akses dari Mobile atau Web
+        var userAgent = Request.Headers["User-Agent"].ToString();
+        var isMobile = !string.IsNullOrEmpty(userAgent) && 
+                       (userAgent.Contains("Android", StringComparison.OrdinalIgnoreCase) ||
+                        userAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
+                        userAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
+
+        string deviceType = isMobile ? "Mobile" : "Web";
+
         // Catat Sesi User ke Database
         var session = new UserSession
         {
@@ -66,8 +75,9 @@ public class AuthController : ControllerBase
             UserId = user.Id,
             RefreshTokenHash = "COOKIE_SESSION",
             IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
-            DeviceName = "Client",
-            Browser = "Browser",
+            OperatingSystem = deviceType, // Diisi "Web" atau "Mobile" (Dijamin NOT NULL)
+            DeviceName = deviceType,
+            Browser = isMobile ? "Mobile App/Browser" : "Web Browser",
             Country = "ID",
             IsActive = true,
             IsCurrent = true,
