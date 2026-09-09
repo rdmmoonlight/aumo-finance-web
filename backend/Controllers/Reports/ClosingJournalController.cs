@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("api/v1/reports/closing-journal")]
+[Route("/api/v1/reports/closing-journal")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
 public class ClosingJournalController : ControllerBase
 {
@@ -23,7 +23,7 @@ public class ClosingJournalController : ControllerBase
     }
 
     // ==========================================
-    // 1. GET: /web/reports/closing-journal
+    // 1. GET: /api/v1/reports/closing-journal
     // ==========================================
     [HttpGet]
     public async Task<IActionResult> GetClosingJournal()
