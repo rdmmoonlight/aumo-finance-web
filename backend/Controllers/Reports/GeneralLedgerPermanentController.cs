@@ -12,13 +12,13 @@ using Microsoft.EntityFrameworkCore;
 namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
-[Route("/api/v1/reports/general-ledger")]
+[Route("/api/v1/reports/general-ledger/permanent")]
 [Authorize(AuthenticationSchemes = "Identity.Application")]
-public class GeneralLedgerController : ControllerBase
+public class GeneralLedgerPermanentController : ControllerBase
 {
     private readonly AppDbContext _db;
 
-    public GeneralLedgerController(AppDbContext db)
+    public GeneralLedgerPermanentController(AppDbContext db)
     {
         _db = db;
     }
@@ -26,31 +26,8 @@ public class GeneralLedgerController : ControllerBase
     // ==========================================
     // 1. GET: /api/v1/reports/general-ledger/permanent
     // ==========================================
-    [HttpGet("permanent")]
-    public async Task<IActionResult> GetPermanentGeneralLedger()
-    {
-        return await ProcessGeneralLedger(isTemporary: false);
-    }
-
-    // ==========================================
-    // 2. GET: /api/v1/reports/general-ledger/temporary
-    // ==========================================
-    [HttpGet("temporary")]
-    public async Task<IActionResult> GetTemporaryGeneralLedger()
-    {
-        return await ProcessGeneralLedger(isTemporary: true);
-    }
-
-    // ==========================================
-    // 3. GET: /api/v1/reports/general-ledger?isTemporary=false
-    // ==========================================
     [HttpGet]
-    public async Task<IActionResult> GetGeneralLedger([FromQuery] bool isTemporary = false)
-    {
-        return await ProcessGeneralLedger(isTemporary);
-    }
-
-    private async Task<IActionResult> ProcessGeneralLedger(bool isTemporary)
+    public async Task<IActionResult> GetPermanentGeneralLedger()
     {
         var userId = GetCurrentUserId();
         if (userId == Guid.Empty)
@@ -67,36 +44,26 @@ public class GeneralLedgerController : ControllerBase
             });
         }
 
-        Func<string, bool> typeFilter = isTemporary
-            ? AccountClassification.IsTemporary
-            : AccountClassification.IsPermanent;
-
-        var ledgers = await BuildLedgersAsync(userId, period, typeFilter, isTemporary);
-
-        decimal netTotal = 0m;
-        if (isTemporary)
-        {
-            netTotal = ledgers.Sum(l => l.NormalBalanceIsDebit ? -l.EndingBalance : l.EndingBalance);
-        }
+        var ledgers = await BuildPermanentLedgersAsync(userId, period);
 
         return Ok(new
         {
             success = true,
             hasPeriodSelected = true,
             selectedPeriodName = period.PeriodName,
-            isTemporary = isTemporary,
-            netIncomeBeforeClosing = netTotal,
+            isTemporary = false,
+            netIncomeBeforeClosing = 0m,
             ledgers = ledgers
         });
     }
 
-    private async Task<List<LedgerAccountWebResponse>> BuildLedgersAsync(Guid userId, Period period, Func<string, bool> typeFilter, bool isTemporary)
+    private async Task<List<PermanentLedgerAccountWebResponse>> BuildPermanentLedgersAsync(Guid userId, Period period)
     {
         var accounts = (await _db.ChartOfAccounts
                 .Where(a => a.IsActive && a.UserId == userId)
                 .OrderBy(a => a.ReferenceNumber)
                 .ToListAsync())
-            .Where(a => typeFilter(a.Type))
+            .Where(a => AccountClassification.IsPermanent(a.Type))
             .ToList();
 
         var accountIds = accounts.Select(a => a.Id).ToList();
@@ -109,7 +76,7 @@ public class GeneralLedgerController : ControllerBase
             .ThenBy(l => l.LineOrder)
             .ToListAsync();
 
-        var result = new List<LedgerAccountWebResponse>();
+        var result = new List<PermanentLedgerAccountWebResponse>();
 
         foreach (var account in accounts)
         {
@@ -120,11 +87,11 @@ public class GeneralLedgerController : ControllerBase
                 && l.JournalEntry!.EntryDate >= period.StartDate
                 && l.JournalEntry!.EntryDate <= period.EndDate);
 
-            var ledgerLines = new List<LedgerLineWebResponse>();
+            var ledgerLines = new List<PermanentLedgerLineWebResponse>();
             foreach (var line in accountLines)
             {
                 running += normalDebit ? (line.Debit - line.Credit) : (line.Credit - line.Debit);
-                ledgerLines.Add(new LedgerLineWebResponse
+                ledgerLines.Add(new PermanentLedgerLineWebResponse
                 {
                     JournalEntryId = line.JournalEntryId,
                     EntryDate = line.JournalEntry!.EntryDate.ToString("yyyy-MM-dd"),
@@ -135,28 +102,7 @@ public class GeneralLedgerController : ControllerBase
                 });
             }
 
-            // Periode sudah ditutup: hitung ayat penutup di sini saja
-            // (tidak disimpan ke tabel JournalEntry/JournalEntryLine).
-            // Tampilkan sebagai baris paling bawah supaya saldo akhir
-            // akun sementara ini menjadi 0.
-            if (isTemporary && period.IsClosed && running != 0)
-            {
-                var closingDebit = normalDebit ? Math.Max(-running, 0) : Math.Max(running, 0);
-                var closingCredit = normalDebit ? Math.Max(running, 0) : Math.Max(-running, 0);
-                running = 0m;
-
-                ledgerLines.Add(new LedgerLineWebResponse
-                {
-                    JournalEntryId = 0,
-                    EntryDate = period.EndDate.ToString("yyyy-MM-dd"),
-                    Description = "closing journal",
-                    Debit = closingDebit,
-                    Credit = closingCredit,
-                    RunningBalance = running
-                });
-            }
-
-            result.Add(new LedgerAccountWebResponse
+            result.Add(new PermanentLedgerAccountWebResponse
             {
                 AccountId = account.Id,
                 ReferenceNumber = account.ReferenceNumber,
@@ -180,7 +126,7 @@ public class GeneralLedgerController : ControllerBase
     }
 }
 
-public class LedgerAccountWebResponse
+public class PermanentLedgerAccountWebResponse
 {
     public int AccountId { get; set; }
     public int ReferenceNumber { get; set; }
@@ -188,10 +134,10 @@ public class LedgerAccountWebResponse
     public string Type { get; set; } = string.Empty;
     public bool NormalBalanceIsDebit { get; set; }
     public decimal EndingBalance { get; set; }
-    public List<LedgerLineWebResponse> Lines { get; set; } = new();
+    public List<PermanentLedgerLineWebResponse> Lines { get; set; } = new();
 }
 
-public class LedgerLineWebResponse
+public class PermanentLedgerLineWebResponse
 {
     public int JournalEntryId { get; set; }
     public string EntryDate { get; set; } = string.Empty;
