@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoBackend.Controllers.Web;
+namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("/api/v1/periods")]
