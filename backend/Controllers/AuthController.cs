@@ -66,14 +66,17 @@ public class AuthController : ControllerBase
                                 rawUserAgent.Contains("iPhone", StringComparison.OrdinalIgnoreCase) ||
                                 rawUserAgent.Contains("Mobile", StringComparison.OrdinalIgnoreCase));
 
+            string deviceCategoryFail = isMobileFail ? "Mobile" : "Web";
+
             await _guardianService.CreateLoginActivityAsync(
                 user.Id,
                 "Failed Login",
-                isMobileFail ? "Mobile" : "Web",
+                deviceCategoryFail,
                 isMobileFail ? "Mobile App/Browser" : "Web Browser",
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0",
                 "ID",
-                false
+                false,
+                operatingSystem: deviceCategoryFail // Terkirim eksplisit (Pasti NOT NULL)
             );
 
             return Unauthorized(new { success = false, message = "Invalid email/username or password." });
@@ -97,10 +100,10 @@ public class AuthController : ControllerBase
             ipAddress: ip,
             country: "ID",
             refreshTokenHash: "COOKIE_SESSION",
-            userAgent: safeUserAgent // Terkirim secara eksplisit ke service & database
+            userAgent: safeUserAgent
         );
 
-        // 2. Catat Log Aktivitas Login Sukses
+        // 2. Catat Log Aktivitas Login Sukses (Mengirim operatingSystem secara eksplisit)
         await _guardianService.CreateLoginActivityAsync(
             user.Id,
             "Interactive Login",
@@ -108,7 +111,8 @@ public class AuthController : ControllerBase
             isMobile ? "Mobile App/Browser" : "Web Browser",
             ip,
             "ID",
-            true
+            true,
+            operatingSystem: deviceCategory // Terkirim eksplisit (Pasti NOT NULL)
         );
 
         return Ok(new
