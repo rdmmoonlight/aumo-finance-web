@@ -1,11 +1,20 @@
-import axios from 'axios';
+import axios from 'axios'
 
-const API_BASE_URL = (import.meta.env.WEB_API_BASE_URL as string) || 'https://aumonext-api.onrender.com';
-apiClient.interceptors.request.use(c => {
-  const t = localStorage.getItem('token') || localStorage.getItem('accessToken');
-  if (t) c.headers.Authorization = `Bearer ${t}`;
-  console.log('[API]', c.method?.toUpperCase(), `${c.baseURL}${c.url}`);
-  return c;
+function getApiBase() {
+  let raw = (import.meta.env.WEB_API_BASE_URL as string) || '';
+  raw = raw.trim().replace(/\/+$/, '');
+  raw = raw.replace(/\/api\/v1\/?$/, '');
+  if (!raw) raw = 'https://aumonext-api.onrender.com';
+  if (raw.startsWith('http://')) raw = raw.replace('http://', 'https://');
+  return raw;
+}
+
+const API_BASE_URL = getApiBase();
+
+export const apiClient = axios.create({
+  baseURL: `${API_BASE_URL}/api/v1`,
+  withCredentials: true, // INI WAJIB. Biar cookie ikut kekirim
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
-
-export default apiClient;
