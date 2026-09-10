@@ -4,6 +4,8 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
+  // WAJIB: biar API_BASE_URL kebaca di client
+  envPrefix: ['VITE_', 'API_'],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -13,7 +15,6 @@ export default defineConfig({
     postcss: './postcss.config.js',
   },
   build: {
-    // FIX: lightningcss error var(--spacing) - pake esbuild biar gak crash
     cssMinify: false,
   },
 })
