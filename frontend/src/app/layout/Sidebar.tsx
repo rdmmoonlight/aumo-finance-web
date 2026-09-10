@@ -14,13 +14,13 @@ import {
   IconLock,
   IconNotebook,
   IconScale,
-  IconScaleOutline,
   IconReceipt2,
   IconPigMoney,
   IconBuildingBank,
   IconCash,
   IconTable,
   IconBuildingStore,
+  IconScaleOff, // Digunakan sebagai pengganti IconScaleOutline jika ingin variasi berbeda
 } from '@tabler/icons-react';
 
 interface MenuItem {
@@ -34,7 +34,7 @@ const mainNavItems: MenuItem[] = [
   { label: 'Chart of Accounts', path: '/chart-of-accounts', icon: IconListDetails },
   { label: 'Journal Entry', path: '/journal-entry', icon: IconFilePencil },
   { label: 'Periods', path: '/periods', icon: IconCalendarTime },
-  { label: 'AI Assistant', path: '/ai-assistant', icon: IconRobot }, // ✅ Ganti di sini
+  { label: 'AI Assistant', path: '/ai-assistant', icon: IconRobot },
   { label: 'Guardian', path: '/guardian', icon: IconShieldCheck },
   { label: 'Tools', path: '/tools', icon: IconTools },
   { label: 'Settings', path: '/settings', icon: IconSettings },
@@ -47,7 +47,7 @@ const reportNavItems: MenuItem[] = [
   { label: 'Permanent Ledger', path: '/reports/general-ledger/permanent', icon: IconNotebook },
   { label: 'Temporary Ledger', path: '/reports/general-ledger/temporary', icon: IconNotebook },
   { label: 'Unadjusted Trial Balance', path: '/reports/trial-balance/unadjusted', icon: IconScale },
-  { label: 'Adjusted Trial Balance', path: '/reports/trial-balance/adjusted', icon: IconScaleOutline },
+  { label: 'Adjusted Trial Balance', path: '/reports/trial-balance/adjusted', icon: IconScaleOff }, // Diganti dari IconScaleOutline
   { label: 'Post-Closing Trial Balance', path: '/reports/trial-balance/post-closing', icon: IconReceipt2 },
   { label: 'Income Statement', path: '/reports/income-statement', icon: IconPigMoney },
   { label: 'Retained Earnings', path: '/reports/retained-earnings', icon: IconBuildingBank },
@@ -55,6 +55,38 @@ const reportNavItems: MenuItem[] = [
   { label: 'Cash Flow', path: '/reports/statement-of-cash-flow', icon: IconCash },
   { label: 'Worksheet', path: '/reports/worksheet', icon: IconTable },
 ];
+
+// Sub-komponen NavItem untuk menjaga kebersihan kode
+function NavItemLink({ item }: { item: MenuItem }) {
+  const Icon = item.icon;
+  return (
+    <li>
+      <NavLink
+        to={item.path}
+        className={({ isActive }) =>
+          `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 group ${
+            isActive
+              ? 'bg-zinc-800 text-zinc-100 border border-zinc-700/50 shadow-sm'
+              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <Icon
+              size={18}
+              className={`transition-colors ${
+                isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'
+              }`}
+              stroke={1.8}
+            />
+            <span>{item.label}</span>
+          </>
+        )}
+      </NavLink>
+    </li>
+  );
+}
 
 export default function Sidebar() {
   return (
@@ -82,36 +114,9 @@ export default function Sidebar() {
             Main Domain
           </div>
           <ul className="space-y-1">
-            {mainNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 group ${
-                        isActive
-                          ? 'bg-zinc-800 text-zinc-100 border border-zinc-700/50 shadow-sm'
-                          : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Icon
-                          size={18}
-                          className={`transition-colors ${
-                            isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'
-                          }`}
-                          stroke={1.8}
-                        />
-                        <span>{item.label}</span>
-                      </>
-                    )}
-                  </NavLink>
-                </li>
-              );
-            })}
+            {mainNavItems.map((item) => (
+              <NavItemLink key={item.path} item={item} />
+            ))}
           </ul>
         </div>
 
@@ -121,36 +126,9 @@ export default function Sidebar() {
             Reports & Statements
           </div>
           <ul className="space-y-1">
-            {reportNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 group ${
-                        isActive
-                          ? 'bg-zinc-800 text-zinc-100 border border-zinc-700/50 shadow-sm'
-                          : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <Icon
-                          size={18}
-                          className={`transition-colors ${
-                            isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'
-                          }`}
-                          stroke={1.8}
-                        />
-                        <span>{item.label}</span>
-                      </>
-                    )}
-                  </NavLink>
-                </li>
-              );
-            })}
+            {reportNavItems.map((item) => (
+              <NavItemLink key={item.path} item={item} />
+            ))}
           </ul>
         </div>
       </nav>
