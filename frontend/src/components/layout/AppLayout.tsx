@@ -1,271 +1,30 @@
-import React from 'react';
-import { Outlet, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
-import {
-  IconLayoutDashboard,
-  IconListDetails,
-  IconFilePencil,
-  IconCalendarTime,
-  IconRobot,
-  IconShieldCheck,
-  IconTools,
-  IconSettings,
-  IconBook,
-  IconFileCheck,
-  IconLock,
-  IconNotebook,
-  IconScale,
-  IconReceipt2,
-  IconPigMoney,
-  IconBuildingBank,
-  IconCash,
-  IconTable,
-  IconBuildingStore,
-  IconScaleOff,
-  IconLogout,
-  IconChevronRight,
-  IconUserCheck,
-} from '@tabler/icons-react';
-
-import { cn } from "@/lib/utils";
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-
-// ==========================================
-// TYPES & DATA
-// ==========================================
-
-interface MenuItem {
-  label: string;
-  path: string;
-  icon: React.ElementType;
-}
-
-const mainNavItems: MenuItem[] = [
-  { label: 'Dashboard', path: '/dashboard', icon: IconLayoutDashboard },
-  { label: 'Chart of Accounts', path: '/chart-of-accounts', icon: IconListDetails },
-  { label: 'Journal Entry', path: '/journal-entry', icon: IconFilePencil },
-  { label: 'Periods', path: '/periods', icon: IconCalendarTime },
-  { label: 'AI Assistant', path: '/ai-assistant', icon: IconRobot },
-  { label: 'Guardian', path: '/guardian', icon: IconShieldCheck },
-  { label: 'Tools', path: '/tools', icon: IconTools },
-  { label: 'Settings', path: '/settings', icon: IconSettings },
-];
-
-const reportNavItems: MenuItem[] = [
-  { label: 'General Journal', path: '/reports/general-journal', icon: IconBook },
-  { label: 'Adjusting Journal', path: '/reports/adjusting-journal', icon: IconFileCheck },
-  { label: 'Closing Journal', path: '/reports/closing-journal', icon: IconLock },
-  { label: 'Permanent Ledger', path: '/reports/general-ledger/permanent', icon: IconNotebook },
-  { label: 'Temporary Ledger', path: '/reports/general-ledger/temporary', icon: IconNotebook },
-  { label: 'Unadjusted Trial Balance', path: '/reports/trial-balance/unadjusted', icon: IconScale },
-  { label: 'Adjusted Trial Balance', path: '/reports/trial-balance/adjusted', icon: IconScaleOff },
-  { label: 'Post-Closing Trial Balance', path: '/reports/trial-balance/post-closing', icon: IconReceipt2 },
-  { label: 'Income Statement', path: '/reports/income-statement', icon: IconPigMoney },
-  { label: 'Retained Earnings', path: '/reports/retained-earnings', icon: IconBuildingBank },
-  { label: 'Financial Position', path: '/reports/statement-of-financial-position', icon: IconBuildingStore },
-  { label: 'Cash Flow', path: '/reports/statement-of-cash-flow', icon: IconCash },
-  { label: 'Worksheet', path: '/reports/worksheet', icon: IconTable },
-];
-
-// ==========================================
-// 1. SIDEBAR COMPONENT
-// ==========================================
-
-function NavItemLink({ item }: { item: MenuItem }) {
-  const Icon = item.icon;
-
-  return (
-    <li>
-      <NavLink to={item.path}>
-        {({ isActive }) => (
-          <span
-            className={cn(
-              'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150 ease-in-out',
-              isActive
-                ? 'bg-primary/10 text-primary font-semibold shadow-xs'
-                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-            )}
-          >
-            {/* Indicator bar saat aktif */}
-            {isActive && (
-              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary" />
-            )}
-            <Icon
-              size={18}
-              className={cn(
-                'shrink-0 transition-colors',
-                isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-              )}
-              stroke={1.8}
-            />
-            <span className="truncate">{item.label}</span>
-          </span>
-        )}
-      </NavLink>
-    </li>
-  );
-}
-
-export function Sidebar() {
-  return (
-    <aside className="w-64 border-r bg-card/50 backdrop-blur-sm text-card-foreground flex flex-col h-screen font-sans antialiased shrink-0 select-none">
-      {/* Brand Header */}
-      <div className="h-16 px-5 border-b flex items-center gap-3 shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-sm ring-2 ring-primary/20 shrink-0">
-          A
-        </div>
-        <div className="flex flex-col min-w-0">
-          <span className="font-bold text-foreground text-sm tracking-tight truncate">
-            Aumo Finance
-          </span>
-          <span className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase">
-            Accounting Suite
-          </span>
-        </div>
-      </div>
-
-      {/* Navigation Links */}
-      <ScrollArea className="flex-1 px-3 py-4">
-        <nav className="space-y-6">
-          {/* Main Domain Group */}
-          <div>
-            <h2 className="px-3 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-2">
-              Main Domain
-            </h2>
-            <ul className="space-y-1">
-              {mainNavItems.map((item) => (
-                <NavItemLink key={item.path} item={item} />
-              ))}
-            </ul>
-          </div>
-
-          {/* Reports & Statements Group */}
-          <div>
-            <h2 className="px-3 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-2">
-              Reports & Statements
-            </h2>
-            <ul className="space-y-1">
-              {reportNavItems.map((item) => (
-                <NavItemLink key={item.path} item={item} />
-              ))}
-            </ul>
-          </div>
-        </nav>
-      </ScrollArea>
-    </aside>
-  );
-}
-
-// ==========================================
-// 2. TOPBAR COMPONENT
-// ==========================================
-
-export function Topbar() {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  const pathSegments = location.pathname.split("/").filter(Boolean);
-
-  const handleLogout = () => {
-    navigate("/auth");
-  };
-
-  return (
-    <header className="h-16 border-b bg-background/80 backdrop-blur-md px-6 flex items-center justify-between text-foreground shrink-0 z-10">
-      {/* Dynamic Breadcrumb */}
-      <Breadcrumb>
-        <BreadcrumbList className="text-xs">
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/" className="hover:text-primary transition-colors">
-                Home
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-
-          {pathSegments.map((segment, index) => {
-            const url = `/${pathSegments.slice(0, index + 1).join("/")}`;
-            const isLast = index === pathSegments.length - 1;
-            const title = segment.replace(/-/g, " ");
-
-            return (
-              <React.Fragment key={url}>
-                <BreadcrumbSeparator>
-                  <IconChevronRight size={12} className="text-muted-foreground/60" />
-                </BreadcrumbSeparator>
-                <BreadcrumbItem>
-                  {isLast ? (
-                    <BreadcrumbPage className="capitalize font-semibold text-foreground">
-                      {title}
-                    </BreadcrumbPage>
-                  ) : (
-                    <BreadcrumbLink asChild>
-                      <Link to={url} className="capitalize hover:text-primary transition-colors">
-                        {title}
-                      </Link>
-                    </BreadcrumbLink>
-                  )}
-                </BreadcrumbItem>
-              </React.Fragment>
-            );
-          })}
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      {/* Right Controls */}
-      <div className="flex items-center gap-4">
-        {/* User Info / Profile Brief */}
-        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-muted/50 border text-xs text-muted-foreground">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-medium text-foreground">Ghofur</span>
-        </div>
-
-        {/* Logout Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLogout}
-          className="h-8 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 transition-colors"
-        >
-          <IconLogout size={15} />
-          <span>Logout</span>
-        </Button>
-      </div>
-    </header>
-  );
-}
-
-// ==========================================
-// 3. MAIN APP LAYOUT
-// ==========================================
+import { Outlet, NavLink, useLocation, Link } from 'react-router-dom';
 
 export default function AppLayout() {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans antialiased">
-      {/* Sidebar Navigation */}
-      <Sidebar />
+    <div className="flex h-screen w-full bg-background overflow-hidden">
+      {/* SIDEBAR - versi native tanpa ScrollArea */}
+      <aside className="w-64 border-r bg-white flex flex-col shrink-0">
+        <div className="h-16 px-5 border-b flex items-center gap-3 font-bold">
+          <div className="w-9 h-9 rounded-xl bg-black text-white grid place-items-center">A</div>
+          Aumo Finance
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+          <NavLink to="/dashboard" className={({isActive}) => isActive ? "block bg-black text-white p-2 rounded" : "block p-2 text-gray-500"}>Dashboard</NavLink>
+          <NavLink to="/chart-of-accounts" className={({isActive}) => isActive ? "block bg-black text-white p-2 rounded" : "block p-2 text-gray-500"}>Chart of Accounts</NavLink>
+          <NavLink to="/reports/general-journal" className={({isActive}) => isActive ? "block bg-black text-white p-2 rounded" : "block p-2 text-gray-500"}>General Journal</NavLink>
+        </div>
+      </aside>
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        <Topbar />
-
-        {/* Main Workspace Area */}
-        <ScrollArea className="flex-1 bg-muted/20">
-          <main className="p-4 md:p-6 lg:p-8">
-            <div className="mx-auto max-w-7xl space-y-6">
-              <Outlet />
-            </div>
-          </main>
-        </ScrollArea>
+      <div className="flex flex-1 flex-col min-w-0">
+        <header className="h-16 border-b bg-white px-6 flex items-center justify-between shrink-0">
+          <div className="text-xs text-gray-500">{useLocation().pathname}</div>
+          <Link to="/auth" className="text-xs">Logout</Link>
+        </header>
+        <div className="flex-1 overflow-auto bg-gray-50 p-6">
+          <Outlet />
+        </div>
       </div>
     </div>
-  );
+  )
 }
