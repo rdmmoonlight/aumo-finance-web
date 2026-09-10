@@ -22,6 +22,8 @@ import {
   IconBuildingStore,
   IconScaleOff,
   IconLogout,
+  IconChevronRight,
+  IconUserCheck,
 } from '@tabler/icons-react';
 
 import { cn } from "@/lib/utils";
@@ -35,10 +37,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import "@/styles/index.css";
 
 // ==========================================
-// 1. SIDEBAR COMPONENT & TYPES
+// TYPES & DATA
 // ==========================================
 
 interface MenuItem {
@@ -74,36 +75,39 @@ const reportNavItems: MenuItem[] = [
   { label: 'Worksheet', path: '/reports/worksheet', icon: IconTable },
 ];
 
+// ==========================================
+// 1. SIDEBAR COMPONENT
+// ==========================================
+
 function NavItemLink({ item }: { item: MenuItem }) {
   const Icon = item.icon;
 
   return (
     <li>
-      <NavLink to={item.path} className="block">
+      <NavLink to={item.path}>
         {({ isActive }) => (
-          <Button
-            asChild
-            variant={isActive ? 'secondary' : 'ghost'}
-            size="sm"
+          <span
             className={cn(
-              'w-full justify-start gap-3 px-3 font-normal text-xs transition-colors',
+              'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150 ease-in-out',
               isActive
-                ? 'bg-secondary text-secondary-foreground font-medium shadow-sm'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                ? 'bg-primary/10 text-primary font-semibold shadow-xs'
+                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
             )}
           >
-            <div>
-              <Icon
-                size={18}
-                className={cn(
-                  'shrink-0 transition-colors',
-                  isActive ? 'text-foreground' : 'text-muted-foreground'
-                )}
-                stroke={1.8}
-              />
-              <span className="truncate">{item.label}</span>
-            </div>
-          </Button>
+            {/* Indicator bar saat aktif */}
+            {isActive && (
+              <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-primary" />
+            )}
+            <Icon
+              size={18}
+              className={cn(
+                'shrink-0 transition-colors',
+                isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+              )}
+              stroke={1.8}
+            />
+            <span className="truncate">{item.label}</span>
+          </span>
         )}
       </NavLink>
     </li>
@@ -112,17 +116,17 @@ function NavItemLink({ item }: { item: MenuItem }) {
 
 export function Sidebar() {
   return (
-    <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col h-screen font-sans antialiased shrink-0">
+    <aside className="w-64 border-r bg-card/50 backdrop-blur-sm text-card-foreground flex flex-col h-screen font-sans antialiased shrink-0 select-none">
       {/* Brand Header */}
-      <div className="p-4 border-b flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+      <div className="h-16 px-5 border-b flex items-center gap-3 shrink-0">
+        <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-base shadow-sm ring-2 ring-primary/20 shrink-0">
           A
         </div>
-        <div className="flex flex-col">
-          <span className="font-semibold text-foreground text-sm tracking-wide leading-none">
+        <div className="flex flex-col min-w-0">
+          <span className="font-bold text-foreground text-sm tracking-tight truncate">
             Aumo Finance
           </span>
-          <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase mt-1">
+          <span className="text-[10px] text-muted-foreground font-semibold tracking-wider uppercase">
             Accounting Suite
           </span>
         </div>
@@ -133,7 +137,7 @@ export function Sidebar() {
         <nav className="space-y-6">
           {/* Main Domain Group */}
           <div>
-            <h2 className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <h2 className="px-3 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-2">
               Main Domain
             </h2>
             <ul className="space-y-1">
@@ -145,7 +149,7 @@ export function Sidebar() {
 
           {/* Reports & Statements Group */}
           <div>
-            <h2 className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            <h2 className="px-3 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-2">
               Reports & Statements
             </h2>
             <ul className="space-y-1">
@@ -168,7 +172,6 @@ export function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Memecah pathname menjadi array breadcrumb item
   const pathSegments = location.pathname.split("/").filter(Boolean);
 
   const handleLogout = () => {
@@ -176,13 +179,15 @@ export function Topbar() {
   };
 
   return (
-    <header className="h-16 border-b bg-background px-6 flex items-center justify-between text-foreground shrink-0">
-      {/* Dynamic Breadcrumb Shadcn */}
+    <header className="h-16 border-b bg-background/80 backdrop-blur-md px-6 flex items-center justify-between text-foreground shrink-0 z-10">
+      {/* Dynamic Breadcrumb */}
       <Breadcrumb>
-        <BreadcrumbList>
+        <BreadcrumbList className="text-xs">
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
-              <Link to="/">Home</Link>
+              <Link to="/" className="hover:text-primary transition-colors">
+                Home
+              </Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
 
@@ -193,15 +198,17 @@ export function Topbar() {
 
             return (
               <React.Fragment key={url}>
-                <BreadcrumbSeparator />
+                <BreadcrumbSeparator>
+                  <IconChevronRight size={12} className="text-muted-foreground/60" />
+                </BreadcrumbSeparator>
                 <BreadcrumbItem>
                   {isLast ? (
-                    <BreadcrumbPage className="capitalize font-semibold">
+                    <BreadcrumbPage className="capitalize font-semibold text-foreground">
                       {title}
                     </BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link to={url} className="capitalize">
+                      <Link to={url} className="capitalize hover:text-primary transition-colors">
                         {title}
                       </Link>
                     </BreadcrumbLink>
@@ -214,14 +221,21 @@ export function Topbar() {
       </Breadcrumb>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
+        {/* User Info / Profile Brief */}
+        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-muted/50 border text-xs text-muted-foreground">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-medium text-foreground">Ghofur</span>
+        </div>
+
+        {/* Logout Button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={handleLogout}
-          className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-2"
+          className="h-8 text-xs font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 gap-1.5 transition-colors"
         >
-          <IconLogout size={16} />
+          <IconLogout size={15} />
           <span>Logout</span>
         </Button>
       </div>
@@ -230,7 +244,7 @@ export function Topbar() {
 }
 
 // ==========================================
-// 3. MAIN APP LAYOUT (DEFAULT EXPORT)
+// 3. MAIN APP LAYOUT
 // ==========================================
 
 export default function AppLayout() {
@@ -243,9 +257,9 @@ export default function AppLayout() {
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         <Topbar />
 
-        {/* Main Workspace Area with Shadcn ScrollArea */}
-        <ScrollArea className="flex-1 bg-muted/30">
-          <main className="p-4 md:p-6">
+        {/* Main Workspace Area */}
+        <ScrollArea className="flex-1 bg-muted/20">
+          <main className="p-4 md:p-6 lg:p-8">
             <div className="mx-auto max-w-7xl space-y-6">
               <Outlet />
             </div>
