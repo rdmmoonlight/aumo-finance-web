@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { API_BASE_URL } from '@/lib/config';
+import { WEB_API_BASE_URL } from '@/lib/config';
 const apiClient = axios.create({
-  baseURL: API_BASE_URL, // https://aumonext-api.onrender.com
+  baseURL: WEB_API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 apiClient.interceptors.request.use(c => {
