@@ -51,8 +51,8 @@ public class AuthController : ControllerBase
             lockoutOnFailure: false);
 
         var headerUserAgent = Request.Headers["User-Agent"].ToString();
-        var safeUserAgent = !string.IsNullOrWhiteSpace(request.UserAgent) 
-            ? request.UserAgent 
+        var safeUserAgent = !string.IsNullOrWhiteSpace(request.UserAgent)
+            ? request.UserAgent
             : (!string.IsNullOrWhiteSpace(headerUserAgent) ? headerUserAgent : "Aumo Client / Web");
 
         if (!result.Succeeded)
