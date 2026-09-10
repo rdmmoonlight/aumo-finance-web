@@ -22,6 +22,10 @@ const ctx = await esbuild.context({
     '.ttf': 'file',
     '.svg': 'file'
   },
+  // Mencegah "process is not defined" di browser untuk library pihak ketiga
+  banner: {
+    js: `if (typeof globalThis.process === "undefined") { globalThis.process = { env: {} }; }`,
+  },
   define: { 
     'process.env.NODE_ENV': isDev ? '"development"' : '"production"',
     'process.env.API_BASE_URL': JSON.stringify(apiBaseUrl),
