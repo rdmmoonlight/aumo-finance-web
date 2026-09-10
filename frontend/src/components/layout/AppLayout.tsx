@@ -35,7 +35,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import './index.css'
+import "@/styles/index.css";
 
 // ==========================================
 // 1. SIDEBAR COMPONENT & TYPES
