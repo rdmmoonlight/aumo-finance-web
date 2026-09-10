@@ -20,8 +20,12 @@ import {
   IconCash,
   IconTable,
   IconBuildingStore,
-  IconScaleOff, // Digunakan sebagai pengganti IconScaleOutline jika ingin variasi berbeda
+  IconScaleOff,
 } from '@tabler/icons-react';
+
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MenuItem {
   label: string;
@@ -47,7 +51,7 @@ const reportNavItems: MenuItem[] = [
   { label: 'Permanent Ledger', path: '/reports/general-ledger/permanent', icon: IconNotebook },
   { label: 'Temporary Ledger', path: '/reports/general-ledger/temporary', icon: IconNotebook },
   { label: 'Unadjusted Trial Balance', path: '/reports/trial-balance/unadjusted', icon: IconScale },
-  { label: 'Adjusted Trial Balance', path: '/reports/trial-balance/adjusted', icon: IconScaleOff }, // Diganti dari IconScaleOutline
+  { label: 'Adjusted Trial Balance', path: '/reports/trial-balance/adjusted', icon: IconScaleOff },
   { label: 'Post-Closing Trial Balance', path: '/reports/trial-balance/post-closing', icon: IconReceipt2 },
   { label: 'Income Statement', path: '/reports/income-statement', icon: IconPigMoney },
   { label: 'Retained Earnings', path: '/reports/retained-earnings', icon: IconBuildingBank },
@@ -56,32 +60,36 @@ const reportNavItems: MenuItem[] = [
   { label: 'Worksheet', path: '/reports/worksheet', icon: IconTable },
 ];
 
-// Sub-komponen NavItem untuk menjaga kebersihan kode
 function NavItemLink({ item }: { item: MenuItem }) {
   const Icon = item.icon;
+
   return (
     <li>
-      <NavLink
-        to={item.path}
-        className={({ isActive }) =>
-          `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150 group ${
-            isActive
-              ? 'bg-zinc-800 text-zinc-100 border border-zinc-700/50 shadow-sm'
-              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-          }`
-        }
-      >
+      <NavLink to={item.path} className="block">
         {({ isActive }) => (
-          <>
-            <Icon
-              size={18}
-              className={`transition-colors ${
-                isActive ? 'text-zinc-100' : 'text-zinc-500 group-hover:text-zinc-300'
-              }`}
-              stroke={1.8}
-            />
-            <span>{item.label}</span>
-          </>
+          <Button
+            asChild
+            variant={isActive ? 'secondary' : 'ghost'}
+            size="sm"
+            className={cn(
+              'w-full justify-start gap-3 px-3 font-normal text-xs transition-colors',
+              isActive
+                ? 'bg-secondary text-secondary-foreground font-medium shadow-sm'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <div>
+              <Icon
+                size={18}
+                className={cn(
+                  'shrink-0 transition-colors',
+                  isActive ? 'text-foreground' : 'text-muted-foreground'
+                )}
+                stroke={1.8}
+              />
+              <span className="truncate">{item.label}</span>
+            </div>
+          </Button>
         )}
       </NavLink>
     </li>
@@ -90,48 +98,50 @@ function NavItemLink({ item }: { item: MenuItem }) {
 
 export default function Sidebar() {
   return (
-    <aside className="w-64 bg-zinc-900 text-zinc-400 flex flex-col h-screen border-r border-zinc-800/80 font-sans antialiased selection:bg-zinc-800">
+    <aside className="w-64 border-r bg-sidebar text-sidebar-foreground flex flex-col h-screen font-sans antialiased">
       {/* Brand Header */}
-      <div className="p-5 border-b border-zinc-800/80 flex items-center space-x-3">
-        <div className="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700/60 flex items-center justify-center font-bold text-zinc-100 shadow-sm">
+      <div className="p-4 border-b flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
           A
         </div>
         <div className="flex flex-col">
-          <span className="font-semibold text-zinc-100 text-base tracking-wide leading-none">
+          <span className="font-semibold text-foreground text-sm tracking-wide leading-none">
             Aumo Finance
           </span>
-          <span className="text-[10px] text-zinc-500 font-medium tracking-wider uppercase mt-1">
+          <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase mt-1">
             Accounting Suite
           </span>
         </div>
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800">
-        {/* Main Domain Group */}
-        <div>
-          <div className="px-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-            Main Domain
+      <ScrollArea className="flex-1 px-3 py-4">
+        <nav className="space-y-6">
+          {/* Main Domain Group */}
+          <div>
+            <h2 className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Main Domain
+            </h2>
+            <ul className="space-y-1">
+              {mainNavItems.map((item) => (
+                <NavItemLink key={item.path} item={item} />
+              ))}
+            </ul>
           </div>
-          <ul className="space-y-1">
-            {mainNavItems.map((item) => (
-              <NavItemLink key={item.path} item={item} />
-            ))}
-          </ul>
-        </div>
 
-        {/* Reports & Statements Group */}
-        <div>
-          <div className="px-3 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-            Reports & Statements
+          {/* Reports & Statements Group */}
+          <div>
+            <h2 className="px-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Reports & Statements
+            </h2>
+            <ul className="space-y-1">
+              {reportNavItems.map((item) => (
+                <NavItemLink key={item.path} item={item} />
+              ))}
+            </ul>
           </div>
-          <ul className="space-y-1">
-            {reportNavItems.map((item) => (
-              <NavItemLink key={item.path} item={item} />
-            ))}
-          </ul>
-        </div>
-      </nav>
+        </nav>
+      </ScrollArea>
     </aside>
   );
 }

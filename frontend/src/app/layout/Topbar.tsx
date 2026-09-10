@@ -1,7 +1,16 @@
 import React from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { IconLogout } from "@tabler/icons-react"
+
 import { Button } from "@/components/ui/button"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
 export default function Topbar() {
   const location = useLocation()
@@ -11,44 +20,46 @@ export default function Topbar() {
   const pathSegments = location.pathname.split("/").filter(Boolean)
 
   const handleLogout = () => {
-    // Navigasi ke halaman auth saat logout
     navigate("/auth")
   }
 
   return (
     <header className="h-16 border-b bg-background px-6 flex items-center justify-between text-foreground">
-      {/* Dynamic Breadcrumb / Current Location */}
-      <nav aria-label="Breadcrumb" className="flex items-center space-x-2 text-sm font-medium">
-        <Link
-          to="/"
-          className="text-muted-foreground hover:text-foreground transition-colors capitalize"
-        >
-          Home
-        </Link>
-        {pathSegments.map((segment, index) => {
-          const url = `/${pathSegments.slice(0, index + 1).join("/")}`
-          const isLast = index === pathSegments.length - 1
-          const title = segment.replace(/-/g, " ")
+      {/* Dynamic Breadcrumb Shadcn */}
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">Home</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
 
-          return (
-            <React.Fragment key={url}>
-              <span className="text-muted-foreground/60">/</span>
-              {isLast ? (
-                <span className="font-semibold text-foreground capitalize">
-                  {title}
-                </span>
-              ) : (
-                <Link
-                  to={url}
-                  className="text-muted-foreground hover:text-foreground transition-colors capitalize"
-                >
-                  {title}
-                </Link>
-              )}
-            </React.Fragment>
-          )
-        })}
-      </nav>
+          {pathSegments.map((segment, index) => {
+            const url = `/${pathSegments.slice(0, index + 1).join("/")}`
+            const isLast = index === pathSegments.length - 1
+            const title = segment.replace(/-/g, " ")
+
+            return (
+              <React.Fragment key={url}>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  {isLast ? (
+                    <BreadcrumbPage className="capitalize font-semibold">
+                      {title}
+                    </BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link to={url} className="capitalize">
+                        {title}
+                      </Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </React.Fragment>
+            )
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
