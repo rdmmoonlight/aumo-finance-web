@@ -1,8 +1,19 @@
-import apiClient from '@/services/apiClient';
-
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { Link } from 'react-router-dom';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  IconSitemap,
+  IconPlus,
+  IconPencil,
+  IconNotebook,
+  IconTrash,
+  IconAlertTriangleFilled,
+  IconCircleCheckFilled,
+  IconX,
+  IconInfoCircle,
+} from '@tabler/icons-react';
+
+import apiClient from '@/services/apiClient';
+import { Button } from '@/components/ui/button';
 
 export interface ChartOfAccount {
   id: number;
@@ -42,9 +53,6 @@ const validateReferenceNumber = (type: string, refNum: number) => {
   return refNum >= range.start && refNum <= range.end;
 };
 
-const rawApiUrl = process.env.API_URL || 'https://my-authentic-web-api.onrender.com';
-const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
-
 function ChartOfAccountsContent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -77,7 +85,7 @@ function ChartOfAccountsContent() {
   const handleUnauthorized = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('userId');
-      navigate('/');
+      navigate('/auth');
     }
   };
 
@@ -85,30 +93,18 @@ function ChartOfAccountsContent() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error('Failed to load Chart of Accounts data from the server.');
-      }
-
+      const response = await apiClient.get('/api/v1/chart-of-accounts');
       const rawData = response.data;
       const loadedAccounts: ChartOfAccount[] = rawData?.accounts || [];
       setSelectedPeriodName(rawData?.selectedPeriodName || null);
 
       setAccounts(loadedAccounts.sort((a, b) => a.referenceNumber - b.referenceNumber));
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to connect to the backend server.');
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setErrorMessage(err.response?.data?.message || err.message || 'Failed to connect to the backend server.');
       setAccounts([]);
     } finally {
       setLoading(false);
@@ -161,25 +157,8 @@ function ChartOfAccountsContent() {
         role: newAccount.role || 'Default',
       };
 
-      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-        data: payload,
-      });
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      const resData = response.data.catch(() => ({}));
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error(resData.message || 'Failed to save the new account.');
-      }
+      const response = await apiClient.post('/api/v1/chart-of-accounts', payload);
+      const resData = response.data || {};
 
       setSuccessMessage(resData.message || `Account '${payload.accountName}' was successfully created.`);
       setNewAccount({ type: '', referenceNumber: 0, accountName: '', role: 'Default' });
@@ -187,7 +166,11 @@ function ChartOfAccountsContent() {
 
       await fetchAccounts();
     } catch (err: any) {
-      setCreateError(err.message || 'An error occurred while creating the account.');
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setCreateError(err.response?.data?.message || err.message || 'An error occurred while creating the account.');
     }
   };
 
@@ -225,32 +208,19 @@ function ChartOfAccountsContent() {
         isActive: editAccount.isActive,
       };
 
-      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts/${editAccount.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-        data: payload,
-      });
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      const resData = response.data.catch(() => ({}));
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error(resData.message || 'Failed to update the account.');
-      }
+      const response = await apiClient.put(`/api/v1/chart-of-accounts/${editAccount.id}`, payload);
+      const resData = response.data || {};
 
       setSuccessMessage(resData.message || `Account '${editAccount.accountName}' was successfully updated.`);
       setIsEditModalOpen(false);
 
       await fetchAccounts();
     } catch (err: any) {
-      setEditError(err.message || 'An error occurred while updating the account.');
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setEditError(err.response?.data?.message || err.message || 'An error occurred while updating the account.');
     }
   };
 
@@ -260,101 +230,87 @@ function ChartOfAccountsContent() {
     }
 
     try {
-      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts/${account.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        withCredentials: true,
-      });
-
-      if (response.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      const resData = response.data.catch(() => ({}));
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error(resData.message || 'Failed to delete the account.');
-      }
+      const response = await apiClient.delete(`/api/v1/chart-of-accounts/${account.id}`);
+      const resData = response.data || {};
 
       setSuccessMessage(resData.message || `Account '${account.accountName}' was successfully deleted.`);
       await fetchAccounts();
     } catch (err: any) {
-      setErrorMessage(err.message || 'An error occurred while deleting the account.');
+      if (err.response?.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      setErrorMessage(err.response?.data?.message || err.message || 'An error occurred while deleting the account.');
     }
   };
 
   const getLedgerUrl = (account: ChartOfAccount) => {
-    return `/reports/general-ledger#account-${account.id}`;
+    return `/reports/general-ledger/permanent#account-${account.id}`;
   };
 
   return (
-    <div className="coa-container">
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="coa-header">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="coa-title">
-            <i className="ti ti-sitemap coa-title-icon"></i> Chart of Accounts
-          </h2>
-          <p className="coa-subtitle">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+            <IconSitemap className="text-amber-500" size={28} /> Chart of Accounts
+          </h1>
+          <p className="text-xs text-zinc-400 mt-1">
             Master list of financial accounts {selectedPeriodName ? `(Viewing Period: ${selectedPeriodName})` : ''}.
           </p>
         </div>
         <div>
-          <button
-            className="btn-warning-custom"
+          <Button
             onClick={() => {
               setCreateError(null);
               setIsAddModalOpen(true);
             }}
+            className="bg-amber-600 hover:bg-amber-500 text-white gap-2 font-medium text-xs h-9"
           >
-            <i className="ti ti-plus"></i> New Account
-          </button>
+            <IconPlus size={16} /> New Account
+          </Button>
         </div>
       </div>
 
       {/* Alerts */}
       {errorMessage && (
-        <div className="coa-alert coa-alert-danger">
-          <div className="coa-alert-content">
-            <i className="ti ti-alert-triangle-filled"></i>
+        <div className="p-4 rounded-lg bg-red-950/50 border border-red-800 text-red-200 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <IconAlertTriangleFilled size={18} className="text-red-400 shrink-0" />
             <span>{errorMessage}</span>
           </div>
-          <button type="button" className="coa-alert-close" onClick={() => setErrorMessage(null)}>
-            <i className="ti ti-x"></i>
+          <button type="button" onClick={() => setErrorMessage(null)} className="text-red-400 hover:text-red-200">
+            <IconX size={16} />
           </button>
         </div>
       )}
 
       {successMessage && (
-        <div className="coa-alert coa-alert-success">
-          <div className="coa-alert-content">
-            <i className="ti ti-circle-check-filled"></i>
+        <div className="p-4 rounded-lg bg-emerald-950/50 border border-emerald-800 text-emerald-200 text-xs flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <IconCircleCheckFilled size={18} className="text-emerald-400 shrink-0" />
             <span>{successMessage}</span>
           </div>
-          <button type="button" className="coa-alert-close" onClick={() => setSuccessMessage(null)}>
-            <i className="ti ti-x"></i>
+          <button type="button" onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-emerald-200">
+            <IconX size={16} />
           </button>
         </div>
       )}
 
       {/* COA Table Card */}
-      <div className="coa-card">
-        <div className="coa-card-header">
-          <div className="coa-controls">
+      <div className="border border-zinc-800 bg-zinc-950 rounded-xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <input
               type="text"
-              className="coa-input"
-              style={{ width: '240px' }}
+              className="h-9 w-60 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
               placeholder="Search accounts..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
             <select
-              className="coa-select"
-              style={{ width: '180px' }}
+              className="h-9 w-44 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
             >
@@ -366,322 +322,346 @@ function ChartOfAccountsContent() {
               ))}
             </select>
           </div>
-          <span className="coa-subtitle" style={{ fontWeight: 600 }}>
+          <span className="text-xs font-semibold text-zinc-400">
             Total Accounts: {filteredAccounts.length}
           </span>
         </div>
 
-        <div className="coa-card-body">
-          <div className="coa-table-wrapper">
-            <table className="coa-table">
-              <thead>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-zinc-300">
+            <thead className="border-b border-zinc-800 bg-zinc-900/50 uppercase text-[10px] font-semibold text-zinc-400 tracking-wider">
+              <tr>
+                <th className="pl-6 py-3 w-28">Ref No.</th>
+                <th className="py-3">Account Name</th>
+                <th className="py-3">Category</th>
+                <th className="py-3">Role</th>
+                <th className="py-3 text-right">Current Balance</th>
+                <th className="py-3 text-center w-24">Status</th>
+                <th className="py-3 text-center pr-6 w-32">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/60">
+              {loading ? (
                 <tr>
-                  <th style={{ paddingLeft: '1.5rem', width: '120px' }}>Ref No.</th>
-                  <th>Account Name</th>
-                  <th>Category</th>
-                  <th>Role</th>
-                  <th style={{ textAlign: 'right' }}>Current Balance</th>
-                  <th style={{ textAlign: 'center', width: '100px' }}>Status</th>
-                  <th style={{ textAlign: 'center', paddingRight: '1.5rem', width: '130px' }}>Action</th>
+                  <td colSpan={7} className="text-center py-10 text-zinc-400">
+                    <span className="inline-block animate-spin mr-2">⏳</span> Loading account data from server...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '2rem 0', color: '#ffffff' }}>
-                      <span className="coa-spinner" style={{ marginRight: '0.5rem' }}></span>
-                      Loading account data from server...
+              ) : filteredAccounts.length > 0 ? (
+                filteredAccounts.map((account) => (
+                  <tr
+                    key={account.id}
+                    id={`account-${account.id}`}
+                    className={`hover:bg-zinc-900/40 transition-colors ${
+                      highlightId === String(account.id) ? 'bg-amber-950/30' : ''
+                    }`}
+                  >
+                    <td className="pl-6 py-3 font-mono text-sky-400 font-medium">
+                      {account.referenceNumber}
                     </td>
-                  </tr>
-                ) : filteredAccounts.length > 0 ? (
-                  filteredAccounts.map((account) => (
-                    <tr
-                      key={account.id}
-                      id={`account-${account.id}`}
-                      className={highlightId === String(account.id) ? 'highlight-row' : ''}
-                    >
-                      <td style={{ paddingLeft: '1.5rem' }}>
-                        <code style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{account.referenceNumber}</code>
-                      </td>
-                      <td style={{ fontWeight: 700 }}>{account.accountName}</td>
-                      <td>
-                        <span className="badge-custom badge-sec">{account.type}</span>
-                      </td>
-                      <td>
-                        {account.role !== 'Default' ? (
-                          <span className="badge-custom badge-info">{account.role}</span>
-                        ) : (
-                          <span className="coa-subtitle" style={{ fontSize: '0.75rem' }}>Standard</span>
-                        )}
-                      </td>
-                      <td
-                        style={{
-                          textAlign: 'right',
-                          fontWeight: 600,
-                          color: account.balance >= 0 ? '#4ade80' : '#fca5a5',
-                        }}
-                      >
-                        Rp {account.balance.toLocaleString('en-US')}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <span className={`badge-custom ${account.isActive ? 'badge-active' : 'badge-inactive'}`}>
-                          {account.isActive ? 'Active' : 'Inactive'}
+                    <td className="py-3 font-semibold text-zinc-100">{account.accountName}</td>
+                    <td className="py-3">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-800 text-zinc-300 border border-zinc-700/50">
+                        {account.type}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      {account.role !== 'Default' ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-sky-950 text-sky-300 border border-sky-800/50">
+                          {account.role}
                         </span>
-                      </td>
-                      <td style={{ textAlign: 'center', paddingRight: '1.5rem' }}>
-                        <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
-                          <button
-                            type="button"
-                            className="btn-icon-custom"
-                            title="Edit Account"
-                            onClick={() => openEditModal(account)}
-                          >
-                            <i className="ti ti-pencil"></i>
-                          </button>
-                          <Link to={getLedgerUrl(account)}
-                            className="btn-icon-custom btn-icon-info"
-                            title="View General Ledger"
-                          >
-                            <i className="ti ti-notebook"></i>
-                          </Link>
-                          <button
-                            type="button"
-                            className="btn-icon-custom btn-icon-danger"
-                            title="Delete Account"
-                            onClick={() => confirmAndDelete(account)}
-                          >
-                            <i className="ti ti-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '3rem 0', color: '#ffffff' }}>
-                      <i className="ti ti-sitemap" style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}></i>
-                      No accounts found. Add a new account to get started.
+                      ) : (
+                        <span className="text-zinc-500 text-[11px]">Standard</span>
+                      )}
+                    </td>
+                    <td
+                      className={`py-3 text-right font-medium ${
+                        account.balance >= 0 ? 'text-emerald-400' : 'text-red-400'
+                      }`}
+                    >
+                      Rp {account.balance.toLocaleString('en-US')}
+                    </td>
+                    <td className="py-3 text-center">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                          account.isActive
+                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/50'
+                            : 'bg-zinc-800 text-zinc-500 border border-zinc-700/50'
+                        }`}
+                      >
+                        {account.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="py-3 text-center pr-6">
+                      <div className="inline-flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                          title="Edit Account"
+                          onClick={() => openEditModal(account)}
+                        >
+                          <IconPencil size={15} />
+                        </Button>
+                        <Link
+                          to={getLedgerUrl(account)}
+                          className="h-7 w-7 inline-flex items-center justify-center rounded-md text-sky-400 hover:bg-sky-950/50 transition-colors"
+                          title="View General Ledger"
+                        >
+                          <IconNotebook size={15} />
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                          title="Delete Account"
+                          onClick={() => confirmAndDelete(account)}
+                        >
+                          <IconTrash size={15} />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-zinc-400">
+                    <IconSitemap className="mx-auto text-zinc-600 mb-2" size={36} />
+                    No accounts found. Add a new account to get started.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* REACT MODAL: ADD ACCOUNT */}
+      {/* MODAL: ADD ACCOUNT */}
       {isAddModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsAddModalOpen(false)}>
-          <div className="modal-dialog-custom" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-custom">
-              <h5 className="modal-title-custom">
-                <i className="ti ti-circle-plus" style={{ color: '#f59e0b' }}></i> Add New Account
-              </h5>
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-md overflow-hidden shadow-xl">
+            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                <IconPlus className="text-amber-500" size={18} /> Add New Account
+              </h3>
               <button
                 type="button"
-                className="coa-alert-close"
+                className="text-zinc-400 hover:text-zinc-100"
                 onClick={() => setIsAddModalOpen(false)}
               >
-                <i className="ti ti-x"></i>
+                <IconX size={18} />
               </button>
             </div>
-            <form onSubmit={handleCreate}>
-              <div className="modal-body-custom">
-                {createError && <div className="coa-alert coa-alert-danger">{createError}</div>}
-
-                <div className="form-group-custom">
-                  <label className="form-label-custom">Account Category</label>
-                  <select
-                    className="coa-select"
-                    value={newAccount.type}
-                    onChange={(e) =>
-                      setNewAccount({
-                        ...newAccount,
-                        type: e.target.value,
-                        referenceNumber: ACCOUNT_RANGES[e.target.value]?.start || 0,
-                      })
-                    }
-                    required
-                  >
-                    <option value="">-- Select Category --</option>
-                    {ACCOUNT_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {formatCategoryLabel(type)}
-                      </option>
-                    ))}
-                  </select>
+            <form onSubmit={handleCreate} className="p-4 space-y-4">
+              {createError && (
+                <div className="p-3 rounded-lg bg-red-950/50 border border-red-800 text-red-200 text-xs">
+                  {createError}
                 </div>
+              )}
 
-                <div className="form-group-custom">
-                  <label className="form-label-custom">Reference Number (Account Code)</label>
-                  <input
-                    type="number"
-                    className="coa-input"
-                    value={newAccount.referenceNumber || ''}
-                    disabled={!newAccount.type}
-                    onChange={(e) =>
-                      setNewAccount({ ...newAccount, referenceNumber: Number(e.target.value) })
-                    }
-                    required
-                  />
-                  {newAccount.type ? (
-                    <div className="form-hint-custom">
-                      <i className="ti ti-info-circle"></i> Valid range: {ACCOUNT_RANGES[newAccount.type]?.start} - {ACCOUNT_RANGES[newAccount.type]?.end}
-                    </div>
-                  ) : (
-                    <div className="coa-subtitle" style={{ fontSize: '0.75rem' }}>
-                      Please select a category to view the valid numbering range.
-                    </div>
-                  )}
-                </div>
-
-                <div className="form-group-custom">
-                  <label className="form-label-custom">Account Name</label>
-                  <input
-                    type="text"
-                    className="coa-input"
-                    placeholder="e.g. Rent Expense"
-                    value={newAccount.accountName || ''}
-                    onChange={(e) => setNewAccount({ ...newAccount, accountName: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="form-group-custom">
-                  <label className="form-label-custom">System Role (Special Calculations)</label>
-                  <select
-                    className="coa-select"
-                    value={newAccount.role}
-                    onChange={(e) => setNewAccount({ ...newAccount, role: e.target.value })}
-                  >
-                    <option value="Default">Standard / Default</option>
-                    <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
-                    <option value="RetainedEarnings">Retained Earnings</option>
-                    <option value="TaxPayable">Tax Payable</option>
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">Account Category</label>
+                <select
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={newAccount.type}
+                  onChange={(e) =>
+                    setNewAccount({
+                      ...newAccount,
+                      type: e.target.value,
+                      referenceNumber: ACCOUNT_RANGES[e.target.value]?.start || 0,
+                    })
+                  }
+                  required
+                >
+                  <option value="">-- Select Category --</option>
+                  {ACCOUNT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {formatCategoryLabel(type)}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="modal-footer-custom">
-                <button
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">Reference Number (Account Code)</label>
+                <input
+                  type="number"
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-50"
+                  value={newAccount.referenceNumber || ''}
+                  disabled={!newAccount.type}
+                  onChange={(e) =>
+                    setNewAccount({ ...newAccount, referenceNumber: Number(e.target.value) })
+                  }
+                  required
+                />
+                {newAccount.type ? (
+                  <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-1">
+                    <IconInfoCircle size={14} className="text-amber-500" /> Valid range: {ACCOUNT_RANGES[newAccount.type]?.start} - {ACCOUNT_RANGES[newAccount.type]?.end}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-zinc-500 mt-1">
+                    Please select a category to view the valid numbering range.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">Account Name</label>
+                <input
+                  type="text"
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  placeholder="e.g. Rent Expense"
+                  value={newAccount.accountName || ''}
+                  onChange={(e) => setNewAccount({ ...newAccount, accountName: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">System Role (Special Calculations)</label>
+                <select
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={newAccount.role}
+                  onChange={(e) => setNewAccount({ ...newAccount, role: e.target.value })}
+                >
+                  <option value="Default">Standard / Default</option>
+                  <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
+                  <option value="RetainedEarnings">Retained Earnings</option>
+                  <option value="TaxPayable">Tax Payable</option>
+                </select>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-zinc-800">
+                <Button
                   type="button"
-                  className="btn-secondary-custom"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-zinc-400 hover:text-zinc-100"
                   onClick={() => setIsAddModalOpen(false)}
                 >
                   Cancel
-                </button>
-                <button type="submit" className="btn-primary-custom">
+                </Button>
+                <Button type="submit" size="sm" className="bg-amber-600 hover:bg-amber-500 text-white text-xs">
                   Save Account
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* REACT MODAL: EDIT ACCOUNT */}
+      {/* MODAL: EDIT ACCOUNT */}
       {isEditModalOpen && editAccount && (
-        <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)}>
-          <div className="modal-dialog-custom" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header-custom">
-              <h5 className="modal-title-custom">
-                <i className="ti ti-edit" style={{ color: '#f59e0b' }}></i> Edit Account
-              </h5>
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-md overflow-hidden shadow-xl">
+            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+                <IconPencil className="text-amber-500" size={18} /> Edit Account
+              </h3>
               <button
                 type="button"
-                className="coa-alert-close"
+                className="text-zinc-400 hover:text-zinc-100"
                 onClick={() => setIsEditModalOpen(false)}
               >
-                <i className="ti ti-x"></i>
+                <IconX size={18} />
               </button>
             </div>
-            <form onSubmit={handleEdit}>
-              <div className="modal-body-custom">
-                {editError && <div className="coa-alert coa-alert-danger">{editError}</div>}
-
-                <div className="form-group-custom">
-                  <label className="form-label-custom">Account Category</label>
-                  <select
-                    className="coa-select"
-                    value={editAccount.type}
-                    onChange={(e) => setEditAccount({ ...editAccount, type: e.target.value })}
-                    required
-                  >
-                    <option value="">-- Select Category --</option>
-                    {ACCOUNT_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {formatCategoryLabel(type)}
-                      </option>
-                    ))}
-                  </select>
+            <form onSubmit={handleEdit} className="p-4 space-y-4">
+              {editError && (
+                <div className="p-3 rounded-lg bg-red-950/50 border border-red-800 text-red-200 text-xs">
+                  {editError}
                 </div>
+              )}
 
-                <div className="form-group-custom">
-                  <label className="form-label-custom">Reference Number (Account Code)</label>
-                  <input
-                    type="number"
-                    className="coa-input"
-                    value={editAccount.referenceNumber}
-                    onChange={(e) =>
-                      setEditAccount({
-                        ...editAccount,
-                        referenceNumber: Number(e.target.value),
-                      })
-                    }
-                    required
-                  />
-                  {editAccount.type && (
-                    <div className="form-hint-custom">
-                      <i className="ti ti-info-circle"></i> Valid range: {ACCOUNT_RANGES[editAccount.type]?.start} - {ACCOUNT_RANGES[editAccount.type]?.end}
-                    </div>
-                  )}
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">Account Category</label>
+                <select
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={editAccount.type}
+                  onChange={(e) => setEditAccount({ ...editAccount, type: e.target.value })}
+                  required
+                >
+                  <option value="">-- Select Category --</option>
+                  {ACCOUNT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {formatCategoryLabel(type)}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div className="form-group-custom">
-                  <label className="form-label-custom">Account Name</label>
-                  <input
-                    type="text"
-                    className="coa-input"
-                    value={editAccount.accountName}
-                    onChange={(e) => setEditAccount({ ...editAccount, accountName: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">Reference Number (Account Code)</label>
+                <input
+                  type="number"
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={editAccount.referenceNumber}
+                  onChange={(e) =>
+                    setEditAccount({
+                      ...editAccount,
+                      referenceNumber: Number(e.target.value),
+                    })
+                  }
+                  required
+                />
+                {editAccount.type && (
+                  <p className="text-[11px] text-zinc-400 flex items-center gap-1 mt-1">
+                    <IconInfoCircle size={14} className="text-amber-500" /> Valid range: {ACCOUNT_RANGES[editAccount.type]?.start} - {ACCOUNT_RANGES[editAccount.type]?.end}
+                  </p>
+                )}
+              </div>
 
-                <div className="form-group-custom">
-                  <label className="form-label-custom">System Role (Special Calculations)</label>
-                  <select
-                    className="coa-select"
-                    value={editAccount.role}
-                    onChange={(e) => setEditAccount({ ...editAccount, role: e.target.value })}
-                  >
-                    <option value="Default">Standard / Default</option>
-                    <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
-                    <option value="RetainedEarnings">Retained Earnings</option>
-                    <option value="TaxPayable">Tax Payable</option>
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">Account Name</label>
+                <input
+                  type="text"
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={editAccount.accountName}
+                  onChange={(e) => setEditAccount({ ...editAccount, accountName: e.target.value })}
+                  required
+                />
+              </div>
 
-                <label className="form-switch-custom">
-                  <input
-                    type="checkbox"
-                    checked={editAccount.isActive}
-                    onChange={(e) => setEditAccount({ ...editAccount, isActive: e.target.checked })}
-                  />
-                  <span className="form-label-custom">Active Account</span>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-zinc-300">System Role (Special Calculations)</label>
+                <select
+                  className="w-full h-9 rounded-lg bg-zinc-900 border border-zinc-800 px-3 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={editAccount.role}
+                  onChange={(e) => setEditAccount({ ...editAccount, role: e.target.value })}
+                >
+                  <option value="Default">Standard / Default</option>
+                  <option value="CashAndEquivalents">Cash &amp; Equivalents</option>
+                  <option value="RetainedEarnings">Retained Earnings</option>
+                  <option value="TaxPayable">Tax Payable</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  className="rounded border-zinc-800 bg-zinc-900 text-amber-500 focus:ring-amber-500"
+                  checked={editAccount.isActive}
+                  onChange={(e) => setEditAccount({ ...editAccount, isActive: e.target.checked })}
+                />
+                <label htmlFor="isActive" className="text-xs font-medium text-zinc-300 cursor-pointer">
+                  Active Account
                 </label>
               </div>
-              <div className="modal-footer-custom">
-                <button
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-zinc-800">
+                <Button
                   type="button"
-                  className="btn-secondary-custom"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-zinc-400 hover:text-zinc-100"
                   onClick={() => setIsEditModalOpen(false)}
                 >
                   Cancel
-                </button>
-                <button type="submit" className="btn-primary-custom">
+                </Button>
+                <Button type="submit" size="sm" className="bg-amber-600 hover:bg-amber-500 text-white text-xs">
                   Update Account
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -695,9 +675,8 @@ export default function ChartOfAccountsPage() {
   return (
     <Suspense
       fallback={
-        <div style={{ textAlign: 'center', padding: '5rem 0', color: '#ffffff' }}>
-          <span className="coa-spinner" style={{ width: '1.5rem', height: '1.5rem', marginRight: '0.5rem' }}></span>
-          <span>Loading chart of accounts...</span>
+        <div className="text-center py-20 text-zinc-400 text-xs">
+          <span className="inline-block animate-spin mr-2">⏳</span> Loading chart of accounts...
         </div>
       }
     >
