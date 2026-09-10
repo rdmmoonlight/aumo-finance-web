@@ -1,21 +1,10 @@
-import React from 'react';
-import AppRouter from './router';
-
-export default function App() {
-  return (
-    <React.Fragment>
-      <AppRouter />
-    </React.Fragment>
-  );
-}
-
-import React from 'react';
+// app/App.tsx - INI BOX MCB NYA
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Layout Import
+// LAYOUT - Temboknya
 import AppLayout from '@/components/layout/AppLayout';
 
-// Direct Page Imports
+// HALAMAN
 import HomePage from '@/pages/HomePage';
 import AuthPage from '@/pages/AuthPage';
 import AIAssistantPage from '@/pages/AIAssistantPage';
@@ -27,7 +16,7 @@ import PeriodsPage from '@/pages/PeriodsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import ToolsPage from '@/pages/ToolsPage';
 
-// Reports Page Imports
+// Reports
 import AdjustingJournalPage from '@/pages/reports/adjusting-journal/AdjustingJournalPage';
 import ClosingJournalPage from '@/pages/reports/closing-journal/ClosingJournalPage';
 import GeneralJournalPage from '@/pages/reports/general-journal/GeneralJournalPage';
@@ -42,19 +31,15 @@ import PostClosingTrialBalancePage from '@/pages/reports/trial-balance/post-clos
 import UnadjustedTrialBalancePage from '@/pages/reports/trial-balance/unadjusted/UnadjustedTrialBalancePage';
 import WorksheetPage from '@/pages/reports/worksheet/WorksheetPage';
 
-export default function AppRouter() {
+export default function App() {
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
+    // MCB UTAMA: Router
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
-        {/* Public Route */}
+        {/* MCB 1: Jalur Public - tanpa tembok */}
         <Route path="/auth" element={<AuthPage />} />
 
-        {/* Protected App Routes (Wrapped inside AppLayout) */}
+        {/* MCB 2: Jalur Private - semua lewat tembok AppLayout */}
         <Route element={<AppLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -66,25 +51,23 @@ export default function AppRouter() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/tools" element={<ToolsPage />} />
 
-          {/* Reports Sub-routes */}
-          <Route path="/reports">
-            <Route path="general-journal" element={<GeneralJournalPage />} />
-            <Route path="adjusting-journal" element={<AdjustingJournalPage />} />
-            <Route path="closing-journal" element={<ClosingJournalPage />} />
-            <Route path="general-ledger/permanent" element={<PermanentLedgerPage />} />
-            <Route path="general-ledger/temporary" element={<TemporaryLedgerPage />} />
-            <Route path="income-statement" element={<IncomeStatementPage />} />
-            <Route path="retained-earnings" element={<RetainedEarningsPage />} />
-            <Route path="statement-of-cash-flow" element={<StatementOfCashFlowPage />} />
-            <Route path="statement-of-financial-position" element={<StatementOfFinancialPositionPage />} />
-            <Route path="trial-balance/unadjusted" element={<UnadjustedTrialBalancePage />} />
-            <Route path="trial-balance/adjusted" element={<AdjustedTrialBalancePage />} />
-            <Route path="trial-balance/post-closing" element={<PostClosingTrialBalancePage />} />
-            <Route path="worksheet" element={<WorksheetPage />} />
-          </Route>
+          {/* Laporan */}
+          <Route path="/reports/general-journal" element={<GeneralJournalPage />} />
+          <Route path="/reports/adjusting-journal" element={<AdjustingJournalPage />} />
+          <Route path="/reports/closing-journal" element={<ClosingJournalPage />} />
+          <Route path="/reports/general-ledger/permanent" element={<PermanentLedgerPage />} />
+          <Route path="/reports/general-ledger/temporary" element={<TemporaryLedgerPage />} />
+          <Route path="/reports/income-statement" element={<IncomeStatementPage />} />
+          <Route path="/reports/retained-earnings" element={<RetainedEarningsPage />} />
+          <Route path="/reports/statement-of-cash-flow" element={<StatementOfCashFlowPage />} />
+          <Route path="/reports/statement-of-financial-position" element={<StatementOfFinancialPositionPage />} />
+          <Route path="/reports/trial-balance/unadjusted" element={<UnadjustedTrialBalancePage />} />
+          <Route path="/reports/trial-balance/adjusted" element={<AdjustedTrialBalancePage />} />
+          <Route path="/reports/trial-balance/post-closing" element={<PostClosingTrialBalancePage />} />
+          <Route path="/reports/worksheet" element={<WorksheetPage />} />
         </Route>
 
-        {/* Fallback Route */}
+        {/* MCB Pengaman: kalau salah ketik url, lempar ke home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
