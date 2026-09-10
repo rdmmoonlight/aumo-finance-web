@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -60,10 +61,10 @@ export default function ClosingJournalReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/closing-journal`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/reports/closing-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Identity Cookie Session
+        withCredentials: true, // Identity Cookie Session
       });
 
       if (response.status === 401) {
@@ -76,11 +77,11 @@ export default function ClosingJournalReportPage() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load Closing Journal data from the server.');
       }
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data?.hasPeriodSelected === false) {
         setNoPeriodSelected(true);

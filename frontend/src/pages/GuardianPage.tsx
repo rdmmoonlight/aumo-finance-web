@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 import React, { useState, useEffect } from 'react';
 import {
   IconShieldCheck,
@@ -73,15 +74,15 @@ export default function GuardianSecurityPage() {
         setIsLoading(true);
         setErrorMessage(null);
 
-        const response = await fetch(`${API_BASE_URL}/api/v1/guardian`, {
+        const response = await apiClient.get(`${API_BASE_URL}/api/v1/guardian`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          withCredentials: true,
         });
 
-        if (!response.ok) throw new Error('Gagal mengambil data keamanan.');
+        if (response.status !== 200 && response.status !== 201) throw new Error('Gagal mengambil data keamanan.');
 
-        const json = await response.json();
+        const json = response.data;
 
         if (json.success && json.data) {
           setViewModel(json.data);
@@ -104,13 +105,13 @@ export default function GuardianSecurityPage() {
     if (!window.confirm(`Akhiri sesi untuk perangkat "${deviceName || 'ini'}"?`)) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/guardian/revoke-session/${sessionId}`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/guardian/revoke-session/${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        withCredentials: true,
       });
 
-      if (!response.ok) throw new Error('Gagal mengakhiri sesi.');
+      if (response.status !== 200 && response.status !== 201) throw new Error('Gagal mengakhiri sesi.');
 
       setActiveSessionsList((prev) => prev.filter((s) => s.id !== sessionId));
       setSuccessMessage('Sesi berhasil diakhiri.');
@@ -124,13 +125,13 @@ export default function GuardianSecurityPage() {
     if (!window.confirm('Emergency Lockout: Apakah Anda yakin ingin keluar dari SEMUA perangkat lain?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/guardian/revoke-all`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/guardian/revoke-all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        withCredentials: true,
       });
 
-      if (!response.ok) throw new Error('Gagal mengakhiri semua sesi.');
+      if (response.status !== 200 && response.status !== 201) throw new Error('Gagal mengakhiri semua sesi.');
 
       setActiveSessionsList((prev) => prev.filter((s) => s.isCurrent));
       setSuccessMessage('Semua sesi perangkat lain telah berhasil diakhiri.');

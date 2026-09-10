@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -50,12 +51,12 @@ export default function AdjustedTrialBalancePage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/trial-balance/adjusted`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/reports/trial-balance/adjusted`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Menggunakan Identity Cookie Session
+        withCredentials: true, // Menggunakan Identity Cookie Session
       });
 
       if (response.status === 401) {
@@ -64,11 +65,11 @@ export default function AdjustedTrialBalancePage() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load Adjusted Trial Balance data from the server.');
       }
 
-      const rawData = await response.json();
+      const rawData = response.data;
 
       // Tangani kondisi saat belum ada periode terpilih
       if (rawData?.hasPeriodSelected === false) {

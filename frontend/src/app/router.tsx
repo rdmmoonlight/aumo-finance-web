@@ -1,33 +1,35 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AppLayout from './layout/AppLayout';
+
+// Layout Import
+import AppLayout from '@/components/layout/AppLayout';
 
 // Direct Page Imports
-import HomePage from '../pages/home/HomePage';
-import AuthPage from '../pages/auth/AuthPage';
-import AIAssistantPage from '../pages/ai-assistant/AIAssistantPage';
-import DashboardPage from '../pages/dashboard/DashboardPage';
-import GuardianPage from '../pages/guardian/GuardianPage';
-import ChartOfAccountsPage from '../pages/chart-of-accounts/ChartOfAccountsPage';
-import JournalEntryPage from '../pages/journal-entry/JournalEntryPage';
-import PeriodsPage from '../pages/periods/PeriodsPage';
-import SettingsPage from '../pages/settings/SettingsPage';
-import ToolsPage from '../pages/tools/ToolsPage';
+import HomePage from '@/pages/HomePage';
+import AuthPage from '@/pages/AuthPage';
+import AIAssistantPage from '@/pages/AIAssistantPage';
+import DashboardPage from '@/pages/DashboardPage';
+import GuardianPage from '@/pages/GuardianPage';
+import ChartOfAccountsPage from '@/pages/ChartOfAccountsPage';
+import JournalEntryPage from '@/pages/JournalEntryPage';
+import PeriodsPage from '@/pages/PeriodsPage';
+import SettingsPage from '@/pages/SettingsPage';
+import ToolsPage from '@/pages/ToolsPage';
 
 // Reports Page Imports
-import AdjustingJournalPage from '../pages/reports/adjusting-journal/AdjustingJournalPage';
-import ClosingJournalPage from '../pages/reports/closing-journal/ClosingJournalPage';
-import GeneralJournalPage from '../pages/reports/general-journal/GeneralJournalPage';
-import PermanentLedgerPage from '../pages/reports/general-ledger/permanent/PermanentLedgerPage';
-import TemporaryLedgerPage from '../pages/reports/general-ledger/temporary/TemporaryLedgerPage';
-import IncomeStatementPage from '../pages/reports/income-statement/IncomeStatementPage';
-import RetainedEarningsPage from '../pages/reports/retained-earnings/RetainedEarningsPage';
-import StatementOfCashFlowPage from '../pages/reports/statement-of-cash-flow/StatementOfCashFlowPage';
-import StatementOfFinancialPositionPage from '../pages/reports/statement-of-financial-position/StatementOfFinancialPositionPage';
-import AdjustedTrialBalancePage from '../pages/reports/trial-balance/adjusted/AdjustedTrialBalancePage';
-import PostClosingTrialBalancePage from '../pages/reports/trial-balance/post-closing/PostClosingTrialBalancePage';
-import UnadjustedTrialBalancePage from '../pages/reports/trial-balance/unadjusted/UnadjustedTrialBalancePage';
-import WorksheetPage from '../pages/reports/worksheet/WorksheetPage';
+import AdjustingJournalPage from '@/pages/reports/adjusting-journal/AdjustingJournalPage';
+import ClosingJournalPage from '@/pages/reports/closing-journal/ClosingJournalPage';
+import GeneralJournalPage from '@/pages/reports/general-journal/GeneralJournalPage';
+import PermanentLedgerPage from '@/pages/reports/general-ledger/permanent/PermanentLedgerPage';
+import TemporaryLedgerPage from '@/pages/reports/general-ledger/temporary/TemporaryLedgerPage';
+import IncomeStatementPage from '@/pages/reports/income-statement/IncomeStatementPage';
+import RetainedEarningsPage from '@/pages/reports/retained-earnings/RetainedEarningsPage';
+import StatementOfCashFlowPage from '@/pages/reports/statement-of-cash-flow/StatementOfCashFlowPage';
+import StatementOfFinancialPositionPage from '@/pages/reports/statement-of-financial-position/StatementOfFinancialPositionPage';
+import AdjustedTrialBalancePage from '@/pages/reports/trial-balance/adjusted/AdjustedTrialBalancePage';
+import PostClosingTrialBalancePage from '@/pages/reports/trial-balance/post-closing/PostClosingTrialBalancePage';
+import UnadjustedTrialBalancePage from '@/pages/reports/trial-balance/unadjusted/UnadjustedTrialBalancePage';
+import WorksheetPage from '@/pages/reports/worksheet/WorksheetPage';
 
 export default function AppRouter() {
   return (

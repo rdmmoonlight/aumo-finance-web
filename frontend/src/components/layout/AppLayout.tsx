@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from "@/lib/utils"
 
 export default function AppLayout() {
   return (

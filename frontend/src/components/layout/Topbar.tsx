@@ -1,7 +1,7 @@
 import React from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { IconLogout } from "@tabler/icons-react"
-
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Breadcrumb,

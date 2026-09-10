@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -56,12 +57,12 @@ export default function TemporaryGeneralLedgerPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-ledger/temporary`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/reports/general-ledger/temporary`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Menggunakan Identity Cookie Session
+        withCredentials: true, // Menggunakan Identity Cookie Session
       });
 
       if (response.status === 404 || response.status === 400) {
@@ -76,11 +77,11 @@ export default function TemporaryGeneralLedgerPage() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load Temporary Accounts General Ledger from the server.');
       }
 
-      const rawData = await response.json();
+      const rawData = response.data;
 
       // Safe extraction untuk menangani format array langsung atau terbungkus objek
       const data: LedgerAccountViewModel[] = Array.isArray(rawData)

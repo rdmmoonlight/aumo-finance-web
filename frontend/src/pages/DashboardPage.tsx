@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
 import { Link } from 'react-router-dom';
@@ -31,7 +32,6 @@ import {
 } from '@tabler/icons-react';
 
 // Import CSS Terpisah
-import './dashboard.css';
 
 // Registrasi modul Chart.js
 ChartJS.register(
@@ -118,10 +118,10 @@ function DashboardContent() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/dashboard?period=${type}`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/dashboard?period=${type}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        withCredentials: true,
       });
 
       if (response.status === 401) {
@@ -130,11 +130,11 @@ function DashboardContent() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load Dashboard data from the server.');
       }
 
-      const resData = await response.json();
+      const resData = response.data;
 
       if (resData?.hasPeriodSelected === false) {
         setData({

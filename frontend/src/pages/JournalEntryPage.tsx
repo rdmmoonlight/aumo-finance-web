@@ -1,8 +1,8 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import './journal-entry.css';
 
 // Data Model Interfaces
 export interface ChartOfAccountOption {
@@ -132,13 +132,13 @@ function JournalEntryContent() {
         const headers = getAuthHeaders();
 
         // 1. Fetch Chart of Accounts
-        const accountsRes = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
+        const accountsRes = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
           method: 'GET',
           headers,
         });
 
-        if (accountsRes.ok) {
-          const rawAccounts = await accountsRes.json();
+        if (accountsRes.status === 200) {
+          const rawAccounts = accountsRes.data;
           const accountsData = Array.isArray(rawAccounts)
             ? rawAccounts
             : Array.isArray(rawAccounts?.data)
@@ -158,16 +158,16 @@ function JournalEntryContent() {
 
         // 2. Fetch data jika Edit Mode
         if (isEdit && entryIdParam) {
-          const journalRes = await fetch(`${API_BASE_URL}/api/v1/journals/${entryIdParam}`, {
+          const journalRes = await apiClient.get(`${API_BASE_URL}/api/v1/journals/${entryIdParam}`, {
             method: 'GET',
             headers,
           });
 
-          if (!journalRes.ok) {
+          if (journalRes.status !== 200) {
             throw new Error('Failed to retrieve journal entry data from the server.');
           }
 
-          const journalData = await journalRes.json();
+          const journalData = journalRes.data;
 
           if (journalData.isClosedPeriod) {
             setLockedMessage(
@@ -356,20 +356,20 @@ function JournalEntryContent() {
         : `${API_BASE_URL}/api/v1/journals`;
       const method = isEdit ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      const response = await apiClient.get(url, {
         method,
         headers: getAuthHeaders(),
-        body: JSON.stringify(payload),
+        data: payload,
       });
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
+      if (response.status !== 200 && response.status !== 201) {
+        const errData = response.data.catch(() => ({}));
         throw new Error(
           errData.message || 'Failed to save journal transaction to server.'
         );
       }
 
-      const result = await response.json();
+      const result = response.data;
 
       if (isEdit) {
         setSuccessMessage(`Journal entry ${transactionNumber} has been updated.`);

@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -59,19 +60,19 @@ function AuthContent() {
   // Handler API: Verifikasi Email ke Backend
   const handleVerifyEmailBackend = async (email: string, token: string) => {
     try {
-      const response = await fetch(
+      const response = await apiClient.get(
         `${API_BASE_URL}/api/v1/auth/verify-email?email=${encodeURIComponent(
           email.trim()
         )}&token=${encodeURIComponent(token)}`,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          withCredentials: true,
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+      if (response.status !== 200 && response.status !== 201) {
+        const errorData = response.data.catch(() => ({}));
         throw new Error(
           errorData.message ||
             'Failed to verify email. Link may have expired.'
@@ -100,20 +101,20 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
+        withCredentials: true,
+        data: {
           email: loginEmail.trim(),
           password: loginPassword,
           rememberMe,
-        }),
+        },
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = response.data.catch(() => ({}));
 
-      if (!response.ok || (data.success !== undefined && !data.success)) {
+      if (response.status !== 200 && response.status !== 201 || (data.success !== undefined && !data.success)) {
         throw new Error(
           data.message || data.title || 'Invalid email or password.'
         );
@@ -140,20 +141,20 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
+        withCredentials: true,
+        data: {
           fullName: regFullName,
           email: regEmail.trim(),
           password: regPassword,
-        }),
+        },
       });
 
-      const data = await response.json().catch(() => ({}));
+      const data = response.data.catch(() => ({}));
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(
           data.message || 'An unexpected error occurred during registration.'
         );
@@ -181,21 +182,21 @@ function AuthContent() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(
+      const response = await apiClient.get(
         `${API_BASE_URL}/api/v1/auth/resend-verification`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
+          withCredentials: true,
+          data: {
             email: resendEmail.trim(),
-          }),
+          },
         }
       );
 
-      const data = await response.json().catch(() => ({}));
+      const data = response.data.catch(() => ({}));
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(
           data.message || 'Failed to send verification email.'
         );

@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -90,10 +91,10 @@ export default function GeneralJournalPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-journal`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/reports/general-journal`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Mengirim Session Cookie secara otomatis
+        withCredentials: true, // Mengirim Session Cookie secara otomatis
       });
 
       if (response.status === 401) {
@@ -101,11 +102,11 @@ export default function GeneralJournalPage() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load general journal data from the server.');
       }
 
-      const resData = await response.json();
+      const resData = response.data;
 
       if (resData.success) {
         setSelectedPeriodName(resData.selectedPeriodName || null);
@@ -146,10 +147,10 @@ export default function GeneralJournalPage() {
 
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-journal/${entry.id}`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/reports/general-journal/${entry.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        withCredentials: true,
       });
 
       if (response.status === 401) {
@@ -157,9 +158,9 @@ export default function GeneralJournalPage() {
         return;
       }
 
-      const resData = await response.json().catch(() => ({}));
+      const resData = response.data.catch(() => ({}));
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(resData.message || 'Failed to delete journal entry from the server.');
       }
 

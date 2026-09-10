@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -71,10 +72,10 @@ export default function PostClosingTrialBalanceReportPage() {
     setErrorMessage(null);
     try {
       // Menggunakan endpoint Web Controller
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/statement-of-financial-position?isPostClosing=true`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/reports/statement-of-financial-position?isPostClosing=true`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Cookie Session Identity
+        withCredentials: true, // Cookie Session Identity
       });
 
       if (response.status === 401) {
@@ -89,11 +90,11 @@ export default function PostClosingTrialBalanceReportPage() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load Post-Closing Trial Balance data from the server.');
       }
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data?.hasPeriodSelected === false) {
         setNoPeriodSelected(true);

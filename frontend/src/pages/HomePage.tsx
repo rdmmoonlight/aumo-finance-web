@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -147,8 +148,8 @@ function MarketWidget() {
     setLoading(true);
     setError(false);
     try {
-      const fiatRes = await fetch('https://open.er-api.com/v6/latest/USD');
-      const fiatData = await fiatRes.json();
+      const fiatRes = await apiClient.get('https://open.er-api.com/v6/latest/USD');
+      const fiatData = fiatRes.data;
 
       const items: MarketItem[] = [];
 

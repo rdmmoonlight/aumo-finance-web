@@ -1,8 +1,8 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import './chart-of-accounts.css';
 
 export interface ChartOfAccount {
   id: number;
@@ -85,12 +85,12 @@ function ChartOfAccountsContent() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
 
       if (response.status === 401) {
@@ -98,11 +98,11 @@ function ChartOfAccountsContent() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load Chart of Accounts data from the server.');
       }
 
-      const rawData = await response.json();
+      const rawData = response.data;
       const loadedAccounts: ChartOfAccount[] = rawData?.accounts || [];
       setSelectedPeriodName(rawData?.selectedPeriodName || null);
 
@@ -161,13 +161,13 @@ function ChartOfAccountsContent() {
         role: newAccount.role || 'Default',
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify(payload),
+        withCredentials: true,
+        data: payload,
       });
 
       if (response.status === 401) {
@@ -175,9 +175,9 @@ function ChartOfAccountsContent() {
         return;
       }
 
-      const resData = await response.json().catch(() => ({}));
+      const resData = response.data.catch(() => ({}));
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(resData.message || 'Failed to save the new account.');
       }
 
@@ -225,13 +225,13 @@ function ChartOfAccountsContent() {
         isActive: editAccount.isActive,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts/${editAccount.id}`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts/${editAccount.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
-        body: JSON.stringify(payload),
+        withCredentials: true,
+        data: payload,
       });
 
       if (response.status === 401) {
@@ -239,9 +239,9 @@ function ChartOfAccountsContent() {
         return;
       }
 
-      const resData = await response.json().catch(() => ({}));
+      const resData = response.data.catch(() => ({}));
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(resData.message || 'Failed to update the account.');
       }
 
@@ -260,12 +260,12 @@ function ChartOfAccountsContent() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts/${account.id}`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts/${account.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
+        withCredentials: true,
       });
 
       if (response.status === 401) {
@@ -273,9 +273,9 @@ function ChartOfAccountsContent() {
         return;
       }
 
-      const resData = await response.json().catch(() => ({}));
+      const resData = response.data.catch(() => ({}));
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(resData.message || 'Failed to delete the account.');
       }
 

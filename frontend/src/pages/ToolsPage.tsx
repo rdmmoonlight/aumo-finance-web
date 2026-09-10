@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect } from 'react';
 
@@ -76,13 +77,13 @@ export default function ToolsPage() {
   const fetchDbAccounts = async () => {
     setIsLoadingCoa(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
+      const res = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        withCredentials: true,
       });
-      if (res.ok) {
-        const data = await res.json();
+      if (res.status === 200) {
+        const data = res.data;
         if (data.success && Array.isArray(data.accounts)) {
           setDbMasterAccounts(data.accounts);
         }
@@ -325,11 +326,11 @@ export default function ToolsPage() {
 
     setIsBusy(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/tools/import-journal-entries`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/tools/import-journal-entries`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
+        withCredentials: true,
+        data: {
           targetMonth: Number(targetMonth),
           targetYear: Number(targetYear),
           customMappings: accountMappings,
@@ -344,17 +345,17 @@ export default function ToolsPage() {
               credit: l.credit,
             })),
           })),
-        }),
+        },
       });
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      const contentType = response.headers['content-type'];
+      if (!String(contentType).includes('application/json')) {
         throw new Error(`Server returned error (${response.status}). Ensure API route exists.`);
       }
 
-      const result = await response.json();
+      const result = response.data;
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error(result.message || 'Failed to save data to database.');
       }
 

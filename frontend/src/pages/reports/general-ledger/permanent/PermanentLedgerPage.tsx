@@ -1,3 +1,4 @@
+import apiClient from '@/services/apiClient';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -54,12 +55,12 @@ export default function PermanentGeneralLedgerPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-ledger/permanent`, {
+      const response = await apiClient.get(`${API_BASE_URL}/api/v1/reports/general-ledger/permanent`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Menggunakan Identity Cookie Session
+        withCredentials: true, // Menggunakan Identity Cookie Session
       });
 
       if (response.status === 404 || response.status === 400) {
@@ -74,11 +75,11 @@ export default function PermanentGeneralLedgerPage() {
         return;
       }
 
-      if (!response.ok) {
+      if (response.status !== 200 && response.status !== 201) {
         throw new Error('Failed to load Permanent General Ledger data from server.');
       }
 
-      const rawData = await response.json();
+      const rawData = response.data;
 
       // Safe extraction untuk menangani format array langsung atau terbungkus objek
       const data: LedgerAccountViewModel[] = Array.isArray(rawData)
