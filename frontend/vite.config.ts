@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 export default defineConfig({
   plugins: [react()],
-  envPrefix: ['VITE_', 'API_'],
+  envPrefix: [''],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   build: { cssMinify: false },
 })
