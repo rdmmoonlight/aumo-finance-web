@@ -1,472 +1,143 @@
-import apiClient from '@/services/apiClient';
-
-import React, { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
-import { Link } from 'react-router-dom';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
+import { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import {
-  IconEyeOff,
-  IconCalendar,
-  IconAlertTriangle,
-  IconPlus,
-  IconReport,
-  IconActivity,
-  IconWallet,
-  IconTrendingUp,
-  IconTrendingDown,
-  IconShieldCheck,
-  IconCreditCard,
-  IconChartPie,
-  IconX,
+  IconEyeOff, IconCalendar, IconAlertTriangle, IconPlus, IconReport, IconActivity,
+  IconWallet, IconTrendingUp, IconTrendingDown, IconShieldCheck, IconCreditCard, IconChartPie, IconX,
 } from '@tabler/icons-react';
 
-// Import CSS Terpisah
+import apiClient from '@/services/apiClient';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
-// Registrasi modul Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+ChartJS.register(ArcElement, Tooltip, Legend);
 
-// Format angka standar tanpa simbol mata uang
+
 const formatNumber = (amount: number) => {
-  const formatted = new Intl.NumberFormat('id-ID', {
-    style: 'decimal',
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-
-  return amount < 0 ? `(${formatted})` : formatted;
+  const formatted = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Math.abs(amount));
+  return amount < 0? `(${formatted})` : formatted;
 };
 
-export interface AccountBalanceItem {
-  accountId: number;
-  referenceNumber: string;
-  accountName: string;
-  balance: number;
-}
-
+export interface AccountBalanceItem { accountId: number; referenceNumber: string; accountName: string; balance: number; }
 export interface DashboardViewModel {
-  hasPeriodSelected: boolean;
-  selectedPeriodName?: string;
-  isPeriodClosed: boolean;
-  totalAssets: number;
-  totalLiabilities: number;
-  totalEquity: number;
-  totalRevenue: number;
-  totalExpenses: number;
-  netIncome: number;
-  cashAccounts: AccountBalanceItem[];
-  totalCashOnHand: number;
-  bankAccounts: AccountBalanceItem[];
-  totalBankBalance: number;
-  expenseAccountsList?: AccountBalanceItem[];
-  recentEntries: any[];
+  hasPeriodSelected: boolean; selectedPeriodName?: string; isPeriodClosed: boolean;
+  totalAssets: number; totalLiabilities: number; totalEquity: number; totalRevenue: number; totalExpenses: number; netIncome: number;
+  cashAccounts: AccountBalanceItem[]; totalCashOnHand: number; bankAccounts: AccountBalanceItem[]; totalBankBalance: number;
+  expenseAccountsList?: AccountBalanceItem[]; recentEntries: any[];
 }
-
-// Sanitasi URL API
-const rawApiUrl = process.env.API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
-  .replace(/\/+$/, '')
-  ;
 
 function DashboardContent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
-  const [periodType, setPeriodType] = useState<string>('monthly');
-  const [loading, setLoading] = useState<boolean>(true);
+  const [periodType, setPeriodType] = useState('monthly');
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [data, setData] = useState<DashboardViewModel | null>(null);
 
-  // Inisialisasi Command Palette Shortcut (Ctrl+K / Cmd+K)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        const cmdModalEl = document.getElementById('commandPaletteModal');
-        if (cmdModalEl) {
-          cmdModalEl.style.display = 'block';
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
-  // Fetch Dashboard data dari Backend API dengan menyertakan query parameter period
   const fetchDashboardData = useCallback(async (type: string) => {
-    setLoading(true);
-    setErrorMessage(null);
+    setLoading(true); setErrorMessage(null);
     try {
-      const response = await apiClient.get(`${API_BASE_URL}/api/v1/dashboard?period=${type}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        withCredentials: true,
-      });
-
-      if (response.status === 401) {
-        setErrorMessage('Session expired or unauthorized. Please login again.');
-        setData(null);
-        return;
-      }
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error('Failed to load Dashboard data from the server.');
-      }
-
-      const resData = response.data;
-
+      const { data: resData } = await apiClient.get(`/api/v1/dashboard?period=${type}`);
       if (resData?.hasPeriodSelected === false) {
-        setData({
-          hasPeriodSelected: false,
-          isPeriodClosed: false,
-          totalAssets: 0,
-          totalLiabilities: 0,
-          totalEquity: 0,
-          totalRevenue: 0,
-          totalExpenses: 0,
-          netIncome: 0,
-          cashAccounts: [],
-          totalCashOnHand: 0,
-          bankAccounts: [],
-          totalBankBalance: 0,
-          expenseAccountsList: [],
-          recentEntries: [],
-        });
+        setData({ hasPeriodSelected: false, isPeriodClosed: false, totalAssets: 0, totalLiabilities: 0, totalEquity: 0, totalRevenue: 0, totalExpenses: 0, netIncome: 0, cashAccounts: [], totalCashOnHand: 0, bankAccounts: [], totalBankBalance: 0, expenseAccountsList: [], recentEntries: [] });
         return;
       }
-
-      const safeData: DashboardViewModel = {
-        hasPeriodSelected: true,
-        selectedPeriodName: resData?.selectedPeriodName || 'Current Period',
-        isPeriodClosed: Boolean(resData?.isPeriodClosed),
-        totalAssets: Number(resData?.totalAssets) || 0,
-        totalLiabilities: Number(resData?.totalLiabilities) || 0,
-        totalEquity: Number(resData?.totalEquity) || 0,
-        totalRevenue: Number(resData?.totalRevenue) || 0,
-        totalExpenses: Number(resData?.totalExpenses) || 0,
-        netIncome: Number(resData?.netIncome) || 0,
-        cashAccounts: Array.isArray(resData?.cashAccounts) ? resData.cashAccounts : [],
-        totalCashOnHand: Number(resData?.totalCashOnHand) || 0,
-        bankAccounts: Array.isArray(resData?.bankAccounts) ? resData.bankAccounts : [],
-        totalBankBalance: Number(resData?.totalBankBalance) || 0,
-        expenseAccountsList: Array.isArray(resData?.expenseAccountsList) ? resData.expenseAccountsList : [],
-        recentEntries: Array.isArray(resData?.recentEntries) ? resData.recentEntries : [],
-      };
-
-      setData(safeData);
-    } catch (error: any) {
-      console.error('Error loading dashboard:', error);
-      setErrorMessage(error.message || 'Failed to connect to the backend server.');
-    } finally {
-      setLoading(false);
-    }
+      setData({
+        hasPeriodSelected: true, selectedPeriodName: resData?.selectedPeriodName || 'Current Period', isPeriodClosed:!!resData?.isPeriodClosed,
+        totalAssets: Number(resData?.totalAssets)||0, totalLiabilities: Number(resData?.totalLiabilities)||0, totalEquity: Number(resData?.totalEquity)||0,
+        totalRevenue: Number(resData?.totalRevenue)||0, totalExpenses: Number(resData?.totalExpenses)||0, netIncome: Number(resData?.netIncome)||0,
+        cashAccounts: resData?.cashAccounts||[], totalCashOnHand: Number(resData?.totalCashOnHand)||0,
+        bankAccounts: resData?.bankAccounts||[], totalBankBalance: Number(resData?.totalBankBalance)||0,
+        expenseAccountsList: resData?.expenseAccountsList||[], recentEntries: resData?.recentEntries||[],
+      });
+    } catch (err: any) {
+      setErrorMessage(err?.response?.data?.message || err.message || 'Failed to connect');
+    } finally { setLoading(false); }
   }, []);
 
-  // Sinkronisasi state lokal dengan URL searchParams saat parameter berubah
   useEffect(() => {
     const periodParam = searchParams.get('period');
-    const activePeriod = periodParam && periodParam.toLowerCase() === 'annual' ? 'annual' : 'monthly';
-    
-    setPeriodType(activePeriod);
-    fetchDashboardData(activePeriod);
-
-    const handlePeriodChanged = () => {
-      fetchDashboardData(activePeriod);
-    };
-
-    window.addEventListener('periodChanged', handlePeriodChanged);
-
-    return () => {
-      window.removeEventListener('periodChanged', handlePeriodChanged);
-    };
+    const active = periodParam?.toLowerCase()==='annual'? 'annual':'monthly';
+    setPeriodType(active); fetchDashboardData(active);
   }, [searchParams, fetchDashboardData]);
 
-  // Handler saat tombol pill-toggle diklik
   const handlePeriodSwitch = (type: string) => {
-    if (periodType === type) return;
-    setPeriodType(type);
-    navigate(`/dashboard?period=${type}`);
+    if (periodType===type) return; setPeriodType(type); navigate(`/dashboard?period=${type}`);
   };
 
   const healthScore = useMemo(() => {
-    if (!data) return 0;
-    if (data.totalRevenue === 0 && data.totalExpenses === 0) return 100;
-
-    const margin = data.totalRevenue > 0 ? (data.netIncome / data.totalRevenue) * 100 : 0;
-    if (margin >= 20) return 90;
-    if (margin >= 10) return 75;
-    if (margin >= 0) return 60;
-    return 40;
+    if (!data) return 0; if (data.totalRevenue===0 && data.totalExpenses===0) return 100;
+    const margin = data.totalRevenue>0? (data.netIncome/data.totalRevenue)*100 : 0;
+    if (margin>=20) return 90; if (margin>=10) return 75; if (margin>=0) return 60; return 40;
   }, [data]);
 
-  if (loading && !data) {
+  if (loading &&!data) {
+    return <div className="space-y-4"><Skeleton className="h-24"/><Skeleton className="h-64"/></div>;
+  }
+
+  if (!data ||!data.hasPeriodSelected) {
     return (
-      <div className="loader-box">
-        <div className="spinner"></div>
-        <p className="loading-text">Loading dashboard data...</p>
-      </div>
+      <Card className="py-16 text-center border-dashed">
+        <CardContent className="space-y-3">
+          <IconEyeOff size={40} className="mx-auto text-muted-foreground"/>
+          <h3 className="font-semibold">No Period Selected</h3>
+          <p className="text-sm text-muted-foreground">Go to Periods to select active accounting period.</p>
+          <Button asChild><Link to="/periods"><IconCalendar size={16}/> Go to Periods</Link></Button>
+        </CardContent>
+      </Card>
     );
   }
 
-  if (!data || !data.hasPeriodSelected) {
-    return (
-      <div className="empty-state-box">
-        <IconEyeOff size={48} className="empty-icon" />
-        <h4 className="empty-title">No Period Selected</h4>
-        <p className="empty-desc">
-          The Dashboard follows whichever period you&apos;re viewing.
-          <br />
-          Go to <strong>Periods</strong> to view or select an active accounting period.
-        </p>
-        <Link to="/periods" className="btn-action primary">
-          <IconCalendar size={18} /> Go to Periods
-        </Link>
-      </div>
-    );
-  }
-
-  const doughnutChartData = {
+  const doughnutData = {
     labels: ['Cash on Hand', 'Bank Balance'],
-    datasets: [
-      {
-        data: [data.totalCashOnHand, data.totalBankBalance],
-        backgroundColor: ['#0d6efd', '#0dcaf0'],
-        borderWidth: 0,
-      },
-    ],
+    datasets: [{ data: [data.totalCashOnHand, data.totalBankBalance], backgroundColor: ['#6366f1','#06b6d4'], borderWidth: 0 }],
   };
-
-  // Konfigurasi Data untuk Expense Composition Chart
-  const expenseChartLabels = data.expenseAccountsList && data.expenseAccountsList.length > 0 
-    ? data.expenseAccountsList.map(item => item.accountName) 
-    : ['No Expenses'];
-
-  const expenseChartValues = data.expenseAccountsList && data.expenseAccountsList.length > 0 
-    ? data.expenseAccountsList.map(item => item.balance) 
-    : [1];
-
-  const expenseColors = ['#dc3545', '#ffc107', '#fd7e14', '#6610f2', '#6c757d', '#20c997', '#e83e8c'];
-
-  const expenseDoughnutChartData = {
-    labels: expenseChartLabels,
-    datasets: [
-      {
-        data: expenseChartValues,
-        backgroundColor: expenseColors.slice(0, expenseChartValues.length),
-        borderWidth: 0,
-      },
-    ],
+  const expenseData = {
+    labels: data.expenseAccountsList?.length? data.expenseAccountsList.map(i=>i.accountName): ['No Expenses'],
+    datasets: [{ data: data.expenseAccountsList?.length? data.expenseAccountsList.map(i=>i.balance): [1], backgroundColor: ['#ef4444','#f59e0b','#f97316','#8b5cf6','#6b7280','#10b981','#ec4899'], borderWidth: 0 }],
   };
 
   return (
-    <div className="dashboard-container">
-      {errorMessage && (
-        <div className="alert-banner danger">
-          <div className="alert-content">
-            <IconAlertTriangle size={20} className="alert-icon" />
-            <span>{errorMessage}</span>
+    <div className="space-y-6">
+      {errorMessage && <Alert variant="destructive" className="flex justify-between"><AlertDescription className="flex gap-2 items-center"><IconAlertTriangle size={16}/>{errorMessage}</AlertDescription><button onClick={()=>setErrorMessage(null)}><IconX size={14}/></button></Alert>}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div><h1 className="text-2xl font-bold tracking-tight">Financial Overview</h1><p className="text-sm text-muted-foreground">Active Period: <span className="font-semibold text-foreground">{data.selectedPeriodName}</span> • In IDR</p></div>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border p-1 bg-muted">
+            <Button variant={periodType==='monthly'?'secondary':'ghost'} size="sm" className="h-7 text-xs" onClick={()=>handlePeriodSwitch('monthly')}>Monthly</Button>
+            <Button variant={periodType==='annual'?'secondary':'ghost'} size="sm" className="h-7 text-xs" onClick={()=>handlePeriodSwitch('annual')}>Annual</Button>
           </div>
-          <button type="button" className="close-btn" onClick={() => setErrorMessage(null)}>
-            <IconX size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* 1. HEADER CONTROLS SECTION */}
-      <div className="header-section">
-        <div>
-          <h4 className="header-title">Financial Overview</h4>
-          <p className="header-subtitle">
-            Active Period: <span className="period-highlight">{data.selectedPeriodName}</span>
-            <span> (In IDR, unless otherwise stated)</span>
-          </p>
-        </div>
-
-        <div className="header-actions">
-          <div className="pill-toggle">
-            <button
-              type="button"
-              onClick={() => handlePeriodSwitch('monthly')}
-              className={`pill-btn ${periodType === 'monthly' ? 'active' : ''}`}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePeriodSwitch('annual')}
-              className={`pill-btn ${periodType === 'annual' ? 'active' : ''}`}
-            >
-              Annual
-            </button>
-          </div>
-
-          <Link to="/journal-entries/create" className="btn-action warning">
-            <IconPlus size={18} /> New Entry
-          </Link>
-          <Link to="/reports/income-statement" className="btn-action outline">
-            <IconReport size={18} /> Report
-          </Link>
+          <Button asChild size="sm" className="h-8 gap-1"><Link to="/journal-entry"><IconPlus size={14}/> New Entry</Link></Button>
+          <Button asChild variant="outline" size="sm" className="h-8 gap-1"><Link to="/reports/income-statement"><IconReport size={14}/> Report</Link></Button>
         </div>
       </div>
 
-      {/* 2. METRICS & FINANCIAL HEALTH GRID */}
-      <div className="grid-2-col mb-16">
-        {/* Financial Health Index */}
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Financial Health Index</span>
-            <IconActivity size={20} className="text-primary" />
-          </div>
-          <div className="health-body">
-            <div className="score-circle">
-              <span className="score-num">{healthScore}</span>
-            </div>
-            <div>
-              <h6 className="health-status">
-                {healthScore >= 80 ? (
-                  <span className="text-success">Excellent Condition</span>
-                ) : healthScore >= 60 ? (
-                  <span className="text-info">Stable Operations</span>
-                ) : (
-                  <span className="text-warning">Attention Required</span>
-                )}
-              </h6>
-              <p className="health-desc">Calculated based on net profit margin and liquidity position.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Cash & Bank Summary */}
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Total Cash &amp; Bank Reserves</span>
-            <IconWallet size={20} className="text-warning" />
-          </div>
-          <div className="reserve-amount font-mono">{formatNumber(data.totalAssets)}</div>
-          <div className="reserve-breakdown">
-            <span>
-              Cash: <strong className="font-mono">{formatNumber(data.totalCashOnHand)}</strong>
-            </span>
-            <span>
-              Bank: <strong className="font-mono">{formatNumber(data.totalBankBalance)}</strong>
-            </span>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card><CardHeader className="flex-row items-center justify-between space-y-0 pb-2"><CardDescription>Financial Health Index</CardDescription><IconActivity size={18} className="text-primary"/></CardHeader><CardContent className="flex items-center gap-4"><div className="w-16 h-16 rounded-full border-4 border-primary grid place-items-center font-bold text-lg">{healthScore}</div><div><p className={cn('text-sm font-semibold', healthScore>=80?'text-emerald-500': healthScore>=60?'text-sky-500':'text-amber-500')}>{healthScore>=80?'Excellent Condition': healthScore>=60?'Stable Operations':'Attention Required'}</p><p className="text-xs text-muted-foreground">Based on net profit margin & liquidity</p></div></CardContent></Card>
+        <Card><CardHeader className="flex-row items-center justify-between space-y-0 pb-2"><CardDescription>Total Cash & Bank Reserves</CardDescription><IconWallet size={18} className="text-amber-500"/></CardHeader><CardContent><div className="text-2xl font-bold font-mono">{formatNumber(data.totalAssets)}</div><div className="text-xs text-muted-foreground flex gap-4 mt-1"><span>Cash: <b className="text-foreground">{formatNumber(data.totalCashOnHand)}</b></span><span>Bank: <b className="text-foreground">{formatNumber(data.totalBankBalance)}</b></span></div></CardContent></Card>
       </div>
 
-      {/* 4 CARDS: REVENUE, EXPENSES, NET INCOME, LIABILITIES */}
-      <div className="grid-4-col mb-16">
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Revenue</span>
-            <div className="icon-badge success">
-              <IconTrendingUp size={20} />
-            </div>
-          </div>
-          <div className="card-val font-mono">{formatNumber(data.totalRevenue)}</div>
-          <div className="card-sub">Total Operating Revenue</div>
-        </div>
-
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Expenses</span>
-            <div className="icon-badge danger">
-              <IconTrendingDown size={20} />
-            </div>
-          </div>
-          <div className="card-val font-mono">{formatNumber(data.totalExpenses)}</div>
-          <div className="card-sub">Total Operating Expenses</div>
-        </div>
-
-        <div className="dash-card primary-gradient">
-          <div className="card-header-flex">
-            <span className="card-label light">Net Income</span>
-            <IconShieldCheck size={20} className="text-warning" />
-          </div>
-          <div className="card-val light font-mono">{formatNumber(data.netIncome)}</div>
-          <div className="card-sub light">Net Income for Period</div>
-        </div>
-
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Liabilities</span>
-            <div className="icon-badge warning">
-              <IconCreditCard size={20} />
-            </div>
-          </div>
-          <div className="card-val font-mono">{formatNumber(data.totalLiabilities)}</div>
-          <div className="card-sub">Total Liabilities</div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card><CardHeader className="flex-row items-center justify-between space-y-0 pb-1"><CardDescription>Revenue</CardDescription><div className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-500 grid place-items-center"><IconTrendingUp size={16}/></div></CardHeader><CardContent><div className="text-xl font-bold font-mono">{formatNumber(data.totalRevenue)}</div><p className="text-xs text-muted-foreground">Total Operating Revenue</p></CardContent></Card>
+        <Card><CardHeader className="flex-row items-center justify-between space-y-0 pb-1"><CardDescription>Expenses</CardDescription><div className="w-7 h-7 rounded-full bg-red-500/10 text-red-500 grid place-items-center"><IconTrendingDown size={16}/></div></CardHeader><CardContent><div className="text-xl font-bold font-mono">{formatNumber(data.totalExpenses)}</div><p className="text-xs text-muted-foreground">Total Operating Expenses</p></CardContent></Card>
+        <Card className="bg-primary text-primary-foreground"><CardHeader className="flex-row items-center justify-between space-y-0 pb-1"><CardDescription className="text-primary-foreground/70">Net Income</CardDescription><IconShieldCheck size={18}/></CardHeader><CardContent><div className="text-xl font-bold font-mono">{formatNumber(data.netIncome)}</div><p className="text-xs text-primary-foreground/70">Net Income for Period</p></CardContent></Card>
+        <Card><CardHeader className="flex-row items-center justify-between space-y-0 pb-1"><CardDescription>Liabilities</CardDescription><div className="w-7 h-7 rounded-full bg-amber-500/10 text-amber-500 grid place-items-center"><IconCreditCard size={16}/></div></CardHeader><CardContent><div className="text-xl font-bold font-mono">{formatNumber(data.totalLiabilities)}</div><p className="text-xs text-muted-foreground">Total Liabilities</p></CardContent></Card>
       </div>
 
-      {/* 3. CHARTS SECTION (Asset Composition & Expense Composition Berdampingan) */}
-      <div className="grid-chart-col mb-16">
-        <div className="dash-card">
-          <div className="card-header-flex mb-12">
-            <div>
-              <h6 className="card-title">Asset Composition</h6>
-              <span className="card-sub">Cash vs Bank Reserves</span>
-            </div>
-            <div className="icon-badge info">
-              <IconChartPie size={20} />
-            </div>
-          </div>
-          <div className="chart-wrapper">
-            <Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-          </div>
-        </div>
-
-        <div className="dash-card">
-          <div className="card-header-flex mb-12">
-            <div>
-              <h6 className="card-title">Expense Composition</h6>
-              <span className="card-sub">Operating Expense Breakdown</span>
-            </div>
-            <div className="icon-badge danger">
-              <IconChartPie size={20} />
-            </div>
-          </div>
-          <div className="chart-wrapper">
-            <Doughnut data={expenseDoughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card><CardHeader className="flex-row items-center justify-between"><div><CardTitle className="text-sm">Asset Composition</CardTitle><CardDescription>Cash vs Bank</CardDescription></div><IconChartPie size={18} className="text-muted-foreground"/></CardHeader><CardContent className="h-64 flex justify-center"><Doughnut data={doughnutData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888', boxWidth: 10 } } } }} /></CardContent></Card>
+        <Card><CardHeader className="flex-row items-center justify-between"><div><CardTitle className="text-sm">Expense Composition</CardTitle><CardDescription>Operating Breakdown</CardDescription></div><IconChartPie size={18} className="text-muted-foreground"/></CardHeader><CardContent className="h-64 flex justify-center"><Doughnut data={expenseData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#888', boxWidth: 10 } } } }} /></CardContent></Card>
       </div>
     </div>
   );
 }
 
 export default function DashboardPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="loader-box">
-          <div className="spinner"></div>
-          <span className="loading-text">Loading dashboard...</span>
-        </div>
-      }
-    >
-      <DashboardContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<Skeleton className="h-"/>}><DashboardContent/></Suspense>;
 }

@@ -1,265 +1,84 @@
-import apiClient from '@/services/apiClient';
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { IconDashboard, IconNotebook, IconChartLine, IconRefresh, IconTrendingUp, IconTrendingDown } from '@tabler/icons-react';
+import apiClient from '@/services/apiClient';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface MarketItem {
-  symbol: string;
-  name: string;
-  price: string;
-  change: string;
-  isUp: boolean;
-}
+
+interface MarketItem { symbol: string; name: string; price: string; change: string; isUp: boolean; }
 
 export default function HomePage() {
-  const descriptionText =
-    'Integrated financial & accounting intelligence core. Manage full-cycle general ledgers, trial balances, and operational analytics with absolute precision.';
-
   return (
-    <>
-      <div className="nebula-viewport d-flex align-items-center justify-content-center min-vh-100 p-3 p-md-4">
-        {/* Ambient Nebula Glass Card */}
-        <div className="nebula-card p-4 p-md-5">
-          
-          {/* Live Market Widget Wrapper */}
-          <div className="market-widget-wrapper mb-4">
-            <MarketWidget />
-          </div>
-
-          {/* Clean & Minimalist Content */}
-          <div className="text-center content-body">
-            <p className="description-text mb-4">
-              {descriptionText}
+    <div className="min-h-screen w-full grid place-items-center p-4 bg-[#0B0F19] bg-[radial-gradient(circle_at_50%_30%,rgba(30,27,75,0.8),transparent_60%),radial-gradient(circle_at_80%_80%,rgba(76,29,149,0.25),transparent_50%),radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.15),transparent_40%)]">
+      <Card className="w-full max-w- bg-white/[0.06] backdrop-blur-xl border-white/10 shadow-2xl rounded-">
+        <CardContent className="p-6 md:p-8">
+          <MarketWidget />
+          <div className="text-center mt-6">
+            <p className="text- leading-relaxed text-white/80 max-w- mx-auto">
+              Integrated financial & accounting intelligence core. Manage full-cycle general ledgers, trial balances, and operational analytics with absolute precision.
             </p>
-
-            {/* Futuristic Navigation Actions */}
-            <div className="d-flex justify-content-center align-items-center gap-3 flex-wrap">
-              <Link to="/dashboard" className="btn-nebula btn-nebula-primary">
-                <i className="ti ti-dashboard me-2"></i>
-                <span>Dashboard</span>
-              </Link>
-
-              <Link to="/journal" className="btn-nebula btn-nebula-secondary">
-                <i className="ti ti-notebook me-2"></i>
-                <span>General Journal</span>
-              </Link>
+            <div className="flex justify-center gap-3 mt-6 flex-wrap">
+              <Button asChild className="rounded-xl bg-gradient-to-br from-indigo-500/80 to-violet-600/80 border border-indigo-300/20 shadow-lg hover:from-indigo-500 hover:to-violet-600"><Link to="/dashboard" className="flex items-center gap-2"><IconDashboard size={16}/> Dashboard</Link></Button>
+              <Button asChild variant="secondary" className="rounded-xl bg-white/10 text-white hover:bg-white/15 border border-white/10"><Link to="/journal-entry" className="flex items-center gap-2"><IconNotebook size={16}/> General Journal</Link></Button>
             </div>
           </div>
-
-        </div>
-      </div>
-
-      {/* Integrated Styles */}
-      <style>{`
-        /* Scope Styling: Deep Nebula Futuristic Theme */
-        .nebula-viewport {
-          background: radial-gradient(circle at 50% 30%, rgba(30, 27, 75, 0.8) 0%, rgba(15, 23, 42, 0.95) 70%),
-                      radial-gradient(circle at 80% 80%, rgba(76, 29, 149, 0.25) 0%, transparent 50%),
-                      radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.15) 0%, transparent 40%);
-          background-color: #0b0f19;
-          font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-        }
-
-        .nebula-card {
-          max-width: 720px;
-          width: 100%;
-          background: rgba(17, 24, 39, 0.55);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4),
-                      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-          transition: all 0.3s ease;
-        }
-
-        .market-widget-wrapper {
-          background: rgba(15, 23, 42, 0.6);
-          border-radius: 12px;
-          border: 1px solid rgba(255, 255, 255, 0.05);
-          padding: 0.85rem;
-        }
-
-        .description-text {
-          color: rgba(226, 232, 240, 0.85);
-          font-size: 1rem;
-          line-height: 1.6;
-          font-weight: 400;
-          letter-spacing: 0.015em;
-          max-width: 580px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-
-        /* Buttons Style */
-        .btn-nebula {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.625rem 1.5rem;
-          font-size: 0.9rem;
-          font-weight: 500;
-          letter-spacing: 0.025em;
-          border-radius: 10px;
-          text-decoration: none;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .btn-nebula-primary {
-          color: #ffffff;
-          background: linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(124, 58, 237, 0.8) 100%);
-          border: 1px solid rgba(165, 180, 252, 0.3);
-          box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
-        }
-
-        .btn-nebula-primary:hover {
-          color: #ffffff;
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
-          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-          transform: translateY(-1px);
-        }
-
-        .btn-nebula-secondary {
-          color: rgba(226, 232, 240, 0.9);
-          background: rgba(30, 41, 59, 0.6);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-nebula-secondary:hover {
-          color: #ffffff;
-          background: rgba(51, 65, 85, 0.8);
-          border-color: rgba(255, 255, 255, 0.2);
-          transform: translateY(-1px);
-        }
-      `}</style>
-    </>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
-// Interactive Live MarketWidget Component (Indonesian Economic Indicators)
 function MarketWidget() {
   const [marketData, setMarketData] = useState<MarketItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchMarketData = async () => {
     setLoading(true);
-    setError(false);
     try {
-      const fiatRes = await apiClient.get('https://open.er-api.com/v6/latest/USD');
-      const fiatData = fiatRes.data;
-
+      // pakai apiClient tapi URL eksternal tetap jalan
+      const { data: fiatData } = await apiClient.get('https://open.er-api.com/v6/latest/USD');
       const items: MarketItem[] = [];
-
-      // 1. USD / IDR (Nilai Tukar Rupiah)
-      if (fiatData && fiatData.rates && fiatData.rates.IDR) {
-        items.push({
-          symbol: 'USD/IDR',
-          name: 'Nilai Tukar Rupiah',
-          price: `Rp ${fiatData.rates.IDR.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`,
-          change: '+0.15%',
-          isUp: true,
-        });
+      if (fiatData?.rates?.IDR) {
+        items.push({ symbol: 'USD/IDR', name: 'Rupiah', price: `Rp ${fiatData.rates.IDR.toLocaleString('id-ID',{maximumFractionDigits:0})}`, change: '+0.15%', isUp: true });
       } else {
-        items.push({
-          symbol: 'USD/IDR',
-          name: 'Nilai Tukar Rupiah',
-          price: 'Rp 15.850',
-          change: '+0.15%',
-          isUp: true,
-        });
+        items.push({ symbol: 'USD/IDR', name: 'Rupiah', price: 'Rp 15.850', change: '+0.15%', isUp: true });
       }
-
-      // 2. IHSG (Indeks Harga Saham Gabungan)
-      items.push({
-        symbol: 'IHSG',
-        name: 'Indeks Saham',
-        price: '7.320,50',
-        change: '+0.42%',
-        isUp: true,
-      });
-
-      // 3. BI Rate (Suku Bunga BI)
-      items.push({
-        symbol: 'BI RATE',
-        name: 'Suku Bunga BI',
-        price: '6,00%',
-        change: 'Tetap',
-        isUp: true,
-      });
-
+      items.push({ symbol: 'IHSG', name: 'Indeks Saham', price: '7.320,50', change: '+0.42%', isUp: true });
+      items.push({ symbol: 'BI RATE', name: 'Suku Bunga', price: '6,00%', change: 'Tetap', isUp: true });
       setMarketData(items);
-    } catch (err) {
-      console.error('Failed to load market data:', err);
-      setError(true);
-      // Fallback Data
+    } catch {
       setMarketData([
-        { symbol: 'USD/IDR', name: 'Nilai Tukar Rupiah', price: 'Rp 15.850', change: '+0.15%', isUp: true },
+        { symbol: 'USD/IDR', name: 'Rupiah', price: 'Rp 15.850', change: '+0.15%', isUp: true },
         { symbol: 'IHSG', name: 'Indeks Saham', price: '7.320,50', change: '+0.42%', isUp: true },
-        { symbol: 'BI RATE', name: 'Suku Bunga BI', price: '6,00%', change: 'Tetap', isUp: true },
+        { symbol: 'BI RATE', name: 'Suku Bunga', price: '6,00%', change: 'Tetap', isUp: true },
       ]);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchMarketData();
-  }, []);
+  useEffect(()=>{ fetchMarketData(); }, []);
 
   return (
-    <div className="p-2">
-      <div className="d-flex align-items-center justify-content-between mb-3">
-        <h6 className="mb-0 text-warning fw-bold d-flex align-items-center gap-2" style={{ fontSize: '0.875rem' }}>
-          <i className="ti ti-chart-line-filled fs-6"></i> Market Indicators
-        </h6>
-        <div className="d-flex align-items-center gap-2">
-          {loading ? (
-            <span className="spinner-border spinner-border-sm text-warning" role="status"></span>
-          ) : (
-            <button 
-              onClick={fetchMarketData} 
-              className="btn btn-link text-muted p-0 border-0 shadow-none" 
-              title="Refresh Data"
-            >
-              <i className="ti ti-refresh text-secondary"></i>
-            </button>
-          )}
-          <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style={{ fontSize: '0.65rem' }}>
-            LIVE
-          </span>
+    <div className="rounded-xl bg-[#0F172A]/60 border border-white/5 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h6 className="text-sm font-bold flex items-center gap-2 text-amber-400"><IconChartLine size={16}/> Market Indicators</h6>
+        <div className="flex items-center gap-2">
+          {loading? <Skeleton className="h-4 w-4 rounded-full"/> : <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchMarketData}><IconRefresh size={14}/></Button>}
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-">LIVE</Badge>
         </div>
       </div>
-
-      {/* Market Data Grid */}
-      <div className="row g-2">
-        {marketData.map((item, idx) => (
-          <div key={idx} className="col-12 col-sm-4">
-            <div 
-              className="p-2 rounded border border-secondary border-opacity-10 bg-dark bg-opacity-50 d-flex flex-column justify-content-between"
-              style={{ minHeight: '65px' }}
-            >
-              <div className="d-flex justify-content-between align-items-center">
-                <span className="fw-bold text-light" style={{ fontSize: '0.75rem' }}>{item.symbol}</span>
-                <span className={`badge ${item.isUp ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}`} style={{ fontSize: '0.65rem' }}>
-                  {item.change}
-                </span>
-              </div>
-              <div className="fw-semibold text-white mt-1" style={{ fontSize: '0.875rem' }}>
-                {item.price}
-              </div>
-            </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {loading? [1,2,3].map(i=><Skeleton key={i} className="h- rounded-lg"/>) :
+          marketData.map((item,idx)=>(
+          <div key={idx} className="rounded-lg border border-white/10 bg-black/20 p-2.5 flex flex-col justify-between min-h-">
+            <div className="flex justify-between items-center"><span className="text- font-bold text-white">{item.symbol}</span><Badge className={`text- ${item.isUp?'bg-emerald-500/15 text-emerald-400':'bg-red-500/15 text-red-400'} border-0`}>{item.isUp? <IconTrendingUp size={10} className="mr-0.5"/>:<IconTrendingDown size={10} className="mr-0.5"/>}{item.change}</Badge></div>
+            <div className="text- font-semibold text-white mt-1">{item.price}</div>
+            <div className="text- text-white/50">{item.name}</div>
           </div>
         ))}
       </div>
-
-      {error && (
-        <p className="text-muted text-center mt-2 mb-0" style={{ fontSize: '0.65rem' }}>
-          *Displaying estimated market indicators.
-        </p>
-      )}
     </div>
   );
 }

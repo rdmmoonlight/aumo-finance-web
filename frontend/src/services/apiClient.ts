@@ -1,25 +1,21 @@
 import axios from 'axios';
-
-const BASE_URL = (import.meta as any).env?.API_BASE_URL || 'https://aumonext-api.onrender.com';
+import { API_BASE_URL } from '@/lib/config';
 
 const apiClient = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: API_BASE_URL,
   withCredentials: true,
-  timeout: 10000,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+apiClient.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('userId');
+      // window.location.href = '/auth';
     }
-    return config;
-  },
-  (error) => Promise.reject(error)
+    return Promise.reject(err);
+  }
 );
 
 export default apiClient;

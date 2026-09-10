@@ -1,391 +1,89 @@
-import React, { useState, useEffect } from 'react';
-import {
-  IconShieldCheck,
-  IconHeartbeat,
-  IconCircleCheck,
-  IconAlertTriangle,
-  IconActivity,
-  IconDeviceLaptop,
-  IconAlertOctagon,
-  IconLogout,
-  IconHistory,
-  IconDownload,
-  IconLoader2,
-} from '@tabler/icons-react';
-
+import { useState, useEffect } from 'react';
+import { IconShieldCheck, IconHeartbeat, IconCircleCheck, IconAlertTriangle, IconActivity, IconDeviceLaptop, IconAlertOctagon, IconLogout, IconHistory, IconDownload, IconLoader2 } from '@tabler/icons-react';
 import apiClient from '@/services/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export interface UserSessionDto {
-  id?: string;
-  deviceName: string;
-  browser: string;
-  ipAddress: string;
-  country: string;
-  lastActivity: string;
-  isCurrent: boolean;
-}
+export interface UserSessionDto { id?: string; deviceName: string; browser: string; ipAddress: string; country: string; lastActivity: string; isCurrent: boolean; }
+export interface LoginActivityDto { activity: string; device: string; browser: string; country: string; ipAddress: string; occurredAt: string; }
+export interface GuardianViewModel { username: string; email: string; securityScore: number; activeSessions: number; trustedDevices: number; lastLogin: string; security: { emailVerified: boolean }; recentActivities: LoginActivityDto[]; }
 
-export interface LoginActivityDto {
-  activity: string;
-  device: string;
-  browser: string;
-  country: string;
-  ipAddress: string;
-  occurredAt: string;
-}
-
-export interface SecurityStatusDto {
-  emailVerified: boolean;
-}
-
-export interface GuardianViewModel {
-  username: string;
-  email: string;
-  securityScore: number;
-  activeSessions: number;
-  trustedDevices: number;
-  lastLogin: string;
-  security: SecurityStatusDto;
-  recentActivities: LoginActivityDto[];
-}
 
 export default function GuardianSecurityPage() {
-  const [activeTab, setActiveTab] = useState<'health' | 'sessions' | 'logs'>('health');
-
+  const [activeTab, setActiveTab] = useState('health');
   const [viewModel, setViewModel] = useState<GuardianViewModel | null>(null);
-  const [activeSessionsList, setActiveSessionsList] = useState<UserSessionDto[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
+  const [sessions, setSessions] = useState<UserSessionDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchGuardianData = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        setErrorMessage(null);
-
-        // Cukup panggil path relatif karena baseURL sudah di-set di apiClient
-        const response = await apiClient.get('/api/v1/guardian');
-
-        if (response.status !== 200 && response.status !== 201) {
-          throw new Error('Gagal mengambil data keamanan.');
-        }
-
-        const json = response.data;
-
-        if (json.success && json.data) {
-          setViewModel(json.data);
-          setActiveSessionsList(json.activeSessions || []);
-        } else {
-          throw new Error(json.message || 'Gagal memuat data keamanan.');
+        const { data } = await apiClient.get(`/api/v1/guardian`);
+        if (data?.success) {
+          setViewModel(data.data); setSessions(data.activeSessions||[]);
         }
       } catch (err: any) {
-        setErrorMessage(err.response?.data?.message || err.message || 'Terjadi kesalahan saat memuat data.');
-      } finally {
-        setIsLoading(false);
-      }
+        setErrorMessage(err?.response?.data?.message || err.message);
+      } finally { setIsLoading(false); }
     };
-
-    fetchGuardianData();
+    fetchData();
   }, []);
 
-  const handleRevokeSession = async (sessionId?: string, deviceName?: string) => {
-    if (!sessionId) return;
-    if (!window.confirm(`Akhiri sesi untuk perangkat "${deviceName || 'ini'}"?`)) return;
-
+  const handleRevokeSession = async (id?: string, device?: string) => {
+    if (!id ||!confirm(`Akhiri sesi "${device}"?`)) return;
     try {
-      // Gunakan apiClient.post untuk request HTTP POST
-      const response = await apiClient.post(`/api/v1/guardian/revoke-session/${sessionId}`);
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error('Gagal mengakhiri sesi.');
-      }
-
-      setActiveSessionsList((prev) => prev.filter((s) => s.id !== sessionId));
-      setSuccessMessage('Sesi berhasil diakhiri.');
-      setTimeout(() => setSuccessMessage(null), 4000);
-    } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Gagal merevoke sesi.');
-    }
+      await apiClient.post(`/api/v1/guardian/revoke-session/${id}`);
+      setSessions(prev=>prev.filter(s=>s.id!==id)); setSuccessMessage('Sesi diakhiri');
+      setTimeout(()=>setSuccessMessage(null),3000);
+    } catch (err: any) { setErrorMessage(err?.response?.data?.message || 'Gagal'); }
   };
 
-  const handleRevokeAllSessions = async () => {
-    if (!window.confirm('Emergency Lockout: Apakah Anda yakin ingin keluar dari SEMUA perangkat lain?')) return;
-
+  const handleRevokeAll = async () => {
+    if (!confirm('Emergency Lockout semua device lain?')) return;
     try {
-      // Gunakan apiClient.post untuk request HTTP POST
-      const response = await apiClient.post('/api/v1/guardian/revoke-all');
-
-      if (response.status !== 200 && response.status !== 201) {
-        throw new Error('Gagal mengakhiri semua sesi.');
-      }
-
-      setActiveSessionsList((prev) => prev.filter((s) => s.isCurrent));
-      setSuccessMessage('Semua sesi perangkat lain telah berhasil diakhiri.');
-      setTimeout(() => setSuccessMessage(null), 4000);
-    } catch (err: any) {
-      setErrorMessage(err.response?.data?.message || err.message || 'Gagal mengeksekusi emergency lockout.');
-    }
+      await apiClient.post(`/api/v1/guardian/revoke-all`);
+      setSessions(prev=>prev.filter(s=>s.isCurrent)); setSuccessMessage('Semua sesi lain diakhiri');
+    } catch (err: any) { setErrorMessage(err?.response?.data?.message || 'Gagal'); }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
-        <IconLoader2 className="w-8 h-8 animate-spin text-amber-500 mb-3" />
-        <p className="text-xs font-medium tracking-wide">Memuat Guardian Security Dashboard...</p>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="flex flex-col items-center justify-center min-h- gap-3 text-muted-foreground"><IconLoader2 className="w-8 h-8 animate-spin text-primary"/><p className="text-xs">Memuat Guardian...</p></div>;
 
-  const activities = (viewModel?.recentActivities || []).slice(0, 5);
-  const displayedSessions = activeSessionsList.slice(0, 5);
-  const score = viewModel?.securityScore ?? 0;
+  const score = viewModel?.securityScore??0;
+  const activities = (viewModel?.recentActivities||[]).slice(0,5);
+  const displayedSessions = sessions.slice(0,5);
 
   return (
-    <div className="space-y-6 antialiased text-foreground">
-      {/* Header & Overall Health Badge */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b">
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <IconShieldCheck className="text-amber-500" size={26} stroke={2} />
-            Guardian Security
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Security health monitoring, active sessions, and login logs
-          </p>
-        </div>
-        <div>
-          <Badge
-            variant="outline"
-            className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold ${
-              score >= 70
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-            }`}
-          >
-            <IconHeartbeat size={18} />
-            <span>Security Score: {score}%</span>
-          </Badge>
-        </div>
+    <div className="space-y-6 max-w-5xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div><h1 className="text-xl font-bold flex items-center gap-2"><IconShieldCheck className="text-primary" size={24}/> Guardian Security</h1><p className="text-sm text-muted-foreground">Security health, sessions, and logs</p></div>
+        <Badge variant="outline" className={`gap-2 px-3 py-1.5 ${score>=70?'bg-emerald-500/10 text-emerald-500 border-emerald-500/20':'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}><IconHeartbeat size={16}/> Score: {score}%</Badge>
       </div>
 
-      {/* Notifications */}
-      {successMessage && (
-        <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs">
-          <div className="flex items-center gap-2.5">
-            <IconCircleCheck size={18} className="text-emerald-400 shrink-0" />
-            <span>{successMessage}</span>
-          </div>
-          <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-emerald-200">
-            &times;
-          </button>
-        </div>
-      )}
+      {successMessage && <Alert className="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-300"><IconCircleCheck size={16}/><AlertDescription>{successMessage}</AlertDescription></Alert>}
+      {errorMessage && <Alert variant="destructive"><IconAlertTriangle size={16}/><AlertDescription>{errorMessage}</AlertDescription></Alert>}
 
-      {errorMessage && (
-        <div className="flex items-center justify-between p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive-foreground text-xs">
-          <div className="flex items-center gap-2.5">
-            <IconAlertTriangle size={18} className="text-destructive shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-          <button onClick={() => setErrorMessage(null)} className="text-destructive hover:opacity-80">
-            &times;
-          </button>
-        </div>
-      )}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3 sm:w-"><TabsTrigger value="health" className="gap-1.5 text-xs"><IconActivity size={14}/> Health</TabsTrigger><TabsTrigger value="sessions" className="gap-1.5 text-xs"><IconDeviceLaptop size={14}/> Sessions <Badge variant="secondary" className="ml-1 px-1 text-">{displayedSessions.length}</Badge></TabsTrigger><TabsTrigger value="logs" className="gap-1.5 text-xs"><IconHistory size={14}/> Logs</TabsTrigger></TabsList>
 
-      {/* Tabs Navigation */}
-      <div className="flex space-x-1 border-b pb-3">
-        <Button
-          variant={activeTab === 'health' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('health')}
-          className="gap-2 text-xs"
-        >
-          <IconActivity size={16} className="text-rose-400" /> Security Health
-        </Button>
+        <TabsContent value="health" className="mt-4">
+          <Card><CardHeader className="py-3 border-b flex-row items-center justify-between space-y-0"><div className="flex items-center gap-2 text-sm font-semibold"><IconHeartbeat size={16} className="text-rose-400"/> Account Health Checkup</div><span className="text- text-muted-foreground">Automated</span></CardHeader><CardContent className="p-4"><div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"><div><p className="text-sm font-medium">Email Verification</p><p className="text-xs text-muted-foreground">Primary email confirmation</p></div>{viewModel?.security?.emailVerified? <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/20">Verified</Badge>: <Badge variant="secondary">Unverified</Badge>}</div></CardContent></Card>
+        </TabsContent>
 
-        <Button
-          variant={activeTab === 'sessions' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('sessions')}
-          className="gap-2 text-xs"
-        >
-          <IconDeviceLaptop size={16} className="text-cyan-400" /> Active Sessions
-          <Badge variant="secondary" className="px-1.5 py-0.2 text-[10px] ml-1">
-            {displayedSessions.length}
-          </Badge>
-        </Button>
+        <TabsContent value="sessions" className="mt-4">
+          <Card><CardHeader className="py-3 flex-row items-center justify-between space-y-0 border-b"><span className="text-sm font-semibold">Active Sessions (Max 5)</span><Button variant="destructive" size="sm" className="h-7 text-xs gap-1" onClick={handleRevokeAll}><IconAlertOctagon size={14}/> Revoke All</Button></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow className="text-"><TableHead>Device</TableHead><TableHead>Browser</TableHead><TableHead>IP</TableHead><TableHead>Last</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader><TableBody>{displayedSessions.map((s,i)=><TableRow key={s.id||i}><TableCell className="font-medium flex items-center gap-2">{s.deviceName}{s.isCurrent&&<Badge className="text- bg-emerald-500/15 text-emerald-600">Current</Badge>}</TableCell><TableCell className="text-muted-foreground text-xs">{s.browser}</TableCell><TableCell className="font-mono text-xs text-primary">{s.ipAddress}</TableCell><TableCell className="text-xs text-muted-foreground">{s.lastActivity? new Date(s.lastActivity).toLocaleString('id-ID'):'-'}</TableCell><TableCell className="text-right">{!s.isCurrent? <Button variant="ghost" size="sm" className="h-6 text-xs text-destructive" onClick={()=>handleRevokeSession(s.id,s.deviceName)}><IconLogout size={12}/> Out</Button>: <span className="text-xs text-emerald-500">Active</span>}</TableCell></TableRow>)}</TableBody></Table>{displayedSessions.length===0&&<div className="p-8 text-center text-sm text-muted-foreground">No sessions</div>}</CardContent></Card>
+        </TabsContent>
 
-        <Button
-          variant={activeTab === 'logs' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('logs')}
-          className="gap-2 text-xs"
-        >
-          <IconHistory size={16} className="text-amber-400" /> Login Logs
-        </Button>
-      </div>
-
-      {/* Tab 1: Security Health */}
-      {activeTab === 'health' && (
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
-          <div className="p-4 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2 font-semibold text-xs">
-              <IconHeartbeat className="text-rose-400" size={18} /> Security & Account Health Checkup
-            </div>
-            <span className="text-[11px] text-muted-foreground">Automated Analysis</span>
-          </div>
-          <div className="p-4">
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border">
-              <div>
-                <p className="text-xs font-medium flex items-center gap-2">
-                  <IconDeviceLaptop size={16} className="text-cyan-400" /> Email Verification Status
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Primary account email confirmation</p>
-              </div>
-              <div>
-                {viewModel?.security?.emailVerified ? (
-                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                    Verified
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/20">
-                    Unverified
-                  </Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 2: Active Sessions */}
-      {activeTab === 'sessions' && (
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
-          <div className="p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 font-semibold text-xs">
-              <IconDeviceLaptop className="text-cyan-400" size={18} /> Active Sessions (Max 5)
-            </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleRevokeAllSessions}
-              className="gap-1.5 h-8 text-xs"
-            >
-              <IconAlertOctagon size={15} /> Revoke All Other Sessions
-            </Button>
-          </div>
-
-          <div className="overflow-x-auto">
-            {displayedSessions.length === 0 ? (
-              <div className="p-8 text-center text-xs text-muted-foreground">No active sessions found.</div>
-            ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/50 text-muted-foreground text-[11px] font-medium border-b">
-                  <tr>
-                    <th className="py-3 px-4">Device</th>
-                    <th className="py-3 px-4">Browser</th>
-                    <th className="py-3 px-4">IP Address</th>
-                    <th className="py-3 px-4">Last Activity</th>
-                    <th className="py-3 px-4 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {displayedSessions.map((session, index) => (
-                    <tr key={session.id || index} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4 font-semibold flex items-center gap-2">
-                        {session.deviceName}
-                        {session.isCurrent && (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
-                            Current
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">{session.browser}</td>
-                      <td className="py-3 px-4 font-mono text-cyan-400 text-[11px]">{session.ipAddress}</td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {session.lastActivity ? new Date(session.lastActivity).toLocaleString('id-ID') : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {!session.isCurrent ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRevokeSession(session.id, session.deviceName)}
-                            className="text-destructive hover:bg-destructive/10 gap-1 h-7 text-[11px]"
-                          >
-                            <IconLogout size={14} /> Sign Out
-                          </Button>
-                        ) : (
-                          <span className="text-[11px] font-medium text-emerald-400">Active now</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Tab 3: Login Logs */}
-      {activeTab === 'logs' && (
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
-          <div className="p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 font-semibold text-xs">
-              <IconHistory className="text-amber-400" size={18} /> Recent Login History (Max 5)
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => alert('Exporting audit log CSV...')}
-              className="gap-1.5 h-8 text-xs"
-            >
-              <IconDownload size={15} /> Export Log (CSV)
-            </Button>
-          </div>
-
-          <div className="overflow-x-auto">
-            {activities.length === 0 ? (
-              <div className="p-8 text-center text-xs text-muted-foreground">No login activity found.</div>
-            ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/50 text-muted-foreground text-[11px] font-medium border-b">
-                  <tr>
-                    <th className="py-3 px-4">Activity</th>
-                    <th className="py-3 px-4">Device</th>
-                    <th className="py-3 px-4">IP Address</th>
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4 text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {activities.map((act, idx) => (
-                    <tr key={idx} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4 font-semibold">{act.activity}</td>
-                      <td className="py-3 px-4 text-muted-foreground">{act.device}</td>
-                      <td className="py-3 px-4 font-mono text-cyan-400 text-[11px]">{act.ipAddress}</td>
-                      <td className="py-3 px-4 text-muted-foreground">
-                        {act.occurredAt ? new Date(act.occurredAt).toLocaleString('id-ID') : '-'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">
-                          Success
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      )}
+        <TabsContent value="logs" className="mt-4">
+          <Card><CardHeader className="py-3 flex-row items-center justify-between space-y-0 border-b"><span className="text-sm font-semibold">Recent Login History (Max 5)</span><Button variant="outline" size="sm" className="h-7 text-xs gap-1"><IconDownload size={14}/> Export CSV</Button></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow className="text-"><TableHead>Activity</TableHead><TableHead>Device</TableHead><TableHead>IP</TableHead><TableHead>Date</TableHead><TableHead className="text-right">Status</TableHead></TableRow></TableHeader><TableBody>{activities.map((a,i)=><TableRow key={i}><TableCell className="font-medium text-xs">{a.activity}</TableCell><TableCell className="text-xs text-muted-foreground">{a.device}</TableCell><TableCell className="font-mono text-xs text-primary">{a.ipAddress}</TableCell><TableCell className="text-xs text-muted-foreground">{a.occurredAt? new Date(a.occurredAt).toLocaleString('id-ID'):'-'}</TableCell><TableCell className="text-right"><Badge className="text- bg-emerald-500/15 text-emerald-600">Success</Badge></TableCell></TableRow>)}</TableBody></Table>{activities.length===0&&<div className="p-8 text-center text-sm text-muted-foreground">No logs</div>}</CardContent></Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

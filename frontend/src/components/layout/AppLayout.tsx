@@ -24,6 +24,20 @@ import {
   IconChevronRight,
 } from '@tabler/icons-react';
 
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+
 interface MenuItem {
   label: string;
   path: string;
@@ -59,55 +73,59 @@ const reportNavItems: MenuItem[] = [
 
 function NavItemLink({ item }: { item: MenuItem }) {
   return (
-    <li>
-      <NavLink to={item.path}>
-        {({ isActive }) => (
-          <div
-            className={`flex items-center gap-3 rounded-lg px-3 py-2 text- font-medium transition-colors ${
-              isActive
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-            }`}
-          >
-            <item.icon size={18} stroke={1.8} className="shrink-0" />
-            <span className="truncate">{item.label}</span>
-          </div>
-        )}
-      </NavLink>
-    </li>
+    <NavLink to={item.path} className="block">
+      {({ isActive }) => (
+        <div
+          className={cn(
+            'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
+            isActive
+             ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+          )}
+        >
+          <item.icon size={18} stroke={1.8} className="shrink-0" />
+          <span className="truncate">{item.label}</span>
+        </div>
+      )}
+    </NavLink>
   );
 }
 
 export function Sidebar() {
   return (
-    <aside className="w-64 border-r bg-white flex flex-col h-full shrink-0">
+    <aside className="w-64 border-r bg-card flex flex-col h-screen shrink-0">
       <div className="h-16 px-5 border-b flex items-center gap-3 shrink-0">
-        <div className="w-9 h-9 rounded-xl bg-black text-white grid place-items-center font-bold">A</div>
+        <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground grid place-items-center font-bold shadow-sm">
+          A
+        </div>
         <div className="flex flex-col">
-          <span className="font-bold text-sm leading-none">Aumo Finance</span>
-          <span className="text- text-gray-500 uppercase tracking-widest font-semibold">Accounting Suite</span>
+          <span className="font-bold text-sm leading-none tracking-tight">Aumo Finance</span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Accounting Suite</span>
         </div>
       </div>
 
-      {/* PAKAI DIV BIASA, JANGAN ScrollArea */}
-      <div className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="mb-6">
-          <h2 className="px-3 text- font-bold text-gray-400 uppercase tracking-widest mb-2">Main Domain</h2>
-          <ul className="space-y-1">
-            {mainNavItems.map((item) => (
-              <NavItemLink key={item.path} item={item} />
-            ))}
-          </ul>
+      <ScrollArea className="flex-1">
+        <div className="px-3 py-4 space-y-6">
+          <div>
+            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">Main Domain</h2>
+            <div className="space-y-1">
+              {mainNavItems.map((item) => (
+                <NavItemLink key={item.path} item={item} />
+              ))}
+            </div>
+          </div>
+          <Separator />
+          <div>
+            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">Reports & Statements</h2>
+            <div className="space-y-1">
+              {reportNavItems.map((item) => (
+                <NavItemLink key={item.path} item={item} />
+              ))}
+            </div>
+          </div>
         </div>
-        <div>
-          <h2 className="px-3 text- font-bold text-gray-400 uppercase tracking-widest mb-2">Reports & Statements</h2>
-          <ul className="space-y-1">
-            {reportNavItems.map((item) => (
-              <NavItemLink key={item.path} item={item} />
-            ))}
-          </ul>
-        </div>
-      </div>
+        <ScrollBar orientation="vertical" />
+      </ScrollArea>
     </aside>
   );
 }
@@ -118,37 +136,46 @@ export function Topbar() {
   const pathSegments = location.pathname.split('/').filter(Boolean);
 
   return (
-    <header className="h-16 border-b bg-white px-6 flex items-center justify-between shrink-0">
-      {/* Breadcrumb polos, tanpa komponen shadcn */}
-      <div className="flex items-center gap-1.5 text-xs text-gray-500">
-        <Link to="/" className="hover:text-black">Home</Link>
-        {pathSegments.map((seg, i) => {
-          const url = `/${pathSegments.slice(0, i + 1).join('/')}`;
-          const isLast = i === pathSegments.length - 1;
-          return (
-            <span key={url} className="flex items-center gap-1.5">
-              <IconChevronRight size={12} />
-              {isLast ? (
-                <span className="font-semibold text-black capitalize">{seg.replace(/-/g, ' ')}</span>
-              ) : (
-                <Link to={url} className="capitalize hover:text-black">{seg.replace(/-/g, ' ')}</Link>
-              )}
-            </span>
-          );
-        })}
-      </div>
+    <header className="h-16 border-b bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 sticky top-0 z-10">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">Home</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          {pathSegments.map((seg, i) => {
+            const url = `/${pathSegments.slice(0, i + 1).join('/')}`;
+            const isLast = i === pathSegments.length - 1;
+            return (
+              <div key={url} className="flex items-center gap-1.5">
+                <BreadcrumbSeparator>
+                  <IconChevronRight size={14} />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  {isLast? (
+                    <BreadcrumbPage className="capitalize">{seg.replace(/-/g, ' ')}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link to={url} className="capitalize">{seg.replace(/-/g, ' ')}</Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </div>
+            );
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
 
       <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 border text-xs">
+        <Badge variant="outline" className="hidden sm:flex gap-2 font-mono text-">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-medium">Ghofur</span>
-        </div>
-        <button
-          onClick={() => navigate('/auth')}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-600 transition-colors"
-        >
-          <IconLogout size={15} /> Logout
-        </button>
+          Ghofur
+        </Badge>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="h-8 gap-1.5 text-xs">
+          <IconLogout size={15} />
+          Logout
+        </Button>
       </div>
     </header>
   );
@@ -156,18 +183,18 @@ export function Topbar() {
 
 export default function AppLayout() {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f8f8f7] text-gray-900">
+    <div className="flex h-screen w-full overflow-hidden bg-muted/20">
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0">
         <Topbar />
-        {/* PAKAI DIV BIASA LAGI */}
-        <div className="flex-1 overflow-auto">
+        <ScrollArea className="flex-1">
           <main className="p-6 lg:p-8">
             <div className="mx-auto max-w-7xl">
               <Outlet />
             </div>
           </main>
-        </div>
+          <ScrollBar orientation="vertical" />
+        </ScrollArea>
       </div>
     </div>
   );

@@ -1,260 +1,174 @@
+import { useState, useEffect } from 'react';
+import { IconRobot, IconBolt, IconCashBanknote, IconTrendingUp, IconChartPie, IconBulb, IconTrash, IconSend, IconSparkles } from '@tabler/icons-react';
 
-import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
-// Interface for chat messages
-interface ChatMessage {
-  isUser: boolean;
-  text: string;
-}
+interface ChatMessage { isUser: boolean; text: string; }
 
-// Internal helper function for basic markdown formatting
-function formatMarkdown(text: string): { __html: string } {
-  let escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-
-  escaped = escaped.replace(/\n/g, '<br>');
-  escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  return { __html: escaped };
+function formatBold(text: string) {
+  return text.split(/(\*\*.*?\*\*)/).map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="text-foreground">{part.slice(2,-2)}</strong>
+    }
+    return part
+  })
 }
 
 export default function AiAssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [userInput, setUserInput] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [summaryText, setSummaryText] = useState<string>('');
-  const [summaryLoaded, setSummaryLoaded] = useState<boolean>(false);
+  const [userInput, setUserInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [summaryText, setSummaryText] = useState('');
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
 
-  // Initialize automated summary on component load
   useEffect(() => {
-    const loadLiveSummary = async () => {
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 1400));
-        setSummaryText(
-          'Your current cash position and liquidity are very stable and healthy, showing a positive cash flow surplus for January 2026. Operating expenses remain below the risk threshold.'
-        );
-      } catch (err) {
-        setSummaryText('Failed to load automated summary. Make sure connection and journal data exist.');
-      } finally {
-        setSummaryLoaded(true);
-      }
-    };
-
-    loadLiveSummary();
+    const t = setTimeout(() => {
+      setSummaryText('Your cash position and liquidity are very stable, positive surplus for Jan 2026. Operating expenses below risk threshold.');
+      setSummaryLoaded(true);
+    }, 1200);
+    return () => clearTimeout(t);
   }, []);
 
-  // Send message / question handler
   const handleSendMessage = async (promptText?: string) => {
-    const textToSend = promptText !== undefined ? promptText : userInput;
+    const textToSend = promptText?? userInput;
     const message = textToSend.trim();
     if (!message || isLoading) return;
 
-    setMessages((prev) => [...prev, { isUser: true, text: message }]);
-    if (promptText === undefined) {
-      setUserInput('');
-    }
+    setMessages(prev => [...prev, { isUser: true, text: message }]);
+    if (!promptText) setUserInput('');
     setIsLoading(true);
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+    await new Promise(r => setTimeout(r, 1000));
 
-      let aiReply = '';
-      const lowerMsg = message.toLowerCase();
-
-      if (lowerMsg.includes('cash') || lowerMsg.includes('liquidity')) {
-        aiReply =
-          '**Liquidity Analysis:** Your total cash equivalent is safely recorded at **Rp 45,500,000**. The liquidity coverage ratio is excellent to cover short-term obligations over the next 3 months.';
-      } else if (lowerMsg.includes('overspending') || lowerMsg.includes('expense')) {
-        aiReply =
-          '**Expense Alert:** The largest operating expense category is currently **Payroll & Office Rent**. No significant anomalies or overspending spikes have been detected yet.';
-      } else if (lowerMsg.includes('net income') || lowerMsg.includes('revenue') || lowerMsg.includes('profit')) {
-        aiReply =
-          '**Revenue Forecast:** Estimated gross revenue for this period is **Rp 85,000,000** with a projected net profit of approximately **Rp 32,400,000** after expenses.';
-      } else {
-        aiReply =
-          'Based on your accounting data for the active period, the system shows consistent financial stability. Would you like to perform an in-depth audit on adjusting entries?';
-      }
-
-      setMessages((prev) => [...prev, { isUser: false, text: aiReply }]);
-    } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { isUser: false, text: 'Failed to connect to AI. Please try again later.' },
-      ]);
-    } finally {
-      setIsLoading(false);
+    let aiReply = '';
+    const low = message.toLowerCase();
+    if (low.includes('cash') || low.includes('liquidity')) {
+      aiReply = '**Liquidity Analysis:** Total cash equivalent **Rp 45,500,000**. Coverage ratio excellent for next 3 months.';
+    } else if (low.includes('overspending') || low.includes('expense')) {
+      aiReply = '**Expense Alert:** Largest expense is **Payroll & Office Rent**. No anomalies detected.';
+    } else if (low.includes('net income') || low.includes('revenue') || low.includes('profit')) {
+      aiReply = '**Revenue Forecast:** Gross revenue **Rp 85,000,000** with net profit **Rp 32,400,000**.';
+    } else {
+      aiReply = 'Based on active period data, financial stability is consistent. Want in-depth audit on adjusting entries?';
     }
+
+    setMessages(prev => [...prev, { isUser: false, text: aiReply }]);
+    setIsLoading(false);
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
-    }
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-  };
+  const presets = [
+    { icon: IconCashBanknote, title: 'Cash Health', desc: 'Check liquid cash safety', prompt: 'How is my cash position and liquidity looking right now?', color: 'text-blue-500 bg-blue-500/10' },
+    { icon: IconTrendingUp, title: 'Overspending Alert', desc: 'Detect highest expense', prompt: 'Are there any overspending areas or expenses that need review?', color: 'text-red-500 bg-red-500/10' },
+    { icon: IconChartPie, title: 'Profit Forecast', desc: 'Project net profit', prompt: 'What is the estimated net income and revenue trend for this period?', color: 'text-emerald-500 bg-emerald-500/10' },
+    { icon: IconBulb, title: 'Efficiency Tips', desc: 'Cost-saving insights', prompt: 'Give me 3 actionable tips to optimize financial performance.', color: 'text-amber-500 bg-amber-500/10' },
+  ];
 
   return (
-    <div className="ai-container">
-      {/* Header */}
-      <div className="ai-header">
-        <div>
-          <h3 className="ai-title">
-            <i className="ti ti-robot ai-title-icon"></i> AI Financial Assistant
-          </h3>
-          <p className="ai-subtitle">Business analysis, expense detection, and instant financial advice.</p>
-        </div>
+    <div className="max-w-5xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <IconRobot size={26} className="text-primary" /> AI Financial Assistant
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">Business analysis, expense detection, and instant financial advice.</p>
       </div>
 
-      {/* 1. AI LIVE INSIGHT (Auto Summary Box) */}
-      <div className="ai-summary-card">
-        <div className="ai-summary-header">
-          <span className="ai-summary-badge">
-            <i className="ti ti-bolt"></i> LIVE SUMMARY
-          </span>
-          {summaryLoaded && <span className="ai-summary-time">Updated just now</span>}
-        </div>
-
-        <p className="ai-summary-text">
-          {!summaryLoaded ? (
-            <>
-              <span className="ai-spinner"></span>
-              Analyzing your current cash flow &amp; transactions...
-            </>
+      {/* LIVE SUMMARY */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary">
+              <IconBolt size={12}/> LIVE SUMMARY
+            </Badge>
+            {summaryLoaded && <span className="text- text-muted-foreground">Updated just now</span>}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!summaryLoaded? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"/>
+              Analyzing your current cash flow & transactions...
+            </div>
           ) : (
-            summaryText
+            <p className="text-sm leading-relaxed">{summaryText}</p>
           )}
-        </p>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* 2. PRESET PROMPT CARDS (Quick Questions) */}
-      <div className="ai-quick-header">
-        <h6 className="ai-quick-title">Recommended Quick Questions:</h6>
-        <span className="ai-quick-hint">Click a card to ask instantly</span>
-      </div>
-
-      <div className="ai-preset-grid">
-        <button
-          className="ai-preset-card"
-          disabled={isLoading}
-          onClick={() => handleSendMessage('How is my cash position and liquidity looking right now?')}
-        >
-          <div className="ai-icon-badge ai-icon-primary">
-            <i className="ti ti-cash-banknote"></i>
-          </div>
-          <div className="ai-preset-title">Cash Health</div>
-          <div className="ai-preset-desc">Check current liquid cash safety</div>
-        </button>
-
-        <button
-          className="ai-preset-card"
-          disabled={isLoading}
-          onClick={() => handleSendMessage('Are there any overspending areas or expenses that need review?')}
-        >
-          <div className="ai-icon-badge ai-icon-danger">
-            <i className="ti ti-trending-up"></i>
-          </div>
-          <div className="ai-preset-title">Overspending Alert</div>
-          <div className="ai-preset-desc">Detect highest expense categories</div>
-        </button>
-
-        <button
-          className="ai-preset-card"
-          disabled={isLoading}
-          onClick={() => handleSendMessage('What is the estimated net income and revenue trend for this period?')}
-        >
-          <div className="ai-icon-badge ai-icon-success">
-            <i className="ti ti-chart-pie"></i>
-          </div>
-          <div className="ai-preset-title">Profit Forecast</div>
-          <div className="ai-preset-desc">Project net profit for active period</div>
-        </button>
-
-        <button
-          className="ai-preset-card"
-          disabled={isLoading}
-          onClick={() => handleSendMessage('Give me 3 actionable tips to optimize financial performance.')}
-        >
-          <div className="ai-icon-badge ai-icon-warning">
-            <i className="ti ti-bulb"></i>
-          </div>
-          <div className="ai-preset-title">Efficiency Tips</div>
-          <div className="ai-preset-desc">Pragmatic cost-saving insights</div>
-        </button>
-      </div>
-
-      {/* 3. INTERACTIVE CHAT BOX */}
-      <div className="ai-chat-card">
-        <div className="ai-chat-header">
-          <h6 className="ai-chat-title">
-            <i className="ti ti-messages" style={{ color: '#3b82f6' }}></i> Conversation
-          </h6>
-          <button className="ai-clear-btn" onClick={clearChat}>
-            <i className="ti ti-trash"></i> Clear
-          </button>
+      {/* PRESETS */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold">Recommended Quick Questions</h3>
+          <span className="text-xs text-muted-foreground">Click to ask instantly</span>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {presets.map(p => (
+            <Card key={p.title} className="cursor-pointer hover:bg-accent/50 transition-colors group" onClick={()=>handleSendMessage(p.prompt)}>
+              <CardContent className="p-4">
+                <div className={cn('w-9 h-9 rounded-lg grid place-items-center mb-3', p.color)}>
+                  <p.icon size={18}/>
+                </div>
+                <div className="font-medium text-sm">{p.title}</div>
+                <div className="text-xs text-muted-foreground mt-1">{p.desc}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
-        <div className="ai-chat-body">
-          {/* Chat Container */}
-          <div className="ai-message-container">
-            {messages.length === 0 && (
-              <div className="ai-empty-state">
-                <i className="ti ti-robot ai-empty-icon"></i>
-                <p style={{ fontSize: '0.85rem', margin: 0 }}>
-                  Click any card above or type a question below to start the discussion.
-                </p>
+      {/* CHAT */}
+      <Card className="flex flex-col h-">
+        <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0 border-b">
+          <CardTitle className="text-sm flex items-center gap-2"><IconSparkles size={16} className="text-primary"/> Conversation</CardTitle>
+          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={()=>setMessages([])}><IconTrash size={14}/> Clear</Button>
+        </CardHeader>
+
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-4">
+            {messages.length===0 && (
+              <div className="py-16 text-center text-muted-foreground">
+                <IconRobot size={36} className="mx-auto mb-3 opacity-20"/>
+                <p className="text-sm">Click any card above or type a question below.</p>
               </div>
             )}
-
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`ai-message-row ${msg.isUser ? 'ai-user-row' : 'ai-ai-row'}`}
-              >
-                <div className={`ai-bubble ${msg.isUser ? 'ai-user-bubble' : 'ai-ai-bubble'}`}>
-                  <div dangerouslySetInnerHTML={formatMarkdown(msg.text)}></div>
+            {messages.map((m,i)=>(
+              <div key={i} className={cn('flex', m.isUser? 'justify-end':'justify-start')}>
+                <div className={cn('max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
+                  m.isUser? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'
+                )}>
+                  {formatBold(m.text)}
                 </div>
               </div>
             ))}
-
             {isLoading && (
-              <div className="ai-message-row ai-ai-row">
-                <div className="ai-bubble ai-ai-bubble">
-                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.5rem', opacity: 0.8 }}>
-                    <span className="ai-spinner"></span> AI is analyzing data...
-                  </div>
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm flex items-center gap-2">
+                  <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"/>
+                  AI is analyzing data...
                 </div>
               </div>
             )}
           </div>
+        </ScrollArea>
 
-          {/* Input Box */}
-          <div className="ai-input-wrapper">
-            <input
-              type="text"
-              className="ai-chat-input"
-              placeholder="Ask anything or request custom analysis..."
-              disabled={isLoading}
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyDown={handleInputKeyDown}
-            />
-            <button
-              className="ai-send-btn"
-              type="button"
-              disabled={isLoading}
-              onClick={() => handleSendMessage()}
-            >
-              <i className="ti ti-send"></i> Send
-            </button>
-          </div>
+        <div className="p-3 border-t flex gap-2">
+          <Input
+            placeholder="Ask anything or request custom analysis..."
+            value={userInput}
+            onChange={e=>setUserInput(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&handleSendMessage()}
+            disabled={isLoading}
+            className="h-10"
+          />
+          <Button onClick={()=>handleSendMessage()} disabled={isLoading} className="h-10 px-4 gap-1.5">
+            <IconSend size={16}/> Send
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
