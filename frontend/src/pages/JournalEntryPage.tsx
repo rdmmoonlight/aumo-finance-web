@@ -1,8 +1,25 @@
-import apiClient from '@/services/apiClient';
-
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
-import { Link } from 'react-router-dom';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  IconEdit,
+  IconNotebook,
+  IconArrowLeft,
+  IconCircleCheck,
+  IconAlertTriangle,
+  IconLock,
+  IconHash,
+  IconCategory,
+  IconCalendar,
+  IconListDetails,
+  IconPlus,
+  IconTrash,
+  IconDeviceFloppy,
+  IconLoader2,
+} from '@tabler/icons-react';
+
+import apiClient from '@/services/apiClient';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 // Data Model Interfaces
 export interface ChartOfAccountOption {
@@ -53,9 +70,6 @@ const generateTxNumber = (journalType: string, dateStr: string): string => {
   return `${prefix}${yy}${mm}0001`;
 };
 
-const rawApiUrl = process.env.API_URL || 'http://localhost:5000/api';
-const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
-
 function JournalEntryContent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -78,15 +92,6 @@ function JournalEntryContent() {
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
-  // Helper Authorization JWT Header
-  const getAuthHeaders = (): Record<string, string> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    return {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-  };
 
   const resetForm = () => {
     const defaultDate = new Date().toISOString().split('T')[0];
@@ -129,13 +134,8 @@ function JournalEntryContent() {
     const initPage = async () => {
       setLoading(true);
       try {
-        const headers = getAuthHeaders();
-
         // 1. Fetch Chart of Accounts
-        const accountsRes = await apiClient.get(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
-          method: 'GET',
-          headers,
-        });
+        const accountsRes = await apiClient.get('/api/v1/chart-of-accounts');
 
         if (accountsRes.status === 200) {
           const rawAccounts = accountsRes.data;
@@ -158,10 +158,7 @@ function JournalEntryContent() {
 
         // 2. Fetch data jika Edit Mode
         if (isEdit && entryIdParam) {
-          const journalRes = await apiClient.get(`${API_BASE_URL}/api/v1/journals/${entryIdParam}`, {
-            method: 'GET',
-            headers,
-          });
+          const journalRes = await apiClient.get(`/api/v1/journals/${entryIdParam}`);
 
           if (journalRes.status !== 200) {
             throw new Error('Failed to retrieve journal entry data from the server.');
@@ -201,7 +198,7 @@ function JournalEntryContent() {
           resetForm();
         }
       } catch (err: any) {
-        setValidationErrors([err.message || 'Failed to load data from the server.']);
+        setValidationErrors([err?.response?.data?.message || err.message || 'Failed to load data from the server.']);
       } finally {
         setLoading(false);
       }
@@ -351,22 +348,13 @@ function JournalEntryContent() {
         })),
       };
 
-      const url = isEdit
-        ? `${API_BASE_URL}/api/v1/journals/${entryIdParam}`
-        : `${API_BASE_URL}/api/v1/journals`;
-      const method = isEdit ? 'PUT' : 'POST';
-
-      const response = await apiClient.get(url, {
-        method,
-        headers: getAuthHeaders(),
-        data: payload,
-      });
+      const endpoint = isEdit ? `/api/v1/journals/${entryIdParam}` : '/api/v1/journals';
+      const response = isEdit
+        ? await apiClient.put(endpoint, payload)
+        : await apiClient.post(endpoint, payload);
 
       if (response.status !== 200 && response.status !== 201) {
-        const errData = response.data.catch(() => ({}));
-        throw new Error(
-          errData.message || 'Failed to save journal transaction to server.'
-        );
+        throw new Error(response.data?.message || 'Failed to save journal transaction to server.');
       }
 
       const result = response.data;
@@ -378,382 +366,339 @@ function JournalEntryContent() {
         }, 1200);
       } else {
         const postedTxNum = result.transactionNumber || transactionNumber;
-        setSuccessMessage(
-          `Journal entry ${postedTxNum} has been posted successfully.`
-        );
+        setSuccessMessage(`Journal entry ${postedTxNum} has been posted successfully.`);
         resetForm();
       }
     } catch (err: any) {
       setValidationErrors([
-        err.message || 'An error occurred while processing the journal entry.',
+        err?.response?.data?.message || err.message || 'An error occurred while processing the journal entry.',
       ]);
     }
   };
 
   if (loading) {
     return (
-      <div className="text-center py-5 my-5 text-white-50">
-        <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-        <span>Loading journal data from server...</span>
+      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+        <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-sm">Loading journal data from server...</span>
       </div>
     );
   }
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           {isEdit ? (
             <>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-edit me-2 text-warning fs-2"></i> Edit Journal Entry
-                <span className="badge bg-secondary-subtle text-white border border-secondary-subtle ms-2">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <IconEdit className="text-amber-500 h-7 w-7" /> Edit Journal Entry
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-muted text-muted-foreground border">
                   {transactionNumber}
                 </span>
               </h2>
-              <p className="text-white-50 mb-0">
+              <p className="text-xs text-muted-foreground mt-1">
                 Update this double-entry transaction for Aumo Finance.
               </p>
             </>
           ) : (
             <>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-notebook me-2 text-warning fs-2"></i> Create Journal Entry
+              <h2 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <IconNotebook className="text-amber-500 h-7 w-7" /> Create Journal Entry
               </h2>
-              <p className="text-white-50 mb-0">
+              <p className="text-xs text-muted-foreground mt-1">
                 Record double-entry financial transactions or adjusting entries for Aumo Finance.
               </p>
             </>
           )}
         </div>
-        <div>
-          <Link to="/reports/general-journal"
-            className="btn btn-outline-secondary shadow-sm d-inline-flex align-items-center"
-          >
-            <i className="ti ti-arrow-left me-1"></i> Back to Journal
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/reports/general-journal" className="flex items-center gap-1.5">
+            <IconArrowLeft size={16} /> Back to Journal
           </Link>
-        </div>
+        </Button>
       </div>
 
       {/* Notifications */}
       {successMessage && (
-        <div
-          className="alert alert-success alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between"
-          role="alert"
-        >
-          <div className="d-flex align-items-center">
-            <i className="ti ti-circle-check me-2 fs-5 flex-shrink-0"></i>
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-emerald-400 flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <IconCircleCheck className="h-5 w-5 shrink-0" />
             <span>{successMessage}</span>
           </div>
           <button
             type="button"
-            className="btn-close ms-auto"
+            className="text-emerald-400 hover:opacity-75 font-semibold text-xs"
             onClick={() => setSuccessMessage(null)}
-          ></button>
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
       {validationErrors.length > 0 && (
-        <div
-          className="alert alert-danger alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between"
-          role="alert"
-        >
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle me-2 fs-5 flex-shrink-0"></i>
-            <ul className="mb-0 small fw-semibold list-unstyled">
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-red-400 text-sm">
+          <div className="flex items-start gap-2">
+            <IconAlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+            <ul className="list-disc list-inside space-y-1 font-medium">
               {validationErrors.map((err, idx) => (
                 <li key={idx}>{err}</li>
               ))}
             </ul>
           </div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setValidationErrors([])}
-          ></button>
         </div>
       )}
 
       {lockedMessage ? (
-        <div
-          className="alert alert-warning shadow-sm py-2 d-flex align-items-center"
-          role="alert"
-        >
-          <i className="ti ti-lock me-2 fs-5 flex-shrink-0"></i>
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-amber-300 flex items-center gap-2 text-sm">
+          <IconLock className="h-5 w-5 shrink-0" />
           <span>{lockedMessage}</span>
-          <Link to="/reports/general-journal" className="alert-link ms-2">
+          <Link to="/reports/general-journal" className="underline hover:text-amber-100 font-medium ml-1">
             Back to General Journal
           </Link>
         </div>
       ) : (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Transaction Header Metadata */}
-          <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
-            <div className="card-body p-4 text-white">
-              <div className="row g-3">
-                {/* Transaction Number Input (Uneditable, Disamakan Style-nya) */}
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
-                    <i className="ti ti-hash"></i> Transaction No.
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control bg-dark text-white border-secondary fw-semibold"
-                    value={transactionNumber}
-                    readOnly
-                    tabIndex={-1}
-                  />
-                </div>
+          <div className="rounded-xl border bg-card p-5 shadow-sm text-card-foreground">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Transaction Number Input */}
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <IconHash size={14} /> Transaction No.
+                </label>
+                <input
+                  type="text"
+                  className="w-full h-9 px-3 rounded-md border bg-muted text-foreground text-xs font-semibold focus:outline-none"
+                  value={transactionNumber}
+                  readOnly
+                  tabIndex={-1}
+                />
+              </div>
 
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
-                    <i className="ti ti-category"></i> Journal Type
-                  </label>
-                  <select
-                    className="form-select bg-dark text-white border-secondary fw-semibold"
-                    value={journalType}
-                    onChange={(e) => setJournalType(e.target.value)}
-                  >
-                    <option value="General">General Journal (GJ)</option>
-                    <option value="Adjusting">Adjusting Entry (AJ)</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <IconCategory size={14} /> Journal Type
+                </label>
+                <select
+                  className="w-full h-9 px-3 rounded-md border bg-background text-foreground text-xs font-semibold focus:ring-1 focus:ring-ring focus:outline-none"
+                  value={journalType}
+                  onChange={(e) => setJournalType(e.target.value)}
+                >
+                  <option value="General">General Journal (GJ)</option>
+                  <option value="Adjusting">Adjusting Entry (AJ)</option>
+                </select>
+              </div>
 
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
-                    <i className="ti ti-calendar"></i> Transaction Date
-                  </label>
-                  <input
-                    type="date"
-                    className="form-control bg-dark text-white border-secondary"
-                    required
-                    value={entryDate}
-                    onChange={(e) => setEntryDate(e.target.value)}
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <IconCalendar size={14} /> Transaction Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full h-9 px-3 rounded-md border bg-background text-foreground text-xs focus:ring-1 focus:ring-ring focus:outline-none"
+                  required
+                  value={entryDate}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                />
               </div>
             </div>
           </div>
 
           {/* Journal Lines Table */}
-          <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
-            <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 px-4">
-              <h5 className="mb-0 fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-list-details me-2 text-warning fs-4"></i> Journal Lines
-              </h5>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center"
-                onClick={addLine}
-              >
-                <i className="ti ti-plus me-1"></i> Add Line
-              </button>
+          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                <IconListDetails className="text-amber-500 h-5 w-5" /> Journal Lines
+              </h3>
+              <Button type="button" variant="outline" size="sm" onClick={addLine} className="gap-1 text-xs">
+                <IconPlus size={14} /> Add Line
+              </Button>
             </div>
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-dark table-hover align-middle mb-0 journal-line-table">
-                  <thead className="table-light text-secondary">
-                    <tr>
-                      <th style={{ width: '10%' }} className="ps-4">
-                        Ref No.
-                      </th>
-                      <th style={{ width: '25%' }}>Account Name</th>
-                      <th style={{ width: '25%' }}>Description</th>
-                      <th style={{ width: '15%' }} className="text-end">
-                        Debit
-                      </th>
-                      <th style={{ width: '15%' }} className="text-end">
-                        Credit
-                      </th>
-                      <th style={{ width: '10%' }} className="text-center pe-4">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="border-top-0">
-                    {lines.map((line) => {
-                      const accountRef = availableAccounts.find(
-                        (a) => a.id === line.accountId
-                      )?.referenceNumber;
 
-                      return (
-                        <tr key={line.id}>
-                          {/* Ref No. */}
-                          <td className="ps-4">
-                            <input
-                              type="text"
-                              className="form-control text-center bg-dark text-info border-secondary"
-                              readOnly
-                              tabIndex={-1}
-                              placeholder="---"
-                              value={accountRef ? accountRef.toString() : ''}
-                            />
-                          </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-muted/50 text-muted-foreground border-b font-medium">
+                  <tr>
+                    <th className="py-3 px-4 w-[10%]">Ref No.</th>
+                    <th className="py-3 px-4 w-[25%]">Account Name</th>
+                    <th className="py-3 px-4 w-[25%]">Description</th>
+                    <th className="py-3 px-4 w-[15%] text-right">Debit</th>
+                    <th className="py-3 px-4 w-[15%] text-right">Credit</th>
+                    <th className="py-3 px-4 w-[10%] text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y border-b">
+                  {lines.map((line) => {
+                    const accountRef = availableAccounts.find(
+                      (a) => a.id === line.accountId
+                    )?.referenceNumber;
 
-                          {/* Account Selection */}
-                          <td>
-                            <select
-                              className="form-select bg-dark text-white border-secondary"
-                              value={line.accountId}
-                              onChange={(e) =>
-                                updateLineField(line.id, 'accountId', Number(e.target.value))
-                              }
-                            >
-                              <option value={0} disabled>
-                                Select Account...
+                    return (
+                      <tr key={line.id} className="hover:bg-muted/30">
+                        {/* Ref No. */}
+                        <td className="py-2 px-4">
+                          <input
+                            type="text"
+                            className="w-full h-8 px-2 text-center rounded border bg-muted text-info text-xs focus:outline-none"
+                            readOnly
+                            tabIndex={-1}
+                            placeholder="---"
+                            value={accountRef ? accountRef.toString() : ''}
+                          />
+                        </td>
+
+                        {/* Account Selection */}
+                        <td className="py-2 px-4">
+                          <select
+                            className="w-full h-8 px-2 rounded border bg-background text-foreground text-xs focus:ring-1 focus:ring-ring focus:outline-none"
+                            value={line.accountId}
+                            onChange={(e) =>
+                              updateLineField(line.id, 'accountId', Number(e.target.value))
+                            }
+                          >
+                            <option value={0} disabled>
+                              Select Account...
+                            </option>
+                            {availableAccounts.map((acc) => (
+                              <option key={acc.id} value={acc.id}>
+                                {acc.referenceNumber} - {acc.accountName}
                               </option>
-                              {availableAccounts.map((acc) => (
-                                <option key={acc.id} value={acc.id}>
-                                  {acc.referenceNumber} - {acc.accountName}
-                                </option>
+                            ))}
+                          </select>
+                        </td>
+
+                        {/* Description */}
+                        <td className="py-2 px-4 relative">
+                          <input
+                            type="text"
+                            className="w-full h-8 px-2 rounded border bg-background text-foreground text-xs focus:ring-1 focus:ring-ring focus:outline-none"
+                            placeholder="Note..."
+                            autoComplete="off"
+                            value={line.lineDescription}
+                            onChange={(e) => handleDescriptionInput(line.id, e.target.value)}
+                            onBlur={() => {
+                              setTimeout(
+                                () => updateLineField(line.id, 'showSuggestions', false),
+                                200
+                              );
+                            }}
+                          />
+                          {line.showSuggestions && line.suggestions.length > 0 && (
+                            <div className="absolute z-10 left-4 right-4 top-11 rounded-md border bg-popover shadow-md overflow-hidden">
+                              {line.suggestions.map((suggestion, sIdx) => (
+                                <button
+                                  key={sIdx}
+                                  type="button"
+                                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground text-foreground border-b last:border-0"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    selectSuggestion(line.id, suggestion);
+                                  }}
+                                >
+                                  {suggestion}
+                                </button>
                               ))}
-                            </select>
-                          </td>
+                            </div>
+                          )}
+                        </td>
 
-                          {/* Description */}
-                          <td className="journal-line-description-container">
-                            <input
-                              type="text"
-                              className="form-control bg-dark text-white border-secondary"
-                              placeholder="Note..."
-                              autoComplete="off"
-                              value={line.lineDescription}
-                              onChange={(e) =>
-                                handleDescriptionInput(line.id, e.target.value)
-                              }
-                              onBlur={() => {
-                                setTimeout(
-                                  () => updateLineField(line.id, 'showSuggestions', false),
-                                  200
-                                );
-                              }}
-                            />
-                            {line.showSuggestions && line.suggestions.length > 0 && (
-                              <div className="list-group journal-suggestions-menu bg-dark border border-secondary">
-                                {lines
-                                  .find((l) => l.id === line.id)
-                                  ?.suggestions.map((suggestion, sIdx) => (
-                                    <button
-                                      key={sIdx}
-                                      type="button"
-                                      className="list-group-item list-group-item-action bg-dark text-white border-secondary small py-1"
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        selectSuggestion(line.id, suggestion);
-                                      }}
-                                    >
-                                      {suggestion}
-                                    </button>
-                                  ))}
-                              </div>
-                            )}
-                          </td>
+                        {/* Debit Input */}
+                        <td className="py-2 px-4">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="w-full h-8 px-2 text-right rounded border bg-background text-foreground text-xs focus:ring-1 focus:ring-ring focus:outline-none"
+                            placeholder="0"
+                            value={line.debit}
+                            onChange={(e) => updateLineField(line.id, 'debit', e.target.value)}
+                          />
+                        </td>
 
-                          {/* Debit Input (Tipe text, format titik otomatis, tanpa spinner) */}
-                          <td>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              className="form-control bg-dark text-white border-secondary text-end"
-                              placeholder="0"
-                              value={line.debit}
-                              onChange={(e) =>
-                                updateLineField(line.id, 'debit', e.target.value)
-                              }
-                            />
-                          </td>
+                        {/* Credit Input */}
+                        <td className="py-2 px-4">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            className="w-full h-8 px-2 text-right rounded border bg-background text-foreground text-xs focus:ring-1 focus:ring-ring focus:outline-none"
+                            placeholder="0"
+                            value={line.credit}
+                            onChange={(e) => updateLineField(line.id, 'credit', e.target.value)}
+                          />
+                        </td>
 
-                          {/* Credit Input (Tipe text, format titik otomatis, tanpa spinner) */}
-                          <td>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              className="form-control bg-dark text-white border-secondary text-end"
-                              placeholder="0"
-                              value={line.credit}
-                              onChange={(e) =>
-                                updateLineField(line.id, 'credit', e.target.value)
-                              }
-                            />
-                          </td>
-
-                          {/* Remove Line Action */}
-                          <td className="text-center pe-4">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeLine(line.id)}
-                            >
-                              <i className="ti ti-trash"></i>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="table-light text-secondary border-top fw-bold">
-                    <tr>
-                      <td colSpan={3} className="text-end py-3 text-white">
-                        Total Balance:
-                      </td>
-                      <td className="text-end text-success fs-6 py-3">
-                        Rp {formatIDR(totalDebit)}
-                      </td>
-                      <td className="text-end text-danger fs-6 py-3">
-                        Rp {formatIDR(totalCredit)}
-                      </td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td colSpan={3} className="text-end pb-3 border-bottom-0 text-white">
-                        Status:
-                      </td>
-                      <td colSpan={2} className="text-center pb-3 border-bottom-0">
-                        {isBalanced ? (
-                          <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 d-inline-flex align-items-center">
-                            <i className="ti ti-circle-check me-1"></i> Balanced
-                          </span>
-                        ) : (
-                          <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 d-inline-flex align-items-center">
-                            <i className="ti ti-alert-triangle me-1"></i> Unbalanced (Rp{' '}
-                            {formatIDR(Math.abs(totalDebit - totalCredit))})
-                          </span>
-                        )}
-                      </td>
-                      <td className="border-bottom-0"></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                        {/* Remove Line Action */}
+                        <td className="py-2 px-4 text-center">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => removeLine(line.id)}
+                          >
+                            <IconTrash size={16} />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-muted/20 font-semibold text-xs">
+                  <tr className="border-b">
+                    <td colSpan={3} className="py-3 px-4 text-right">
+                      Total Balance:
+                    </td>
+                    <td className="py-3 px-4 text-right text-emerald-400">
+                      Rp {formatIDR(totalDebit)}
+                    </td>
+                    <td className="py-3 px-4 text-right text-red-400">
+                      Rp {formatIDR(totalCredit)}
+                    </td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td colSpan={3} className="py-3 px-4 text-right">
+                      Status:
+                    </td>
+                    <td colSpan={2} className="py-3 px-4 text-center">
+                      {isBalanced ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs">
+                          <IconCircleCheck size={14} /> Balanced
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs">
+                          <IconAlertTriangle size={14} /> Unbalanced (Rp{' '}
+                          {formatIDR(Math.abs(totalDebit - totalCredit))})
+                        </span>
+                      )}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
 
           {/* Form Controls */}
-          <div className="d-flex justify-content-end gap-2">
+          <div className="flex justify-end gap-3">
             {isEdit ? (
-              <Link to="/reports/general-journal"
-                className="btn btn-outline-secondary px-4"
-              >
-                Cancel
-              </Link>
+              <Button variant="outline" asChild>
+                <Link to="/reports/general-journal">Cancel</Link>
+              </Button>
             ) : (
-              <button
-                type="button"
-                className="btn btn-outline-secondary px-4"
-                onClick={resetForm}
-              >
+              <Button type="button" variant="outline" onClick={resetForm}>
                 Reset Form
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary fw-semibold px-4 shadow-sm d-inline-flex align-items-center"
               disabled={!isBalanced}
+              className="gap-2"
             >
-              <i className="ti ti-device-floppy me-1"></i>{' '}
+              <IconDeviceFloppy size={16} />
               {isEdit ? 'Save Changes' : 'Post Journal Entry'}
-            </button>
+            </Button>
           </div>
         </form>
       )}
@@ -765,9 +710,9 @@ export default function JournalEntryPage() {
   return (
     <Suspense
       fallback={
-        <div className="text-center py-5 my-5 text-white-50">
-          <div className="spinner-border text-primary me-2" role="status"></div>
-          <span>Loading journal entry page...</span>
+        <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+          <IconLoader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="text-sm">Loading journal entry page...</span>
         </div>
       }
     >
