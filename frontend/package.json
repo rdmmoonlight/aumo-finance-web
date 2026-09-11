@@ -39,6 +39,7 @@
     "@tanstack/nitro-v2-vite-plugin": "^1.155.2",
     "@tanstack/react-router-devtools": "^1.167.1",
     "@tanstack/router-plugin": "^1.168.37",
+    "@tanstack/start": "^1.120.20",
     "@types/node": "^20.19.43",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
