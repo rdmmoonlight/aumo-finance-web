@@ -12,7 +12,7 @@ namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("/api/v1/dashboard")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class DashboardController : ControllerBase
 {
     private readonly AppDbContext _db;

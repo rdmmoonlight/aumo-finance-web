@@ -11,7 +11,7 @@ namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
 [Route("/api/v1/reports/statement-of-financial-position")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class StatementOfFinancialPositionController : ControllerBase
 {
     private readonly AppDbContext _db;

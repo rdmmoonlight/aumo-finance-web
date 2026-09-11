@@ -12,7 +12,7 @@ namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("/api/v1/chart-of-accounts")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class ChartOfAccountsController : ControllerBase
 {
     private readonly AppDbContext _db;
