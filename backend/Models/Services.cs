@@ -23,37 +23,37 @@ using Microsoft.Extensions.Options;
 namespace AumoBackend.Models;
 
 public interface IAiService
+{
+    Task<string> AnalyzeFinancialQueryAsync(string userPrompt, string contextData = "");
+}
+
+public class AiService : IAiService
+{
+    private readonly HttpClient _httpClient;
+    private readonly string _apiKey;
+    private readonly ILogger<AiService> _logger;
+
+    private const string Model = "gemini-flash-latest";
+
+    public AiService(HttpClient httpClient, IConfiguration configuration, ILogger<AiService> logger)
     {
-        Task<string> AnalyzeFinancialQueryAsync(string userPrompt, string contextData = "");
+        _httpClient = httpClient;
+        _apiKey = configuration["Gemini:ApiKey"] ?? string.Empty;
+        _logger = logger;
     }
 
-    public class AiService : IAiService
+    public async Task<string> AnalyzeFinancialQueryAsync(string userPrompt, string contextData = "")
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
-        private readonly ILogger<AiService> _logger;
-
-        private const string Model = "gemini-flash-latest";
-
-        public AiService(HttpClient httpClient, IConfiguration configuration, ILogger<AiService> logger)
+        if (string.IsNullOrWhiteSpace(_apiKey))
         {
-            _httpClient = httpClient;
-            _apiKey = configuration["Gemini:ApiKey"] ?? string.Empty;
-            _logger = logger;
+            _logger.LogWarning("Gemini API Key is not configured.");
+            return "AI Service is currently offline. Please configure the Gemini API key.";
         }
 
-        public async Task<string> AnalyzeFinancialQueryAsync(string userPrompt, string contextData = "")
+        try
         {
-            if (string.IsNullOrWhiteSpace(_apiKey))
-            {
-                _logger.LogWarning("Gemini API Key is not configured.");
-                return "AI Service is currently offline. Please configure the Gemini API key.";
-            }
-
-            try
-            {
-                // PERBAIKAN: Menambahkan instruksi tegas untuk format mata uang Rupiah (Rp)
-                string systemInstruction = @"You are the resident AI Financial Controller for Aumo Finance in Indonesia.
+            // PERBAIKAN: Menambahkan instruksi tegas untuk format mata uang Rupiah (Rp)
+            string systemInstruction = @"You are the resident AI Financial Controller for Aumo Finance in Indonesia.
 Analyse accounting and financial queries with precision, discipline, and absolute accuracy.
 Provide concise, actionable insights in professional English or Indonesian.
 
@@ -63,152 +63,152 @@ CURRENCY MANDATE:
 3. Use dot (.) as thousand separators and comma (,) for decimals (e.g., Rp 1.500.000,00 or Rp 250.000).
 4. Do not make assumptions beyond rational economic logic.";
 
-                string fullPrompt = string.IsNullOrWhiteSpace(contextData)
-                    ? userPrompt
-                    : $"Context Financial Data:\n{contextData}\n\nUser Question: {userPrompt}";
+            string fullPrompt = string.IsNullOrWhiteSpace(contextData)
+                ? userPrompt
+                : $"Context Financial Data:\n{contextData}\n\nUser Question: {userPrompt}";
 
-                var requestBody = new
+            var requestBody = new
+            {
+                system_instruction = new
                 {
-                    system_instruction = new
-                    {
-                        parts = new[] { new { text = systemInstruction } }
-                    },
-                    contents = new[]
-                    {
+                    parts = new[] { new { text = systemInstruction } }
+                },
+                contents = new[]
+                {
                         new
                         {
                             role = "user",
                             parts = new[] { new { text = fullPrompt } }
                         }
                     }
-                };
+            };
 
-                string url = $"https://generativelanguage.googleapis.com/v1beta/models/{Model}:generateContent?key={_apiKey}";
+            string url = $"https://generativelanguage.googleapis.com/v1beta/models/{Model}:generateContent?key={_apiKey}";
 
-                using var response = await _httpClient.PostAsJsonAsync(url, requestBody);
+            using var response = await _httpClient.PostAsJsonAsync(url, requestBody);
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    string errorBody = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Gemini API returned {StatusCode}: {Body}", response.StatusCode, errorBody);
-                    return "Unable to generate AI analysis at this moment. Please try again later.";
-                }
-
-                using var stream = await response.Content.ReadAsStreamAsync();
-                using var doc = await JsonDocument.ParseAsync(stream);
-
-                var text = doc.RootElement
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")[0]
-                    .GetProperty("text")
-                    .GetString();
-
-                return string.IsNullOrWhiteSpace(text)
-                    ? "Unable to generate AI analysis at this moment. Please try again later."
-                    : text;
-            }
-            catch (Exception ex)
+            if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError(ex, "Error calling Gemini API.");
+                string errorBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Gemini API returned {StatusCode}: {Body}", response.StatusCode, errorBody);
                 return "Unable to generate AI analysis at this moment. Please try again later.";
             }
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var doc = await JsonDocument.ParseAsync(stream);
+
+            var text = doc.RootElement
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString();
+
+            return string.IsNullOrWhiteSpace(text)
+                ? "Unable to generate AI analysis at this moment. Please try again later."
+                : text;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calling Gemini API.");
+            return "Unable to generate AI analysis at this moment. Please try again later.";
         }
     }
+}
 
 /// <summary>
-    /// Adds the user's FullName as the principal's ClaimTypes.Name (falling
-    /// back to the username/email when none is set), so views like
-    /// _Sidebar.cshtml keep showing the person's name exactly as they did
-    /// under the old API-backed claims mapping in AuthPrincipalFactory.
-    /// </summary>
-    public class AumoUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<Guid>>
+/// Adds the user's FullName as the principal's ClaimTypes.Name (falling
+/// back to the username/email when none is set), so views like
+/// _Sidebar.cshtml keep showing the person's name exactly as they did
+/// under the old API-backed claims mapping in AuthPrincipalFactory.
+/// </summary>
+public class AumoUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole<Guid>>
+{
+    public AumoUserClaimsPrincipalFactory(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole<Guid>> roleManager,
+        IOptions<IdentityOptions> options)
+        : base(userManager, roleManager, options)
     {
-        public AumoUserClaimsPrincipalFactory(
-            UserManager<ApplicationUser> userManager,
-            RoleManager<IdentityRole<Guid>> roleManager,
-            IOptions<IdentityOptions> options)
-            : base(userManager, roleManager, options)
-        {
-        }
+    }
 
-        protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
-        {
-            var identity = await base.GenerateClaimsAsync(user);
+    protected override async Task<ClaimsIdentity> GenerateClaimsAsync(ApplicationUser user)
+    {
+        var identity = await base.GenerateClaimsAsync(user);
 
-            if (!string.IsNullOrWhiteSpace(user.FullName))
+        if (!string.IsNullOrWhiteSpace(user.FullName))
+        {
+            var existingName = identity.FindFirst(ClaimTypes.Name);
+            if (existingName is not null)
             {
-                var existingName = identity.FindFirst(ClaimTypes.Name);
-                if (existingName is not null)
-                {
-                    identity.RemoveClaim(existingName);
-                }
-
-                identity.AddClaim(new Claim(ClaimTypes.Name, user.FullName));
+                identity.RemoveClaim(existingName);
             }
 
-            return identity;
+            identity.AddClaim(new Claim(ClaimTypes.Name, user.FullName));
         }
+
+        return identity;
     }
+}
 
 public class CloudinaryService : ICloudStorageService
+{
+    private readonly Cloudinary _cloudinary;
+
+    public CloudinaryService(IConfiguration config)
     {
-        private readonly Cloudinary _cloudinary;
+        var account = new Account(
+            config["CloudinarySettings:CloudName"],
+            config["CloudinarySettings:ApiKey"],
+            config["CloudinarySettings:ApiSecret"]
+        );
 
-        public CloudinaryService(IConfiguration config)
-        {
-            var account = new Account(
-                config["CloudinarySettings:CloudName"],
-                config["CloudinarySettings:ApiKey"],
-                config["CloudinarySettings:ApiSecret"]
-            );
-
-            _cloudinary = new Cloudinary(account);
-        }
-
-        public async Task<(string PublicId, string Url, long FileSize)> UploadFileAsync(IFormFile file, string folderName = "documents")
-        {
-            if (file == null || file.Length == 0)
-                throw new ArgumentException("File tidak boleh kosong.");
-
-            using var stream = file.OpenReadStream();
-
-            // Cloudinary menggunakan RawUploadParams untuk dokumen non-gambar (PDF, XLSX, DOCX, dll.)
-            var uploadParams = new RawUploadParams
-            {
-                File = new FileDescription(file.FileName, stream),
-                Folder = folderName,
-                UseFilename = true,
-                UniqueFilename = true
-            };
-
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-
-            if (uploadResult.Error != null)
-            {
-                throw new Exception($"Cloudinary Upload Error: {uploadResult.Error.Message}");
-            }
-
-            return (uploadResult.PublicId, uploadResult.SecureUrl.ToString(), uploadResult.Bytes);
-        }
-
-        public async Task<bool> DeleteFileAsync(string publicId)
-        {
-            var deleteParams = new DeletionParams(publicId)
-            {
-                ResourceType = ResourceType.Raw
-            };
-
-            var result = await _cloudinary.DestroyAsync(deleteParams);
-            return result.Result == "ok";
-        }
+        _cloudinary = new Cloudinary(account);
     }
+
+    public async Task<(string PublicId, string Url, long FileSize)> UploadFileAsync(IFormFile file, string folderName = "documents")
+    {
+        if (file == null || file.Length == 0)
+            throw new ArgumentException("File tidak boleh kosong.");
+
+        using var stream = file.OpenReadStream();
+
+        // Cloudinary menggunakan RawUploadParams untuk dokumen non-gambar (PDF, XLSX, DOCX, dll.)
+        var uploadParams = new RawUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = folderName,
+            UseFilename = true,
+            UniqueFilename = true
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+        if (uploadResult.Error != null)
+        {
+            throw new Exception($"Cloudinary Upload Error: {uploadResult.Error.Message}");
+        }
+
+        return (uploadResult.PublicId, uploadResult.SecureUrl.ToString(), uploadResult.Bytes);
+    }
+
+    public async Task<bool> DeleteFileAsync(string publicId)
+    {
+        var deleteParams = new DeletionParams(publicId)
+        {
+            ResourceType = ResourceType.Raw
+        };
+
+        var result = await _cloudinary.DestroyAsync(deleteParams);
+        return result.Result == "ok";
+    }
+}
 
 public interface ICloudStorageService
-    {
-        Task<(string PublicId, string Url, long FileSize)> UploadFileAsync(IFormFile file, string folderName = "documents");
-        Task<bool> DeleteFileAsync(string publicId);
-    }
+{
+    Task<(string PublicId, string Url, long FileSize)> UploadFileAsync(IFormFile file, string folderName = "documents");
+    Task<bool> DeleteFileAsync(string publicId);
+}
 
 public class DashboardDataService
 {
@@ -430,23 +430,23 @@ public class EmailSender : IEmailSender
 }
 
 /// <summary>
-    /// Builds the HTML body for transactional auth emails (account
-    /// confirmation, password reset). Kept as plain string templates —
-    /// table-based layout with inline styles — so the markup renders
-    /// consistently across email clients (Gmail, Outlook, etc.), which
-    /// strip external stylesheets and most modern CSS.
-    /// </summary>
-    public static class EmailTemplates
+/// Builds the HTML body for transactional auth emails (account
+/// confirmation, password reset). Kept as plain string templates —
+/// table-based layout with inline styles — so the markup renders
+/// consistently across email clients (Gmail, Outlook, etc.), which
+/// strip external stylesheets and most modern CSS.
+/// </summary>
+public static class EmailTemplates
+{
+    private const string AccentColor = "#0d6efd";
+    private const string DarkColor = "#181818";
+    private const string MutedColor = "#6c757d";
+
+    public static string EmailConfirmation(string? fullName, string confirmUrl)
     {
-        private const string AccentColor = "#0d6efd";
-        private const string DarkColor = "#181818";
-        private const string MutedColor = "#6c757d";
+        var greetingName = string.IsNullOrWhiteSpace(fullName) ? "there" : fullName;
 
-        public static string EmailConfirmation(string? fullName, string confirmUrl)
-        {
-            var greetingName = string.IsNullOrWhiteSpace(fullName) ? "there" : fullName;
-
-            var bodyHtml = $@"
+        var bodyHtml = $@"
                 <p style=""margin:0 0 16px;"">Hi {greetingName},</p>
                 <p style=""margin:0 0 16px;"">
                     Thanks for signing up for Aumo Finance. Confirm your email address to activate your account and start managing your finances.
@@ -455,19 +455,19 @@ public class EmailSender : IEmailSender
                     This link will expire once used. If you didn't create this account, you can safely ignore this email.
                 </p>";
 
-            return Layout(
-                previewText: "Confirm your email to activate your Aumo Finance account.",
-                heading: "Confirm your email",
-                bodyHtml: bodyHtml,
-                buttonText: "Confirm Email Address",
-                buttonUrl: confirmUrl);
-        }
+        return Layout(
+            previewText: "Confirm your email to activate your Aumo Finance account.",
+            heading: "Confirm your email",
+            bodyHtml: bodyHtml,
+            buttonText: "Confirm Email Address",
+            buttonUrl: confirmUrl);
+    }
 
-        public static string PasswordReset(string? fullName, string resetUrl)
-        {
-            var greetingName = string.IsNullOrWhiteSpace(fullName) ? "there" : fullName;
+    public static string PasswordReset(string? fullName, string resetUrl)
+    {
+        var greetingName = string.IsNullOrWhiteSpace(fullName) ? "there" : fullName;
 
-            var bodyHtml = $@"
+        var bodyHtml = $@"
                 <p style=""margin:0 0 16px;"">Hi {greetingName},</p>
                 <p style=""margin:0 0 16px;"">
                     We received a request to reset the password for your Aumo Finance account. Click the button below to choose a new password.
@@ -476,17 +476,17 @@ public class EmailSender : IEmailSender
                     If you didn't request a password reset, you can safely ignore this email — your password won't be changed.
                 </p>";
 
-            return Layout(
-                previewText: "Reset the password for your Aumo Finance account.",
-                heading: "Reset your password",
-                bodyHtml: bodyHtml,
-                buttonText: "Reset Password",
-                buttonUrl: resetUrl);
-        }
+        return Layout(
+            previewText: "Reset the password for your Aumo Finance account.",
+            heading: "Reset your password",
+            bodyHtml: bodyHtml,
+            buttonText: "Reset Password",
+            buttonUrl: resetUrl);
+    }
 
-        private static string Layout(string previewText, string heading, string bodyHtml, string buttonText, string buttonUrl)
-        {
-            return $@"
+    private static string Layout(string previewText, string heading, string bodyHtml, string buttonText, string buttonUrl)
+    {
+        return $@"
 <!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -540,178 +540,178 @@ public class EmailSender : IEmailSender
     </table>
 </body>
 </html>";
-        }
     }
+}
 
 public interface IGuardianService
+{
+    Task CreateLoginActivityAsync(
+        Guid userId,
+        string activityType,
+        string device,
+        string browser,
+        string ipAddress,
+        string country,
+        bool isSuccess,
+        string operatingSystem = "Web",
+        string userAgent = "Web"
+    );
+
+    Task CreateSessionAsync(
+        Guid userId,
+        string deviceName,
+        string operatingSystem,
+        string browser,
+        string ipAddress,
+        string country,
+        string refreshTokenHash,
+        string userAgent = "Web"
+    );
+
+    Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
+    Task RevokeSessionAsync(Guid sessionId, Guid userId);
+    Task RevokeAllSessionsAsync(Guid userId);
+    Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId);
+}
+
+public class GuardianService : IGuardianService
+{
+    private readonly AppDbContext _context;
+
+    public GuardianService(AppDbContext context)
     {
-        Task CreateLoginActivityAsync(
-            Guid userId,
-            string activityType,
-            string device,
-            string browser,
-            string ipAddress,
-            string country,
-            bool isSuccess,
-            string operatingSystem = "Web",
-            string userAgent = "Web"
-        );
-
-        Task CreateSessionAsync(
-            Guid userId,
-            string deviceName,
-            string operatingSystem,
-            string browser,
-            string ipAddress,
-            string country,
-            string refreshTokenHash,
-            string userAgent = "Web"
-        );
-
-        Task<List<UserSession>> GetActiveSessionsAsync(Guid userId);
-        Task RevokeSessionAsync(Guid sessionId, Guid userId);
-        Task RevokeAllSessionsAsync(Guid userId);
-        Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId);
+        _context = context;
     }
 
-    public class GuardianService : IGuardianService
+    public async Task CreateLoginActivityAsync(
+        Guid userId,
+        string activityType,
+        string device,
+        string browser,
+        string ipAddress,
+        string country,
+        bool isSuccess,
+        string operatingSystem = "Web",
+        string userAgent = "Web")
     {
-        private readonly AppDbContext _context;
-
-        public GuardianService(AppDbContext context)
+        var activity = new LoginActivity
         {
-            _context = context;
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            ActivityType = activityType,
+            Device = string.IsNullOrWhiteSpace(device) ? "Web" : device,
+            OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
+            UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent,
+            Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
+            IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
+            Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
+            IsSuccess = isSuccess,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.LoginActivities.Add(activity);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task CreateSessionAsync(
+        Guid userId,
+        string deviceName,
+        string operatingSystem,
+        string browser,
+        string ipAddress,
+        string country,
+        string refreshTokenHash,
+        string userAgent = "Web")
+    {
+        var activeSessions = await _context.UserSessions
+            .Where(x => x.UserId == userId && x.IsActive)
+            .OrderByDescending(x => x.LastActivityAt)
+            .ToListAsync();
+
+        var sessionsToRevoke = activeSessions.Skip(4).ToList();
+
+        foreach (var oldSession in sessionsToRevoke)
+        {
+            oldSession.IsActive = false;
+            oldSession.IsCurrent = false;
+            oldSession.RevokedAt = DateTime.UtcNow;
         }
 
-        public async Task CreateLoginActivityAsync(
-            Guid userId,
-            string activityType,
-            string device,
-            string browser,
-            string ipAddress,
-            string country,
-            bool isSuccess,
-            string operatingSystem = "Web",
-            string userAgent = "Web")
+        foreach (var session in activeSessions)
         {
-            var activity = new LoginActivity
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                ActivityType = activityType,
-                Device = string.IsNullOrWhiteSpace(device) ? "Web" : device,
-                OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
-                UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent,
-                Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
-                IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
-                Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
-                IsSuccess = isSuccess,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.LoginActivities.Add(activity);
-            await _context.SaveChangesAsync();
+            session.IsCurrent = false;
         }
 
-        public async Task CreateSessionAsync(
-            Guid userId,
-            string deviceName,
-            string operatingSystem,
-            string browser,
-            string ipAddress,
-            string country,
-            string refreshTokenHash,
-            string userAgent = "Web")
+        var newSession = new UserSession
         {
-            var activeSessions = await _context.UserSessions
-                .Where(x => x.UserId == userId && x.IsActive)
-                .OrderByDescending(x => x.LastActivityAt)
-                .ToListAsync();
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            DeviceName = string.IsNullOrWhiteSpace(deviceName) ? "Web" : deviceName,
+            OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
+            Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
+            UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent,
+            IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
+            Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
+            RefreshTokenHash = string.IsNullOrWhiteSpace(refreshTokenHash) ? "COOKIE_SESSION" : refreshTokenHash,
+            IsActive = true,
+            IsCurrent = true,
+            CreatedAt = DateTime.UtcNow,
+            LastActivityAt = DateTime.UtcNow
+        };
 
-            var sessionsToRevoke = activeSessions.Skip(4).ToList();
+        _context.UserSessions.Add(newSession);
+        await _context.SaveChangesAsync();
+    }
 
-            foreach (var oldSession in sessionsToRevoke)
-            {
-                oldSession.IsActive = false;
-                oldSession.IsCurrent = false;
-                oldSession.RevokedAt = DateTime.UtcNow;
-            }
+    public async Task<List<UserSession>> GetActiveSessionsAsync(Guid userId)
+    {
+        return await _context.UserSessions
+            .Where(x => x.UserId == userId && x.IsActive)
+            .OrderByDescending(x => x.LastActivityAt)
+            .ToListAsync();
+    }
 
-            foreach (var session in activeSessions)
-            {
-                session.IsCurrent = false;
-            }
+    public async Task RevokeSessionAsync(Guid sessionId, Guid userId)
+    {
+        var session = await _context.UserSessions
+            .FirstOrDefaultAsync(x => x.Id == sessionId && x.UserId == userId);
 
-            var newSession = new UserSession
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                DeviceName = string.IsNullOrWhiteSpace(deviceName) ? "Web" : deviceName,
-                OperatingSystem = string.IsNullOrWhiteSpace(operatingSystem) ? "Web" : operatingSystem,
-                Browser = string.IsNullOrWhiteSpace(browser) ? "Browser" : browser,
-                UserAgent = string.IsNullOrWhiteSpace(userAgent) ? "Web" : userAgent,
-                IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? "0.0.0.0" : ipAddress,
-                Country = string.IsNullOrWhiteSpace(country) ? "ID" : country,
-                RefreshTokenHash = string.IsNullOrWhiteSpace(refreshTokenHash) ? "COOKIE_SESSION" : refreshTokenHash,
-                IsActive = true,
-                IsCurrent = true,
-                CreatedAt = DateTime.UtcNow,
-                LastActivityAt = DateTime.UtcNow
-            };
+        if (session == null) return;
 
-            _context.UserSessions.Add(newSession);
-            await _context.SaveChangesAsync();
-        }
+        session.IsActive = false;
+        session.IsCurrent = false;
+        session.RevokedAt = DateTime.UtcNow;
 
-        public async Task<List<UserSession>> GetActiveSessionsAsync(Guid userId)
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task RevokeAllSessionsAsync(Guid userId)
+    {
+        var activeSessions = await _context.UserSessions
+            .Where(x => x.UserId == userId && x.IsActive)
+            .ToListAsync();
+
+        if (!activeSessions.Any()) return;
+
+        foreach (var session in activeSessions)
         {
-            return await _context.UserSessions
-                .Where(x => x.UserId == userId && x.IsActive)
-                .OrderByDescending(x => x.LastActivityAt)
-                .ToListAsync();
-        }
-
-        public async Task RevokeSessionAsync(Guid sessionId, Guid userId)
-        {
-            var session = await _context.UserSessions
-                .FirstOrDefaultAsync(x => x.Id == sessionId && x.UserId == userId);
-
-            if (session == null) return;
-
             session.IsActive = false;
             session.IsCurrent = false;
             session.RevokedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
         }
 
-        public async Task RevokeAllSessionsAsync(Guid userId)
-        {
-            var activeSessions = await _context.UserSessions
-                .Where(x => x.UserId == userId && x.IsActive)
-                .ToListAsync();
-
-            if (!activeSessions.Any()) return;
-
-            foreach (var session in activeSessions)
-            {
-                session.IsActive = false;
-                session.IsCurrent = false;
-                session.RevokedAt = DateTime.UtcNow;
-            }
-
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId)
-        {
-            return await _context.LoginActivities
-                .Where(x => x.UserId == userId)
-                .OrderByDescending(x => x.CreatedAt)
-                .Take(50)
-                .ToListAsync();
-        }
+        await _context.SaveChangesAsync();
     }
+
+    public async Task<List<LoginActivity>> GetLoginActivitiesAsync(Guid userId)
+    {
+        return await _context.LoginActivities
+            .Where(x => x.UserId == userId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(50)
+            .ToListAsync();
+    }
+}
 
 /// <summary>
 /// Minimal mail abstraction used by Identity's account-confirmation and
@@ -723,23 +723,23 @@ public interface IEmailSender
 }
 
 public interface ITransactionNumberService
-    {
-        // Menghasilkan TransactionNumber baru dengan format
-        // [PREFIX][YY][MM][SEQUENCE 4 digit], contoh: GJ26080001.
-        // Prefix: GJ untuk General, AJ untuk Adjusting.
-        // YY/MM diambil dari entryDate (tanggal transaksi), bukan tanggal
-        // sistem — supaya nomor tetap konsisten dengan periode jurnalnya.
-        // Sequence reset ke 0001 setiap bulan, per user, per jenis jurnal.
-        Task<string> GenerateAsync(Guid userId, string journalType, DateTime entryDate);
+{
+    // Menghasilkan TransactionNumber baru dengan format
+    // [PREFIX][YY][MM][SEQUENCE 4 digit], contoh: GJ26080001.
+    // Prefix: GJ untuk General, AJ untuk Adjusting.
+    // YY/MM diambil dari entryDate (tanggal transaksi), bukan tanggal
+    // sistem — supaya nomor tetap konsisten dengan periode jurnalnya.
+    // Sequence reset ke 0001 setiap bulan, per user, per jenis jurnal.
+    Task<string> GenerateAsync(Guid userId, string journalType, DateTime entryDate);
 
-        // Menampilkan perkiraan nomor transaksi berikutnya TANPA
-        // menaikkan/mengonsumsi sequence — dipakai murni untuk preview di
-        // form (mis. saat halaman dibuka atau jenis jurnal diganti).
-        // Nomor final tetap diambil ulang secara atomik lewat GenerateAsync
-        // saat entry benar-benar disimpan, jadi hasil Peek bisa saja sedikit
-        // basi kalau ada request lain di antaranya — itu tidak masalah untuk preview.
-        Task<string> PeekNextAsync(Guid userId, string journalType, DateTime entryDate);
-    }
+    // Menampilkan perkiraan nomor transaksi berikutnya TANPA
+    // menaikkan/mengonsumsi sequence — dipakai murni untuk preview di
+    // form (mis. saat halaman dibuka atau jenis jurnal diganti).
+    // Nomor final tetap diambil ulang secara atomik lewat GenerateAsync
+    // saat entry benar-benar disimpan, jadi hasil Peek bisa saja sedikit
+    // basi kalau ada request lain di antaranya — itu tidak masalah untuk preview.
+    Task<string> PeekNextAsync(Guid userId, string journalType, DateTime entryDate);
+}
 
 public class IdentityEmailSender : IEmailSender<ApplicationUser>
 {
@@ -791,197 +791,197 @@ public class LoggingEmailSender : IEmailSender
 }
 
 public interface IMarketService
-    {
-        Task<MarketDataResponse> GetMarketDataAsync();
-    }
+{
+    Task<MarketDataResponse> GetMarketDataAsync();
+}
 
-    public class MarketDataResponse
-    {
-        public bool Success { get; set; }
-        public MarketDetail? Usd { get; set; }
-        public MarketDetail? Ihsg { get; set; }
-        public string? BiRate { get; set; }
-    }
+public class MarketDataResponse
+{
+    public bool Success { get; set; }
+    public MarketDetail? Usd { get; set; }
+    public MarketDetail? Ihsg { get; set; }
+    public string? BiRate { get; set; }
+}
 
-    public class MarketDetail
-    {
-        public double Price { get; set; }
-        public double Percent { get; set; }
-        public bool IsUp { get; set; }
-    }
+public class MarketDetail
+{
+    public double Price { get; set; }
+    public double Percent { get; set; }
+    public bool IsUp { get; set; }
+}
 
 public class MarketService : IMarketService
+{
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public MarketService(IHttpClientFactory httpClientFactory)
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        _httpClientFactory = httpClientFactory;
+    }
 
-        public MarketService(IHttpClientFactory httpClientFactory)
+    public async Task<MarketDataResponse> GetMarketDataAsync()
+    {
+        var response = new MarketDataResponse();
+
+        try
         {
-            _httpClientFactory = httpClientFactory;
+            var client = _httpClientFactory.CreateClient("MarketApiClient");
+
+            // Set User-Agent wajib agar tidak ter-block oleh server target
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AumoFinance/1.0");
+
+            // Jalankan Fetching Paralel dari Internet secara bersamaan
+            var usdTask = FetchUsdRateFromInternetAsync(client);
+            var ihsgTask = FetchIhsgFromInternetAsync(client);
+            var biRateTask = FetchBiRateRealtimeFromBIAsync(client);
+
+            await Task.WhenAll(usdTask, ihsgTask, biRateTask);
+
+            response.Usd = await usdTask;
+            response.Ihsg = await ihsgTask;
+            response.BiRate = await biRateTask;
+
+            // Berhasil jika setidaknya salah satu data indikator pasar utama berhasil diambil
+            response.Success = response.Usd != null || response.Ihsg != null || !string.IsNullOrEmpty(response.BiRate);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MarketService Error] {ex.Message}");
+            response.Success = false;
         }
 
-        public async Task<MarketDataResponse> GetMarketDataAsync()
+        return response;
+    }
+
+    /// <summary>
+    /// Ambil Live Rate USD ke IDR Real-time
+    /// </summary>
+    private async Task<MarketDetail?> FetchUsdRateFromInternetAsync(HttpClient client)
+    {
+        try
         {
-            var response = new MarketDataResponse();
+            var url = "https://open.er-api.com/v6/latest/USD";
+            var res = await client.GetAsync(url);
 
-            try
+            if (res.IsSuccessStatusCode)
             {
-                var client = _httpClientFactory.CreateClient("MarketApiClient");
+                using var stream = await res.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
 
-                // Set User-Agent wajib agar tidak ter-block oleh server target
-                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AumoFinance/1.0");
-
-                // Jalankan Fetching Paralel dari Internet secara bersamaan
-                var usdTask = FetchUsdRateFromInternetAsync(client);
-                var ihsgTask = FetchIhsgFromInternetAsync(client);
-                var biRateTask = FetchBiRateRealtimeFromBIAsync(client);
-
-                await Task.WhenAll(usdTask, ihsgTask, biRateTask);
-
-                response.Usd = await usdTask;
-                response.Ihsg = await ihsgTask;
-                response.BiRate = await biRateTask;
-
-                // Berhasil jika setidaknya salah satu data indikator pasar utama berhasil diambil
-                response.Success = response.Usd != null || response.Ihsg != null || !string.IsNullOrEmpty(response.BiRate);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[MarketService Error] {ex.Message}");
-                response.Success = false;
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// Ambil Live Rate USD ke IDR Real-time
-        /// </summary>
-        private async Task<MarketDetail?> FetchUsdRateFromInternetAsync(HttpClient client)
-        {
-            try
-            {
-                var url = "https://open.er-api.com/v6/latest/USD";
-                var res = await client.GetAsync(url);
-
-                if (res.IsSuccessStatusCode)
+                var root = doc.RootElement;
+                if (root.TryGetProperty("rates", out var rates) && rates.TryGetProperty("IDR", out var idrVal))
                 {
-                    using var stream = await res.Content.ReadAsStreamAsync();
-                    using var doc = await JsonDocument.ParseAsync(stream);
-
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("rates", out var rates) && rates.TryGetProperty("IDR", out var idrVal))
-                    {
-                        double currentPrice = idrVal.GetDouble();
-
-                        return new MarketDetail
-                        {
-                            Price = currentPrice,
-                            Percent = 0.12, // Disesuaikan dengan fluktuasi harian
-                            IsUp = true
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[USD Fetch Error] {ex.Message}");
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Ambil Live IHSG (^JKSE) dari Yahoo Finance Chart API
-        /// </summary>
-        private async Task<MarketDetail?> FetchIhsgFromInternetAsync(HttpClient client)
-        {
-            try
-            {
-                var url = "https://query1.finance.yahoo.com/v8/finance/chart/^JKSE?interval=1d&range=1d";
-                var res = await client.GetAsync(url);
-
-                if (res.IsSuccessStatusCode)
-                {
-                    using var stream = await res.Content.ReadAsStreamAsync();
-                    using var doc = await JsonDocument.ParseAsync(stream);
-
-                    var result = doc.RootElement
-                        .GetProperty("chart")
-                        .GetProperty("result")[0];
-
-                    var meta = result.GetProperty("meta");
-
-                    double currentPrice = meta.GetProperty("regularMarketPrice").GetDouble();
-                    double previousClose = meta.GetProperty("chartPreviousClose").GetDouble();
-
-                    double diff = currentPrice - previousClose;
-                    double percentChange = (diff / previousClose) * 100;
+                    double currentPrice = idrVal.GetDouble();
 
                     return new MarketDetail
                     {
                         Price = currentPrice,
-                        Percent = Math.Abs(percentChange),
-                        IsUp = diff >= 0
+                        Percent = 0.12, // Disesuaikan dengan fluktuasi harian
+                        IsUp = true
                     };
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[IHSG Fetch Error] {ex.Message}");
-            }
-
-            return null;
         }
-
-        /// <summary>
-        /// Ambil BI-Rate REAL-TIME dengan membaca/scraping langsung dari Situs Resmi Bank Indonesia (bi.go.id)
-        /// </summary>
-        private async Task<string> FetchBiRateRealtimeFromBIAsync(HttpClient client)
+        catch (Exception ex)
         {
-            try
-            {
-                // URL Resmi Bank Indonesia
-                var url = "https://www.bi.go.id/id/default.aspx";
-                var res = await client.GetAsync(url);
-
-                if (res.IsSuccessStatusCode)
-                {
-                    var htmlContent = await res.Content.ReadAsStringAsync();
-
-                    // Pattern RegEx untuk mencari Teks BI-Rate di HTML BI (contoh pattern: "BI-Rate</span>...<span>5,75%")
-                    var match = Regex.Match(htmlContent, @"BI-Rate[\s\S]*?(\d{1,2}[,\.]\d{2})%", RegexOptions.IgnoreCase);
-
-                    if (match.Success)
-                    {
-                        var rateValue = match.Groups[1].Value.Replace(',', '.');
-                        return $"{rateValue}%";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[BI Rate Live Scraping Error] {ex.Message}");
-            }
-
-            // Fallback API Publik jika bi.go.id lambat/down
-            try
-            {
-                var fallbackUrl = "https://raw.githubusercontent.com/seputar-finansial/bi-rate-api/main/latest.json";
-                var res = await client.GetAsync(fallbackUrl);
-                if (res.IsSuccessStatusCode)
-                {
-                    using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync());
-                    if (doc.RootElement.TryGetProperty("rate", out var rateProp))
-                    {
-                        return $"{rateProp.GetString()}%";
-                    }
-                }
-            }
-            catch { }
-
-            return "5.75%"; // Angka acuan resmi jika internet mengalami timeout
+            Console.WriteLine($"[USD Fetch Error] {ex.Message}");
         }
+
+        return null;
     }
+
+    /// <summary>
+    /// Ambil Live IHSG (^JKSE) dari Yahoo Finance Chart API
+    /// </summary>
+    private async Task<MarketDetail?> FetchIhsgFromInternetAsync(HttpClient client)
+    {
+        try
+        {
+            var url = "https://query1.finance.yahoo.com/v8/finance/chart/^JKSE?interval=1d&range=1d";
+            var res = await client.GetAsync(url);
+
+            if (res.IsSuccessStatusCode)
+            {
+                using var stream = await res.Content.ReadAsStreamAsync();
+                using var doc = await JsonDocument.ParseAsync(stream);
+
+                var result = doc.RootElement
+                    .GetProperty("chart")
+                    .GetProperty("result")[0];
+
+                var meta = result.GetProperty("meta");
+
+                double currentPrice = meta.GetProperty("regularMarketPrice").GetDouble();
+                double previousClose = meta.GetProperty("chartPreviousClose").GetDouble();
+
+                double diff = currentPrice - previousClose;
+                double percentChange = (diff / previousClose) * 100;
+
+                return new MarketDetail
+                {
+                    Price = currentPrice,
+                    Percent = Math.Abs(percentChange),
+                    IsUp = diff >= 0
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[IHSG Fetch Error] {ex.Message}");
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Ambil BI-Rate REAL-TIME dengan membaca/scraping langsung dari Situs Resmi Bank Indonesia (bi.go.id)
+    /// </summary>
+    private async Task<string> FetchBiRateRealtimeFromBIAsync(HttpClient client)
+    {
+        try
+        {
+            // URL Resmi Bank Indonesia
+            var url = "https://www.bi.go.id/id/default.aspx";
+            var res = await client.GetAsync(url);
+
+            if (res.IsSuccessStatusCode)
+            {
+                var htmlContent = await res.Content.ReadAsStringAsync();
+
+                // Pattern RegEx untuk mencari Teks BI-Rate di HTML BI (contoh pattern: "BI-Rate</span>...<span>5,75%")
+                var match = Regex.Match(htmlContent, @"BI-Rate[\s\S]*?(\d{1,2}[,\.]\d{2})%", RegexOptions.IgnoreCase);
+
+                if (match.Success)
+                {
+                    var rateValue = match.Groups[1].Value.Replace(',', '.');
+                    return $"{rateValue}%";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[BI Rate Live Scraping Error] {ex.Message}");
+        }
+
+        // Fallback API Publik jika bi.go.id lambat/down
+        try
+        {
+            var fallbackUrl = "https://raw.githubusercontent.com/seputar-finansial/bi-rate-api/main/latest.json";
+            var res = await client.GetAsync(fallbackUrl);
+            if (res.IsSuccessStatusCode)
+            {
+                using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync());
+                if (doc.RootElement.TryGetProperty("rate", out var rateProp))
+                {
+                    return $"{rateProp.GetString()}%";
+                }
+            }
+        }
+        catch { }
+
+        return "5.75%"; // Angka acuan resmi jika internet mengalami timeout
+    }
+}
 
 public class RenderKeepAliveService : BackgroundService
 {
@@ -1111,147 +1111,147 @@ public class RenderKeepAliveService : BackgroundService
 }
 
 public class ResendEmailSender : IEmailSender
+{
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<ResendEmailSender> _logger;
+
+    public ResendEmailSender(IConfiguration configuration, ILogger<ResendEmailSender> logger)
     {
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<ResendEmailSender> _logger;
-
-        public ResendEmailSender(IConfiguration configuration, ILogger<ResendEmailSender> logger)
-        {
-            _configuration = configuration;
-            _logger = logger;
-        }
-
-        public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage, CancellationToken ct = default)
-        {
-            var apiKey = _configuration["Resend:ApiKey"] ?? _configuration["Resend__ApiKey"];
-
-            if (string.IsNullOrEmpty(apiKey) || apiKey.Contains("xxxxxxxxx"))
-            {
-                _logger.LogError("Resend API Key is missing or invalid in environment variables!");
-                throw new InvalidOperationException("Resend API Key is not configured on the server.");
-            }
-
-            try
-            {
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
-
-                var payload = new
-                {
-                    from = "Aumo Finance <onboarding@resend.dev>",
-                    to = new[] { toEmail },
-                    subject = subject,
-                    html = htmlMessage
-                };
-
-                _logger.LogInformation("Sending email to {ToEmail} via Resend REST API...", toEmail);
-
-                var response = await client.PostAsJsonAsync("https://api.resend.com/emails", payload, ct);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var resultText = await response.Content.ReadAsStringAsync(ct);
-                    _logger.LogInformation("Email successfully sent to {ToEmail} via Resend API. Response: {Result}", toEmail, resultText);
-                }
-                else
-                {
-                    var errorBody = await response.Content.ReadAsStringAsync(ct);
-                    _logger.LogError("Failed to send email via Resend API. Response: {Error}", errorBody);
-                    throw new HttpRequestException($"Resend API Error ({response.StatusCode}): {errorBody}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send email to {ToEmail} via Resend API", toEmail);
-                throw;
-            }
-        }
+        _configuration = configuration;
+        _logger = logger;
     }
 
-// Satu-satunya sumber logika penomoran transaksi di seluruh aplikasi.
-    // Sebelumnya logika ini diduplikasi terpisah di enam tempat (mobile API,
-    // web API, form jurnal, open-period, dan dua halaman import) — pola yang
-    // sama yang berulang kali menyebabkan bug di General Ledger/Trial
-    // Balance/Worksheet karena satu tempat diperbaiki tapi tempat lain tidak.
-    // Semua pembuatan JournalEntry wajib memanggil service ini.
-    public class TransactionNumberService : ITransactionNumberService
+    public async Task SendEmailAsync(string toEmail, string subject, string htmlMessage, CancellationToken ct = default)
     {
-        private readonly AppDbContext _db;
+        var apiKey = _configuration["Resend:ApiKey"] ?? _configuration["Resend__ApiKey"];
 
-        public TransactionNumberService(AppDbContext db)
+        if (string.IsNullOrEmpty(apiKey) || apiKey.Contains("xxxxxxxxx"))
         {
-            _db = db;
+            _logger.LogError("Resend API Key is missing or invalid in environment variables!");
+            throw new InvalidOperationException("Resend API Key is not configured on the server.");
         }
 
-        public async Task<string> GenerateAsync(Guid userId, string journalType, DateTime entryDate)
+        try
         {
-            string prefix = journalType == "Adjusting" ? "AJ" : "GJ";
-            string counterKey = $"{prefix}{entryDate:yyMM}";
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
-            // UPSERT atomik: PostgreSQL menjamin INSERT ... ON CONFLICT DO
-            // UPDATE ... RETURNING sebagai satu operasi tunggal di level
-            // database. Dua request yang membuat jurnal secara bersamaan
-            // (dua user, atau dua tab yang sama) tidak akan pernah mendapat
-            // sequence yang sama. Sengaja TIDAK memakai
-            // MAX(TransactionNumber)+1 karena itu rentan race condition.
-            //
-            // Dieksekusi lewat ADO.NET langsung (bukan Database.SqlQuery<T>)
-            // supaya tidak bergantung pada API EF Core 10 yang masih
-            // preview — ExecuteScalarAsync jauh lebih stabil/portabel dan
-            // tidak mensyaratkan nama kolom hasil tertentu.
-            var connection = _db.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
+            var payload = new
             {
-                await connection.OpenAsync();
-            }
+                from = "Aumo Finance <onboarding@resend.dev>",
+                to = new[] { toEmail },
+                subject = subject,
+                html = htmlMessage
+            };
 
-            using var command = connection.CreateCommand();
-            command.CommandText = @"
+            _logger.LogInformation("Sending email to {ToEmail} via Resend REST API...", toEmail);
+
+            var response = await client.PostAsJsonAsync("https://api.resend.com/emails", payload, ct);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var resultText = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogInformation("Email successfully sent to {ToEmail} via Resend API. Response: {Result}", toEmail, resultText);
+            }
+            else
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogError("Failed to send email via Resend API. Response: {Error}", errorBody);
+                throw new HttpRequestException($"Resend API Error ({response.StatusCode}): {errorBody}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email to {ToEmail} via Resend API", toEmail);
+            throw;
+        }
+    }
+}
+
+// Satu-satunya sumber logika penomoran transaksi di seluruh aplikasi.
+// Sebelumnya logika ini diduplikasi terpisah di enam tempat (mobile API,
+// web API, form jurnal, open-period, dan dua halaman import) — pola yang
+// sama yang berulang kali menyebabkan bug di General Ledger/Trial
+// Balance/Worksheet karena satu tempat diperbaiki tapi tempat lain tidak.
+// Semua pembuatan JournalEntry wajib memanggil service ini.
+public class TransactionNumberService : ITransactionNumberService
+{
+    private readonly AppDbContext _db;
+
+    public TransactionNumberService(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    public async Task<string> GenerateAsync(Guid userId, string journalType, DateTime entryDate)
+    {
+        string prefix = journalType == "Adjusting" ? "AJ" : "GJ";
+        string counterKey = $"{prefix}{entryDate:yyMM}";
+
+        // UPSERT atomik: PostgreSQL menjamin INSERT ... ON CONFLICT DO
+        // UPDATE ... RETURNING sebagai satu operasi tunggal di level
+        // database. Dua request yang membuat jurnal secara bersamaan
+        // (dua user, atau dua tab yang sama) tidak akan pernah mendapat
+        // sequence yang sama. Sengaja TIDAK memakai
+        // MAX(TransactionNumber)+1 karena itu rentan race condition.
+        //
+        // Dieksekusi lewat ADO.NET langsung (bukan Database.SqlQuery<T>)
+        // supaya tidak bergantung pada API EF Core 10 yang masih
+        // preview — ExecuteScalarAsync jauh lebih stabil/portabel dan
+        // tidak mensyaratkan nama kolom hasil tertentu.
+        var connection = _db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
                 INSERT INTO ""TransactionCounters"" (""UserId"", ""CounterKey"", ""LastSequence"")
                 VALUES (@userId, @counterKey, 1)
                 ON CONFLICT (""UserId"", ""CounterKey"")
                 DO UPDATE SET ""LastSequence"" = ""TransactionCounters"".""LastSequence"" + 1
                 RETURNING ""LastSequence"";";
 
-            var userIdParam = command.CreateParameter();
-            userIdParam.ParameterName = "userId";
-            userIdParam.Value = userId;
-            command.Parameters.Add(userIdParam);
+        var userIdParam = command.CreateParameter();
+        userIdParam.ParameterName = "userId";
+        userIdParam.Value = userId;
+        command.Parameters.Add(userIdParam);
 
-            var counterKeyParam = command.CreateParameter();
-            counterKeyParam.ParameterName = "counterKey";
-            counterKeyParam.Value = counterKey;
-            command.Parameters.Add(counterKeyParam);
+        var counterKeyParam = command.CreateParameter();
+        counterKeyParam.ParameterName = "counterKey";
+        counterKeyParam.Value = counterKey;
+        command.Parameters.Add(counterKeyParam);
 
-            var rawResult = await command.ExecuteScalarAsync()
-                ?? throw new InvalidOperationException($"Transaction counter upsert for {counterKey} returned no result.");
-            int nextSeq = Convert.ToInt32(rawResult);
+        var rawResult = await command.ExecuteScalarAsync()
+            ?? throw new InvalidOperationException($"Transaction counter upsert for {counterKey} returned no result.");
+        int nextSeq = Convert.ToInt32(rawResult);
 
-            if (nextSeq > 9999)
-            {
-                // Kapasitas 4 digit (9999 transaksi per jenis dokumen per
-                // bulan) habis. Sesuai keputusan final: naik ke 5 digit baru
-                // kalau benar-benar diperlukan — bukan sekarang.
-                throw new InvalidOperationException(
-                    $"Transaction number sequence for {counterKey} has reached its 9999 capacity.");
-            }
-
-            return $"{counterKey}{nextSeq:D4}";
-        }
-
-        public async Task<string> PeekNextAsync(Guid userId, string journalType, DateTime entryDate)
+        if (nextSeq > 9999)
         {
-            string prefix = journalType == "Adjusting" ? "AJ" : "GJ";
-            string counterKey = $"{prefix}{entryDate:yyMM}";
-
-            // Hanya membaca, tidak menaikkan LastSequence — kalau counter
-            // belum ada, perkiraan berikutnya adalah 0001.
-            var current = await _db.TransactionCounters
-                .Where(c => c.UserId == userId && c.CounterKey == counterKey)
-                .Select(c => (int?)c.LastSequence)
-                .FirstOrDefaultAsync();
-
-            var previewSeq = (current ?? 0) + 1;
-            return $"{counterKey}{previewSeq:D4}";
+            // Kapasitas 4 digit (9999 transaksi per jenis dokumen per
+            // bulan) habis. Sesuai keputusan final: naik ke 5 digit baru
+            // kalau benar-benar diperlukan — bukan sekarang.
+            throw new InvalidOperationException(
+                $"Transaction number sequence for {counterKey} has reached its 9999 capacity.");
         }
+
+        return $"{counterKey}{nextSeq:D4}";
     }
+
+    public async Task<string> PeekNextAsync(Guid userId, string journalType, DateTime entryDate)
+    {
+        string prefix = journalType == "Adjusting" ? "AJ" : "GJ";
+        string counterKey = $"{prefix}{entryDate:yyMM}";
+
+        // Hanya membaca, tidak menaikkan LastSequence — kalau counter
+        // belum ada, perkiraan berikutnya adalah 0001.
+        var current = await _db.TransactionCounters
+            .Where(c => c.UserId == userId && c.CounterKey == counterKey)
+            .Select(c => (int?)c.LastSequence)
+            .FirstOrDefaultAsync();
+
+        var previewSeq = (current ?? 0) + 1;
+        return $"{counterKey}{previewSeq:D4}";
+    }
+}
