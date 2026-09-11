@@ -153,7 +153,14 @@ namespace AumoBackend
                     options.SignInScheme = IdentityConstants.ExternalScheme;
                 });
             }
-
+            builder.Services.AddAuthorization(options =>
+            {
+                options.DefaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme, JwtBearerDefaults.AuthenticationScheme)
+                .Build();
+            });
+            
             // =====================================
             // 5. REST API CORE SETUP, SWAGGER & CORS
             // =====================================
