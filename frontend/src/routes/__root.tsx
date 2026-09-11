@@ -1,38 +1,18 @@
-import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-import AppLayout from '@/components/layout/AppLayout'
-import '@/styles/index.css'
+import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { HeadContent, Scripts } from '@tanstack/react-router'
 
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'AUMO Finance' },
-    ],
-  }),
   component: RootComponent,
 })
 
 function RootComponent() {
   return (
-    <RootDocument>
-      <AppLayout>
-        <Outlet />
-      </AppLayout>
-    </RootDocument>
-  )
-}
-
-function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-     <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark">
       <head>
         <HeadContent />
       </head>
-      <body className="bg-[#0B0F19] antialiased">
-        {children}
-        <TanStackRouterDevtools position="bottom-right" />
+      <body className="bg-background text-foreground antialiased">
+        <Outlet />
         <Scripts />
       </body>
     </html>

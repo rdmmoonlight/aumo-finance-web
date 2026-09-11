@@ -74,10 +74,10 @@ const reportNavItems: MenuItem[] = [
 function NavItemLink({ item }: { item: MenuItem }) {
   return (
     <Link to={item.path} className="block">
-      {({ isActive }) => (
+      {({ isActive }: { isActive: boolean }) => (
         <div
           className={cn(
-            'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
+            'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
             isActive
              ? 'bg-primary text-primary-foreground shadow-sm'
               : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -100,14 +100,18 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-sm leading-none tracking-tight">Aumo Finance</span>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Accounting Suite</span>
+          <span className="text- text-muted-foreground uppercase tracking-widest font-semibold">
+            Accounting Suite
+          </span>
         </div>
       </div>
 
       <ScrollArea className="flex-1">
         <div className="px-3 py-4 space-y-6">
           <div>
-            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">Main Domain</h2>
+            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">
+              Main Domain
+            </h2>
             <div className="space-y-1">
               {mainNavItems.map((item) => (
                 <NavItemLink key={item.path} item={item} />
@@ -116,7 +120,9 @@ export function Sidebar() {
           </div>
           <Separator />
           <div>
-            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">Reports & Statements</h2>
+            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">
+              Reports & Statements
+            </h2>
             <div className="space-y-1">
               {reportNavItems.map((item) => (
                 <NavItemLink key={item.path} item={item} />
@@ -148,7 +154,7 @@ export function Topbar() {
             const url = `/${pathSegments.slice(0, i + 1).join('/')}`;
             const isLast = i === pathSegments.length - 1;
             return (
-              <div key={url} className="flex items-center gap-1.5">
+              <div key={url} className="contents">
                 <BreadcrumbSeparator>
                   <IconChevronRight size={14} />
                 </BreadcrumbSeparator>
@@ -157,7 +163,9 @@ export function Topbar() {
                     <BreadcrumbPage className="capitalize">{seg.replace(/-/g, ' ')}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
-                      <Link to={url} className="capitalize">{seg.replace(/-/g, ' ')}</Link>
+                      <Link to={url} className="capitalize">
+                        {seg.replace(/-/g, ' ')}
+                      </Link>
                     </BreadcrumbLink>
                   )}
                 </BreadcrumbItem>
@@ -168,11 +176,11 @@ export function Topbar() {
       </Breadcrumb>
 
       <div className="flex items-center gap-3">
-        <Badge variant="outline" className="hidden sm:flex gap-2 font-mono text-">
+        <Badge variant="outline" className="hidden sm:flex gap-2 font-mono text-xs">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           Ghofur
         </Badge>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="h-8 gap-1.5 text-xs">
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/auth' })} className="h-8 gap-1.5 text-xs">
           <IconLogout size={15} />
           Logout
         </Button>
