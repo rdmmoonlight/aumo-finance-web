@@ -16,7 +16,7 @@ export const aumoConfig: AumoConfig = {
   appName: "Aumo Finance",
   appVersion: "9.0.0",
   description: "Independent Accounting & Financial Management System",
-  apiBaseUrl: (import.meta as any).env.API_BASE_URL || "http://localhost:8080/api",
+  apiBaseUrl: (import.meta as any).env.WEB_API_BASE_URL || "http://localhost:8080/api",
   defaultCurrency: "IDR",
   fiscalYearStartMonth: 1,
   features: {

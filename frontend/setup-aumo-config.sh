@@ -6,7 +6,7 @@ echo "🚀 Setting up central API config..."
 # 1. Bikin config central
 mkdir -p src/lib
 cat > src/lib/config.ts <<'EOF'
-export const API_BASE_URL = 
+export const WEB_API_BASE_URL = 
   typeof window !== 'undefined' && window.location.hostname !== 'localhost'
     ? 'https://api.aumo.finance'
     : 'http://localhost:5000';
@@ -17,10 +17,10 @@ echo "✅ src/lib/config.ts created"
 mkdir -p src/services
 cat > src/services/apiClient.ts <<'EOF'
 import axios from 'axios';
-import { API_BASE_URL } from '@/lib/config';
+import { WEB_API_BASE_URL } from '@/lib/config';
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: WEB_API_BASE_URL,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -40,15 +40,15 @@ export default apiClient;
 EOF
 echo "✅ src/services/apiClient.ts updated"
 
-# 3. Auto-fix semua file yang masih pakai WEB_ / process.env / rawApiUrl / API_BASE_URL hardcode
-echo "🔧 Cleaning old API_BASE_URL declarations..."
+# 3. Auto-fix semua file yang masih pakai WEB_ / process.env / rawApiUrl / WEB_API_BASE_URL hardcode
+echo "🔧 Cleaning old WEB_API_BASE_URL declarations..."
 find src -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i \
-  -e '/const API_BASE_URL =/d' \
+  -e '/const WEB_API_BASE_URL =/d' \
   -e '/const rawApiUrl =/d' \
   -e '/process\.env\.API_URL/d' \
   -e '/process\.env\.WEB_/d' \
   -e '/import\.meta\.env\.WEB_/d' \
-  -e 's/${API_BASE_URL}//g' \
+  -e 's/${WEB_API_BASE_URL}//g' \
   -e 's|http://localhost:5000||g' \
   {} \;
 
