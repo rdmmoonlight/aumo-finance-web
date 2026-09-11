@@ -1,27 +1,45 @@
+using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using AumoBackend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("/api/v1/auth")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+// Menerima cookie ASP.NET Identity (web/nextjs) MAUPUN JWT Bearer (mobile) —
+// dua-duanya sudah dikonfigurasi di Program.cs (DefaultPolicy malah sudah
+// menerima keduanya lewat AddAuthenticationSchemes), controller lain di
+// project ini sebelumnya cuma sengaja dipersempit ke cookie saja lewat
+// atribut ini. Login tetap sign-in cookie seperti biasa (SignInManager,
+// dipakai web/nextjs) DAN sekaligus menerbitkan token JWT di response body
+// (dipakai mobile) — dua mekanisme berjalan berdampingan, tidak saling
+// menggantikan.
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class AuthController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IGuardianService _guardianService;
+    private readonly IConfiguration _configuration;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        IGuardianService guardianService)
+        IGuardianService guardianService,
+        IConfiguration configuration)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _guardianService = guardianService;
+        _configuration = configuration;
     }
 
     [HttpPost("login")]
@@ -111,8 +129,54 @@ public class AuthController : ControllerBase
             success = true,
             message = "Login successful.",
             userId = user.Id.ToString(),
-            fullName = user.FullName ?? user.UserName ?? "User"
+            fullName = user.FullName ?? user.UserName ?? "User",
+            token = GenerateJwtToken(user)
         });
+    }
+
+    // Dipakai mobile lewat header "Authorization: Bearer <token>". Signing
+    // key/issuer sama persis dengan yang dipakai Program.cs memvalidasi JWT
+    // (JWT_SIGNING_KEY/JWT_ISSUER) supaya token yang diterbitkan di sini
+    // memang lolos TokenValidationParameters yang sudah dikonfigurasi.
+    // ClaimTypes.NameIdentifier dipakai karena controller lain di project
+    // ini sudah lebih dulu membaca User.FindFirstValue(ClaimTypes.
+    // NameIdentifier) (dengan fallback "sub") untuk menentukan user yang
+    // sedang login — token ini otomatis kompatibel tanpa controller lain
+    // perlu diubah.
+    private string GenerateJwtToken(ApplicationUser user)
+    {
+        var jwtSigningKey = _configuration["JWT_SIGNING_KEY"]
+            ?? Environment.GetEnvironmentVariable("JWT_SIGNING_KEY")
+            ?? throw new InvalidOperationException("JWT_SIGNING_KEY is missing.");
+
+        var jwtIssuer = _configuration["JWT_ISSUER"]
+            ?? Environment.GetEnvironmentVariable("JWT_ISSUER")
+            ?? "AumoFinanceApp";
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.FullName ?? user.UserName ?? string.Empty),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSigningKey));
+        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: jwtIssuer,
+            audience: jwtIssuer,
+            claims: claims,
+            // 30 hari, disamakan dengan masa berlaku cookie sesi
+            // (ConfigureApplicationCookie di Program.cs) supaya perilaku
+            // "Ingat saya" konsisten antara web dan mobile.
+            expires: DateTime.UtcNow.AddDays(30),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     [HttpGet("me")]

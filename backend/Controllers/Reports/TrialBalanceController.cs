@@ -12,7 +12,7 @@ namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
 [Route("/api/v1/reports/trial-balance")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class TrialBalanceController : ControllerBase
 {
     private readonly AppDbContext _db;

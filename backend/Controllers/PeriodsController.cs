@@ -12,7 +12,7 @@ namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("/api/v1/periods")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class PeriodsController : ControllerBase
 {
     private readonly AppDbContext _db;

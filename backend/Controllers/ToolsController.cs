@@ -16,7 +16,7 @@ namespace AumoBackend.Controllers;
 
 [ApiController]
 [Route("/api/v1/tools")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class ToolsController : ControllerBase
 {
     private readonly AppDbContext _context;

@@ -7,7 +7,7 @@ namespace AumoBackend.Controllers
 {
     [ApiController]
     [Route("/api/v1/guardian")]
-    [Authorize(AuthenticationSchemes = "Identity.Application")]
+    [Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
     public class GuardianController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;

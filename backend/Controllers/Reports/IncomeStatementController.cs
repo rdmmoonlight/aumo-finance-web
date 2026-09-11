@@ -11,7 +11,7 @@ namespace AumoBackend.Controllers.Reports;
 
 [ApiController]
 [Route("/api/v1/reports/income-statement")]
-[Authorize(AuthenticationSchemes = "Identity.Application")]
+[Authorize(AuthenticationSchemes = "Identity.Application,Bearer")]
 public class IncomeStatementController : ControllerBase
 {
     private readonly AppDbContext _db;
