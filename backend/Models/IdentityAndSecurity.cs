@@ -1,9 +1,20 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
-namespace AumoBackend.Models.Guardian
-{
-    [Table("UserSessions")]
+namespace AumoBackend.Models;
+
+/// <summary>
+    /// The application's user record, owned entirely by ASP.NET Core Identity.
+    /// Replaces the old hand-rolled User entity, which only ever shadowed
+    /// accounts that actually lived in a separate external Aumo.Api service.
+    /// </summary>
+    public class ApplicationUser : IdentityUser<Guid>
+    {
+        public string? FullName { get; set; }
+    }
+
+[Table("UserSessions")]
     public class UserSession
     {
         [Key]
@@ -78,4 +89,61 @@ namespace AumoBackend.Models.Guardian
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
+
+public class RecoveryCode
+{
+    public Guid Id { get; set; }
+
+    public Guid UserId { get; set; }
+
+    public ApplicationUser User { get; set; } = null!;
+
+    public string CodeHash { get; set; } = string.Empty;
+
+    public bool Used { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UsedAt { get; set; }
 }
+
+public class SecuritySetting
+{
+    public Guid UserId { get; set; }
+
+    public ApplicationUser User { get; set; } = null!;
+
+    public bool EmailVerified { get; set; }
+
+    public bool TwoFactorEnabled { get; set; }
+
+    public bool LoginNotificationEnabled { get; set; }
+
+    public int SessionTimeoutMinutes { get; set; } = 30;
+
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class TrustedDevice
+{
+    public Guid Id { get; set; }
+
+    public Guid UserId { get; set; }
+
+    public ApplicationUser User { get; set; } = null!;
+
+    public string DeviceName { get; set; } = string.Empty;
+
+    public string DeviceIdentifier { get; set; } = string.Empty;
+
+    public string Browser { get; set; } = string.Empty;
+
+    public string OperatingSystem { get; set; } = string.Empty;
+
+    public bool IsTrusted { get; set; } = true;
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastUsedAt { get; set; }
+}
+

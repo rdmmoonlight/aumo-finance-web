@@ -1,7 +1,4 @@
 using AumoBackend.Models;
-using AumoBackend.Models.DTOs;
-using AumoBackend.Models.Guardian;
-using AumoBackend.Services.Guardian;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

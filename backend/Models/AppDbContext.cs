@@ -1,4 +1,3 @@
-using AumoBackend.Models.Guardian; // Ditunjuk ke namespace baru
 using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;

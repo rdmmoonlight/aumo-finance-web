@@ -1,11 +1,11 @@
-using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System;
 using Microsoft.EntityFrameworkCore;
 
-namespace AumoBackend.Models
-{
-    public static class SelectedPeriodHelper
+namespace AumoBackend.Models;
+
+public static class SelectedPeriodHelper
     {
         public static async Task<Period?> GetSelectedPeriodAsync(AppDbContext db, Guid userId)
         {
@@ -108,4 +108,3 @@ namespace AumoBackend.Models
             await db.SaveChangesAsync();
         }
     }
-}
