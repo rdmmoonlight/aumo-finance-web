@@ -1,1 +1,0 @@
-import{u as t}from"./index-BD34tDVw.js";function i(){const r=t(),a=new URLSearchParams(window.location.search);return[a,e=>{let s;e instanceof URLSearchParams?s=e:typeof e=="function"?s=e(a):s=new URLSearchParams(e);const n=Object.fromEntries(s.entries());r({to:".",search:n})}]}function u(){const r=t();return a=>r(typeof a=="string"?{to:a}:a)}export{i as a,u};
