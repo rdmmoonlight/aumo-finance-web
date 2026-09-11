@@ -1,1 +1,1 @@
-export default function AdjustedTrialBalancePage(){ return <div className="p-6">Adjusted Trial Balance - TODO</div>; }
+export default function AdjustedTrialBalancePage(){ return <div className='p-8'>AdjustedTrialBalancePage - coming soon</div> }
