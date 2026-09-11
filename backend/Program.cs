@@ -206,11 +206,7 @@ namespace AumoBackend
                 "https://aumo-finance-web.vercel.app"
             };
 
-            if (!string.IsNullOrWhiteSpace(frontendUrl))
-            {
-                originsList.Add(frontendUrl);
-            }
-
+ 
             var allowedOrigins = originsList.Distinct().ToArray();
 
             builder.Services.AddCors(options =>
