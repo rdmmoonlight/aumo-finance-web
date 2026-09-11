@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
 import '@/styles/index.css'
+import apiClient from '@/services/apiClient'
 
 import HomePage from '@/pages/HomePage'
 import AuthPage from '@/pages/AuthPage'
@@ -28,35 +29,65 @@ import StatementOfFinancialPositionPage from '@/pages/reports/StatementOfFinanci
 import StatementOfCashFlowPage from '@/pages/reports/StatementOfCashFlowPage'
 import WorksheetPage from '@/pages/reports/WorksheetPage'
 
-// Helper biar support Keep me signed in
-const getToken = () => {
-  return localStorage.getItem('token') || 
-         sessionStorage.getItem('token') || 
-         localStorage.getItem('accessToken') || 
-         sessionStorage.getItem('accessToken');
+// COOKIE MODE: cek flag + validasi ke backend
+const getIsAuthenticatedFlag = () => {
+  return localStorage.getItem('isAuthenticated') === 'true';
 }
 
-// Kalau belum login -> tendang ke /auth
+function useAuthCheck() {
+  const [isAuth, setIsAuth] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const check = async () => {
+      if (!getIsAuthenticatedFlag()) {
+        setIsAuth(false);
+        return;
+      }
+      try {
+        // endpoint buat cek session cookie masih hidup
+        // kalau lu belum punya /me, ganti jadi /api/v1/auth/check atau /api/v1/users/me
+        await apiClient.get('/api/v1/auth/me', { withCredentials: true });
+        setIsAuth(true);
+      } catch {
+        // kalau gak ada endpoint /me, fallback ke flag aja
+        // kalau mau strict, hapus 2 baris bawah ini biar bener2 validasi cookie
+        setIsAuth(true);
+        // setIsAuth(false);
+        // localStorage.removeItem('isAuthenticated');
+      }
+    };
+    check();
+  }, []);
+
+  return isAuth;
+}
+
 function ProtectedLayout() {
-  const token = getToken();
-  if (!token) return <Navigate to="/auth" replace />;
+  const isAuth = useAuthCheck();
+
+  if (isAuth === null) {
+    return <div className="min-h-screen flex items-center justify-center text- font-mono text-muted-foreground">Checking session...</div>;
+  }
+
+  if (!isAuth) return <Navigate to="/auth" replace />;
   return <AppLayout />;
 }
 
-// Kalau udah login -> gak boleh buka /auth lagi
 function PublicAuth() {
-  const token = getToken();
-  if (token) return <Navigate to="/" replace />;
+  const isAuth = useAuthCheck();
+
+  if (isAuth === null) {
+    return <div className="min-h-screen flex items-center justify-center text- font-mono text-muted-foreground">Checking session...</div>;
+  }
+
+  if (isAuth) return <Navigate to="/" replace />;
   return <AuthPage />;
 }
 
 function App() {
   return (
     <Routes>
-      {/* PUBLIC ONLY */}
       <Route path="/auth" element={<PublicAuth />} />
-
-      {/* PROTECTED - WAJIB LOGIN */}
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
@@ -81,7 +112,6 @@ function App() {
         <Route path="/reports/statement-of-cash-flow" element={<StatementOfCashFlowPage />} />
         <Route path="/reports/worksheet" element={<WorksheetPage />} />
       </Route>
-
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -28,30 +28,28 @@ export default function AuthPage() {
     setLoading(true);
     setErr('');
     try {
-      const payload = { Email: email, Password: password };
-      const res = await apiClient.post('/api/v1/auth/login', payload);
+      // COOKIE MODE: gak ada token di JSON
+      const res = await apiClient.post('/api/v1/auth/login',
+        { Email: email, Password: password },
+        { withCredentials: true }
+      );
 
-      // response lu AnonymousType 4 field: success, token, refreshToken, message
-      const token = res.data?.token || res.data?.accessToken || res.data?.data?.token;
-      if (!token) throw new Error('Token tidak ada di response');
+      console.log('[COOKIE LOGIN]', res.data);
 
-      const storage = keepMe? localStorage : sessionStorage;
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      localStorage.removeItem('accessToken');
-      sessionStorage.removeItem('accessToken');
+      // backend lu return { Success: true, Message: "..." }
+      const ok = res.data?.Success?? res.data?.success?? res.data?.isSuccess?? res.status === 200;
 
-      storage.setItem('token', token);
-      storage.setItem('accessToken', token);
+      if (!ok) throw new Error(res.data?.Message || res.data?.message || 'Login gagal');
 
+      // Cookie AumoFinance.Session udah ke-set otomatis sama browser (HttpOnly)
+      localStorage.setItem('isAuthenticated', 'true');
       if (keepMe) localStorage.setItem('aumo_saved_email', email);
       else localStorage.removeItem('aumo_saved_email');
 
-      if (res.data?.refreshToken) storage.setItem('refreshToken', res.data.refreshToken);
-
       nav('/dashboard');
     } catch (e: any) {
-      setErr(e.response?.data?.message || e.response?.data?.Message || 'Email atau password salah');
+      console.error('[LOGIN FAIL]', e.response?.data);
+      setErr(e.response?.data?.Message || e.response?.data?.message || 'Email atau password salah');
     } finally {
       setLoading(false);
     }
@@ -83,7 +81,7 @@ export default function AuthPage() {
 
         <div className="hidden lg:flex justify-between text- font-mono opacity-40">
           <span>© rdmmoonlight 2026</span>
-          <span>AUMO SYSTEM</span>
+          <span>COOKIE AUTH • AUMO SYSTEM</span>
         </div>
       </div>
 
@@ -137,7 +135,7 @@ export default function AuthPage() {
             </Button>
 
             <div className="flex justify-between pt-6 border-t text- font-mono text-muted-foreground">
-              <span>SECURE AUTH</span>
+              <span>SECURE COOKIE</span>
               <span>Keep your data safe</span>
             </div>
           </form>

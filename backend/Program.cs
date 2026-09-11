@@ -190,8 +190,6 @@ namespace AumoBackend
                 });
             });
 
-            var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL")?.TrimEnd('/');
-
             var originsList = new List<string>
             {
                 "http://localhost:3000",
@@ -317,10 +315,8 @@ namespace AumoBackend
                 });
             }
 
-            app.UseCors("AllowFrontend");
-
             app.UseRouting();
-
+            app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
 
