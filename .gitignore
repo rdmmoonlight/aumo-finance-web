@@ -104,3 +104,25 @@ $RECYCLE.BIN/
 .DS_Store
 .AppleDouble
 .LSSharedFileList
+
+# build
+dist
+dist-ssr
+build
+
+# deps
+node_modules
+
+# env
+.env
+.env.local
+.env.production
+
+# logs & cache
+*.log
+.vite
+.turbo
+
+# os
+.DS_Store
+Thumbs.db

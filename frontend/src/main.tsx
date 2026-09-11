@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
-import './styles/globals.css'
+import '@/styles/index.css'
 
 import HomePage from '@/pages/HomePage'
 import AuthPage from '@/pages/AuthPage'
@@ -14,7 +14,6 @@ import JournalEntryPage from '@/pages/JournalEntryPage'
 import PeriodsPage from '@/pages/PeriodsPage'
 import SettingsPage from '@/pages/SettingsPage'
 import ToolsPage from '@/pages/ToolsPage'
-
 import GeneralJournalPage from '@/pages/reports/GeneralJournalPage'
 import AdjustingJournalPage from '@/pages/reports/AdjustingJournalPage'
 import ClosingJournalPage from '@/pages/reports/ClosingJournalPage'
@@ -64,8 +63,6 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <BrowserRouter><App /></BrowserRouter>
   </React.StrictMode>
 )
