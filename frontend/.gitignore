@@ -21,3 +21,7 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.log
 Thumbs.db
+.vercel
+dist
+.vercel
+dist
