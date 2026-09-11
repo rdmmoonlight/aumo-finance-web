@@ -7,7 +7,9 @@
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "start": "vite start --port 3000",
-    "preview": "vite preview --port 3000"
+    "preview": "vite preview --port 3000",
+    "orval": "orval",
+    "orval:watch": "orval --watch"
   },
   "dependencies": {
     "@fontsource-variable/figtree": "^5.3.0",
