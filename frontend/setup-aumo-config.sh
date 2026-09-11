@@ -40,14 +40,14 @@ export default apiClient;
 EOF
 echo "✅ src/services/apiClient.ts updated"
 
-# 3. Auto-fix semua file yang masih pakai VITE_ / process.env / rawApiUrl / API_BASE_URL hardcode
+# 3. Auto-fix semua file yang masih pakai WEB_ / process.env / rawApiUrl / API_BASE_URL hardcode
 echo "🔧 Cleaning old API_BASE_URL declarations..."
 find src -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i \
   -e '/const API_BASE_URL =/d' \
   -e '/const rawApiUrl =/d' \
   -e '/process\.env\.API_URL/d' \
-  -e '/process\.env\.VITE_/d' \
-  -e '/import\.meta\.env\.VITE_/d' \
+  -e '/process\.env\.WEB_/d' \
+  -e '/import\.meta\.env\.WEB_/d' \
   -e 's/${API_BASE_URL}//g' \
   -e 's|http://localhost:5000||g' \
   {} \;

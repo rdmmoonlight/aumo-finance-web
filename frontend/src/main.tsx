@@ -28,11 +28,36 @@ import StatementOfFinancialPositionPage from '@/pages/reports/StatementOfFinanci
 import StatementOfCashFlowPage from '@/pages/reports/StatementOfCashFlowPage'
 import WorksheetPage from '@/pages/reports/WorksheetPage'
 
+// Helper biar support Keep me signed in
+const getToken = () => {
+  return localStorage.getItem('token') || 
+         sessionStorage.getItem('token') || 
+         localStorage.getItem('accessToken') || 
+         sessionStorage.getItem('accessToken');
+}
+
+// Kalau belum login -> tendang ke /auth
+function ProtectedLayout() {
+  const token = getToken();
+  if (!token) return <Navigate to="/auth" replace />;
+  return <AppLayout />;
+}
+
+// Kalau udah login -> gak boleh buka /auth lagi
+function PublicAuth() {
+  const token = getToken();
+  if (token) return <Navigate to="/" replace />;
+  return <AuthPage />;
+}
+
 function App() {
   return (
     <Routes>
-      <Route path="/auth" element={<AuthPage />} />
-      <Route element={<AppLayout />}>
+      {/* PUBLIC ONLY */}
+      <Route path="/auth" element={<PublicAuth />} />
+
+      {/* PROTECTED - WAJIB LOGIN */}
+      <Route element={<ProtectedLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/ai-assistant" element={<AIAssistantPage />} />
@@ -56,6 +81,7 @@ function App() {
         <Route path="/reports/statement-of-cash-flow" element={<StatementOfCashFlowPage />} />
         <Route path="/reports/worksheet" element={<WorksheetPage />} />
       </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

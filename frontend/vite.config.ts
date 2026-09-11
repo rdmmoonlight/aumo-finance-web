@@ -11,4 +11,8 @@ export default defineConfig({
   envPrefix: 'WEB_',
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   build: { cssMinify: false },
+  server: {
+    host: 'localhost',
+    port: 3000,
+  },
 })

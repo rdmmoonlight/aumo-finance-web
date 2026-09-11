@@ -18,3 +18,7 @@ Models
 ├── Services.cs
 ├── SmtpSettings.cs
 └── ViewModels.cs
+
+env
+ndopoer@gmail.com
+Bismillah.tewe15
