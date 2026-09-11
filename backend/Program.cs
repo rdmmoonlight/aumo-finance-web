@@ -160,7 +160,7 @@ namespace AumoBackend
                 .AddAuthenticationSchemes(IdentityConstants.ApplicationScheme, JwtBearerDefaults.AuthenticationScheme)
                 .Build();
             });
-            
+
             // =====================================
             // 5. REST API CORE SETUP, SWAGGER & CORS
             // =====================================
