@@ -1,0 +1,23 @@
+# build output
+dist
+dist-ssr
+build
+public/bundle.*
+
+# deps
+node_modules
+
+# env
+.env
+.env.local
+.env.production
+
+# vite/ts
+.vite
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# os/logs
+.DS_Store
+*.log
+Thumbs.db
