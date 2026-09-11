@@ -1,18 +1,14 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import viteReact from '@vitejs/plugin-react'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [react()],
-  envPrefix: 'WEB_',
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-  build: { cssMinify: false },
-  server: {
-    host: 'localhost',
-    port: 3000,
-  },
+  server: { port: 3000 },
+  resolve: { tsconfigPaths: true },
+  plugins: [
+    tailwindcss(),
+    tanstackStart({ customViteReactPlugin: true }),
+    viteReact(),
+  ],
 })

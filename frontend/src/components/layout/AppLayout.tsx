@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Link } from '@tanstack/react-router';
 import {
   IconLayoutDashboard,
   IconListDetails,
@@ -73,7 +73,7 @@ const reportNavItems: MenuItem[] = [
 
 function NavItemLink({ item }: { item: MenuItem }) {
   return (
-    <NavLink to={item.path} className="block">
+    <Link to={item.path} className="block">
       {({ isActive }) => (
         <div
           className={cn(
@@ -87,7 +87,7 @@ function NavItemLink({ item }: { item: MenuItem }) {
           <span className="truncate">{item.label}</span>
         </div>
       )}
-    </NavLink>
+    </Link>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import apiClient from '@/services/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
+import { useNavigate, useSearchParams } from '@/hooks/useCompatRouter';
 import { IconSitemap, IconPlus, IconPencil, IconNotebook, IconTrash, IconX, IconSearch } from '@tabler/icons-react';
 
 import apiClient from '@/services/apiClient';

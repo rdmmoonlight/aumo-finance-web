@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
+import { useNavigate, useSearchParams } from '@/hooks/useCompatRouter';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/hooks/useCompatRouter';
 import { IconCalendar, IconCalendarPlus, IconEye, IconEyeOff, IconPlus, IconLock, IconLockOpen, IconArrowLeft, IconCheck, IconAlertTriangle, IconX, IconInfoCircle, IconRefresh, IconCirclePlus, IconCalendarOff, IconLoader2 } from '@tabler/icons-react';
 import apiClient from '@/services/apiClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

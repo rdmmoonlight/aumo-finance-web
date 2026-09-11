@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/hooks/useCompatRouter';
 import apiClient from '@/services/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,8 +73,8 @@ export default function AuthPage() {
           </p>
 
           <div className="mt-12 border-t border-background/10">
-            <div className="flex justify-between py-4 border-b border-background/10 text-"><span className="opacity-40 font-mono text-">01</span><span>Inventory & BOM</span></div>
-            <div className="flex justify-between py-4 border-b border-background/10 text-"><span className="opacity-40 font-mono text-">02</span><span>Production Tracking</span></div>
+            <div className="flex justify-between py-4 border-b border-background/10 text-"><span className="opacity-40 font-mono text-">01</span><span>Revenues & Expenses</span></div>
+            <div className="flex justify-between py-4 border-b border-background/10 text-"><span className="opacity-40 font-mono text-">02</span><span>Tracking</span></div>
             <div className="flex justify-between py-4 border-b border-background/10 text-"><span className="opacity-40 font-mono text-">03</span><span>Finance & Costings</span></div>
           </div>
         </div>

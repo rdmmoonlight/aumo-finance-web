@@ -1,20 +1,22 @@
-import axios from 'axios';
-import { WEB_API_BASE_URL } from '@/lib/config';
+import axios from 'axios'
+import { WEB_API_BASE_URL } from '@/lib/config'
 
 const apiClient = axios.create({
-  baseURL: WEB_API_BASE_URL.replace(/\/$/, ''),
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true,
-});
+  baseURL: WEB_API_BASE_URL,
+  withCredentials: false,
+})
 
-apiClient.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('isAuthenticated');
-    }
-    return Promise.reject(err);
+// cuma attach token di browser, jangan di SSR
+apiClient.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('aumo_token')
+    if (token) config.headers.Authorization = `Bearer ${token}`
   }
-);
+  // kalo url nya http external, jangan pake baseURL
+  if (config.url?.startsWith('http')) {
+    config.baseURL = ''
+  }
+  return config
+})
 
-export default apiClient;
+export default apiClient

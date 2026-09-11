@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
+import { useNavigate, useSearchParams } from '@/hooks/useCompatRouter';
 import {
   IconEdit, IconNotebook, IconArrowLeft, IconCircleCheck, IconAlertTriangle, IconLock, IconPlus, IconTrash, IconDeviceFloppy, IconLoader2,
 } from '@tabler/icons-react';

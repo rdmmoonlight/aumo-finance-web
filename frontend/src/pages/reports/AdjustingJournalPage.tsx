@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
+import { useNavigate } from '@/hooks/useCompatRouter';
 import apiClient from '@/services/apiClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
