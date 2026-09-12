@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --font-sans: 'Inter', sans-serif; }
+
+/* biar sidebar lu gak ilang style futuristicnya */
+.sidebar-icons { background-color: #0f172a; border-right: 1px solid rgba(255,255,255,0.08); }
+.sidebar-flyout { background-color: #0f172a; border-right: 1px solid rgba(255,255,255,0.08); width: 240px; }
+.topbar-solid { background-color: #0f172a; }
+.status-strip { background-color: #0a0f1c; }
