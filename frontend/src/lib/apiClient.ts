@@ -5,13 +5,17 @@ export const apiClient = axios.create({
   withCredentials: true,
 })
 
-// Interceptor response (Redirect ke login kalau 401 Unauthorized)
+// Interceptor response (Redirect ke auth/login kalau 401 Unauthorized)
 apiClient.interceptors.response.use(
   (res) => res,
   (err) => {
-    // Pengecekan aman untuk lingkungan SSR / TanStack Start
     if (err.response?.status === 401 && typeof window !== 'undefined') {
-      window.location.href = '/login'
+      const currentPath = window.location.pathname
+      
+      // Mencegah infinite loop redirect jika sudah berada di halaman auth/login
+      if (!currentPath.startsWith('/auth') && !currentPath.startsWith('/login')) {
+        window.location.href = '/auth' // sesuaikan dengan rute auth kamu ('/auth' atau '/login')
+      }
     }
     return Promise.reject(err)
   }
