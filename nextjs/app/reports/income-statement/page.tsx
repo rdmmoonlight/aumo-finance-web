@@ -2,353 +2,121 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  IconTrendingUp,
+  IconAlertTriangle,
+  IconEyeOff,
+  IconCalendar,
+  IconArrowRightCircle,
+  IconX,
+  IconLoader2,
+} from '@tabler/icons-react';
 
-// Model & ViewModel Interfaces
-export interface IncomeStatementLine {
-  referenceNumber: number;
-  accountName: string;
-  amount: number;
-}
+export interface IncomeStatementLine { referenceNumber: number; accountName: string; amount: number; }
+export interface IncomeStatementViewModel { asOfDate: string; revenues: IncomeStatementLine[]; operatingExpenses: IncomeStatementLine[]; otherIncome: IncomeStatementLine[]; otherExpenses: IncomeStatementLine[]; }
 
-export interface IncomeStatementViewModel {
-  asOfDate: string;
-  revenues: IncomeStatementLine[];
-  operatingExpenses: IncomeStatementLine[];
-  otherIncome: IncomeStatementLine[];
-  otherExpenses: IncomeStatementLine[];
-}
-
-export interface Period {
-  id: number;
-  periodName: string;
-  startDate: string;
-  endDate: string;
-  isClosed: boolean;
-}
-
-// Format angka standar tanpa tanda Rp / IDR
 const formatNumber = (amount: number) => {
-  const formatted = new Intl.NumberFormat('id-ID', {
-    style: 'decimal',
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-
-  return amount < 0 ? `(${formatted})` : formatted;
+  const formatted = new Intl.NumberFormat('id-ID', { style: 'decimal', maximumFractionDigits: 0 }).format(Math.abs(amount));
+  return amount < 0? `(${formatted})` : formatted;
 };
 
-// Sanitasi URL API
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const NEXT_PUBLIC_API_URL = rawApiUrl
-  .replace(/\/+$/, '')
-  ;
+const NEXT_PUBLIC_API_URL = rawApiUrl.replace(/\/+$/, '');
 
 export default function IncomeStatementReportPage() {
-  const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [noPeriodSelected, setNoPeriodSelected] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [vm, setVm] = useState<IncomeStatementViewModel>({
-    asOfDate: '',
-    revenues: [],
-    operatingExpenses: [],
-    otherIncome: [],
-    otherExpenses: [],
-  });
+  const [vm, setVm] = useState<IncomeStatementViewModel>({ asOfDate: '', revenues: [], operatingExpenses: [], otherIncome: [], otherExpenses: [] });
 
-  // Memuat data Laporan Laba Rugi dari API Backend Web Controller
   const fetchIncomeStatementData = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage(null);
+    setLoading(true); setErrorMessage(null);
     try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/income-statement`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Cookie Session Identity
-      });
-
-      if (response.status === 401) {
-        setErrorMessage('Session expired or unauthorized. Please login again.');
-        setVm({
-          asOfDate: '',
-          revenues: [],
-          operatingExpenses: [],
-          otherIncome: [],
-          otherExpenses: [],
-        });
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to load Income Statement data from the server.');
-      }
-
-      const data = await response.json();
-
-      if (data?.hasPeriodSelected === false) {
-        setNoPeriodSelected(true);
-        setVm({
-          asOfDate: '',
-          revenues: [],
-          operatingExpenses: [],
-          otherIncome: [],
-          otherExpenses: [],
-        });
-        return;
-      }
-
-      // Safe extraction pendukung properti tunggal/jamak dari DTO backend Web
-      const revenuesList = Array.isArray(data?.revenueAccounts)
-        ? data.revenueAccounts
-        : Array.isArray(data?.revenues)
-        ? data.revenues
-        : [];
-
-      const operatingExpensesList = Array.isArray(data?.expenseAccounts)
-        ? data.expenseAccounts
-        : Array.isArray(data?.operatingExpenses)
-        ? data.operatingExpenses
-        : [];
-
-      const otherIncomeList = Array.isArray(data?.otherIncomeAccounts)
-        ? data.otherIncomeAccounts
-        : Array.isArray(data?.otherIncome)
-        ? data.otherIncome
-        : [];
-
-      const otherExpensesList = Array.isArray(data?.otherExpenseAccounts)
-        ? data.otherExpenseAccounts
-        : Array.isArray(data?.otherExpenses)
-        ? data.otherExpenses
-        : [];
-
-      const safeVm: IncomeStatementViewModel = {
-        asOfDate: data?.asOfDate || '',
-        revenues: revenuesList,
-        operatingExpenses: operatingExpensesList,
-        otherIncome: otherIncomeList,
-        otherExpenses: otherExpensesList,
-      };
-
-      setNoPeriodSelected(false);
-      setVm(safeVm);
-    } catch (error: any) {
-      console.error('Error loading Income Statement data:', error);
-      setErrorMessage(error.message || 'Failed to connect to the backend server.');
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/income-statement`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+      if (res.status === 401) { setErrorMessage('Session expired or unauthorized. Please login again.'); setVm({ asOfDate: '', revenues: [], operatingExpenses: [], otherIncome: [], otherExpenses: [] }); return; }
+      if (!res.ok) throw new Error('Failed to load Income Statement data.');
+      const data = await res.json();
+      if (data?.hasPeriodSelected === false) { setNoPeriodSelected(true); setVm({ asOfDate: '', revenues: [], operatingExpenses: [], otherIncome: [], otherExpenses: [] }); return; }
+      const revenuesList = Array.isArray(data?.revenueAccounts)? data.revenueAccounts : Array.isArray(data?.revenues)? data.revenues : [];
+      const operatingExpensesList = Array.isArray(data?.expenseAccounts)? data.expenseAccounts : Array.isArray(data?.operatingExpenses)? data.operatingExpenses : [];
+      const otherIncomeList = Array.isArray(data?.otherIncomeAccounts)? data.otherIncomeAccounts : Array.isArray(data?.otherIncome)? data.otherIncome : [];
+      const otherExpensesList = Array.isArray(data?.otherExpenseAccounts)? data.otherExpenseAccounts : Array.isArray(data?.otherExpenses)? data.otherExpenses : [];
+      setNoPeriodSelected(false); setVm({ asOfDate: data?.asOfDate || '', revenues: revenuesList, operatingExpenses: operatingExpensesList, otherIncome: otherIncomeList, otherExpenses: otherExpensesList });
+    } catch (err: any) { setErrorMessage(err.message); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
     fetchIncomeStatementData();
-
-    // Event listener untuk memuat ulang data saat periode di Topbar diubah
-    const handlePeriodChanged = () => {
-      fetchIncomeStatementData();
-    };
-
-    window.addEventListener('periodChanged', handlePeriodChanged);
-
-    return () => {
-      window.removeEventListener('periodChanged', handlePeriodChanged);
-    };
+    const h = () => fetchIncomeStatementData();
+    window.addEventListener('periodChanged', h);
+    return () => window.removeEventListener('periodChanged', h);
   }, [fetchIncomeStatementData]);
 
-  // Perhitungan Subtotal dan Net Income
-  const totalRevenue = useMemo(() => {
-    return vm.revenues.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  }, [vm.revenues]);
+  const totalRevenue = useMemo(() => vm.revenues.reduce((s,i)=>s+(Number(i.amount)||0),0), [vm.revenues]);
+  const totalOperatingExpenses = useMemo(() => vm.operatingExpenses.reduce((s,i)=>s+(Number(i.amount)||0),0), [vm.operatingExpenses]);
+  const operatingIncome = useMemo(() => totalRevenue - totalOperatingExpenses, [totalRevenue, totalOperatingExpenses]);
+  const totalOtherIncome = useMemo(() => vm.otherIncome.reduce((s,i)=>s+(Number(i.amount)||0),0), [vm.otherIncome]);
+  const totalOtherExpenses = useMemo(() => vm.otherExpenses.reduce((s,i)=>s+(Number(i.amount)||0),0), [vm.otherExpenses]);
+  const netIncome = useMemo(() => operatingIncome + totalOtherIncome - totalOtherExpenses, [operatingIncome, totalOtherIncome, totalOtherExpenses]);
 
-  const totalOperatingExpenses = useMemo(() => {
-    return vm.operatingExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  }, [vm.operatingExpenses]);
-
-  const operatingIncome = useMemo(() => {
-    return totalRevenue - totalOperatingExpenses;
-  }, [totalRevenue, totalOperatingExpenses]);
-
-  const totalOtherIncome = useMemo(() => {
-    return vm.otherIncome.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  }, [vm.otherIncome]);
-
-  const totalOtherExpenses = useMemo(() => {
-    return vm.otherExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-  }, [vm.otherExpenses]);
-
-  const netIncome = useMemo(() => {
-    return operatingIncome + totalOtherIncome - totalOtherExpenses;
-  }, [operatingIncome, totalOtherIncome, totalOtherExpenses]);
-
-  if (loading) {
-    return (
-      <div className="text-center py-5 my-5 text-white-50">
-        <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-        <span>Loading Income Statement...</span>
-      </div>
-    );
-  }
+  if (loading) return <div className="mx-auto max-w-4xl p-6 flex justify-center gap-2 text-sm text-muted-foreground"><IconLoader2 className="h-4 w-4 animate-spin" /> Loading Income Statement...</div>;
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
+    <div className="mx-auto max-w-4xl space-y-4 p-4 md:p-6">
       {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show shadow-sm py-2 mb-4 d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle-filled me-2 fs-5 flex-shrink-0"></i>
-            <span>{errorMessage}</span>
-          </div>
-          <button type="button" className="btn-close ms-auto" onClick={() => setErrorMessage(null)}></button>
-        </div>
+        <Alert variant="destructive" className="flex items-center justify-between"><div className="flex items-center gap-2"><IconAlertTriangle className="h-4 w-4" /><AlertDescription>{errorMessage}</AlertDescription></div><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>setErrorMessage(null)}><IconX className="h-4 w-4" /></Button></Alert>
       )}
 
-      {noPeriodSelected ? (
-        /* Empty State: No Period Selected */
-        <div className="text-center py-5 my-4">
-          <i className="ti ti-eye-off text-secondary mb-3 d-block mx-auto" style={{ fontSize: '2.5rem' }}></i>
-          <h5 className="fw-bold text-white mb-2">No Period Selected</h5>
-          <p className="text-white-50 mb-3">This report follows whichever period you&apos;re viewing.</p>
-          <Link href="/periods" className="btn btn-primary btn-sm fw-semibold shadow-sm px-4 d-inline-flex align-items-center">
-            <i className="ti ti-calendar me-1"></i> Go to Periods
-          </Link>
+      {noPeriodSelected? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted"><IconEyeOff className="h-6 w-6 text-muted-foreground" /></div>
+          <h5 className="text-lg font-semibold">No Period Selected</h5>
+          <p className="mb-4 text-sm text-muted-foreground">This report follows whichever period you're viewing.</p>
+          <Button asChild><Link href="/periods"><IconCalendar className="h-4 w-4" /> Go to Periods</Link></Button>
         </div>
       ) : (
-        /* Income Statement Content */
         <>
-          {/* Header Section (Keterangan mata uang diletakkan di deskripsi header saja) */}
-          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="mb-1 fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-trending-up me-2 text-success fs-2"></i> Income Statement
-              </h2>
-              <p className="text-white-50 mb-0">
-                Statement of Profit or Loss (IAS 1) for the period ending {vm.asOfDate ? new Date(vm.asOfDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : 'current period'} (In IDR, unless otherwise stated).
-              </p>
+              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"><IconTrendingUp className="h-5 w-5" /></span> Income Statement</h2>
+              <p className="max-w- text-sm text-muted-foreground">Statement of Profit or Loss (IAS 1) for the period ending {vm.asOfDate? new Date(vm.asOfDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : 'current period'} (In IDR, unless otherwise stated).</p>
             </div>
-            <div>
-              <Link href="/reports/retained-earnings" className="btn btn-outline-secondary fw-semibold shadow-sm d-inline-flex align-items-center">
-                <i className="ti ti-arrow-right-circle me-1"></i> Retained Earnings
-              </Link>
-            </div>
+            <Button asChild variant="outline"><Link href="/reports/retained-earnings"><IconArrowRightCircle className="h-4 w-4" /> Retained Earnings</Link></Button>
           </div>
 
-          {/* Income Statement Table Card */}
-          <div className="card bg-dark border-secondary text-white shadow-sm border border-secondary border-opacity-25 rounded-4">
-            <div className="card-body p-4">
-              <div className="table-responsive">
-                <table className="table table-dark table-borderless align-middle mb-0">
-                  <tbody>
-                    {/* REVENUE */}
-                    <tr>
-                      <td colSpan={2} className="fw-bold text-warning text-uppercase small pb-2">
-                        Revenue
-                      </td>
-                    </tr>
-                    {vm.revenues.length === 0 ? (
-                      <tr>
-                        <td className="ps-4 text-white-50 fst-italic">No revenue accounts recorded.</td>
-                        <td className="text-end text-white-50 font-monospace">-</td>
-                      </tr>
-                    ) : (
-                      vm.revenues.map((l, idx) => (
-                        <tr key={`rev-${idx}`}>
-                          <td className="ps-4">
-                            <code className="text-white-50 me-2">{l.referenceNumber}</code>
-                            {l.accountName}
-                          </td>
-                          <td className="text-end font-monospace">{formatNumber(l.amount)}</td>
-                        </tr>
-                      ))
-                    )}
-                    <tr className="border-top border-secondary fw-semibold">
-                      <td className="ps-4 pt-2">Total Revenue</td>
-                      <td className="text-end pt-2 font-monospace">{formatNumber(totalRevenue)}</td>
-                    </tr>
+          <Card>
+            <CardContent className="p-6">
+              <Table>
+                <TableBody>
+                  <TableRow className="border-0"><TableCell colSpan={2} className="pb-2 pt-0 text- font-bold uppercase tracking-widest text-amber-500">Revenue</TableCell></TableRow>
+                  {vm.revenues.length === 0? <TableRow className="border-0"><TableCell className="pl-4 text-sm italic text-muted-foreground">No revenue accounts recorded.</TableCell><TableCell className="text-right font-mono text-muted-foreground">-</TableCell></TableRow>
+                  : vm.revenues.map((l, idx) => <TableRow key={`rev-${idx}`} className="border-0"><TableCell className="pl-4 py-1.5 text-sm"><code className="mr-2 rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">{l.referenceNumber}</code>{l.accountName}</TableCell><TableCell className="py-1.5 text-right font-mono text-sm">{formatNumber(l.amount)}</TableCell></TableRow>)}
+                  <TableRow className="border-t font-semibold"><TableCell className="pl-4 pt-3">Total Revenue</TableCell><TableCell className="pt-3 text-right font-mono">{formatNumber(totalRevenue)}</TableCell></TableRow>
 
-                    {/* OPERATING EXPENSES */}
-                    <tr>
-                      <td colSpan={2} className="pt-4 fw-bold text-warning text-uppercase small pb-2">
-                        Operating Expenses
-                      </td>
-                    </tr>
-                    {vm.operatingExpenses.length === 0 ? (
-                      <tr>
-                        <td className="ps-4 text-white-50 fst-italic">No operating expense accounts recorded.</td>
-                        <td className="text-end text-white-50 font-monospace">-</td>
-                      </tr>
-                    ) : (
-                      vm.operatingExpenses.map((l, idx) => (
-                        <tr key={`opex-${idx}`}>
-                          <td className="ps-4">
-                            <code className="text-white-50 me-2">{l.referenceNumber}</code>
-                            {l.accountName}
-                          </td>
-                          <td className="text-end font-monospace">({formatNumber(l.amount)})</td>
-                        </tr>
-                      ))
-                    )}
-                    <tr className="border-top border-secondary fw-semibold">
-                      <td className="ps-4 pt-2">Total Operating Expenses</td>
-                      <td className="text-end pt-2 font-monospace">({formatNumber(totalOperatingExpenses)})</td>
-                    </tr>
+                  <TableRow className="border-0"><TableCell colSpan={2} className="pb-2 pt-6 text- font-bold uppercase tracking-widest text-amber-500">Operating Expenses</TableCell></TableRow>
+                  {vm.operatingExpenses.length === 0? <TableRow className="border-0"><TableCell className="pl-4 text-sm italic text-muted-foreground">No operating expense accounts recorded.</TableCell><TableCell className="text-right font-mono text-muted-foreground">-</TableCell></TableRow>
+                  : vm.operatingExpenses.map((l, idx) => <TableRow key={`opex-${idx}`} className="border-0"><TableCell className="pl-4 py-1.5 text-sm"><code className="mr-2 rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">{l.referenceNumber}</code>{l.accountName}</TableCell><TableCell className="py-1.5 text-right font-mono text-sm">({formatNumber(l.amount)})</TableCell></TableRow>)}
+                  <TableRow className="border-t font-semibold"><TableCell className="pl-4 pt-3">Total Operating Expenses</TableCell><TableCell className="pt-3 text-right font-mono">({formatNumber(totalOperatingExpenses)})</TableCell></TableRow>
 
-                    {/* OPERATING INCOME */}
-                    <tr className="border-top border-bottom border-secondary fw-bold fs-5">
-                      <td className="pt-3 pb-3">Operating Income</td>
-                      <td
-                        className={`text-end pt-3 pb-3 font-monospace ${
-                          operatingIncome >= 0 ? 'text-success' : 'text-danger'
-                        }`}
-                      >
-                        {formatNumber(operatingIncome)}
-                      </td>
-                    </tr>
+                  <TableRow className="border-y font-bold text-base"><TableCell className="py-4">Operating Income</TableCell><TableCell className={`py-4 text-right font-mono ${operatingIncome >= 0? 'text-emerald-500' : 'text-red-500'}`}>{formatNumber(operatingIncome)}</TableCell></TableRow>
 
-                    {/* OTHER INCOME & EXPENSES */}
-                    {(vm.otherIncome.length > 0 || vm.otherExpenses.length > 0) && (
-                      <>
-                        <tr>
-                          <td colSpan={2} className="pt-4 fw-bold text-warning text-uppercase small pb-2">
-                            Other Income &amp; Expenses
-                          </td>
-                        </tr>
-                        {vm.otherIncome.map((l, idx) => (
-                          <tr key={`oth-inc-${idx}`}>
-                            <td className="ps-4">
-                              <code className="text-white-50 me-2">{l.referenceNumber}</code>
-                              {l.accountName}
-                            </td>
-                            <td className="text-end font-monospace">{formatNumber(l.amount)}</td>
-                          </tr>
-                        ))}
-                        {vm.otherExpenses.map((l, idx) => (
-                          <tr key={`oth-exp-${idx}`}>
-                            <td className="ps-4">
-                              <code className="text-white-50 me-2">{l.referenceNumber}</code>
-                              {l.accountName}
-                            </td>
-                            <td className="text-end font-monospace">({formatNumber(l.amount)})</td>
-                          </tr>
-                        ))}
-                      </>
-                    )}
+                  {(vm.otherIncome.length > 0 || vm.otherExpenses.length > 0) && (
+                    <>
+                      <TableRow className="border-0"><TableCell colSpan={2} className="pb-2 pt-6 text- font-bold uppercase tracking-widest text-amber-500">Other Income & Expenses</TableCell></TableRow>
+                      {vm.otherIncome.map((l, idx) => <TableRow key={`oth-inc-${idx}`} className="border-0"><TableCell className="pl-4 py-1.5 text-sm"><code className="mr-2 rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">{l.referenceNumber}</code>{l.accountName}</TableCell><TableCell className="py-1.5 text-right font-mono text-sm">{formatNumber(l.amount)}</TableCell></TableRow>)}
+                      {vm.otherExpenses.map((l, idx) => <TableRow key={`oth-exp-${idx}`} className="border-0"><TableCell className="pl-4 py-1.5 text-sm"><code className="mr-2 rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">{l.referenceNumber}</code>{l.accountName}</TableCell><TableCell className="py-1.5 text-right font-mono text-sm">({formatNumber(l.amount)})</TableCell></TableRow>)}
+                    </>
+                  )}
 
-                    {/* NET INCOME */}
-                    <tr
-                      className="border-top border-secondary"
-                      style={{ borderTopWidth: '3px' }}
-                    >
-                      <td className="fw-bold fs-5 pt-3">Net Income</td>
-                      <td
-                        className={`text-end fw-bold fs-5 pt-3 font-monospace ${
-                          netIncome >= 0 ? 'text-success' : 'text-danger'
-                        }`}
-                      >
-                        {formatNumber(netIncome)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+                  <TableRow className="border-t- font-bold text-lg"><TableCell className="pt-4">Net Income</TableCell><TableCell className={`pt-4 text-right font-mono ${netIncome >= 0? 'text-emerald-500' : 'text-red-500'}`}>{formatNumber(netIncome)}</TableCell></TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

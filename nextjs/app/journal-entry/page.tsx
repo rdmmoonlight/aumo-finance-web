@@ -3,59 +3,65 @@
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import './journal-entry.css';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  IconEdit,
+  IconNotebook,
+  IconArrowLeft,
+  IconCircleCheck,
+  IconAlertTriangle,
+  IconLock,
+  IconHash,
+  IconCategory,
+  IconCalendar,
+  IconListDetails,
+  IconPlus,
+  IconTrash,
+  IconDeviceFloppy,
+  IconLoader2,
+  IconX,
+} from '@tabler/icons-react';
 
-// Data Model Interfaces
-export interface ChartOfAccountOption {
-  id: number;
-  referenceNumber: number;
-  accountName: string;
-}
-
+export interface ChartOfAccountOption { id: number; referenceNumber: number; accountName: string; }
 export interface LineItem {
-  id: string; // Unique temporary ID for list keys
+  id: string;
   accountId: number;
   lineDescription: string;
-  debit: string; // Stored as formatted string for text input (e.g. "1.000.000")
+  debit: string;
   credit: string;
   suggestions: string[];
   showSuggestions: boolean;
 }
 
-// Helpers Format Angka
-const formatIDR = (amount: number) =>
-  new Intl.NumberFormat('id-ID', {
-    style: 'decimal',
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  }).format(amount);
-
-// Format angka mentah/string ke format berpemisah titik
+const formatIDR = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'decimal', maximumFractionDigits: 2, minimumFractionDigits: 0 }).format(amount);
 const formatNumberWithDots = (val: string | number): string => {
-  if (val === '' || val === null || val === undefined) return '';
-  const cleanStr = val.toString().replace(/\D/g, '');
-  if (!cleanStr) return '';
-  return new Intl.NumberFormat('id-ID').format(parseInt(cleanStr, 10));
+  if (val === '' || val == null) return '';
+  const clean = val.toString().replace(/\D/g, '');
+  if (!clean) return '';
+  return new Intl.NumberFormat('id-ID').format(parseInt(clean, 10));
 };
-
-// Mengubah format string berpemisah titik kembali ke number murni
 const parseFormattedNumber = (val: string): number => {
   if (!val) return 0;
-  const cleanStr = val.replace(/\D/g, '');
-  return cleanStr ? parseInt(cleanStr, 10) : 0;
+  const clean = val.replace(/\D/g, '');
+  return clean? parseInt(clean, 10) : 0;
 };
-
-// Helper Generate Next Transaction Number (Format: PREFIX + YYMM + 0001)
 const generateTxNumber = (journalType: string, dateStr: string): string => {
-  const prefix = journalType === 'Adjusting' ? 'AJ' : 'GJ';
-  const dateObj = dateStr ? new Date(dateStr) : new Date();
-  const yy = dateObj.getFullYear().toString().slice(-2);
-  const mm = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+  const prefix = journalType === 'Adjusting'? 'AJ' : 'GJ';
+  const d = dateStr? new Date(dateStr) : new Date();
+  const yy = d.getFullYear().toString().slice(-2);
+  const mm = (d.getMonth() + 1).toString().padStart(2, '0');
   return `${prefix}${yy}${mm}0001`;
 };
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-const NEXT_PUBLIC_API_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
+const NEXT_PUBLIC_API_URL = rawApiUrl.endsWith('/')? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 function JournalEntryContent() {
   const router = useRouter();
@@ -63,22 +69,15 @@ function JournalEntryContent() {
   const entryIdParam = searchParams.get('id');
   const isEdit = Boolean(entryIdParam);
 
-  // Form State Metadata
-  const [journalType, setJournalType] = useState<string>('General');
-  const [entryDate, setEntryDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
-  const [transactionNumber, setTransactionNumber] = useState<string>('');
+  const [journalType, setJournalType] = useState('General');
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [transactionNumber, setTransactionNumber] = useState('');
   const [availableAccounts, setAvailableAccounts] = useState<ChartOfAccountOption[]>([]);
-
-  // Lines State
   const [lines, setLines] = useState<LineItem[]>([]);
-
-  // Alert & Lock Message States
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [lockedMessage, setLockedMessage] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
   const resetForm = () => {
     const defaultDate = new Date().toISOString().split('T')[0];
@@ -86,676 +85,177 @@ function JournalEntryContent() {
     setEntryDate(defaultDate);
     setTransactionNumber(generateTxNumber('General', defaultDate));
     setLines([
-      {
-        id: Date.now().toString() + '-1',
-        accountId: 0,
-        lineDescription: '',
-        debit: '',
-        credit: '',
-        suggestions: [],
-        showSuggestions: false,
-      },
-      {
-        id: Date.now().toString() + '-2',
-        accountId: 0,
-        lineDescription: '',
-        debit: '',
-        credit: '',
-        suggestions: [],
-        showSuggestions: false,
-      },
+      { id: Date.now().toString() + '-1', accountId: 0, lineDescription: '', debit: '', credit: '', suggestions: [], showSuggestions: false },
+      { id: Date.now().toString() + '-2', accountId: 0, lineDescription: '', debit: '', credit: '', suggestions: [], showSuggestions: false },
     ]);
-    setValidationErrors([]);
-    setSuccessMessage(null);
+    setValidationErrors([]); setSuccessMessage(null);
   };
 
-  // Auto Generate Nomor Transaksi jika bukan mode edit
-  useEffect(() => {
-    if (!isEdit) {
-      setTransactionNumber(generateTxNumber(journalType, entryDate));
-    }
-  }, [journalType, entryDate, isEdit]);
+  useEffect(() => { if (!isEdit) setTransactionNumber(generateTxNumber(journalType, entryDate)); }, [journalType, entryDate, isEdit]);
 
-  // Data Initialization: Fetch Accounts & Journal Entry
   useEffect(() => {
     const initPage = async () => {
       setLoading(true);
       try {
-        // 1. Fetch Chart of Accounts menggunakan Cookie Authentication
-        const accountsRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/chart-of-accounts`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Mengirimkan Auth Cookie secara otomatis ke backend
-        });
-
+        const accountsRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/chart-of-accounts`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
         if (accountsRes.ok) {
-          const rawAccounts = await accountsRes.json();
-          const accountsData = Array.isArray(rawAccounts)
-            ? rawAccounts
-            : Array.isArray(rawAccounts?.data)
-            ? rawAccounts.data
-            : Array.isArray(rawAccounts?.accounts)
-            ? rawAccounts.accounts
-            : [];
+          const raw = await accountsRes.json();
+          const data = Array.isArray(raw)? raw : Array.isArray(raw?.data)? raw.data : Array.isArray(raw?.accounts)? raw.accounts : [];
+          setAvailableAccounts(data.map((acc: any) => ({ id: acc.id, referenceNumber: acc.referenceNumber, accountName: acc.accountName })));
+        } else if (accountsRes.status === 401) throw new Error('Sesi telah berakhir. Silakan login kembali.');
 
-          setAvailableAccounts(
-            accountsData.map((acc: any) => ({
-              id: acc.id,
-              referenceNumber: acc.referenceNumber,
-              accountName: acc.accountName,
-            }))
-          );
-        } else if (accountsRes.status === 401) {
-          throw new Error('Sesi telah berakhir atau belum terotentikasi. Silakan login kembali.');
-        }
-
-        // 2. Fetch data jika Edit Mode
         if (isEdit && entryIdParam) {
-          const journalRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/journals/${entryIdParam}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include', // Mengirimkan Auth Cookie
-          });
-
-          if (!journalRes.ok) {
-            throw new Error('Failed to retrieve journal entry data from the server.');
-          }
-
+          const journalRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/journals/${entryIdParam}`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+          if (!journalRes.ok) throw new Error('Failed to retrieve journal entry.');
           const journalData = await journalRes.json();
-
           if (journalData.isClosedPeriod) {
-            setLockedMessage(
-              `Journal entry ${journalData.transactionNumber} belongs to a closed period and cannot be edited. View it from the Periods page instead.`
-            );
+            setLockedMessage(`Journal entry ${journalData.transactionNumber} belongs to a closed period and cannot be edited.`);
           } else {
             setTransactionNumber(journalData.transactionNumber);
             setJournalType(journalData.journalType || 'General');
-            setEntryDate(
-              journalData.entryDate
-                ? journalData.entryDate.split('T')[0]
-                : new Date().toISOString().split('T')[0]
-            );
-
-            const rawLines = Array.isArray(journalData.lines) ? journalData.lines : [];
+            setEntryDate(journalData.entryDate? journalData.entryDate.split('T')[0] : new Date().toISOString().split('T')[0]);
+            const rawLines = Array.isArray(journalData.lines)? journalData.lines : [];
             if (rawLines.length > 0) {
-              setLines(
-                rawLines.map((l: any, idx: number) => ({
-                  id: l.id ? l.id.toString() : `${Date.now()}-${idx}`,
-                  accountId: l.accountId,
-                  lineDescription: l.lineDescription || '',
-                  debit: l.debit > 0 ? formatNumberWithDots(l.debit) : '',
-                  credit: l.credit > 0 ? formatNumberWithDots(l.credit) : '',
-                  suggestions: [],
-                  showSuggestions: false,
-                }))
-              );
+              setLines(rawLines.map((l: any, idx: number) => ({
+                id: l.id? l.id.toString() : `${Date.now()}-${idx}`,
+                accountId: l.accountId,
+                lineDescription: l.lineDescription || '',
+                debit: l.debit > 0? formatNumberWithDots(l.debit) : '',
+                credit: l.credit > 0? formatNumberWithDots(l.credit) : '',
+                suggestions: [], showSuggestions: false,
+              })));
             }
           }
-        } else {
-          resetForm();
-        }
+        } else resetForm();
       } catch (err: any) {
-        setValidationErrors([err.message || 'Failed to load data from the server.']);
-      } finally {
-        setLoading(false);
-      }
+        setValidationErrors([err.message || 'Failed to load data.']);
+      } finally { setLoading(false); }
     };
-
     initPage();
   }, [isEdit, entryIdParam]);
 
-  // Total Debit & Credit Calculation
-  const totalDebit = useMemo(() => {
-    return lines.reduce((sum, line) => sum + parseFormattedNumber(line.debit), 0);
-  }, [lines]);
+  const totalDebit = useMemo(() => lines.reduce((s, l) => s + parseFormattedNumber(l.debit), 0), [lines]);
+  const totalCredit = useMemo(() => lines.reduce((s, l) => s + parseFormattedNumber(l.credit), 0), [lines]);
+  const isBalanced = useMemo(() => totalDebit > 0 && totalCredit > 0 && totalDebit === totalCredit, [totalDebit, totalCredit]);
 
-  const totalCredit = useMemo(() => {
-    return lines.reduce((sum, line) => sum + parseFormattedNumber(line.credit), 0);
-  }, [lines]);
-
-  const isBalanced = useMemo(() => {
-    return totalDebit > 0 && totalCredit > 0 && totalDebit === totalCredit;
-  }, [totalDebit, totalCredit]);
-
-  // Line Items Management Handlers
-  const addLine = () => {
-    setLines((prev) => [
-      ...prev,
-      {
-        id: `${Date.now()}-${Math.random()}`,
-        accountId: 0,
-        lineDescription: '',
-        debit: '',
-        credit: '',
-        suggestions: [],
-        showSuggestions: false,
-      },
-    ]);
-  };
-
+  const addLine = () => setLines((p) => [...p, { id: `${Date.now()}-${Math.random()}`, accountId: 0, lineDescription: '', debit: '', credit: '', suggestions: [], showSuggestions: false }]);
   const removeLine = (id: string) => {
-    if (lines.length <= 2) {
-      alert('A journal entry must have at least two line items (Debit & Credit).');
-      return;
-    }
-    setLines((prev) => prev.filter((line) => line.id !== id));
+    if (lines.length <= 2) { alert('A journal entry must have at least two line items.'); return; }
+    setLines((p) => p.filter((l) => l.id!== id));
   };
-
   const updateLineField = (id: string, field: keyof LineItem, value: any) => {
-    setLines((prev) =>
-      prev.map((line) => {
-        if (line.id !== id) return line;
-
-        // Auto Clear debit/credit yang berseberangan
-        if (field === 'debit' && value !== '') {
-          return { ...line, debit: formatNumberWithDots(value), credit: '' };
-        }
-        if (field === 'credit' && value !== '') {
-          return { ...line, credit: formatNumberWithDots(value), debit: '' };
-        }
-
-        return { ...line, [field]: value };
-      })
-    );
+    setLines((prev) => prev.map((line) => {
+      if (line.id!== id) return line;
+      if (field === 'debit' && value!== '') return {...line, debit: formatNumberWithDots(value), credit: '' };
+      if (field === 'credit' && value!== '') return {...line, credit: formatNumberWithDots(value), debit: '' };
+      return {...line, [field]: value };
+    }));
   };
 
-  // Description Search Autocomplete
   const handleDescriptionInput = (id: string, text: string) => {
     updateLineField(id, 'lineDescription', text);
-
-    if (text.trim().length < 2) {
-      setLines((prev) =>
-        prev.map((l) =>
-          l.id === id ? { ...l, showSuggestions: false, suggestions: [] } : l
-        )
-      );
-      return;
-    }
-
-    const historicalNotes = [
-      'Payroll Disbursement',
-      'Office Rent Payment',
-      'Accounts Receivable Collection',
-      'Supplies Purchase',
-      'Owner Capital Contribution',
-    ];
-
-    const filtered = historicalNotes.filter((n) =>
-      n.toLowerCase().includes(text.toLowerCase())
-    );
-
-    setLines((prev) =>
-      prev.map((l) =>
-        l.id === id
-          ? { ...l, suggestions: filtered, showSuggestions: filtered.length > 0 }
-          : l
-      )
-    );
+    if (text.trim().length < 2) { setLines((p) => p.map((l) => l.id === id? {...l, showSuggestions: false, suggestions: [] } : l)); return; }
+    const historicalNotes = ['Payroll Disbursement', 'Office Rent Payment', 'Accounts Receivable Collection', 'Supplies Purchase', 'Owner Capital Contribution'];
+    const filtered = historicalNotes.filter((n) => n.toLowerCase().includes(text.toLowerCase()));
+    setLines((p) => p.map((l) => l.id === id? {...l, suggestions: filtered, showSuggestions: filtered.length > 0 } : l));
   };
+  const selectSuggestion = (id: string, txt: string) => setLines((p) => p.map((l) => l.id === id? {...l, lineDescription: txt, showSuggestions: false } : l));
 
-  const selectSuggestion = (id: string, suggestionText: string) => {
-    setLines((prev) =>
-      prev.map((l) =>
-        l.id === id
-          ? { ...l, lineDescription: suggestionText, showSuggestions: false }
-          : l
-      )
-    );
-  };
-
-  // Submit Journal Form
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setValidationErrors([]);
-    setSuccessMessage(null);
-
+    e.preventDefault(); setValidationErrors([]); setSuccessMessage(null);
     const errors: string[] = [];
-
-    const effectiveLines = lines.filter(
-      (l) =>
-        l.accountId !== 0 &&
-        (parseFormattedNumber(l.debit) > 0 || parseFormattedNumber(l.credit) > 0)
-    );
-
-    if (effectiveLines.length < 2) {
-      errors.push(
-        'A journal entry must have at least two valid line items with accounts and amounts.'
-      );
-    }
-
-    if (!isBalanced) {
-      errors.push('Total debit must equal total credit before posting.');
-    }
-
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-      return;
-    }
+    const effectiveLines = lines.filter((l) => l.accountId!== 0 && (parseFormattedNumber(l.debit) > 0 || parseFormattedNumber(l.credit) > 0));
+    if (effectiveLines.length < 2) errors.push('A journal entry must have at least two valid line items.');
+    if (!isBalanced) errors.push('Total debit must equal total credit before posting.');
+    if (errors.length > 0) { setValidationErrors(errors); return; }
 
     try {
-      const payload = {
-        journalType,
-        entryDate,
-        transactionNumber,
-        lines: effectiveLines.map((l) => ({
-          accountId: l.accountId,
-          lineDescription: l.lineDescription,
-          debit: parseFormattedNumber(l.debit),
-          credit: parseFormattedNumber(l.credit),
-        })),
-      };
-
-      const url = isEdit
-        ? `${NEXT_PUBLIC_API_URL}/api/v1/journals/${entryIdParam}`
-        : `${NEXT_PUBLIC_API_URL}/api/v1/journals`;
-      const method = isEdit ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Mengirimkan Auth Cookie
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(
-          errData.message || 'Failed to save journal transaction to server.'
-        );
-      }
-
-      const result = await response.json();
-
-      if (isEdit) {
-        setSuccessMessage(`Journal entry ${transactionNumber} has been updated.`);
-        setTimeout(() => {
-          router.push('/reports/general-journal');
-        }, 1200);
-      } else {
-        const postedTxNum = result.transactionNumber || transactionNumber;
-        setSuccessMessage(
-          `Journal entry ${postedTxNum} has been posted successfully.`
-        );
-        resetForm();
-      }
-    } catch (err: any) {
-      setValidationErrors([
-        err.message || 'An error occurred while processing the journal entry.',
-      ]);
-    }
+      const payload = { journalType, entryDate, transactionNumber, lines: effectiveLines.map((l) => ({ accountId: l.accountId, lineDescription: l.lineDescription, debit: parseFormattedNumber(l.debit), credit: parseFormattedNumber(l.credit) })) };
+      const url = isEdit? `${NEXT_PUBLIC_API_URL}/api/v1/journals/${entryIdParam}` : `${NEXT_PUBLIC_API_URL}/api/v1/journals`;
+      const method = isEdit? 'PUT' : 'POST';
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
+      if (!res.ok) { const errData = await res.json().catch(() => ({})); throw new Error(errData.message || 'Failed to save journal.'); }
+      const result = await res.json();
+      if (isEdit) { setSuccessMessage(`Journal entry ${transactionNumber} has been updated.`); setTimeout(() => router.push('/reports/general-journal'), 1200); }
+      else { setSuccessMessage(`Journal entry ${result.transactionNumber || transactionNumber} has been posted successfully.`); resetForm(); }
+    } catch (err: any) { setValidationErrors([err.message]); }
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-5 my-5 text-white-50">
-        <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-        <span>Loading journal data from server...</span>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center py-20 text-sm text-muted-foreground"><IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> Loading journal data from server...</div>;
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
-      {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div className="mx-auto max-w-7xl space-y-4 p-4 md:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          {isEdit ? (
-            <>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-edit me-2 text-warning fs-2"></i> Edit Journal Entry
-                <span className="badge bg-secondary-subtle text-white border border-secondary-subtle ms-2">
-                  {transactionNumber}
-                </span>
-              </h2>
-              <p className="text-white-50 mb-0">
-                Update this double-entry transaction for Aumo Finance.
-              </p>
-            </>
-          ) : (
-            <>
-              <h2 className="fw-bold text-white mb-1 d-flex align-items-center">
-                <i className="ti ti-notebook me-2 text-warning fs-2"></i> Create Journal Entry
-              </h2>
-              <p className="text-white-50 mb-0">
-                Record double-entry financial transactions or adjusting entries for Aumo Finance.
-              </p>
-            </>
-          )}
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+            {isEdit? <><IconEdit className="h-6 w-6 text-amber-500" /> Edit Journal Entry <Badge variant="secondary" className="ml-2 font-mono">{transactionNumber}</Badge></> : <><IconNotebook className="h-6 w-6 text-amber-500" /> Create Journal Entry</>}
+          </h2>
+          <p className="text-sm text-muted-foreground">{isEdit? 'Update this double-entry transaction.' : 'Record double-entry financial transactions or adjusting entries.'}</p>
         </div>
-        <div>
-          <Link
-            href="/reports/general-journal"
-            className="btn btn-outline-secondary shadow-sm d-inline-flex align-items-center"
-          >
-            <i className="ti ti-arrow-left me-1"></i> Back to Journal
-          </Link>
-        </div>
+        <Button asChild variant="outline"><Link href="/reports/general-journal"><IconArrowLeft className="h-4 w-4" /> Back to Journal</Link></Button>
       </div>
 
-      {/* Notifications */}
-      {successMessage && (
-        <div
-          className="alert alert-success alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between"
-          role="alert"
-        >
-          <div className="d-flex align-items-center">
-            <i className="ti ti-circle-check me-2 fs-5 flex-shrink-0"></i>
-            <span>{successMessage}</span>
-          </div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setSuccessMessage(null)}
-          ></button>
-        </div>
-      )}
-
-      {validationErrors.length > 0 && (
-        <div
-          className="alert alert-danger alert-dismissible fade show shadow-sm py-2 d-flex align-items-center justify-content-between"
-          role="alert"
-        >
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle me-2 fs-5 flex-shrink-0"></i>
-            <ul className="mb-0 small fw-semibold list-unstyled">
-              {validationErrors.map((err, idx) => (
-                <li key={idx}>{err}</li>
-              ))}
-            </ul>
-          </div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setValidationErrors([])}
-          ></button>
-        </div>
-      )}
-
-      {lockedMessage ? (
-        <div
-          className="alert alert-warning shadow-sm py-2 d-flex align-items-center"
-          role="alert"
-        >
-          <i className="ti ti-lock me-2 fs-5 flex-shrink-0"></i>
-          <span>{lockedMessage}</span>
-          <Link href="/reports/general-journal" className="alert-link ms-2">
-            Back to General Journal
-          </Link>
-        </div>
+      {successMessage && <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600"><IconCircleCheck className="h-4 w-4" /><AlertDescription className="flex w-full justify-between">{successMessage}<Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>setSuccessMessage(null)}><IconX className="h-4 w-4" /></Button></AlertDescription></Alert>}
+      {validationErrors.length > 0 && <Alert variant="destructive"><IconAlertTriangle className="h-4 w-4" /><AlertDescription><ul className="list-disc pl-4 text-xs">{validationErrors.map((e,i)=><li key={i}>{e}</li>)}</ul></AlertDescription></Alert>}
+      {lockedMessage? (
+        <Alert className="border-amber-500/30 bg-amber-500/10 text-amber-600"><IconLock className="h-4 w-4" /><AlertDescription className="flex items-center gap-2">{lockedMessage}<Link href="/reports/general-journal" className="underline">Back to General Journal</Link></AlertDescription></Alert>
       ) : (
-        <form onSubmit={handleSubmit}>
-          {/* Transaction Header Metadata */}
-          <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
-            <div className="card-body p-4 text-white">
-              <div className="row g-3">
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
-                    <i className="ti ti-hash"></i> Transaction No.
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control bg-dark text-white border-secondary fw-semibold"
-                    value={transactionNumber}
-                    readOnly
-                    tabIndex={-1}
-                  />
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
-                    <i className="ti ti-category"></i> Journal Type
-                  </label>
-                  <select
-                    className="form-select bg-dark text-white border-secondary fw-semibold"
-                    value={journalType}
-                    onChange={(e) => setJournalType(e.target.value)}
-                  >
-                    <option value="General">General Journal (GJ)</option>
-                    <option value="Adjusting">Adjusting Entry (AJ)</option>
-                  </select>
-                </div>
-
-                <div className="col-md-4">
-                  <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
-                    <i className="ti ti-calendar"></i> Transaction Date
-                  </label>
-                  <input
-                    type="date"
-                    className="form-control bg-dark text-white border-secondary"
-                    required
-                    value={entryDate}
-                    onChange={(e) => setEntryDate(e.target.value)}
-                  />
-                </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Card>
+            <CardContent className="grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
+              <div className="space-y-2"><Label className="flex items-center gap-1"><IconHash className="h-3.5 w-3.5" /> Transaction No.</Label><Input value={transactionNumber} readOnly className="font-mono font-semibold bg-muted" /></div>
+              <div className="space-y-2"><Label className="flex items-center gap-1"><IconCategory className="h-3.5 w-3.5" /> Journal Type</Label>
+                <Select value={journalType} onValueChange={setJournalType}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="General">General Journal (GJ)</SelectItem><SelectItem value="Adjusting">Adjusting Entry (AJ)</SelectItem></SelectContent></Select>
               </div>
-            </div>
-          </div>
+              <div className="space-y-2"><Label className="flex items-center gap-1"><IconCalendar className="h-3.5 w-3.5" /> Transaction Date</Label><Input type="date" value={entryDate} onChange={(e)=>setEntryDate(e.target.value)} required /></div>
+            </CardContent>
+          </Card>
 
-          {/* Journal Lines Table */}
-          <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
-            <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 px-4">
-              <h5 className="mb-0 fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-list-details me-2 text-warning fs-4"></i> Journal Lines
-              </h5>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary fw-semibold d-inline-flex align-items-center"
-                onClick={addLine}
-              >
-                <i className="ti ti-plus me-1"></i> Add Line
-              </button>
-            </div>
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-dark table-hover align-middle mb-0 journal-line-table">
-                  <thead className="table-light text-secondary">
-                    <tr>
-                      <th style={{ width: '10%' }} className="ps-4">
-                        Ref No.
-                      </th>
-                      <th style={{ width: '25%' }}>Account Name</th>
-                      <th style={{ width: '25%' }}>Description</th>
-                      <th style={{ width: '15%' }} className="text-end">
-                        Debit
-                      </th>
-                      <th style={{ width: '15%' }} className="text-end">
-                        Credit
-                      </th>
-                      <th style={{ width: '10%' }} className="text-center pe-4">
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="border-top-0">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between py-3"><CardTitle className="flex items-center gap-2 text-base"><IconListDetails className="h-5 w-5 text-amber-500" /> Journal Lines</CardTitle><Button type="button" size="sm" variant="outline" onClick={addLine}><IconPlus className="h-4 w-4" /> Add Line</Button></CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead className="w- pl-6">Ref No.</TableHead><TableHead className="w-[24%]">Account Name</TableHead><TableHead className="w-[24%]">Description</TableHead><TableHead className="text-right">Debit</TableHead><TableHead className="text-right">Credit</TableHead><TableHead className="pr-6 text-center">Action</TableHead></TableRow></TableHeader>
+                  <TableBody>
                     {lines.map((line) => {
-                      const accountRef = availableAccounts.find(
-                        (a) => a.id === line.accountId
-                      )?.referenceNumber;
-
+                      const accountRef = availableAccounts.find((a) => a.id === line.accountId)?.referenceNumber;
                       return (
-                        <tr key={line.id}>
-                          {/* Ref No. */}
-                          <td className="ps-4">
-                            <input
-                              type="text"
-                              className="form-control text-center bg-dark text-info border-secondary"
-                              readOnly
-                              tabIndex={-1}
-                              placeholder="---"
-                              value={accountRef ? accountRef.toString() : ''}
-                            />
-                          </td>
-
-                          {/* Account Selection */}
-                          <td>
-                            <select
-                              className="form-select bg-dark text-white border-secondary"
-                              value={line.accountId}
-                              onChange={(e) =>
-                                updateLineField(line.id, 'accountId', Number(e.target.value))
-                              }
-                            >
-                              <option value={0} disabled>
-                                Select Account...
-                              </option>
-                              {availableAccounts.map((acc) => (
-                                <option key={acc.id} value={acc.id}>
-                                  {acc.referenceNumber} - {acc.accountName}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-
-                          {/* Description */}
-                          <td className="journal-line-description-container">
-                            <input
-                              type="text"
-                              className="form-control bg-dark text-white border-secondary"
-                              placeholder="Note..."
-                              autoComplete="off"
-                              value={line.lineDescription}
-                              onChange={(e) =>
-                                handleDescriptionInput(line.id, e.target.value)
-                              }
-                              onBlur={() => {
-                                setTimeout(
-                                  () => updateLineField(line.id, 'showSuggestions', false),
-                                  200
-                                );
-                              }}
-                            />
+                        <TableRow key={line.id}>
+                          <TableCell className="pl-6"><Input value={accountRef? accountRef.toString() : ''} readOnly placeholder="---" className="h-9 text-center font-mono text-sky-500 bg-muted" /></TableCell>
+                          <TableCell>
+                            <Select value={line.accountId? line.accountId.toString() : ''} onValueChange={(v)=>updateLineField(line.id,'accountId',Number(v))}>
+                              <SelectTrigger className="h-9"><SelectValue placeholder="Select Account..." /></SelectTrigger>
+                              <SelectContent>{availableAccounts.map((acc)=><SelectItem key={acc.id} value={acc.id.toString()}>{acc.referenceNumber} - {acc.accountName}</SelectItem>)}</SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="relative">
+                            <Input placeholder="Note..." value={line.lineDescription} onChange={(e)=>handleDescriptionInput(line.id,e.target.value)} onBlur={()=>setTimeout(()=>updateLineField(line.id,'showSuggestions',false),200)} className="h-9" />
                             {line.showSuggestions && line.suggestions.length > 0 && (
-                              <div className="list-group journal-suggestions-menu bg-dark border border-secondary">
-                                {lines
-                                  .find((l) => l.id === line.id)
-                                  ?.suggestions.map((suggestion, sIdx) => (
-                                    <button
-                                      key={sIdx}
-                                      type="button"
-                                      className="list-group-item list-group-item-action bg-dark text-white border-secondary small py-1"
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        selectSuggestion(line.id, suggestion);
-                                      }}
-                                    >
-                                      {suggestion}
-                                    </button>
-                                  ))}
+                              <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border bg-popover shadow-md">
+                                {line.suggestions.map((s, i)=><button key={i} type="button" className="w-full px-3 py-1.5 text-left text-xs hover:bg-accent" onMouseDown={(e)=>{e.preventDefault(); selectSuggestion(line.id,s)}}>{s}</button>)}
                               </div>
                             )}
-                          </td>
-
-                          {/* Debit Input */}
-                          <td>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              className="form-control bg-dark text-white border-secondary text-end"
-                              placeholder="0"
-                              value={line.debit}
-                              onChange={(e) =>
-                                updateLineField(line.id, 'debit', e.target.value)
-                              }
-                            />
-                          </td>
-
-                          {/* Credit Input */}
-                          <td>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              className="form-control bg-dark text-white border-secondary text-end"
-                              placeholder="0"
-                              value={line.credit}
-                              onChange={(e) =>
-                                updateLineField(line.id, 'credit', e.target.value)
-                              }
-                            />
-                          </td>
-
-                          {/* Remove Line Action */}
-                          <td className="text-center pe-4">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              onClick={() => removeLine(line.id)}
-                            >
-                              <i className="ti ti-trash"></i>
-                            </button>
-                          </td>
-                        </tr>
+                          </TableCell>
+                          <TableCell><Input inputMode="numeric" placeholder="0" value={line.debit} onChange={(e)=>updateLineField(line.id,'debit',e.target.value)} className="h-9 text-right font-mono" /></TableCell>
+                          <TableCell><Input inputMode="numeric" placeholder="0" value={line.credit} onChange={(e)=>updateLineField(line.id,'credit',e.target.value)} className="h-9 text-right font-mono" /></TableCell>
+                          <TableCell className="pr-6 text-center"><Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={()=>removeLine(line.id)}><IconTrash className="h-4 w-4" /></Button></TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                  <tfoot className="table-light text-secondary border-top fw-bold">
-                    <tr>
-                      <td colSpan={3} className="text-end py-3 text-white">
-                        Total Balance:
-                      </td>
-                      <td className="text-end text-success fs-6 py-3">
-                        Rp {formatIDR(totalDebit)}
-                      </td>
-                      <td className="text-end text-danger fs-6 py-3">
-                        Rp {formatIDR(totalCredit)}
-                      </td>
-                      <td></td>
-                    </tr>
-                    <tr>
-                      <td colSpan={3} className="text-end pb-3 border-bottom-0 text-white">
-                        Status:
-                      </td>
-                      <td colSpan={2} className="text-center pb-3 border-bottom-0">
-                        {isBalanced ? (
-                          <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 d-inline-flex align-items-center">
-                            <i className="ti ti-circle-check me-1"></i> Balanced
-                          </span>
-                        ) : (
-                          <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 d-inline-flex align-items-center">
-                            <i className="ti ti-alert-triangle me-1"></i> Unbalanced (Rp{' '}
-                            {formatIDR(Math.abs(totalDebit - totalCredit))})
-                          </span>
-                        )}
-                      </td>
-                      <td className="border-bottom-0"></td>
-                    </tr>
-                  </tfoot>
-                </table>
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow><TableCell colSpan={3} className="text-right font-semibold">Total Balance:</TableCell><TableCell className="text-right font-mono font-bold text-emerald-500">Rp {formatIDR(totalDebit)}</TableCell><TableCell className="text-right font-mono font-bold text-red-500">Rp {formatIDR(totalCredit)}</TableCell><TableCell /></TableRow>
+                    <TableRow><TableCell colSpan={3} className="text-right">Status:</TableCell><TableCell colSpan={2} className="text-center">{isBalanced? <Badge className="gap-1 bg-emerald-500 hover:bg-emerald-600"><IconCircleCheck className="h-3.5 w-3.5" /> Balanced</Badge> : <Badge variant="destructive" className="gap-1"><IconAlertTriangle className="h-3.5 w-3.5" /> Unbalanced (Rp {formatIDR(Math.abs(totalDebit-totalCredit))})</Badge>}</TableCell><TableCell /></TableRow>
+                  </TableFooter>
+                </Table>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Form Controls */}
-          <div className="d-flex justify-content-end gap-2">
-            {isEdit ? (
-              <Link
-                href="/reports/general-journal"
-                className="btn btn-outline-secondary px-4"
-              >
-                Cancel
-              </Link>
-            ) : (
-              <button
-                type="button"
-                className="btn btn-outline-secondary px-4"
-                onClick={resetForm}
-              >
-                Reset Form
-              </button>
-            )}
-            <button
-              type="submit"
-              className="btn btn-primary fw-semibold px-4 shadow-sm d-inline-flex align-items-center"
-              disabled={!isBalanced}
-            >
-              <i className="ti ti-device-floppy me-1"></i>{' '}
-              {isEdit ? 'Save Changes' : 'Post Journal Entry'}
-            </button>
+          <div className="flex justify-end gap-2">
+            {isEdit? <Button asChild variant="secondary"><Link href="/reports/general-journal">Cancel</Link></Button> : <Button type="button" variant="secondary" onClick={resetForm}>Reset Form</Button>}
+            <Button type="submit" disabled={!isBalanced} className="gap-2"><IconDeviceFloppy className="h-4 w-4" />{isEdit? 'Save Changes' : 'Post Journal Entry'}</Button>
           </div>
         </form>
       )}
@@ -764,16 +264,5 @@ function JournalEntryContent() {
 }
 
 export default function JournalEntryPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="text-center py-5 my-5 text-white-50">
-          <div className="spinner-border text-primary me-2" role="status"></div>
-          <span>Loading journal entry page...</span>
-        </div>
-      }
-    >
-      <JournalEntryContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="flex justify-center py-20 text-sm text-muted-foreground"><IconLoader2 className="mr-2 h-4 w-4 animate-spin" /> Loading journal entry page...</div>}><JournalEntryContent /></Suspense>;
 }

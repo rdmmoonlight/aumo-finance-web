@@ -2,371 +2,144 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  IconGridDots,
+  IconTrendingUp,
+  IconAlertTriangle,
+  IconEyeOff,
+  IconCalendar,
+  IconInfoCircle,
+  IconX,
+  IconLoader2,
+} from '@tabler/icons-react';
 
-// Model & ViewModel Interfaces
-export interface WorksheetRow {
-  accountId: number;
-  referenceNumber: number;
-  accountName: string;
-  type: string;
-  normalBalanceIsDebit: boolean;
-  unadjustedDebit: number;
-  unadjustedCredit: number;
-  adjustmentDebit: number;
-  adjustmentCredit: number;
-  adjustedDebit: number;
-  adjustedCredit: number;
-  incomeStatementDebit: number;
-  incomeStatementCredit: number;
-  financialPositionDebit: number;
-  financialPositionCredit: number;
-}
+export interface WorksheetRow { accountId: number; referenceNumber: number; accountName: string; type: string; normalBalanceIsDebit: boolean; unadjustedDebit: number; unadjustedCredit: number; adjustmentDebit: number; adjustmentCredit: number; adjustedDebit: number; adjustedCredit: number; incomeStatementDebit: number; incomeStatementCredit: number; financialPositionDebit: number; financialPositionCredit: number; }
+export interface WorksheetViewModel { rows: WorksheetRow[]; netIncome: number; }
 
-export interface WorksheetViewModel {
-  rows: WorksheetRow[];
-  netIncome: number;
-}
-
-export interface Period {
-  id: number;
-  periodName: string;
-  startDate: string;
-  endDate: string;
-  isClosed: boolean;
-}
-
-// Format angka biasa tanpa simbol mata uang
 const formatNumber = (amount: number) => {
   if (amount === 0) return '-';
-  const formatted = new Intl.NumberFormat('id-ID', {
-    style: 'decimal',
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-
-  return amount < 0 ? `(${formatted})` : formatted;
+  const f = new Intl.NumberFormat('id-ID', { style: 'decimal', maximumFractionDigits: 0 }).format(Math.abs(amount));
+  return amount < 0? `(${f})` : f;
 };
 
-// Sanitasi URL API tanpa /api
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const NEXT_PUBLIC_API_URL = rawApiUrl
-  .replace(/\/+$/, '')
-  ;
+const NEXT_PUBLIC_API_URL = rawApiUrl.replace(/\/+$/, '');
 
 export default function WorksheetReportPage() {
-  const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [noPeriodSelected, setNoPeriodSelected] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [vm, setVm] = useState<WorksheetViewModel>({ rows: [], netIncome: 0 });
 
-  // Memuat data Worksheet 10-Kolom dari API Backend Web (/reports/worksheet)
   const fetchWorksheetData = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage(null);
+    setLoading(true); setErrorMessage(null);
     try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/worksheet`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Menggunakan Session Cookie
-      });
-
-      if (response.status === 401) {
-        setErrorMessage('Session expired or unauthorized. Please login again.');
-        setVm({ rows: [], netIncome: 0 });
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to load Worksheet data from the server.');
-      }
-
-      const data = await response.json();
-
-      if (data?.hasPeriodSelected === false) {
-        setNoPeriodSelected(true);
-        setVm({ rows: [], netIncome: 0 });
-        return;
-      }
-
-      // Pemetaan field dari DTO Backend ke ViewModel Frontend
-      const rawRows = Array.isArray(data?.rows) ? data.rows : [];
+      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/worksheet`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+      if (res.status === 401) { setErrorMessage('Session expired or unauthorized. Please login again.'); setVm({ rows: [], netIncome: 0 }); return; }
+      if (!res.ok) throw new Error('Failed to load Worksheet data.');
+      const data = await res.json();
+      if (data?.hasPeriodSelected === false) { setNoPeriodSelected(true); setVm({ rows: [], netIncome: 0 }); return; }
+      const rawRows = Array.isArray(data?.rows)? data.rows : [];
       const mappedRows: WorksheetRow[] = rawRows.map((r: any) => ({
-        accountId: r.accountId,
-        referenceNumber: r.referenceNumber,
-        accountName: r.accountName,
-        type: r.type,
-        normalBalanceIsDebit: r.normalBalanceIsDebit ?? true,
-        unadjustedDebit: Number(r.tbDebit) || 0,
-        unadjustedCredit: Number(r.tbCredit) || 0,
-        adjustmentDebit: Number(r.adjDebit) || 0,
-        adjustmentCredit: Number(r.adjCredit) || 0,
-        adjustedDebit: Number(r.adjTbDebit) || 0,
-        adjustedCredit: Number(r.adjTbCredit) || 0,
-        incomeStatementDebit: Number(r.isDebit) || 0,
-        incomeStatementCredit: Number(r.isCredit) || 0,
-        financialPositionDebit: Number(r.bsDebit) || 0,
-        financialPositionCredit: Number(r.bsCredit) || 0,
+        accountId: r.accountId, referenceNumber: r.referenceNumber, accountName: r.accountName, type: r.type, normalBalanceIsDebit: r.normalBalanceIsDebit?? true,
+        unadjustedDebit: Number(r.tbDebit) || 0, unadjustedCredit: Number(r.tbCredit) || 0, adjustmentDebit: Number(r.adjDebit) || 0, adjustmentCredit: Number(r.adjCredit) || 0,
+        adjustedDebit: Number(r.adjTbDebit) || 0, adjustedCredit: Number(r.adjTbCredit) || 0, incomeStatementDebit: Number(r.isDebit) || 0, incomeStatementCredit: Number(r.isCredit) || 0,
+        financialPositionDebit: Number(r.bsDebit) || 0, financialPositionCredit: Number(r.bsCredit) || 0,
       }));
-
-      const safeVm: WorksheetViewModel = {
-        rows: mappedRows,
-        netIncome: Number(data?.totals?.netIncome) || 0,
-      };
-
-      setNoPeriodSelected(false);
-      setVm(safeVm);
-    } catch (error: any) {
-      console.error('Error fetching worksheet data:', error);
-      setErrorMessage(error.message || 'Failed to connect to the backend server.');
-      setVm({ rows: [], netIncome: 0 });
-    } finally {
-      setLoading(false);
-    }
+      setNoPeriodSelected(false); setVm({ rows: mappedRows, netIncome: Number(data?.totals?.netIncome) || 0 });
+    } catch (err: any) { setErrorMessage(err.message); setVm({ rows: [], netIncome: 0 }); } finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
     fetchWorksheetData();
-
-    // Re-fetch otomatis jika periode diubah di Topbar/Navbar
-    const handlePeriodChanged = () => {
-      fetchWorksheetData();
-    };
-
-    window.addEventListener('periodChanged', handlePeriodChanged);
-
-    return () => {
-      window.removeEventListener('periodChanged', handlePeriodChanged);
-    };
+    const h = () => fetchWorksheetData();
+    window.addEventListener('periodChanged', h);
+    return () => window.removeEventListener('periodChanged', h);
   }, [fetchWorksheetData]);
 
-  // Total Per Kolom
   const totals = useMemo(() => {
-    const safeRows = Array.isArray(vm.rows) ? vm.rows : [];
-    return safeRows.reduce(
-      (acc, r) => {
-        acc.unadjustedDebit += Number(r.unadjustedDebit) || 0;
-        acc.unadjustedCredit += Number(r.unadjustedCredit) || 0;
-        acc.adjustmentDebit += Number(r.adjustmentDebit) || 0;
-        acc.adjustmentCredit += Number(r.adjustmentCredit) || 0;
-        acc.adjustedDebit += Number(r.adjustedDebit) || 0;
-        acc.adjustedCredit += Number(r.adjustedCredit) || 0;
-        acc.incomeStatementDebit += Number(r.incomeStatementDebit) || 0;
-        acc.incomeStatementCredit += Number(r.incomeStatementCredit) || 0;
-        acc.financialPositionDebit += Number(r.financialPositionDebit) || 0;
-        acc.financialPositionCredit += Number(r.financialPositionCredit) || 0;
-        return acc;
-      },
-      {
-        unadjustedDebit: 0,
-        unadjustedCredit: 0,
-        adjustmentDebit: 0,
-        adjustmentCredit: 0,
-        adjustedDebit: 0,
-        adjustedCredit: 0,
-        incomeStatementDebit: 0,
-        incomeStatementCredit: 0,
-        financialPositionDebit: 0,
-        financialPositionCredit: 0,
-      }
-    );
+    const safeRows = Array.isArray(vm.rows)? vm.rows : [];
+    return safeRows.reduce((acc, r) => {
+      acc.unadjustedDebit += r.unadjustedDebit || 0; acc.unadjustedCredit += r.unadjustedCredit || 0;
+      acc.adjustmentDebit += r.adjustmentDebit || 0; acc.adjustmentCredit += r.adjustmentCredit || 0;
+      acc.adjustedDebit += r.adjustedDebit || 0; acc.adjustedCredit += r.adjustedCredit || 0;
+      acc.incomeStatementDebit += r.incomeStatementDebit || 0; acc.incomeStatementCredit += r.incomeStatementCredit || 0;
+      acc.financialPositionDebit += r.financialPositionDebit || 0; acc.financialPositionCredit += r.financialPositionCredit || 0;
+      return acc;
+    }, { unadjustedDebit: 0, unadjustedCredit: 0, adjustmentDebit: 0, adjustmentCredit: 0, adjustedDebit: 0, adjustedCredit: 0, incomeStatementDebit: 0, incomeStatementCredit: 0, financialPositionDebit: 0, financialPositionCredit: 0 });
   }, [vm.rows]);
 
-  if (loading) {
-    return (
-      <div className="text-center py-5 my-5 text-white-50">
-        <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-        <span>Loading 10-Column Worksheet...</span>
-      </div>
-    );
-  }
+  if (loading) return <div className="mx-auto max-w- p-6 flex justify-center gap-2 text-sm text-muted-foreground"><IconLoader2 className="h-4 w-4 animate-spin" /> Loading 10-Column Worksheet...</div>;
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
-      {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show shadow-sm py-2 mb-4 d-flex align-items-center justify-content-between" role="alert">
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle-filled me-2 fs-5 flex-shrink-0"></i>
-            <span>{errorMessage}</span>
-          </div>
-          <button type="button" className="btn-close ms-auto" onClick={() => setErrorMessage(null)}></button>
-        </div>
-      )}
+    <div className="mx-auto max-w- space-y-4 p-4 md:p-6">
+      {errorMessage && <Alert variant="destructive" className="flex items-center justify-between"><div className="flex items-center gap-2"><IconAlertTriangle className="h-4 w-4" /><AlertDescription>{errorMessage}</AlertDescription></div><Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>setErrorMessage(null)}><IconX className="h-4 w-4" /></Button></Alert>}
 
-      {noPeriodSelected ? (
-        /* Empty State: No Period Selected */
-        <div className="text-center py-5 my-4">
-          <i className="ti ti-eye-off text-secondary mb-3 d-block mx-auto" style={{ fontSize: '2.5rem' }}></i>
-          <h5 className="fw-bold text-white mb-2">No Period Selected</h5>
-          <p className="text-white-50 mb-3">This report follows whichever period you&apos;re viewing.</p>
-          <Link href="/periods" className="btn btn-primary btn-sm fw-semibold shadow-sm px-4 d-inline-flex align-items-center">
-            <i className="ti ti-calendar me-1"></i> Go to Periods
-          </Link>
+      {noPeriodSelected? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted"><IconEyeOff className="h-6 w-6 text-muted-foreground" /></div>
+          <h5 className="text-lg font-semibold">No Period Selected</h5>
+          <p className="mb-4 text-sm text-muted-foreground">This report follows whichever period you're viewing.</p>
+          <Button asChild><Link href="/periods"><IconCalendar className="h-4 w-4" /> Go to Periods</Link></Button>
         </div>
       ) : (
-        /* Report Content */
         <>
-          {/* Header Section (Keterangan mata uang diletakkan di deskripsi header saja) */}
-          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="mb-1 fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-grid-dots me-2 text-info fs-2"></i> Worksheet
-              </h2>
-              <p className="text-white-50 mb-0">
-                10-column worksheet: Trial Balance, Adjustments, Adjusted Trial Balance, Income Statement, and Balance Sheet (In IDR, unless otherwise stated).
-              </p>
+              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500"><IconGridDots className="h-5 w-5" /></span> Worksheet</h2>
+              <p className="max-w- text-sm text-muted-foreground">10-column worksheet: Trial Balance, Adjustments, Adjusted Trial Balance, Income Statement, and Balance Sheet (In IDR, unless otherwise stated).</p>
             </div>
-            <div>
-              <Link href="/reports/income-statement" className="btn btn-outline-secondary fw-semibold shadow-sm d-inline-flex align-items-center">
-                <i className="ti ti-trending-up me-1"></i> Income Statement
-              </Link>
-            </div>
+            <Button asChild variant="outline"><Link href="/reports/income-statement"><IconTrendingUp className="h-4 w-4" /> Income Statement</Link></Button>
           </div>
 
-          {/* Worksheet 10-Column Table Card */}
-          <div className="card bg-dark border-secondary text-white shadow-sm border border-secondary border-opacity-25 rounded-4">
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-dark table-hover align-middle mb-0 small">
-                  <thead className="table-active border-bottom border-secondary text-center text-secondary">
-                    <tr>
-                      <th rowSpan={2} className="align-middle text-start ps-4">
-                        Account
-                      </th>
-                      <th colSpan={2}>Trial Balance</th>
-                      <th colSpan={2}>Adjustments</th>
-                      <th colSpan={2}>Adjusted Trial Balance</th>
-                      <th colSpan={2}>Income Statement</th>
-                      <th colSpan={2} className="pe-4">Balance Sheet</th>
-                    </tr>
-                    <tr>
-                      <th className="text-end">Dr</th>
-                      <th className="text-end">Cr</th>
-                      <th className="text-end">Dr</th>
-                      <th className="text-end">Cr</th>
-                      <th className="text-end">Dr</th>
-                      <th className="text-end">Cr</th>
-                      <th className="text-end">Dr</th>
-                      <th className="text-end">Cr</th>
-                      <th className="text-end">Dr</th>
-                      <th className="text-end pe-4">Cr</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vm.rows.length > 0 ? (
-                      vm.rows.map((row) => (
-                        <tr key={row.accountId}>
-                          <td className="text-nowrap ps-4">
-                            <code className="text-warning me-2">{row.referenceNumber}</code>
-                            {row.accountName}
-                          </td>
-                          <td className="text-end font-monospace">
-                            {row.unadjustedDebit > 0 ? formatNumber(row.unadjustedDebit) : '-'}
-                          </td>
-                          <td className="text-end font-monospace">
-                            {row.unadjustedCredit > 0 ? formatNumber(row.unadjustedCredit) : '-'}
-                          </td>
-                          <td className="text-end text-warning font-monospace">
-                            {row.adjustmentDebit > 0 ? formatNumber(row.adjustmentDebit) : '-'}
-                          </td>
-                          <td className="text-end text-warning font-monospace">
-                            {row.adjustmentCredit > 0 ? formatNumber(row.adjustmentCredit) : '-'}
-                          </td>
-                          <td className="text-end font-monospace">
-                            {row.adjustedDebit > 0 ? formatNumber(row.adjustedDebit) : '-'}
-                          </td>
-                          <td className="text-end font-monospace">
-                            {row.adjustedCredit > 0 ? formatNumber(row.adjustedCredit) : '-'}
-                          </td>
-                          <td className="text-end text-success font-monospace">
-                            {row.incomeStatementDebit > 0 ? formatNumber(row.incomeStatementDebit) : '-'}
-                          </td>
-                          <td className="text-end text-success font-monospace">
-                            {row.incomeStatementCredit > 0 ? formatNumber(row.incomeStatementCredit) : '-'}
-                          </td>
-                          <td className="text-end text-info font-monospace">
-                            {row.financialPositionDebit > 0 ? formatNumber(row.financialPositionDebit) : '-'}
-                          </td>
-                          <td className="text-end text-info pe-4 font-monospace">
-                            {row.financialPositionCredit > 0 ? formatNumber(row.financialPositionCredit) : '-'}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={11} className="text-center py-4 text-white-50">
-                          No worksheet rows found for this period.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                  <tfoot>
-                    {/* Subtotal Row */}
-                    <tr className="border-top border-secondary fw-bold text-white">
-                      <td className="text-end ps-4">Total</td>
-                      <td className="text-end font-monospace">{formatNumber(totals.unadjustedDebit)}</td>
-                      <td className="text-end font-monospace">{formatNumber(totals.unadjustedCredit)}</td>
-                      <td className="text-end text-warning font-monospace">{formatNumber(totals.adjustmentDebit)}</td>
-                      <td className="text-end text-warning font-monospace">{formatNumber(totals.adjustmentCredit)}</td>
-                      <td className="text-end font-monospace">{formatNumber(totals.adjustedDebit)}</td>
-                      <td className="text-end font-monospace">{formatNumber(totals.adjustedCredit)}</td>
-                      <td className="text-end text-success font-monospace">{formatNumber(totals.incomeStatementDebit)}</td>
-                      <td className="text-end text-success font-monospace">{formatNumber(totals.incomeStatementCredit)}</td>
-                      <td className="text-end text-info font-monospace">{formatNumber(totals.financialPositionDebit)}</td>
-                      <td className="text-end text-info pe-4 font-monospace">{formatNumber(totals.financialPositionCredit)}</td>
-                    </tr>
+          <Card>
+            <CardContent className="p-0 overflow-auto">
+              <Table className="text-xs">
+                <TableHeader>
+                  <TableRow><TableHead rowSpan={2} className="pl-6 min-w- align-middle">Account</TableHead><TableHead colSpan={2} className="text-center">Trial Balance</TableHead><TableHead colSpan={2} className="text-center">Adjustments</TableHead><TableHead colSpan={2} className="text-center">Adjusted Trial Balance</TableHead><TableHead colSpan={2} className="text-center">Income Statement</TableHead><TableHead colSpan={2} className="pr-6 text-center">Balance Sheet</TableHead></TableRow>
+                  <TableRow><TableHead className="text-right">Dr</TableHead><TableHead className="text-right">Cr</TableHead><TableHead className="text-right">Dr</TableHead><TableHead className="text-right">Cr</TableHead><TableHead className="text-right">Dr</TableHead><TableHead className="text-right">Cr</TableHead><TableHead className="text-right">Dr</TableHead><TableHead className="text-right">Cr</TableHead><TableHead className="text-right">Dr</TableHead><TableHead className="pr-6 text-right">Cr</TableHead></TableRow>
+                </TableHeader>
+                <TableBody>
+                  {vm.rows.length > 0? vm.rows.map((row) => (
+                    <TableRow key={row.accountId}>
+                      <TableCell className="whitespace-nowrap pl-6"><code className="mr-2 rounded bg-muted px-1 py-0.5 font-mono text- font-bold text-amber-500">{row.referenceNumber}</code>{row.accountName}</TableCell>
+                      <TableCell className="text-right font-mono">{row.unadjustedDebit > 0? formatNumber(row.unadjustedDebit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono">{row.unadjustedCredit > 0? formatNumber(row.unadjustedCredit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono text-amber-500">{row.adjustmentDebit > 0? formatNumber(row.adjustmentDebit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono text-amber-500">{row.adjustmentCredit > 0? formatNumber(row.adjustmentCredit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono">{row.adjustedDebit > 0? formatNumber(row.adjustedDebit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono">{row.adjustedCredit > 0? formatNumber(row.adjustedCredit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono text-emerald-500">{row.incomeStatementDebit > 0? formatNumber(row.incomeStatementDebit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono text-emerald-500">{row.incomeStatementCredit > 0? formatNumber(row.incomeStatementCredit) : '-'}</TableCell>
+                      <TableCell className="text-right font-mono text-sky-500">{row.financialPositionDebit > 0? formatNumber(row.financialPositionDebit) : '-'}</TableCell>
+                      <TableCell className="pr-6 text-right font-mono text-sky-500">{row.financialPositionCredit > 0? formatNumber(row.financialPositionCredit) : '-'}</TableCell>
+                    </TableRow>
+                  )) : <TableRow><TableCell colSpan={11} className="py-8 text-center text-muted-foreground">No worksheet rows found for this period.</TableCell></TableRow>}
+                </TableBody>
+                <TableFooter>
+                  <TableRow className="font-bold"><TableCell className="pl-6 text-right">Total</TableCell><TableCell className="text-right font-mono">{formatNumber(totals.unadjustedDebit)}</TableCell><TableCell className="text-right font-mono">{formatNumber(totals.unadjustedCredit)}</TableCell><TableCell className="text-right font-mono text-amber-500">{formatNumber(totals.adjustmentDebit)}</TableCell><TableCell className="text-right font-mono text-amber-500">{formatNumber(totals.adjustmentCredit)}</TableCell><TableCell className="text-right font-mono">{formatNumber(totals.adjustedDebit)}</TableCell><TableCell className="text-right font-mono">{formatNumber(totals.adjustedCredit)}</TableCell><TableCell className="text-right font-mono text-emerald-500">{formatNumber(totals.incomeStatementDebit)}</TableCell><TableCell className="text-right font-mono text-emerald-500">{formatNumber(totals.incomeStatementCredit)}</TableCell><TableCell className="text-right font-mono text-sky-500">{formatNumber(totals.financialPositionDebit)}</TableCell><TableCell className="pr-6 text-right font-mono text-sky-500">{formatNumber(totals.financialPositionCredit)}</TableCell></TableRow>
+                  <TableRow className="font-bold">
+                    <TableCell colSpan={7} className="pl-6 text-right">Net Income (plug IS → BS)</TableCell>
+                    {vm.netIncome >= 0? <><TableCell className="text-right font-mono text-emerald-500">{formatNumber(vm.netIncome)}</TableCell><TableCell className="text-right">-</TableCell><TableCell className="text-right">-</TableCell><TableCell className="pr-6 text-right font-mono text-sky-500">{formatNumber(vm.netIncome)}</TableCell></>
+                    : <><TableCell className="text-right">-</TableCell><TableCell className="text-right font-mono text-emerald-500">{formatNumber(Math.abs(vm.netIncome))}</TableCell><TableCell className="text-right font-mono text-sky-500">{formatNumber(Math.abs(vm.netIncome))}</TableCell><TableCell className="pr-6 text-right">-</TableCell></>}
+                  </TableRow>
+                  <TableRow className="border-t-2 font-bold">
+                    <TableCell colSpan={7} className="pl-6 text-right">Total (after plug)</TableCell>
+                    <TableCell className="text-right font-mono text-emerald-500">{formatNumber(totals.incomeStatementDebit + (vm.netIncome >= 0? vm.netIncome : 0))}</TableCell>
+                    <TableCell className="text-right font-mono text-emerald-500">{formatNumber(totals.incomeStatementCredit + (vm.netIncome < 0? Math.abs(vm.netIncome) : 0))}</TableCell>
+                    <TableCell className="text-right font-mono text-sky-500">{formatNumber(totals.financialPositionDebit + (vm.netIncome < 0? Math.abs(vm.netIncome) : 0))}</TableCell>
+                    <TableCell className="pr-6 text-right font-mono text-sky-500">{formatNumber(totals.financialPositionCredit + (vm.netIncome >= 0? vm.netIncome : 0))}</TableCell>
+                  </TableRow>
+                </TableFooter>
+              </Table>
+            </CardContent>
+          </Card>
 
-                    {/* Net Income Plug Row */}
-                    <tr className="fw-bold text-white">
-                      <td className="text-end ps-4" colSpan={7}>
-                        Net Income (plug Income Statement &rarr; Balance Sheet)
-                      </td>
-                      {vm.netIncome >= 0 ? (
-                        <>
-                          <td className="text-end text-success font-monospace">{formatNumber(vm.netIncome)}</td>
-                          <td className="text-end font-monospace">-</td>
-                          <td className="text-end font-monospace">-</td>
-                          <td className="text-end text-info pe-4 font-monospace">{formatNumber(vm.netIncome)}</td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="text-end font-monospace">-</td>
-                          <td className="text-end text-success font-monospace">{formatNumber(Math.abs(vm.netIncome))}</td>
-                          <td className="text-end text-info font-monospace">{formatNumber(Math.abs(vm.netIncome))}</td>
-                          <td className="text-end pe-4 font-monospace">-</td>
-                        </>
-                      )}
-                    </tr>
-
-                    {/* Final Balanced Total Row */}
-                    <tr className="border-top border-secondary fw-bold text-white">
-                      <td className="text-end ps-4" colSpan={7}>
-                        Total (after plug)
-                      </td>
-                      <td className="text-end text-success font-monospace">
-                        {formatNumber(totals.incomeStatementDebit + (vm.netIncome >= 0 ? vm.netIncome : 0))}
-                      </td>
-                      <td className="text-end text-success font-monospace">
-                        {formatNumber(totals.incomeStatementCredit + (vm.netIncome < 0 ? Math.abs(vm.netIncome) : 0))}
-                      </td>
-                      <td className="text-end text-info font-monospace">
-                        {formatNumber(totals.financialPositionDebit + (vm.netIncome < 0 ? Math.abs(vm.netIncome) : 0))}
-                      </td>
-                      <td className="text-end text-info pe-4 font-monospace">
-                        {formatNumber(totals.financialPositionCredit + (vm.netIncome >= 0 ? vm.netIncome : 0))}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          {/* Info Alert */}
-          <div className="alert alert-info bg-opacity-10 text-white border-info mt-4 mb-0 py-2 small d-flex align-items-center shadow-sm">
-            <i className="ti ti-info-circle-filled me-2 fs-5 text-info flex-shrink-0"></i>
-            <span>
-              Net Income / (Loss): <strong>{formatNumber(vm.netIncome)}</strong> &mdash; plugged from the Income Statement column to the Balance Sheet column to balance both sections.
-            </span>
-          </div>
+          <Alert className="border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"><IconInfoCircle className="h-4 w-4" /><AlertDescription>Net Income / (Loss): <strong>{formatNumber(vm.netIncome)}</strong> — plugged from the Income Statement column to the Balance Sheet column to balance both sections.</AlertDescription></Alert>
         </>
       )}
     </div>

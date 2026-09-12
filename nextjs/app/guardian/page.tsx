@@ -1,6 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconShieldCheck,
   IconHeartbeat,
@@ -12,14 +19,12 @@ import {
   IconLogout,
   IconHistory,
   IconDownload,
+  IconX,
+  IconLoader2,
 } from '@tabler/icons-react';
 
-// Base URL Backend API dari environment variable Vercel atau fallback ke URL Render
-const NEXT_PUBLIC_API_URL = (
-  process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com'
-).replace(/\/$/, '');
+const NEXT_PUBLIC_API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com').replace(/\/$/, '');
 
-// DTO disesuaikan dengan ActiveSessionViewModel C#
 export interface UserSessionDto {
   id?: string;
   deviceName: string;
@@ -31,8 +36,6 @@ export interface UserSessionDto {
   lastActivity?: string;
   isCurrent: boolean;
 }
-
-// DTO disesuaikan dengan LoginActivityViewModel C#
 export interface LoginActivityDto {
   id?: string;
   activityType?: string;
@@ -46,8 +49,6 @@ export interface LoginActivityDto {
   occurredAt?: string;
   isSuccess?: boolean;
 }
-
-// SecurityStatusViewModel C#
 export interface SecurityStatusDto {
   statusLevel?: string;
   activeSessionsCount?: number;
@@ -55,8 +56,6 @@ export interface SecurityStatusDto {
   lastSuccessfulLogin?: string;
   emailVerified?: boolean;
 }
-
-// GuardianDashboardViewModel C#
 export interface GuardianViewModel {
   username?: string;
   email?: string;
@@ -71,393 +70,212 @@ export interface GuardianViewModel {
 }
 
 export default function GuardianSecurityPage() {
-  const [activeTab, setActiveTab] = useState<string>('health');
-
-  // State data utama dari Backend
+  const [activeTab, setActiveTab] = useState('health');
   const [viewModel, setViewModel] = useState<GuardianViewModel | null>(null);
   const [activeSessionsList, setActiveSessionsList] = useState<UserSessionDto[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  // Notification State
+  const [isLoading, setIsLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Fetch data dari API endpoint backend (/api/v1/guardian/dashboard)
   useEffect(() => {
     const fetchGuardianData = async () => {
       try {
         setIsLoading(true);
-        setErrorMessage(null);
-
-        // Solusi 1: Pemanggilan endpoint diarahkan ke /api/v1/guardian/dashboard
-        const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/dashboard`, {
+        const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/dashboard`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
         });
-
-        if (!response.ok) {
-          throw new Error('Gagal mengambil data keamanan.');
-        }
-
-        const json = await response.json();
-
+        if (!res.ok) throw new Error('Gagal mengambil data keamanan.');
+        const json = await res.json();
         if (json.success && json.data) {
-          const data = json.data;
-          setViewModel(data);
-
-          // Mendukung struktur data dari GuardianDashboardViewModel maupun array langsung
-          const sessions = data.activeSessions || json.activeSessions || [];
-          setActiveSessionsList(sessions);
-        } else {
-          throw new Error(json.message || 'Gagal memuat data keamanan.');
-        }
+          setViewModel(json.data);
+          setActiveSessionsList(json.data.activeSessions || json.activeSessions || []);
+        } else throw new Error(json.message || 'Gagal memuat data.');
       } catch (err: any) {
-        setErrorMessage(err.message || 'Terjadi kesalahan saat memuat data.');
+        setErrorMessage(err.message);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchGuardianData();
   }, []);
 
-  // Handle Revoke Individual Session
   const handleRevokeSession = async (sessionId?: string, deviceName?: string) => {
     if (!sessionId) return;
-
-    if (!window.confirm(`Akhiri sesi untuk perangkat "${deviceName || 'ini'}"?`)) {
-      return;
-    }
-
+    if (!window.confirm(`Akhiri sesi untuk perangkat "${deviceName || 'ini'}"?`)) return;
     try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/revoke-session/${sessionId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) throw new Error('Gagal mengakhiri sesi.');
-
-      setActiveSessionsList((prev) => prev.filter((s) => s.id !== sessionId));
+      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/revoke-session/${sessionId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+      if (!res.ok) throw new Error('Gagal mengakhiri sesi.');
+      setActiveSessionsList((prev) => prev.filter((s) => s.id!== sessionId));
       setSuccessMessage('Sesi berhasil diakhiri.');
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Gagal merevoke sesi.');
+      setErrorMessage(err.message);
     }
   };
 
-  // Handle Revoke All Sessions (Emergency Lockout)
   const handleRevokeAllSessions = async () => {
-    const confirmed = window.confirm(
-      'Emergency Lockout: Apakah Anda yakin ingin keluar dari SEMUA perangkat lain?'
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm('Emergency Lockout: Yakin ingin keluar dari SEMUA perangkat lain?')) return;
     try {
-      // Diselaraskan dengan endpoint [HttpPost("revoke-all-sessions")] di C#
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/revoke-all-sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) throw new Error('Gagal mengakhiri semua sesi.');
-
+      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/revoke-all-sessions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+      if (!res.ok) throw new Error('Gagal mengakhiri semua sesi.');
       setActiveSessionsList((prev) => prev.filter((s) => s.isCurrent));
       setSuccessMessage('Semua sesi perangkat lain telah berhasil diakhiri.');
-
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Gagal mengeksekusi emergency lockout.');
+      setErrorMessage(err.message);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="container-fluid py-5 text-center text-white">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="mt-3 text-white-50">Memuat Guardian Security Dashboard...</p>
+      <div className="mx-auto max-w-7xl space-y-4 p-6">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h- w-full" />
       </div>
     );
   }
 
-  // Membatasi Login History Maksimal 5
   const activities = (viewModel?.recentActivities || []).slice(0, 5);
-  // Membatasi Active Sessions Maksimal 5 untuk display
   const displayedSessions = activeSessionsList.slice(0, 5);
-
-  // Kalkulasi Skor Keamanan jika tidak ada field eksplisit dari BE
   const statusLevel = viewModel?.securityStatus?.statusLevel || 'Good';
-  const calculatedScore = viewModel?.securityScore ?? (statusLevel === 'Warning' ? 60 : 95);
+  const calculatedScore = viewModel?.securityScore?? (statusLevel === 'Warning'? 60 : 95);
 
   return (
-    <div
-      className="container-fluid py-4 px-4 text-white"
-      style={{ fontFamily: "'Aptos', 'Aptos Display', 'Segoe UI', sans-serif" }}
-    >
-      {/* Header & Overall Health Badge */}
-      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h4 className="mb-1 text-white fw-bold d-flex align-items-center gap-2">
-            <IconShieldCheck className="text-warning" size={28} />
+          <h4 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
+              <IconShieldCheck className="h-5 w-5" />
+            </span>
             Guardian Security
           </h4>
-          <p className="text-white-50 small mb-0">
-            Security health monitoring, active sessions, and login logs
-          </p>
+          <p className="text-sm text-muted-foreground">Security health monitoring, active sessions, and login logs</p>
         </div>
-        <div>
-          <span
-            className={`badge ${calculatedScore >= 70 ? 'bg-success' : 'bg-warning'} fs-6 px-3 py-2 shadow-sm d-inline-flex align-items-center gap-2`}
-          >
-            <IconHeartbeat size={20} /> Security Score: {calculatedScore}%
-          </span>
-        </div>
+        <Badge variant={calculatedScore >= 70? 'default' : 'destructive'} className={`gap-2 px-3 py-1.5 text-sm ${calculatedScore >= 70? 'bg-emerald-500 hover:bg-emerald-600' : ''}`}>
+          <IconHeartbeat className="h-4 w-4" /> Security Score: {calculatedScore}%
+        </Badge>
       </div>
 
-      {/* Alert Notifications */}
+      {/* Alerts */}
       {successMessage && (
-        <div className="alert alert-success alert-dismissible fade show mb-4 shadow-sm d-flex align-items-center" role="alert">
-          <IconCircleCheck className="me-2 flex-shrink-0" size={20} />
-          <div>{successMessage}</div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setSuccessMessage(null)}
-          ></button>
-        </div>
+        <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <IconCircleCheck className="h-4 w-4" />
+          <AlertDescription className="flex w-full items-center justify-between">
+            {successMessage}
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSuccessMessage(null)}><IconX className="h-4 w-4" /></Button>
+          </AlertDescription>
+        </Alert>
       )}
-
       {errorMessage && (
-        <div className="alert alert-danger alert-dismissible fade show mb-4 shadow-sm d-flex align-items-center" role="alert">
-          <IconAlertTriangle className="me-2 flex-shrink-0" size={20} />
-          <div>{errorMessage}</div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setErrorMessage(null)}
-          ></button>
-        </div>
+        <Alert variant="destructive">
+          <IconAlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex w-full items-center justify-between">
+            {errorMessage}
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setErrorMessage(null)}><IconX className="h-4 w-4" /></Button>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {/* SUB-TABS NAVIGATION (Nav Pills) */}
-      <ul className="nav nav-pills mb-4 border-bottom border-secondary border-opacity-25 pb-3" role="tablist">
-        <li className="nav-item" role="presentation">
-          <button
-            className={`nav-link fw-bold d-inline-flex align-items-center gap-2 ${
-              activeTab === 'health' ? 'active bg-primary text-white shadow-sm' : 'text-white-50'
-            }`}
-            type="button"
-            onClick={() => setActiveTab('health')}
-          >
-            <IconActivity className="text-danger" size={18} /> Security Health
-          </button>
-        </li>
-        <li className="nav-item" role="presentation">
-          <button
-            className={`nav-link fw-bold d-inline-flex align-items-center gap-2 ${
-              activeTab === 'sessions' ? 'active bg-primary text-white shadow-sm' : 'text-white-50'
-            }`}
-            type="button"
-            onClick={() => setActiveTab('sessions')}
-          >
-            <IconDeviceLaptop className="text-info" size={18} /> Active Sessions
-            <span className="badge bg-secondary ms-1">{displayedSessions.length}</span>
-          </button>
-        </li>
-        <li className="nav-item" role="presentation">
-          <button
-            className={`nav-link fw-bold d-inline-flex align-items-center gap-2 ${
-              activeTab === 'logs' ? 'active bg-primary text-white shadow-sm' : 'text-white-50'
-            }`}
-            type="button"
-            onClick={() => setActiveTab('logs')}
-          >
-            <IconHistory className="text-warning" size={18} /> Login Logs
-          </button>
-        </li>
-      </ul>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="h-auto rounded-full p-1">
+          <TabsTrigger value="health" className="gap-2 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <IconActivity className="h-4 w-4 text-red-500" /> Security Health
+          </TabsTrigger>
+          <TabsTrigger value="sessions" className="gap-2 rounded-full">
+            <IconDeviceLaptop className="h-4 w-4 text-sky-500" /> Active Sessions <Badge variant="secondary" className="ml-1">{displayedSessions.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="gap-2 rounded-full">
+            <IconHistory className="h-4 w-4 text-amber-500" /> Login Logs
+          </TabsTrigger>
+        </TabsList>
 
-      {/* TAB CONTENTS */}
-      <div className="tab-content">
-        {/* ==================== TAB 1: SECURITY HEALTH ==================== */}
-        <div className={`tab-pane fade ${activeTab === 'health' ? 'show active' : ''}`}>
-          <div className="card glass-card border-0 shadow-sm rounded-4">
-            <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3">
-              <strong className="text-white d-flex align-items-center gap-2">
-                <IconHeartbeat className="text-danger" size={20} /> Security &amp; Account Health Checkup
-              </strong>
-              <small className="text-white-50">Automated Analysis</small>
-            </div>
-            <div className="card-body p-0">
-              <div className="list-group list-group-flush bg-transparent">
-                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconDeviceLaptop className="text-info" size={18} /> Account Security Level
-                    </div>
-                    <small className="text-white-50">Overall account threat and status evaluation</small>
-                  </div>
-                  <div>
-                    <span className={`badge ${statusLevel === 'Warning' ? 'bg-warning text-dark' : 'bg-success'}`}>
-                      {statusLevel}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="list-group-item bg-transparent text-white border-secondary border-opacity-25 p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                  <div>
-                    <div className="fw-bold d-flex align-items-center gap-2">
-                      <IconAlertTriangle className="text-warning" size={18} /> Failed Login Attempts (24h)
-                    </div>
-                    <small className="text-white-50">Failed authentication tries within last 24 hours</small>
-                  </div>
-                  <div>
-                    <span className="badge bg-secondary">
-                      {viewModel?.securityStatus?.failedAttemptsLast24Hours ?? 0} Attempts
-                    </span>
-                  </div>
-                </div>
+        {/* TAB HEALTH */}
+        <TabsContent value="health" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base"><IconHeartbeat className="h-5 w-5 text-red-500" /> Security & Account Health Checkup</CardTitle>
+              <span className="text-xs text-muted-foreground">Automated Analysis</span>
+            </CardHeader>
+            <CardContent className="divide-y p-0">
+              <div className="flex items-center justify-between p-4">
+                <div><div className="flex items-center gap-2 font-semibold"><IconDeviceLaptop className="h-4 w-4 text-sky-500" /> Account Security Level</div><p className="text-xs text-muted-foreground">Overall account threat and status evaluation</p></div>
+                <Badge variant={statusLevel === 'Warning'? 'destructive' : 'default'} className={statusLevel!== 'Warning'? 'bg-emerald-500 hover:bg-emerald-600' : ''}>{statusLevel}</Badge>
               </div>
-            </div>
-          </div>
-        </div>
+              <div className="flex items-center justify-between p-4">
+                <div><div className="flex items-center gap-2 font-semibold"><IconAlertTriangle className="h-4 w-4 text-amber-500" /> Failed Login Attempts (24h)</div><p className="text-xs text-muted-foreground">Failed authentication tries within last 24 hours</p></div>
+                <Badge variant="secondary">{viewModel?.securityStatus?.failedAttemptsLast24Hours?? 0} Attempts</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* ==================== TAB 2: ACTIVE SESSIONS (MAX 5) ==================== */}
-        <div className={`tab-pane fade ${activeTab === 'sessions' ? 'show active' : ''}`}>
-          <div className="card glass-card border-0 shadow-sm rounded-4">
-            <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
-              <strong className="text-white d-flex align-items-center gap-2">
-                <IconDeviceLaptop className="text-info" size={20} /> Active Sessions (Max 5)
-              </strong>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"
-                onClick={handleRevokeAllSessions}
-              >
-                <IconAlertOctagon size={16} /> Revoke All Other Sessions
-              </button>
-            </div>
-            <div className="card-body p-0">
-              {displayedSessions.length === 0 ? (
-                <div className="p-4 text-center text-white-50">No active sessions found.</div>
+        {/* TAB SESSIONS */}
+        <TabsContent value="sessions" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base"><IconDeviceLaptop className="h-5 w-5 text-sky-500" /> Active Sessions (Max 5)</CardTitle>
+              <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleRevokeAllSessions}><IconAlertOctagon className="h-4 w-4" /> Revoke All Other Sessions</Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {displayedSessions.length === 0? (
+                <div className="p-8 text-center text-sm text-muted-foreground">No active sessions found.</div>
               ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle mb-0 text-white">
-                    <thead className="table-light text-secondary small">
-                      <tr>
-                        <th className="ps-4">Device</th>
-                        <th>Browser</th>
-                        <th>IP Address</th>
-                        <th>Last Activity</th>
-                        <th className="text-end pe-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="border-top-0">
-                      {displayedSessions.map((session, index) => {
-                        const activityDate = session.lastActivityAt || session.lastActivity;
-                        return (
-                          <tr key={session.id || index}>
-                            <td className="ps-4 fw-bold">
-                              {session.deviceName}
-                              {session.isCurrent && <span className="badge bg-success ms-2">Current</span>}
-                            </td>
-                            <td className="text-white-50">{session.browser}</td>
-                            <td className="font-monospace text-info">{session.ipAddress}</td>
-                            <td className="text-white-50 small">
-                              {activityDate ? new Date(activityDate).toLocaleString('id-ID') : '-'}
-                            </td>
-                            <td className="text-end pe-4">
-                              {!session.isCurrent ? (
-                                <button
-                                  type="button"
-                                  className="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 ms-auto"
-                                  onClick={() => handleRevokeSession(session.id, session.deviceName)}
-                                >
-                                  <IconLogout size={16} /> Sign Out
-                                </button>
-                              ) : (
-                                <span className="badge bg-success">Active now</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <Table>
+                  <TableHeader><TableRow><TableHead className="pl-6">Device</TableHead><TableHead>Browser</TableHead><TableHead>IP Address</TableHead><TableHead>Last Activity</TableHead><TableHead className="pr-6 text-right">Status</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {displayedSessions.map((s, i) => (
+                      <TableRow key={s.id || i}>
+                        <TableCell className="pl-6 font-semibold">{s.deviceName} {s.isCurrent && <Badge className="ml-2 bg-emerald-500">Current</Badge>}</TableCell>
+                        <TableCell className="text-muted-foreground">{s.browser}</TableCell>
+                        <TableCell className="font-mono text-sky-500">{s.ipAddress}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{(s.lastActivityAt || s.lastActivity)? new Date(s.lastActivityAt || s.lastActivity!).toLocaleString('id-ID') : '-'}</TableCell>
+                        <TableCell className="pr-6 text-right">
+                          {!s.isCurrent? <Button variant="outline" size="sm" className="text-destructive" onClick={() => handleRevokeSession(s.id, s.deviceName)}><IconLogout className="h-4 w-4" /> Sign Out</Button> : <Badge className="bg-emerald-500">Active now</Badge>}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
-            </div>
-          </div>
-        </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* ==================== TAB 3: LOGIN LOGS (MAX 5) ==================== */}
-        <div className={`tab-pane fade ${activeTab === 'logs' ? 'show active' : ''}`}>
-          <div className="card glass-card border-0 shadow-sm rounded-4">
-            <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
-              <strong className="text-white d-flex align-items-center gap-2">
-                <IconHistory className="text-info" size={20} /> Recent Login History (Max 5)
-              </strong>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                onClick={() => alert('Exporting audit log CSV...')}
-              >
-                <IconDownload size={16} /> Export Log (CSV)
-              </button>
-            </div>
-            <div className="card-body p-0">
-              {activities.length === 0 ? (
-                <div className="p-4 text-center text-white-50">No login activity found.</div>
+        {/* TAB LOGS */}
+        <TabsContent value="logs" className="mt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base"><IconHistory className="h-5 w-5 text-sky-500" /> Recent Login History (Max 5)</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => alert('Exporting audit log CSV...')}><IconDownload className="h-4 w-4" /> Export Log (CSV)</Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {activities.length === 0? (
+                <div className="p-8 text-center text-sm text-muted-foreground">No login activity found.</div>
               ) : (
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle mb-0 text-white">
-                    <thead className="table-light text-secondary small">
-                      <tr>
-                        <th className="ps-4">Activity</th>
-                        <th>Device</th>
-                        <th>IP Address</th>
-                        <th>Date</th>
-                        <th className="text-end pe-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="border-top-0">
-                      {activities.map((act, idx) => {
-                        const actDate = act.createdAt || act.occurredAt;
-                        const isSuccess = act.isSuccess ?? true;
-                        return (
-                          <tr key={act.id || idx}>
-                            <td className="ps-4 fw-semibold">{act.activityType || act.activity || 'Interactive Login'}</td>
-                            <td className="text-white-50">{act.device}</td>
-                            <td className="font-monospace text-info">{act.ipAddress}</td>
-                            <td className="text-white-50 small">
-                              {actDate ? new Date(actDate).toLocaleString('id-ID') : '-'}
-                            </td>
-                            <td className="text-end pe-4">
-                              <span className={`badge ${isSuccess ? 'bg-success' : 'bg-danger'}`}>
-                                {isSuccess ? 'Success' : 'Failed'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <Table>
+                  <TableHeader><TableRow><TableHead className="pl-6">Activity</TableHead><TableHead>Device</TableHead><TableHead>IP Address</TableHead><TableHead>Date</TableHead><TableHead className="pr-6 text-right">Status</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {activities.map((act, idx) => (
+                      <TableRow key={act.id || idx}>
+                        <TableCell className="pl-6 font-medium">{act.activityType || act.activity || 'Interactive Login'}</TableCell>
+                        <TableCell className="text-muted-foreground">{act.device}</TableCell>
+                        <TableCell className="font-mono text-sky-500">{act.ipAddress}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{(act.createdAt || act.occurredAt)? new Date(act.createdAt || act.occurredAt!).toLocaleString('id-ID') : '-'}</TableCell>
+                        <TableCell className="pr-6 text-right"><Badge className={act.isSuccess?? true? 'bg-emerald-500 hover:bg-emerald-600' : ''} variant={(act.isSuccess?? true)? 'default' : 'destructive'}>{(act.isSuccess?? true)? 'Success' : 'Failed'}</Badge></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -2,266 +2,116 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  IconBook2,
+  IconBook,
+  IconAlertTriangle,
+  IconEyeOff,
+  IconCalendar,
+  IconX,
+  IconLoader2,
+} from '@tabler/icons-react';
 
-// Model Interfaces
-export interface LedgerLineViewModel {
-  entryDate: string;
-  description?: string;
-  debit: number;
-  credit: number;
-  runningBalance: number;
-}
+export interface LedgerLineViewModel { entryDate: string; description?: string; debit: number; credit: number; runningBalance: number; }
+export interface LedgerAccountViewModel { accountId: number; referenceNumber: number; accountName: string; type: string; normalBalanceIsDebit: boolean; endingBalance: number; lines: LedgerLineViewModel[]; }
+export interface Period { id: number; periodName: string; startDate: string; endDate: string; isClosed: boolean; }
 
-export interface LedgerAccountViewModel {
-  accountId: number;
-  referenceNumber: number;
-  accountName: string;
-  type: string;
-  normalBalanceIsDebit: boolean;
-  endingBalance: number;
-  lines: LedgerLineViewModel[];
-}
-
-export interface Period {
-  id: number;
-  periodName: string;
-  startDate: string;
-  endDate: string;
-  isClosed: boolean;
-}
-
-// Format angka standar tanpa simbol / format mata uang (hanya ribuan biasa)
 const formatNumber = (amount: number) => {
   if (amount === 0) return '-';
-  return new Intl.NumberFormat('id-ID', {
-    style: 'decimal',
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
+  return new Intl.NumberFormat('id-ID', { style: 'decimal', maximumFractionDigits: 0 }).format(Math.abs(amount));
 };
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const NEXT_PUBLIC_API_URL = rawApiUrl
-  .replace(/\/+$/, '')
-  ;
+const NEXT_PUBLIC_API_URL = rawApiUrl.replace(/\/+$/, '');
 
 export default function PermanentGeneralLedgerPage() {
-  const [noPeriodSelected, setNoPeriodSelected] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [noPeriodSelected, setNoPeriodSelected] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [ledgers, setLedgers] = useState<LedgerAccountViewModel[]>([]);
 
-  // Fetch Data Buku Besar Akun Permanen dari API Backend
   const fetchLedgerData = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage(null);
+    setLoading(true); setErrorMessage(null);
     try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/general-ledger/permanent`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Menggunakan Identity Cookie Session
-      });
-
-      if (response.status === 404 || response.status === 400) {
-        setNoPeriodSelected(true);
-        setLedgers([]);
-        return;
-      }
-
-      if (response.status === 401) {
-        setErrorMessage('Session expired or unauthorized. Please login again.');
-        setLedgers([]);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to load Permanent General Ledger data from server.');
-      }
-
-      const rawData = await response.json();
-
-      // Safe extraction untuk menangani format array langsung atau terbungkus objek
-      const data: LedgerAccountViewModel[] = Array.isArray(rawData)
-        ? rawData
-        : Array.isArray(rawData?.data)
-        ? rawData.data
-        : Array.isArray(rawData?.ledgers)
-        ? rawData.ledgers
-        : [];
-
-      setNoPeriodSelected(false);
-      setLedgers(data);
-    } catch (error: any) {
-      console.error('Error fetching permanent ledger:', error);
-      setErrorMessage(error.message || 'Failed to connect to the backend server.');
-      setLedgers([]);
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/general-ledger/permanent`, { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+      if (res.status === 404 || res.status === 400) { setNoPeriodSelected(true); setLedgers([]); return; }
+      if (res.status === 401) { setErrorMessage('Session expired or unauthorized. Please login again.'); setLedgers([]); return; }
+      if (!res.ok) throw new Error('Failed to load Permanent General Ledger data.');
+      const rawData = await res.json();
+      const data: LedgerAccountViewModel[] = Array.isArray(rawData)? rawData : Array.isArray(rawData?.data)? rawData.data : Array.isArray(rawData?.ledgers)? rawData.ledgers : [];
+      setNoPeriodSelected(false); setLedgers(data);
+    } catch (err: any) { setErrorMessage(err.message); setLedgers([]); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
     fetchLedgerData();
-
-    // Event listener untuk re-fetch otomatis saat periode di Topbar / Periods page diubah
-    const handlePeriodChanged = () => {
-      fetchLedgerData();
-    };
-
+    const handlePeriodChanged = () => fetchLedgerData();
     window.addEventListener('periodChanged', handlePeriodChanged);
-
-    return () => {
-      window.removeEventListener('periodChanged', handlePeriodChanged);
-    };
+    return () => window.removeEventListener('periodChanged', handlePeriodChanged);
   }, [fetchLedgerData]);
 
-  if (loading) {
-    return (
-      <div className="text-center py-5 my-5 text-white-50">
-        <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-        <span>Loading Permanent Accounts General Ledger...</span>
-      </div>
-    );
-  }
+  if (loading) return <div className="mx-auto max-w-6xl p-6 flex justify-center gap-2 text-sm text-muted-foreground"><IconLoader2 className="h-4 w-4 animate-spin" /> Loading Permanent Accounts General Ledger...</div>;
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
-      {/* Alert Error */}
+    <div className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
       {errorMessage && (
-        <div
-          className="alert alert-danger alert-dismissible fade show shadow-sm py-2 mb-4 d-flex align-items-center justify-content-between"
-          role="alert"
-        >
-          <div className="d-flex align-items-center">
-            <i className="ti ti-alert-triangle-filled me-2 fs-5 flex-shrink-0"></i>
-            <span>{errorMessage}</span>
-          </div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setErrorMessage(null)}
-          ></button>
-        </div>
+        <Alert variant="destructive" className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><IconAlertTriangle className="h-4 w-4" /><AlertDescription>{errorMessage}</AlertDescription></div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>setErrorMessage(null)}><IconX className="h-4 w-4" /></Button>
+        </Alert>
       )}
 
-      {/* State Jika Belum Ada Periode yang Dipilih */}
-      {noPeriodSelected ? (
-        <div className="text-center py-5 my-4">
-          <i
-            className="ti ti-eye-off text-secondary mb-3 d-block mx-auto"
-            style={{ fontSize: '2.5rem' }}
-          ></i>
-          <h5 className="fw-bold text-white mb-2">No Period Selected</h5>
-          <p className="text-white-50 mb-3">
-            This report follows whichever period you&apos;re viewing. Select a period to view its general ledger.
-          </p>
-          <Link
-            href="/periods"
-            className="btn btn-primary btn-sm fw-semibold shadow-sm px-4 d-inline-flex align-items-center"
-          >
-            <i className="ti ti-calendar me-1"></i> Go to Periods
-          </Link>
+      {noPeriodSelected? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted"><IconEyeOff className="h-6 w-6 text-muted-foreground" /></div>
+          <h5 className="text-lg font-semibold">No Period Selected</h5>
+          <p className="mb-4 max-w-sm text-sm text-muted-foreground">This report follows whichever period you're viewing. Select a period to view its general ledger.</p>
+          <Button asChild><Link href="/periods"><IconCalendar className="h-4 w-4" /> Go to Periods</Link></Button>
         </div>
       ) : (
         <>
-          {/* Header (Penjelasan nominal mata uang IDR diletakkan di sini) */}
-          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="mb-1 fw-bold text-white d-flex align-items-center">
-                <i className="ti ti-book-2 me-2 text-info fs-2"></i> General Ledger (Permanent Accounts)
-              </h2>
-              <p className="text-white-50 mb-0">
-                Permanent (real) accounts &mdash; Assets, Liabilities, and Equity balances (in IDR).
-              </p>
+              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500"><IconBook2 className="h-5 w-5" /></span> General Ledger (Permanent Accounts)</h2>
+              <p className="text-sm text-muted-foreground">Permanent (real) accounts — Assets, Liabilities, and Equity balances (in IDR).</p>
             </div>
-            <div className="d-flex gap-2">
-              <Link
-                href="/reports/general-journal"
-                className="btn btn-outline-secondary fw-semibold shadow-sm d-inline-flex align-items-center"
-              >
-                <i className="ti ti-book me-1"></i> General Journal
-              </Link>
-            </div>
+            <Button asChild variant="outline"><Link href="/reports/general-journal"><IconBook className="h-4 w-4" /> General Journal</Link></Button>
           </div>
 
-          {/* State Jika Chart of Accounts Kosong */}
-          {ledgers.length === 0 && !errorMessage && (
-            <div className="alert alert-secondary bg-dark text-white-50 border-secondary">
-              No permanent accounts found in the Chart of Accounts for this period.
-            </div>
-          )}
+          {ledgers.length === 0 &&!errorMessage && <Alert><AlertDescription>No permanent accounts found in the Chart of Accounts for this period.</AlertDescription></Alert>}
 
-          {/* Loop Card Per Akun Buku Besar */}
           {ledgers.map((ledger) => {
             const isDebitNormal = ledger.normalBalanceIsDebit;
-            const endingBal = ledger.endingBalance;
-            const isNormalPositive = isDebitNormal ? endingBal >= 0 : endingBal <= 0;
-
+            const isNormalPositive = isDebitNormal? ledger.endingBalance >= 0 : ledger.endingBalance <= 0;
             return (
-              <div
-                key={ledger.accountId}
-                id={`account-${ledger.accountId}`}
-                className="card bg-body-tertiary border-secondary text-white shadow-sm mb-4 border border-secondary border-opacity-25 rounded-4"
-              >
-                <div className="card-header bg-transparent border-bottom border-secondary border-opacity-25 d-flex justify-content-between align-items-center py-3 px-4 flex-wrap gap-2">
-                  <h5 className="mb-0 fw-bold text-white d-flex align-items-center">
-                    <code className="text-warning me-2">{ledger.referenceNumber}</code>
-                    {ledger.accountName}
-                    <span className="badge bg-secondary bg-opacity-25 border border-secondary ms-2 small">
-                      {ledger.type}
-                    </span>
-                  </h5>
-                  <span
-                    className={`fw-semibold font-monospace ${
-                      isNormalPositive ? 'text-success' : 'text-danger'
-                    }`}
-                  >
-                    Ending Balance: {formatNumber(endingBal)} (
-                    {isDebitNormal ? 'Dr' : 'Cr'})
-                  </span>
-                </div>
-                <div className="card-body p-0">
-                  <div className="table-responsive">
-                    <table className="table table-dark table-hover align-middle mb-0">
-                      <thead className="table-light text-secondary">
-                        <tr>
-                          <th className="ps-4">Date</th>
-                          <th>Description</th>
-                          <th className="text-end">Debit</th>
-                          <th className="text-end">Credit</th>
-                          <th className="text-end pe-4">Balance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ledger.lines && ledger.lines.length > 0 ? (
-                          ledger.lines.map((line, idx) => (
-                            <tr key={idx}>
-                              <td className="text-nowrap ps-4 text-white-50">{line.entryDate}</td>
-                              <td className="text-white-50 small">{line.description || '-'}</td>
-                              <td className="text-end text-success font-monospace">
-                                {line.debit > 0 ? formatNumber(line.debit) : '-'}
-                              </td>
-                              <td className="text-end text-danger font-monospace">
-                                {line.credit > 0 ? formatNumber(line.credit) : '-'}
-                              </td>
-                              <td className="text-end fw-semibold pe-4 font-monospace">
-                                {formatNumber(line.runningBalance)}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={5} className="text-center py-4 text-white-50">
-                              No postings recorded for this account in the selected period.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+              <Card key={ledger.accountId} id={`account-${ledger.accountId}`}>
+                <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 py-3">
+                  <CardTitle className="flex items-center gap-2 text-base"><code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-bold text-amber-500">{ledger.referenceNumber}</code> {ledger.accountName} <Badge variant="secondary" className="text-">{ledger.type}</Badge></CardTitle>
+                  <span className={`font-mono text-sm font-semibold ${isNormalPositive? 'text-emerald-500' : 'text-red-500'}`}>Ending Balance: {formatNumber(ledger.endingBalance)} ({isDebitNormal? 'Dr' : 'Cr'})</span>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader><TableRow><TableHead className="pl-6">Date</TableHead><TableHead>Description</TableHead><TableHead className="text-right">Debit</TableHead><TableHead className="text-right">Credit</TableHead><TableHead className="text-right pr-6">Balance</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {ledger.lines && ledger.lines.length > 0? ledger.lines.map((line, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="whitespace-nowrap pl-6 text-xs text-muted-foreground">{line.entryDate}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{line.description || '-'}</TableCell>
+                          <TableCell className="text-right font-mono text-emerald-500">{line.debit > 0? formatNumber(line.debit) : '-'}</TableCell>
+                          <TableCell className="text-right font-mono text-red-500">{line.credit > 0? formatNumber(line.credit) : '-'}</TableCell>
+                          <TableCell className="pr-6 text-right font-mono font-semibold">{formatNumber(line.runningBalance)}</TableCell>
+                        </TableRow>
+                      )) : <TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">No postings recorded for this account in the selected period.</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             );
           })}
         </>

@@ -15,6 +15,12 @@ import {
   Filler,
 } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconEyeOff,
   IconCalendar,
@@ -29,31 +35,14 @@ import {
   IconCreditCard,
   IconChartPie,
   IconX,
+  IconLoader2,
 } from '@tabler/icons-react';
 
-// Import CSS Terpisah
-import './dashboard.css';
+ChartJS.register(CategoryScale, LinearScale, PointElement, ArcElement, Title, Tooltip, Legend, Filler);
 
-// Registrasi modul Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
-
-// Format angka standar tanpa simbol mata uang
 const formatNumber = (amount: number) => {
-  const formatted = new Intl.NumberFormat('id-ID', {
-    style: 'decimal',
-    maximumFractionDigits: 0,
-  }).format(Math.abs(amount));
-
-  return amount < 0 ? `(${formatted})` : formatted;
+  const formatted = new Intl.NumberFormat('id-ID', { style: 'decimal', maximumFractionDigits: 0 }).format(Math.abs(amount));
+  return amount < 0? `(${formatted})` : formatted;
 };
 
 export interface AccountBalanceItem {
@@ -62,7 +51,6 @@ export interface AccountBalanceItem {
   accountName: string;
   balance: number;
 }
-
 export interface DashboardViewModel {
   hasPeriodSelected: boolean;
   selectedPeriodName?: string;
@@ -81,83 +69,42 @@ export interface DashboardViewModel {
   recentEntries: any[];
 }
 
-// Sanitasi URL API
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const NEXT_PUBLIC_API_URL = rawApiUrl
-  .replace(/\/+$/, '')
-  ;
+const NEXT_PUBLIC_API_URL = rawApiUrl.replace(/\/+$/, '');
 
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
   const [periodType, setPeriodType] = useState<string>('monthly');
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [data, setData] = useState<DashboardViewModel | null>(null);
 
-  // Inisialisasi Command Palette Shortcut (Ctrl+K / Cmd+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        const cmdModalEl = document.getElementById('commandPaletteModal');
-        if (cmdModalEl) {
-          cmdModalEl.style.display = 'block';
-        }
+        document.getElementById('commandPaletteModal')?.style.setProperty('display', 'block');
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Fetch Dashboard data dari Backend API dengan menyertakan query parameter period
   const fetchDashboardData = useCallback(async (type: string) => {
-    setLoading(true);
-    setErrorMessage(null);
+    setLoading(true); setErrorMessage(null);
     try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/dashboard?period=${type}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/dashboard?period=${type}`, {
+        method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
       });
-
-      if (response.status === 401) {
-        setErrorMessage('Session expired or unauthorized. Please login again.');
-        setData(null);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to load Dashboard data from the server.');
-      }
-
-      const resData = await response.json();
-
+      if (res.status === 401) { setErrorMessage('Session expired or unauthorized. Please login again.'); setData(null); return; }
+      if (!res.ok) throw new Error('Failed to load Dashboard data.');
+      const resData = await res.json();
       if (resData?.hasPeriodSelected === false) {
-        setData({
-          hasPeriodSelected: false,
-          isPeriodClosed: false,
-          totalAssets: 0,
-          totalLiabilities: 0,
-          totalEquity: 0,
-          totalRevenue: 0,
-          totalExpenses: 0,
-          netIncome: 0,
-          cashAccounts: [],
-          totalCashOnHand: 0,
-          bankAccounts: [],
-          totalBankBalance: 0,
-          expenseAccountsList: [],
-          recentEntries: [],
-        });
+        setData({ hasPeriodSelected: false, isPeriodClosed: false, totalAssets: 0, totalLiabilities: 0, totalEquity: 0, totalRevenue: 0, totalExpenses: 0, netIncome: 0, cashAccounts: [], totalCashOnHand: 0, bankAccounts: [], totalBankBalance: 0, expenseAccountsList: [], recentEntries: [] });
         return;
       }
-
-      const safeData: DashboardViewModel = {
+      setData({
         hasPeriodSelected: true,
         selectedPeriodName: resData?.selectedPeriodName || 'Current Period',
         isPeriodClosed: Boolean(resData?.isPeriodClosed),
@@ -167,43 +114,28 @@ function DashboardContent() {
         totalRevenue: Number(resData?.totalRevenue) || 0,
         totalExpenses: Number(resData?.totalExpenses) || 0,
         netIncome: Number(resData?.netIncome) || 0,
-        cashAccounts: Array.isArray(resData?.cashAccounts) ? resData.cashAccounts : [],
+        cashAccounts: Array.isArray(resData?.cashAccounts)? resData.cashAccounts : [],
         totalCashOnHand: Number(resData?.totalCashOnHand) || 0,
-        bankAccounts: Array.isArray(resData?.bankAccounts) ? resData.bankAccounts : [],
+        bankAccounts: Array.isArray(resData?.bankAccounts)? resData.bankAccounts : [],
         totalBankBalance: Number(resData?.totalBankBalance) || 0,
-        expenseAccountsList: Array.isArray(resData?.expenseAccountsList) ? resData.expenseAccountsList : [],
-        recentEntries: Array.isArray(resData?.recentEntries) ? resData.recentEntries : [],
-      };
-
-      setData(safeData);
-    } catch (error: any) {
-      console.error('Error loading dashboard:', error);
-      setErrorMessage(error.message || 'Failed to connect to the backend server.');
-    } finally {
-      setLoading(false);
-    }
+        expenseAccountsList: Array.isArray(resData?.expenseAccountsList)? resData.expenseAccountsList : [],
+        recentEntries: Array.isArray(resData?.recentEntries)? resData.recentEntries : [],
+      });
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to connect to backend.');
+    } finally { setLoading(false); }
   }, []);
 
-  // Sinkronisasi state lokal dengan URL searchParams saat parameter berubah
   useEffect(() => {
     const periodParam = searchParams.get('period');
-    const activePeriod = periodParam && periodParam.toLowerCase() === 'annual' ? 'annual' : 'monthly';
-    
-    setPeriodType(activePeriod);
-    fetchDashboardData(activePeriod);
-
-    const handlePeriodChanged = () => {
-      fetchDashboardData(activePeriod);
-    };
-
-    window.addEventListener('periodChanged', handlePeriodChanged);
-
-    return () => {
-      window.removeEventListener('periodChanged', handlePeriodChanged);
-    };
+    const active = periodParam?.toLowerCase() === 'annual'? 'annual' : 'monthly';
+    setPeriodType(active);
+    fetchDashboardData(active);
+    const onChanged = () => fetchDashboardData(active);
+    window.addEventListener('periodChanged', onChanged);
+    return () => window.removeEventListener('periodChanged', onChanged);
   }, [searchParams, fetchDashboardData]);
 
-  // Handler saat tombol pill-toggle diklik
   const handlePeriodSwitch = (type: string) => {
     if (periodType === type) return;
     setPeriodType(type);
@@ -213,245 +145,110 @@ function DashboardContent() {
   const healthScore = useMemo(() => {
     if (!data) return 0;
     if (data.totalRevenue === 0 && data.totalExpenses === 0) return 100;
-
-    const margin = data.totalRevenue > 0 ? (data.netIncome / data.totalRevenue) * 100 : 0;
+    const margin = data.totalRevenue > 0? (data.netIncome / data.totalRevenue) * 100 : 0;
     if (margin >= 20) return 90;
     if (margin >= 10) return 75;
     if (margin >= 0) return 60;
     return 40;
   }, [data]);
 
-  if (loading && !data) {
+  if (loading &&!data) {
     return (
-      <div className="loader-box">
-        <div className="spinner"></div>
-        <p className="loading-text">Loading dashboard data...</p>
+      <div className="grid gap-4 p-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2"><Skeleton className="h-" /><Skeleton className="h-" /></div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">{[1,2,3,4].map(i=><Skeleton key={i} className="h-" />)}</div>
       </div>
     );
   }
 
-  if (!data || !data.hasPeriodSelected) {
+  if (!data ||!data.hasPeriodSelected) {
     return (
-      <div className="empty-state-box">
-        <IconEyeOff size={48} className="empty-icon" />
-        <h4 className="empty-title">No Period Selected</h4>
-        <p className="empty-desc">
-          The Dashboard follows whichever period you&apos;re viewing.
-          <br />
-          Go to <strong>Periods</strong> to view or select an active accounting period.
-        </p>
-        <Link href="/periods" className="btn-action primary">
-          <IconCalendar size={18} /> Go to Periods
-        </Link>
+      <div className="flex min-h- items-center justify-center p-6">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="pt-10 pb-8">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted"><IconEyeOff className="h-6 w-6" /></div>
+            <h4 className="text-lg font-semibold">No Period Selected</h4>
+            <p className="mx-auto mt-2 max-w- text-sm text-muted-foreground">The Dashboard follows whichever period you're viewing. Go to <strong>Periods</strong> to view or select an active accounting period.</p>
+            <Button asChild className="mt-6"><Link href="/periods"><IconCalendar className="h-4 w-4" /> Go to Periods</Link></Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   const doughnutChartData = {
     labels: ['Cash on Hand', 'Bank Balance'],
-    datasets: [
-      {
-        data: [data.totalCashOnHand, data.totalBankBalance],
-        backgroundColor: ['#0d6efd', '#0dcaf0'],
-        borderWidth: 0,
-      },
-    ],
+    datasets: [{ data: [data.totalCashOnHand, data.totalBankBalance], backgroundColor: ['#0d6efd', '#0dcaf0'], borderWidth: 0 }],
   };
-
-  // Konfigurasi Data untuk Expense Composition Chart
-  const expenseChartLabels = data.expenseAccountsList && data.expenseAccountsList.length > 0 
-    ? data.expenseAccountsList.map(item => item.accountName) 
-    : ['No Expenses'];
-
-  const expenseChartValues = data.expenseAccountsList && data.expenseAccountsList.length > 0 
-    ? data.expenseAccountsList.map(item => item.balance) 
-    : [1];
-
+  const expenseChartLabels = data.expenseAccountsList?.length? data.expenseAccountsList.map(i=>i.accountName) : ['No Expenses'];
+  const expenseChartValues = data.expenseAccountsList?.length? data.expenseAccountsList.map(i=>i.balance) : [1];
   const expenseColors = ['#dc3545', '#ffc107', '#fd7e14', '#6610f2', '#6c757d', '#20c997', '#e83e8c'];
 
-  const expenseDoughnutChartData = {
-    labels: expenseChartLabels,
-    datasets: [
-      {
-        data: expenseChartValues,
-        backgroundColor: expenseColors.slice(0, expenseChartValues.length),
-        borderWidth: 0,
-      },
-    ],
-  };
-
   return (
-    <div className="dashboard-container">
+    <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-6">
       {errorMessage && (
-        <div className="alert-banner danger">
-          <div className="alert-content">
-            <IconAlertTriangle size={20} className="alert-icon" />
-            <span>{errorMessage}</span>
-          </div>
-          <button type="button" className="close-btn" onClick={() => setErrorMessage(null)}>
-            <IconX size={16} />
-          </button>
-        </div>
+        <Alert variant="destructive" className="flex items-center justify-between">
+          <div className="flex items-center gap-2"><IconAlertTriangle className="h-4 w-4" /><AlertDescription>{errorMessage}</AlertDescription></div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>setErrorMessage(null)}><IconX className="h-4 w-4" /></Button>
+        </Alert>
       )}
 
-      {/* 1. HEADER CONTROLS SECTION */}
-      <div className="header-section">
+      {/* HEADER */}
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h4 className="header-title">Financial Overview</h4>
-          <p className="header-subtitle">
-            Active Period: <span className="period-highlight">{data.selectedPeriodName}</span>
-            <span> (In IDR, unless otherwise stated)</span>
-          </p>
+          <h4 className="text-2xl font-bold tracking-tight">Financial Overview</h4>
+          <p className="text-sm text-muted-foreground">Active Period: <Badge variant="secondary" className="ml-1 font-mono">{data.selectedPeriodName}</Badge> <span className="text-xs">(In IDR)</span></p>
         </div>
-
-        <div className="header-actions">
-          <div className="pill-toggle">
-            <button
-              type="button"
-              onClick={() => handlePeriodSwitch('monthly')}
-              className={`pill-btn ${periodType === 'monthly' ? 'active' : ''}`}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePeriodSwitch('annual')}
-              className={`pill-btn ${periodType === 'annual' ? 'active' : ''}`}
-            >
-              Annual
-            </button>
-          </div>
-
-          <Link href="/journal-entries/create" className="btn-action warning">
-            <IconPlus size={18} /> New Entry
-          </Link>
-          <Link href="/reports/income-statement" className="btn-action outline">
-            <IconReport size={18} /> Report
-          </Link>
+        <div className="flex items-center gap-2">
+          <Tabs value={periodType} onValueChange={handlePeriodSwitch} className="h-9">
+            <TabsList className="rounded-full"><TabsTrigger value="monthly" className="rounded-full">Monthly</TabsTrigger><TabsTrigger value="annual" className="rounded-full">Annual</TabsTrigger></TabsList>
+          </Tabs>
+          <Button asChild className="bg-amber-500 text-black hover:bg-amber-600"><Link href="/journal-entries/create"><IconPlus className="h-4 w-4" /> New Entry</Link></Button>
+          <Button asChild variant="outline"><Link href="/reports/income-statement"><IconReport className="h-4 w-4" /> Report</Link></Button>
         </div>
       </div>
 
-      {/* 2. METRICS & FINANCIAL HEALTH GRID */}
-      <div className="grid-2-col mb-16">
-        {/* Financial Health Index */}
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Financial Health Index</span>
-            <IconActivity size={20} className="text-primary" />
-          </div>
-          <div className="health-body">
-            <div className="score-circle">
-              <span className="score-num">{healthScore}</span>
-            </div>
+      {/* HEALTH + RESERVE */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2"><CardDescription>Financial Health Index</CardDescription><IconActivity className="h-5 w-5 text-primary" /></CardHeader>
+          <CardContent className="flex items-center gap-6">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-primary/20 bg-primary/5 text-2xl font-bold">{healthScore}</div>
             <div>
-              <h6 className="health-status">
-                {healthScore >= 80 ? (
-                  <span className="text-success">Excellent Condition</span>
-                ) : healthScore >= 60 ? (
-                  <span className="text-info">Stable Operations</span>
-                ) : (
-                  <span className="text-warning">Attention Required</span>
-                )}
+              <h6 className="font-semibold">
+                {healthScore >= 80? <span className="text-emerald-500">Excellent Condition</span> : healthScore >= 60? <span className="text-sky-500">Stable Operations</span> : <span className="text-amber-500">Attention Required</span>}
               </h6>
-              <p className="health-desc">Calculated based on net profit margin and liquidity position.</p>
+              <p className="text-xs text-muted-foreground">Calculated based on net profit margin and liquidity position.</p>
             </div>
-          </div>
-        </div>
-
-        {/* Cash & Bank Summary */}
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Total Cash &amp; Bank Reserves</span>
-            <IconWallet size={20} className="text-warning" />
-          </div>
-          <div className="reserve-amount font-mono">{formatNumber(data.totalAssets)}</div>
-          <div className="reserve-breakdown">
-            <span>
-              Cash: <strong className="font-mono">{formatNumber(data.totalCashOnHand)}</strong>
-            </span>
-            <span>
-              Bank: <strong className="font-mono">{formatNumber(data.totalBankBalance)}</strong>
-            </span>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2"><CardDescription>Total Cash & Bank Reserves</CardDescription><IconWallet className="h-5 w-5 text-amber-500" /></CardHeader>
+          <CardContent>
+            <div className="font-mono text-2xl font-bold">{formatNumber(data.totalAssets)}</div>
+            <div className="mt-2 flex gap-4 text-xs text-muted-foreground">Cash: <span className="font-mono font-semibold text-foreground">{formatNumber(data.totalCashOnHand)}</span> Bank: <span className="font-mono font-semibold text-foreground">{formatNumber(data.totalBankBalance)}</span></div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* 4 CARDS: REVENUE, EXPENSES, NET INCOME, LIABILITIES */}
-      <div className="grid-4-col mb-16">
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Revenue</span>
-            <div className="icon-badge success">
-              <IconTrendingUp size={20} />
-            </div>
-          </div>
-          <div className="card-val font-mono">{formatNumber(data.totalRevenue)}</div>
-          <div className="card-sub">Total Operating Revenue</div>
-        </div>
-
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Expenses</span>
-            <div className="icon-badge danger">
-              <IconTrendingDown size={20} />
-            </div>
-          </div>
-          <div className="card-val font-mono">{formatNumber(data.totalExpenses)}</div>
-          <div className="card-sub">Total Operating Expenses</div>
-        </div>
-
-        <div className="dash-card primary-gradient">
-          <div className="card-header-flex">
-            <span className="card-label light">Net Income</span>
-            <IconShieldCheck size={20} className="text-warning" />
-          </div>
-          <div className="card-val light font-mono">{formatNumber(data.netIncome)}</div>
-          <div className="card-sub light">Net Income for Period</div>
-        </div>
-
-        <div className="dash-card">
-          <div className="card-header-flex">
-            <span className="card-label">Liabilities</span>
-            <div className="icon-badge warning">
-              <IconCreditCard size={20} />
-            </div>
-          </div>
-          <div className="card-val font-mono">{formatNumber(data.totalLiabilities)}</div>
-          <div className="card-sub">Total Liabilities</div>
-        </div>
+      {/* 4 METRICS */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardDescription>Revenue</CardDescription><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"><IconTrendingUp className="h-4 w-4" /></span></CardHeader><CardContent><div className="font-mono text-xl font-bold">{formatNumber(data.totalRevenue)}</div><p className="text-xs text-muted-foreground">Total Operating Revenue</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardDescription>Expenses</CardDescription><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500"><IconTrendingDown className="h-4 w-4" /></span></CardHeader><CardContent><div className="font-mono text-xl font-bold">{formatNumber(data.totalExpenses)}</div><p className="text-xs text-muted-foreground">Total Operating Expenses</p></CardContent></Card>
+        <Card className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white border-0"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardDescription className="text-violet-100">Net Income</CardDescription><IconShieldCheck className="h-5 w-5 text-amber-300" /></CardHeader><CardContent><div className="font-mono text-xl font-bold">{formatNumber(data.netIncome)}</div><p className="text-xs text-violet-100">Net Income for Period</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardDescription>Liabilities</CardDescription><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500"><IconCreditCard className="h-4 w-4" /></span></CardHeader><CardContent><div className="font-mono text-xl font-bold">{formatNumber(data.totalLiabilities)}</div><p className="text-xs text-muted-foreground">Total Liabilities</p></CardContent></Card>
       </div>
 
-      {/* 3. CHARTS SECTION (Asset Composition & Expense Composition Berdampingan) */}
-      <div className="grid-chart-col mb-16">
-        <div className="dash-card">
-          <div className="card-header-flex mb-12">
-            <div>
-              <h6 className="card-title">Asset Composition</h6>
-              <span className="card-sub">Cash vs Bank Reserves</span>
-            </div>
-            <div className="icon-badge info">
-              <IconChartPie size={20} />
-            </div>
-          </div>
-          <div className="chart-wrapper">
-            <Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-          </div>
-        </div>
-
-        <div className="dash-card">
-          <div className="card-header-flex mb-12">
-            <div>
-              <h6 className="card-title">Expense Composition</h6>
-              <span className="card-sub">Operating Expense Breakdown</span>
-            </div>
-            <div className="icon-badge danger">
-              <IconChartPie size={20} />
-            </div>
-          </div>
-          <div className="chart-wrapper">
-            <Doughnut data={expenseDoughnutChartData} options={{ responsive: true, maintainAspectRatio: false }} />
-          </div>
-        </div>
+      {/* CHARTS */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-base">Asset Composition</CardTitle><CardDescription>Cash vs Bank Reserves</CardDescription></div><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500"><IconChartPie className="h-4 w-4" /></span></CardHeader>
+          <CardContent><div className="h-"><Doughnut data={doughnutChartData} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} /></div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between"><div><CardTitle className="text-base">Expense Composition</CardTitle><CardDescription>Operating Expense Breakdown</CardDescription></div><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500"><IconChartPie className="h-4 w-4" /></span></CardHeader>
+          <CardContent><div className="h-"><Doughnut data={{ labels: expenseChartLabels, datasets: [{ data: expenseChartValues, backgroundColor: expenseColors.slice(0, expenseChartValues.length), borderWidth: 0 }] }} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} /></div></CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -459,14 +256,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="loader-box">
-          <div className="spinner"></div>
-          <span className="loading-text">Loading dashboard...</span>
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex h- items-center justify-center gap-2 text-sm text-muted-foreground"><IconLoader2 className="h-5 w-5 animate-spin" /> Loading dashboard...</div>}>
       <DashboardContent />
     </Suspense>
   );

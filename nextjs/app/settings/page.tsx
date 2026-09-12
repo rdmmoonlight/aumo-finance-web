@@ -1,17 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  IconUser, 
-  IconSettings, 
-  IconMoon, 
-  IconSun, 
-  IconInfoCircle, 
-  IconMailForward, 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  IconUser,
+  IconSettings,
+  IconMoon,
+  IconSun,
+  IconInfoCircle,
   IconCheck,
   IconPhone,
   IconShieldCheck,
-  IconMail
+  IconMail,
+  IconX,
+  IconLoader2,
 } from '@tabler/icons-react';
 
 export interface UserProfile {
@@ -27,284 +35,159 @@ export interface UserProfile {
 const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function SettingsPage() {
-  // State Profile Dinamis dari Backend Database
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  // State Preferensi & UI
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  const [enableSystemAlerts, setEnableSystemAlerts] = useState<boolean>(true);
-  const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
-
-  // Status Notifikasi (Toast / Alert)
+  const [loading, setLoading] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [enableSystemAlerts, setEnableSystemAlerts] = useState(true);
+  const [isSendingEmail] = useState(false);
   const [statusAlertMessage, setStatusAlertMessage] = useState<string | null>(null);
-  const [statusAlertClass, setStatusAlertClass] = useState<string>('alert-success');
-  const [toastMessage, setToastMessage] = useState<string>('');
+  const [statusAlertClass, setStatusAlertClass] = useState<'success' | 'error'>('success');
+  const [toastMessage, setToastMessage] = useState('');
 
-  // Fungsi Menampilkan Notifikasi
-  const showNotification = (message: string, isError: boolean = false) => {
+  const showNotification = (message: string, isError = false) => {
     setToastMessage(message);
     setStatusAlertMessage(message);
-    setStatusAlertClass(isError ? 'alert-danger' : 'alert-success');
-
-    setTimeout(() => {
-      setStatusAlertMessage(null);
-    }, 5000);
+    setStatusAlertClass(isError? 'error' : 'success');
+    setTimeout(() => setStatusAlertMessage(null), 5000);
   };
 
-  // 1. Fetch Data User Asli dari Database Backend
   useEffect(() => {
     const fetchUserProfile = async () => {
       setLoading(true);
       try {
-        // Panggil /auth/me dengan credentials: 'include' agar Identity Cookie terkirim
         const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/auth/me`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', // PENTING: Untuk Identity.Application Cookie Session
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
-
         if (res.ok) {
           const data = await res.json();
-
           if (data.success) {
             setUserProfile({
               userId: data.userId || '',
               fullName: data.fullName || data.userName || 'User',
               userName: data.userName || data.email,
               email: data.email || '-',
-              isEmailConfirmed: true, // Default karena tidak dikirim dari backend me endpoint
-              phoneNumber: '-',      // Default karena tidak dikirim dari backend me endpoint
+              isEmailConfirmed: true,
+              phoneNumber: '-',
               twoFactorEnabled: false,
             });
             return;
           }
         } else if (res.status === 401 || res.status === 404) {
           showNotification('User session not found. Please sign in again.', true);
-        } else {
-          showNotification(`Failed to fetch profile: HTTP ${res.status}`, true);
         }
       } catch (err: any) {
-        showNotification(`Failed to load profile from database: ${err.message}`, true);
+        showNotification(`Failed to load profile: ${err.message}`, true);
       } finally {
         setLoading(false);
       }
     };
-
     fetchUserProfile();
-
-    // Inisialisasi Tema
     try {
       const savedTheme = localStorage.getItem('aumo_theme');
       setIsDarkMode(!savedTheme || savedTheme === 'dark');
-    } catch {
-      setIsDarkMode(true);
-    }
+    } catch { setIsDarkMode(true); }
   }, []);
 
-  // Handler Kirim Ulang Verifikasi Email
-  const handleResendVerification = async () => {
-    if (!userProfile?.email) {
-      showNotification('User account email not found.', true);
-      return;
-    }
-
-    setIsSendingEmail(true);
-    try {
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email: userProfile.email }),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to send verification email.');
-      }
-
-      showNotification('Verification email sent successfully. Please check your inbox.');
-    } catch (err: any) {
-      showNotification(`Failed to send verification email: ${err.message || 'Unknown error'}`, true);
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
-  // Handler Perubahan Tema
-  const handleThemeChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
+  const handleThemeChanged = (checked: boolean) => {
     setIsDarkMode(checked);
-    const selectedTheme = checked ? 'dark' : 'light';
-
+    const selectedTheme = checked? 'dark' : 'light';
     try {
-      if ((window as any).aumoTheme) {
-        (window as any).aumoTheme.set(selectedTheme);
-      } else {
+      if ((window as any).aumoTheme) (window as any).aumoTheme.set(selectedTheme);
+      else {
         document.documentElement.setAttribute('data-bs-theme', selectedTheme);
         localStorage.setItem('aumo_theme', selectedTheme);
       }
     } catch {}
-
     showNotification(`Theme updated to ${selectedTheme} mode.`);
   };
 
-  // Handler Preferensi System Alerts
-  const handleSystemAlertsChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
+  const handleSystemAlertsChanged = (checked: boolean) => {
     setEnableSystemAlerts(checked);
-    showNotification(`System alerts have been ${checked ? 'enabled' : 'disabled'}.`);
+    showNotification(`System alerts have been ${checked? 'enabled' : 'disabled'}.`);
   };
 
   if (loading) {
     return (
-      <div className="container-fluid py-5 text-center text-white-50">
-        <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-        <span>Memuat profil pengguna dari database...</span>
+      <div className="mx-auto max-w-4xl space-y-4 p-6">
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h- w-full" />
       </div>
     );
   }
 
   return (
-    <div className="container-fluid py-4 px-4 text-white">
-      <h3 className="mb-4 fw-bold d-flex align-items-center gap-2">
-        <IconSettings size={28} />
-        <span>Settings</span>
+    <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
+      <h3 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <IconSettings className="h-5 w-5" />
+        </span>
+        Settings
       </h3>
 
-      {/* Status Notification Alert */}
       {statusAlertMessage && (
-        <div className={`alert ${statusAlertClass} alert-dismissible fade show my-3 shadow-sm d-flex align-items-center`} role="alert">
-          <IconInfoCircle size={20} className="me-2 flex-shrink-0" />
-          <div>{statusAlertMessage}</div>
-          <button
-            type="button"
-            className="btn-close ms-auto"
-            onClick={() => setStatusAlertMessage(null)}
-            aria-label="Close"
-          ></button>
-        </div>
+        <Alert variant={statusAlertClass === 'error'? 'destructive' : 'default'} className={`flex items-center justify-between ${statusAlertClass === 'success'? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : ''}`}>
+          <div className="flex items-center gap-2"><IconInfoCircle className="h-4 w-4" /><AlertDescription>{statusAlertMessage}</AlertDescription></div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={()=>setStatusAlertMessage(null)}><IconX className="h-4 w-4" /></Button>
+        </Alert>
       )}
 
-      {/* ===== USER PROFILE SECTION (FROM DB) ===== */}
-      <div className="card glass-card border-0 shadow-sm rounded-4 mb-4">
-        <div className="card-header bg-primary text-white py-3 rounded-top-4 d-flex align-items-center gap-2">
-          <IconUser size={22} />
-          <h5 className="mb-0 fw-semibold">User Profile</h5>
-        </div>
-        <div className="card-body p-4">
-          <div className="row">
-            <div className="col-md-8">
-              <dl className="row mb-0 gy-3">
-                <dt className="col-sm-4 text-white-50">Full Name</dt>
-                <dd className="col-sm-8 fw-semibold">{userProfile?.fullName || '-'}</dd>
-
-                <dt className="col-sm-4 text-white-50">Username</dt>
-                <dd className="col-sm-8 fw-semibold">{userProfile?.userName || '-'}</dd>
-
-                <dt className="col-sm-4 text-white-50">Email</dt>
-                <dd className="col-sm-8 d-flex align-items-center gap-1">
-                  <IconMail size={16} className="text-white-50" />
-                  <span>{userProfile?.email || '-'}</span>
-                </dd>
-
-                <dt className="col-sm-4 text-white-50">Email Status</dt>
-                <dd className="col-sm-8">
-                  <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <span className="badge d-inline-flex align-items-center gap-1 bg-success">
-                      <IconCheck size={14} /> Confirmed
-                    </span>
-                  </div>
-                </dd>
-
-                <dt className="col-sm-4 text-white-50">Phone</dt>
-                <dd className="col-sm-8 font-monospace d-flex align-items-center gap-1">
-                  <IconPhone size={16} className="text-white-50" />
-                  <span>{userProfile?.phoneNumber || '-'}</span>
-                </dd>
-
-                <dt className="col-sm-4 text-white-50">2FA Status</dt>
-                <dd className="col-sm-8">
-                  <span className="badge d-inline-flex align-items-center gap-1 bg-secondary">
-                    <IconShieldCheck size={14} /> Disabled
-                  </span>
-                </dd>
-              </dl>
-            </div>
+      {/* USER PROFILE */}
+      <Card>
+        <CardHeader className="bg-primary text-primary-foreground rounded-t-lg py-3">
+          <CardTitle className="flex items-center gap-2 text-base"><IconUser className="h-5 w-5" /> User Profile</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="grid gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]"><span className="text-sm text-muted-foreground">Full Name</span><span className="text-sm font-semibold">{userProfile?.fullName || '-'}</span></div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]"><span className="text-sm text-muted-foreground">Username</span><span className="text-sm font-semibold">{userProfile?.userName || '-'}</span></div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]"><span className="text-sm text-muted-foreground">Email</span><span className="flex items-center gap-1.5 text-sm font-medium"><IconMail className="h-4 w-4 text-muted-foreground" />{userProfile?.email || '-'}</span></div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]"><span className="text-sm text-muted-foreground">Email Status</span><Badge className="w-fit gap-1 bg-emerald-500 hover:bg-emerald-600"><IconCheck className="h-3.5 w-3.5" /> Confirmed</Badge></div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]"><span className="text-sm text-muted-foreground">Phone</span><span className="flex items-center gap-1.5 font-mono text-sm"><IconPhone className="h-4 w-4 text-muted-foreground" />{userProfile?.phoneNumber || '-'}</span></div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-[160px_1fr]"><span className="text-sm text-muted-foreground">2FA Status</span><Badge variant="secondary" className="w-fit gap-1"><IconShieldCheck className="h-3.5 w-3.5" /> Disabled</Badge></div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* ===== PREFERENCES SECTION ===== */}
-      <div className="card glass-card border-0 shadow-sm rounded-4">
-        <div className="card-header bg-primary text-white py-3 rounded-top-4 d-flex align-items-center gap-2">
-          <IconSettings size={22} />
-          <h5 className="mb-0 fw-semibold">Preferences</h5>
-        </div>
-        <div className="card-body p-4">
-          <div className="mb-4">
-            <label className="form-label d-block fw-semibold mb-2">Theme Interface</label>
-            <div className="form-check form-switch">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="themeToggle"
-                checked={isDarkMode}
-                onChange={handleThemeChanged}
-              />
-              <label className="form-check-label ms-2 cursor-pointer d-inline-flex align-items-center gap-1" htmlFor="themeToggle">
-                {isDarkMode ? (
-                  <>
-                    <IconMoon size={18} className="text-info" /> Dark Nebula Mode
-                  </>
-                ) : (
-                  <>
-                    <IconSun size={18} className="text-warning" /> Light Minimal Mode
-                  </>
-                )}
-              </label>
+      {/* PREFERENCES */}
+      <Card>
+        <CardHeader className="bg-primary text-primary-foreground rounded-t-lg py-3">
+          <CardTitle className="flex items-center gap-2 text-base"><IconSettings className="h-5 w-5" /> Preferences</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6 p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold">Theme Interface</Label>
+              <p className="text-xs text-muted-foreground">Switch between dark and light appearance.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-sm">{isDarkMode? <><IconMoon className="h-4 w-4 text-sky-500" /> Dark Nebula</> : <><IconSun className="h-4 w-4 text-amber-500" /> Light Minimal</>}</div>
+              <Switch checked={isDarkMode} onCheckedChange={handleThemeChanged} id="themeToggle" />
             </div>
           </div>
 
-          <div className="mb-0">
-            <label className="form-label d-block fw-semibold mb-2">System Alerts</label>
-            <div className="form-check form-switch">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="alertsToggle"
-                checked={enableSystemAlerts}
-                onChange={handleSystemAlertsChanged}
-              />
-              <label className="form-check-label ms-2 cursor-pointer" htmlFor="alertsToggle">
-                {enableSystemAlerts ? 'Enabled' : 'Disabled'}
-              </label>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label className="text-sm font-semibold">System Alerts</Label>
+              <p className="text-xs text-muted-foreground">Receive important system notifications.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm">{enableSystemAlerts? 'Enabled' : 'Disabled'}</span>
+              <Switch checked={enableSystemAlerts} onCheckedChange={handleSystemAlertsChanged} id="alertsToggle" />
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Toast Notification Container */}
-      <div className="toast-container position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1080 }}>
-        <div id="settingsToast" className="toast show bg-dark text-white border-secondary shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
-          <div className="toast-header bg-primary text-white border-bottom border-secondary border-opacity-25 d-flex align-items-center">
-            <IconInfoCircle size={18} className="me-2" />
-            <strong className="me-auto">Notification</strong>
-            <button
-              type="button"
-              className="btn-close btn-close-white"
-              onClick={() => setToastMessage('')}
-              aria-label="Close"
-            ></button>
-          </div>
-          <div className="toast-body">
-            {toastMessage || 'System ready.'}
-          </div>
-        </div>
+      {/* Toast */}
+      <div className="pointer-events-none fixed bottom-4 right-4 z-50">
+        {toastMessage && (
+          <Card className="pointer-events-auto w- shadow-xl">
+            <CardHeader className="flex flex-row items-center justify-between bg-primary py-2 text-primary-foreground"><div className="flex items-center gap-2 text-sm font-semibold"><IconInfoCircle className="h-4 w-4" /> Notification</div><Button variant="ghost" size="icon" className="h-6 w-6 text-primary-foreground hover:bg-white/10" onClick={()=>setToastMessage('')}><IconX className="h-4 w-4" /></Button></CardHeader>
+            <CardContent className="p-3 text-sm">{toastMessage || 'System ready.'}</CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
