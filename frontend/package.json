@@ -6,10 +6,9 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
-    "generate-routes": "tsr generate",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check ."
