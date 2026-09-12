@@ -6,9 +6,9 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --config aumo.config.ts --port 3000",
+    "dev": "tanstack-start dev --config aumo.config.ts --port 3000",
     "generate-routes": "tsr generate",
-    "build": "vinxi build --config aumo.config.ts",
+    "build": "tanstack-start build --config aumo.config.ts",
     "preview": "vite preview --config aumo.config.ts",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
@@ -43,6 +43,7 @@
     "@tanstack/devtools-vite": "latest",
     "@tanstack/eslint-config": "latest",
     "@tanstack/router-cli": "^1.132.0",
+    "@tanstack/start-cli": "latest",
     "@types/node": "^22.20.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -50,8 +51,7 @@
     "eslint": "^10.10.0",
     "prettier": "^3.8.1",
     "typescript": "^6.0.2",
-    "vite": "^8.0.0",
-    "vinxi": "^0.5.3"
+    "vite": "^8.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -59,4 +59,5 @@
       "lightningcss"
     ]
   }
-}
+  }
+    
