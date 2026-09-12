@@ -6,10 +6,10 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --config aumo.config.ts --port 3000",
     "generate-routes": "tsr generate",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "vinxi build --config aumo.config.ts",
+    "preview": "vite preview --config aumo.config.ts",
     "lint": "eslint",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check ."
@@ -50,7 +50,8 @@
     "eslint": "^10.10.0",
     "prettier": "^3.8.1",
     "typescript": "^6.0.2",
-    "vite": "^8.0.0"
+    "vite": "^8.0.0",
+    "vinxi": "^0.5.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
