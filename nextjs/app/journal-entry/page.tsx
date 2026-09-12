@@ -80,15 +80,6 @@ function JournalEntryContent() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Helper Authorization JWT Header
-  const getAuthHeaders = (): Record<string, string> => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    return {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-  };
-
   const resetForm = () => {
     const defaultDate = new Date().toISOString().split('T')[0];
     setJournalType('General');
@@ -130,12 +121,13 @@ function JournalEntryContent() {
     const initPage = async () => {
       setLoading(true);
       try {
-        const headers = getAuthHeaders();
-
-        // 1. Fetch Chart of Accounts
+        // 1. Fetch Chart of Accounts menggunakan Cookie Authentication
         const accountsRes = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
           method: 'GET',
-          headers,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Mengirimkan Auth Cookie secara otomatis ke backend
         });
 
         if (accountsRes.ok) {
@@ -155,13 +147,18 @@ function JournalEntryContent() {
               accountName: acc.accountName,
             }))
           );
+        } else if (accountsRes.status === 401) {
+          throw new Error('Sesi telah berakhir atau belum terotentikasi. Silakan login kembali.');
         }
 
         // 2. Fetch data jika Edit Mode
         if (isEdit && entryIdParam) {
           const journalRes = await fetch(`${API_BASE_URL}/api/v1/journals/${entryIdParam}`, {
             method: 'GET',
-            headers,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include', // Mengirimkan Auth Cookie
           });
 
           if (!journalRes.ok) {
@@ -359,7 +356,10 @@ function JournalEntryContent() {
 
       const response = await fetch(url, {
         method,
-        headers: getAuthHeaders(),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Mengirimkan Auth Cookie
         body: JSON.stringify(payload),
       });
 
@@ -494,7 +494,6 @@ function JournalEntryContent() {
           <div className="card border-0 shadow-sm rounded-4 bg-body-tertiary mb-4 border border-secondary border-opacity-25">
             <div className="card-body p-4 text-white">
               <div className="row g-3">
-                {/* Transaction Number Input (Uneditable, Disamakan Style-nya) */}
                 <div className="col-md-4">
                   <label className="form-label fw-semibold small text-white-50 d-flex align-items-center gap-1">
                     <i className="ti ti-hash"></i> Transaction No.
@@ -652,7 +651,7 @@ function JournalEntryContent() {
                             )}
                           </td>
 
-                          {/* Debit Input (Tipe text, format titik otomatis, tanpa spinner) */}
+                          {/* Debit Input */}
                           <td>
                             <input
                               type="text"
@@ -666,7 +665,7 @@ function JournalEntryContent() {
                             />
                           </td>
 
-                          {/* Credit Input (Tipe text, format titik otomatis, tanpa spinner) */}
+                          {/* Credit Input */}
                           <td>
                             <input
                               type="text"
