@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from '@tanstack/react-router';
 import {
   IconLayoutDashboard,
@@ -22,6 +23,8 @@ import {
   IconScaleOff,
   IconLogout,
   IconChevronRight,
+  IconLoader2,
+  IconUser,
 } from '@tabler/icons-react';
 
 import { cn } from '@/lib/utils';
@@ -37,12 +40,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-
+import apiClient from '@/services/apiClient';
 
 interface MenuItem {
   label: string;
   path: string;
   icon: React.ElementType;
+}
+
+interface UserProfile {
+  userId?: string;
+  email?: string;
+  userName?: string;
+  fullName?: string;
 }
 
 const mainNavItems: MenuItem[] = [
@@ -80,7 +90,7 @@ function NavItemLink({ item }: { item: MenuItem }) {
           className={cn(
             'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
             isActive
-             ? 'bg-primary text-primary-foreground shadow-sm'
+              ? 'bg-primary text-primary-foreground shadow-sm'
               : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
           )}
         >
@@ -93,24 +103,65 @@ function NavItemLink({ item }: { item: MenuItem }) {
 }
 
 export function Sidebar() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchUserProfile() {
+      try {
+        const res = await apiClient.get('/api/v1/auth/me');
+        if (isMounted && res.data) {
+          setUser(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load user profile:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchUserProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await apiClient.post('/api/v1/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      setLoggingOut(false);
+      navigate({ to: '/auth' });
+    }
+  };
+
   return (
-    <aside className="w-64 border-r bg-card flex flex-col h-screen shrink-0">
+    <aside className="w-64 border-r bg-card flex flex-col h-screen shrink-0 overflow-hidden select-none">
+      {/* 1. Header Sidebar (Fixed/Unscrollable) */}
       <div className="h-16 px-5 border-b flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground grid place-items-center font-bold shadow-sm">
           A
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-sm leading-none tracking-tight">Aumo Finance</span>
-          <span className="text- text-muted-foreground uppercase tracking-widest font-semibold">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">
             Accounting Suite
           </span>
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      {/* 2. Menu Navigation (Scrollable Area) */}
+      <ScrollArea className="flex-1 min-h-0">
         <div className="px-3 py-4 space-y-6">
           <div>
-            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">
+            <h2 className="px-3 mb-2 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
               Main Domain
             </h2>
             <div className="space-y-1">
@@ -121,7 +172,7 @@ export function Sidebar() {
           </div>
           <Separator />
           <div>
-            <h2 className="px-3 mb-2 text- font-bold text-muted-foreground/70 uppercase tracking-widest">
+            <h2 className="px-3 mb-2 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
               Reports & Statements
             </h2>
             <div className="space-y-1">
@@ -133,14 +184,47 @@ export function Sidebar() {
         </div>
         <ScrollBar orientation="vertical" />
       </ScrollArea>
+
+      {/* 3. User Info & Logout Footer (Unscrollable dengan Garis Pemisah Atas) */}
+      <div className="p-3 border-t bg-card shrink-0 space-y-2">
+        <div className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg bg-muted/40 border border-border/50">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary grid place-items-center shrink-0">
+              <IconUser size={16} />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-semibold truncate">
+                {loading ? 'Loading...' : user?.fullName || user?.userName || 'User'}
+              </span>
+              <span className="text-[10px] text-muted-foreground truncate font-mono">
+                {user?.email || 'Active Session'}
+              </span>
+            </div>
+          </div>
+          <Badge variant="outline" className="px-1.5 py-0.5 text-[9px] gap-1 font-mono border-emerald-500/30 text-emerald-600 bg-emerald-500/5 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Online
+          </Badge>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="w-full justify-start gap-2.5 h-9 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          {loggingOut ? <IconLoader2 size={16} className="animate-spin" /> : <IconLogout size={16} />}
+          <span>{loggingOut ? 'Logging out...' : 'Sign Out'}</span>
+        </Button>
+      </div>
     </aside>
   );
 }
 
 export function Topbar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const pathSegments = location.pathname.split('/' })).filter(Boolean);
+  const pathSegments = location.pathname.split('/').filter(Boolean);
 
   return (
     <header className="h-16 border-b bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 sticky top-0 z-10">
@@ -152,7 +236,7 @@ export function Topbar() {
             </BreadcrumbLink>
           </BreadcrumbItem>
           {pathSegments.map((seg, i) => {
-            const url = `/${pathSegments.slice(0, i + 1).join('/' }))}`;
+            const url = `/${pathSegments.slice(0, i + 1).join('/')}`;
             const isLast = i === pathSegments.length - 1;
             return (
               <div key={url} className="contents">
@@ -160,7 +244,7 @@ export function Topbar() {
                   <IconChevronRight size={14} />
                 </BreadcrumbSeparator>
                 <BreadcrumbItem>
-                  {isLast? (
+                  {isLast ? (
                     <BreadcrumbPage className="capitalize">{seg.replace(/-/g, ' ')}</BreadcrumbPage>
                   ) : (
                     <BreadcrumbLink asChild>
@@ -175,17 +259,6 @@ export function Topbar() {
           })}
         </BreadcrumbList>
       </Breadcrumb>
-
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className="hidden sm:flex gap-2 font-mono text-xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          Ghofur
-        </Badge>
-        <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/auth' })} className="h-8 gap-1.5 text-xs">
-          <IconLogout size={15} />
-          Logout
-        </Button>
-      </div>
     </header>
   );
 }
