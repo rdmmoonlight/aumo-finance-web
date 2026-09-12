@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios'
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.WEB_API_BASE_URL,
+  baseURL: import.meta.env.VITE_WEB_API_URL,
   withCredentials: true,
 })
 
