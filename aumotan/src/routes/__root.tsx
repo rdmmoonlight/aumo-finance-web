@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { createRootRoute, Outlet, useLocation, useNavigate, Link, HeadContent, Scripts } from '@tanstack/react-router';
 import appCss from '../styles/index.css?url';
 import {
   IconLayoutDashboard, IconListDetails, IconFilePencil, IconCalendarTime, IconRobot, IconShieldCheck,
   IconTools, IconSettings, IconBook, IconFileCheck, IconLock, IconNotebook, IconScale, IconReceipt2,
   IconPigMoney, IconBuildingBank, IconCash, IconTable, IconBuildingStore, IconScaleOff, IconLogout, IconChevronRight,
+  IconLoader2
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -11,11 +13,19 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { apiClient } from '@/services/apiClient';
 
 interface MenuItem {
   label: string;
   path: string;
   icon: React.ElementType;
+}
+
+interface UserProfile {
+  userId: string;
+  email: string;
+  userName: string;
+  fullName: string;
 }
 
 const mainNavItems: MenuItem[] = [
@@ -63,7 +73,7 @@ function NavItemLink({ item }: { item: MenuItem }) {
 
 export function Sidebar() {
   return (
-    <aside className="w-64 border-r bg-card flex flex-col h-screen shrink-0">
+    <aside className="w-64 border-r bg-card flex flex-col h-screen shrink-0 overflow-hidden">
       <div className="h-16 px-5 border-b flex items-center gap-3 shrink-0">
         <div className="w-9 h-9 rounded-xl bg-primary text-primary-foreground grid place-items-center font-bold shadow-sm">A</div>
         <div className="flex flex-col">
@@ -71,24 +81,23 @@ export function Sidebar() {
           <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-1">Accounting Suite</span>
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="px-3 py-4 space-y-6">
-          <div>
-            <h2 className="px-3 mb-2 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">Main Domain</h2>
-            <div className="space-y-1">
-              {mainNavItems.map((item) => <NavItemLink key={item.path} item={item} />)}
-            </div>
-          </div>
-          <Separator />
-          <div>
-            <h2 className="px-3 mb-2 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">Reports & Statements</h2>
-            <div className="space-y-1">
-              {reportNavItems.map((item) => <NavItemLink key={item.path} item={item} />)}
-            </div>
+      
+      {/* Scrollable Container */}
+      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <div>
+          <h2 className="px-3 mb-2 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">Main Domain</h2>
+          <div className="space-y-1">
+            {mainNavItems.map((item) => <NavItemLink key={item.path} item={item} />)}
           </div>
         </div>
-        <ScrollBar orientation="vertical" />
-      </ScrollArea>
+        <Separator />
+        <div>
+          <h2 className="px-3 mb-2 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">Reports & Statements</h2>
+          <div className="space-y-1">
+            {reportNavItems.map((item) => <NavItemLink key={item.path} item={item} />)}
+          </div>
+        </div>
+      </div>
     </aside>
   );
 }
@@ -97,6 +106,46 @@ export function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const pathSegments = location.pathname.split('/').filter(Boolean);
+
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function fetchUserProfile() {
+      try {
+        // Panggil GET /api/v1/auth/me via apiClient
+        const res = await apiClient.get('/api/v1/auth/me');
+        if (isMounted && res.data) {
+          setUser(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load user profile:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchUserProfile();
+    return () => { isMounted = false; };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await apiClient.post('/api/v1/auth/logout');
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      // Hapus token lokal jika disimpan di localStorage / cookie
+      localStorage.removeItem('token');
+      sessionStorage.clear();
+      setLoggingOut(false);
+      navigate({ to: '/auth' });
+    }
+  };
 
   return (
     <header className="h-16 border-b bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 sticky top-0 z-10">
@@ -130,12 +179,18 @@ export function Topbar() {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="flex items-center gap-3">
-        <Badge variant="outline" className="hidden sm:flex gap-2 font-mono text-xs">
+        <Badge variant="outline" className="hidden sm:flex gap-2 font-mono text-xs py-1 px-2.5">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          Ghofur
+          {loading ? 'Loading...' : (user?.fullName || user?.userName || 'User')}
         </Badge>
-        <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/auth' })} className="h-8 gap-1.5 text-xs">
-          <IconLogout size={15} />
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleLogout} 
+          disabled={loggingOut}
+          className="h-8 gap-1.5 text-xs"
+        >
+          {loggingOut ? <IconLoader2 size={15} className="animate-spin" /> : <IconLogout size={15} />}
           Logout
         </Button>
       </div>

@@ -100,7 +100,7 @@ function JournalEntryContent() {
       const payload = { journalType, entryDate, transactionNumber, lines: effective.map(l=>({ accountId:l.accountId, lineDescription:l.lineDescription, debit:parseFormattedNumber(l.debit), credit:parseFormattedNumber(l.credit) })) };
       const endpoint = isEdit? `/api/v1/journals/${entryIdParam}`: `/api/v1/journals`;
       const res = isEdit? await apiClient.put(endpoint, payload): await apiClient.post(endpoint, payload);
-      if(isEdit){ setSuccessMessage(`Updated ${transactionNumber}`); setTimeout(()=>navigate('/reports/general-journal'),1200); }
+      if(isEdit){ setSuccessMessage(`Updated ${transactionNumber}`); setTimeout(()=>navigate({ to: '/reports/general-journal'),1200); }
       else { setSuccessMessage(`Posted ${res.data?.transactionNumber||transactionNumber}`); resetForm(); }
     } catch (err:any){ setValidationErrors([err?.response?.data?.message||'Failed to post']); }
   };

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from '@tanstack/react-router';
-import { useNavigate } from '@/hooks/useCompatRouter';
+import { useNavigate } from '@tanstack/react-router';
 import apiClient from '@/services/apiClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,7 +32,7 @@ export default function AdjustingJournalPage() {
       const {data}=await apiClient.get('/api/v1/reports/adjusting-journal');
       if(data.success){ setSelectedPeriodName(data.selectedPeriodName||null); setIsPeriodClosed(data.isPeriodClosed||false); setEntries(data.entries||[]); }
       else throw new Error(data.message);
-    }catch(err:any){ if(err.response?.status===401) navigate('/'); setErrorMessage(err.response?.data?.message||err.message); setEntries([]); } finally{ setLoading(false); }
+    }catch(err:any){ if(err.response?.status===401) navigate({ to: '/' })); setErrorMessage(err.response?.data?.message||err.message); setEntries([]); } finally{ setLoading(false); }
   }, [navigate]);
 
   useEffect(()=>{ fetchData(); }, [fetchData]);

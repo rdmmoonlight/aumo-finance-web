@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from '@/hooks/useCompatRouter';
+import { useNavigate } from '@tanstack/react-router';
 import { IconCalendar, IconCalendarPlus, IconEye, IconEyeOff, IconPlus, IconLock, IconLockOpen, IconArrowLeft, IconCheck, IconAlertTriangle, IconX, IconInfoCircle, IconRefresh, IconCirclePlus, IconCalendarOff, IconLoader2 } from '@tabler/icons-react';
 import apiClient from '@/services/apiClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -52,7 +52,7 @@ export default function PeriodsPage() {
       const exists = info.hasExistingPermanentAccounts?? (cashBankOptions.length>0 && retainedOptions.length>0);
       setHasExisting(exists); setSetupMode(exists?'LoadExisting':'CreateNew');
       if(exists){ setCashAccountId(cashBankOptions[0]?.id||''); setBankAccountId(cashBankOptions[1]?.id||cashBankOptions[0]?.id||''); setRetainedId(retainedOptions[0]?.id||''); }
-    } catch (err:any){ if(err.response?.status===401) navigate('/auth'); setErrorMessage(err.response?.data?.message||'Failed to connect'); } finally { setLoading(false); }
+    } catch (err:any){ if(err.response?.status===401) navigate({ to: '/auth'); setErrorMessage(err.response?.data?.message||'Failed to connect'); } finally { setLoading(false); }
   };
 
   useEffect(()=>{ fetchAll(); }, []);

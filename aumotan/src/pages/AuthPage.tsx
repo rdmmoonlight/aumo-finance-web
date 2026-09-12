@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from '@/hooks/useCompatRouter';
+import { useNavigate } from '@tanstack/react-router';
 import apiClient from '@/services/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

@@ -140,7 +140,7 @@ export function Sidebar() {
 export function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const pathSegments = location.pathname.split('/').filter(Boolean);
+  const pathSegments = location.pathname.split('/' })).filter(Boolean);
 
   return (
     <header className="h-16 border-b bg-background/80 backdrop-blur-md px-6 flex items-center justify-between shrink-0 sticky top-0 z-10">
@@ -152,7 +152,7 @@ export function Topbar() {
             </BreadcrumbLink>
           </BreadcrumbItem>
           {pathSegments.map((seg, i) => {
-            const url = `/${pathSegments.slice(0, i + 1).join('/')}`;
+            const url = `/${pathSegments.slice(0, i + 1).join('/' }))}`;
             const isLast = i === pathSegments.length - 1;
             return (
               <div key={url} className="contents">

@@ -56,7 +56,7 @@ function ChartOfAccountsContent() {
       const loaded: ChartOfAccount[] = data?.accounts || [];
       setAccounts(loaded.sort((a,b)=>a.referenceNumber-b.referenceNumber));
     } catch (err: any) {
-      if (err.response?.status===401) navigate('/auth');
+      if (err.response?.status===401) navigate({ to: '/auth');
       setErrorMessage(err.response?.data?.message || 'Failed to load accounts');
     } finally { setLoading(false); }
   };
