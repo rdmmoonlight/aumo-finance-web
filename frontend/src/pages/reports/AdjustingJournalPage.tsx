@@ -32,7 +32,7 @@ export default function AdjustingJournalPage() {
       const {data}=await apiClient.get('/api/v1/reports/adjusting-journal');
       if(data.success){ setSelectedPeriodName(data.selectedPeriodName||null); setIsPeriodClosed(data.isPeriodClosed||false); setEntries(data.entries||[]); }
       else throw new Error(data.message);
-    }catch(err:any){ if(err.response?.status===401) navigate({ to: '/' })); setErrorMessage(err.response?.data?.message||err.message); setEntries([]); } finally{ setLoading(false); }
+    }catch(err:any){ if(err.response?.status===401) navigate({ to: '/' }); setErrorMessage(err.response?.data?.message||err.message); setEntries([]); } finally{ setLoading(false); }
   }, [navigate]);
 
   useEffect(()=>{ fetchData(); }, [fetchData]);

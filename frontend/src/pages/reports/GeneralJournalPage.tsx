@@ -32,7 +32,7 @@ export default function GeneralJournalPage() {
       const {data}=await apiClient.get('/api/v1/reports/general-journal');
       if(data.success){ setSelectedPeriodName(data.selectedPeriodName||null); setIsPeriodClosed(data.isPeriodClosed||false); setEntries(data.entries||[]); }
       else throw new Error(data.message);
-    }catch(err:any){ if(err.response?.status===401) navigate({ to: '/' })); setErrorMessage(err.response?.data?.message||err.message); } finally{ setLoading(false); }
+    }catch(err:any){ if(err.response?.status===401) navigate({ to: '/' }); setErrorMessage(err.response?.data?.message||err.message); } finally{ setLoading(false); }
   }, [navigate]);
 
   useEffect(()=>{ fetchData(); const h=()=>fetchData(); window.addEventListener('periodChanged',h); return()=>window.removeEventListener('periodChanged',h); }, [fetchData]);

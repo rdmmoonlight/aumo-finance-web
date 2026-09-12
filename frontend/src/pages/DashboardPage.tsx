@@ -68,7 +68,7 @@ function DashboardContent() {
   }, [searchParams, fetchDashboardData]);
 
   const handlePeriodSwitch = (type: string) => {
-    if (periodType===type) return; setPeriodType(type); navigate({ to: `/dashboard?period=${type}`);
+    if (periodType===type) return; setPeriodType(type); navigate({ to: `/dashboard?period=${type}` });
   };
 
   const healthScore = useMemo(() => {
