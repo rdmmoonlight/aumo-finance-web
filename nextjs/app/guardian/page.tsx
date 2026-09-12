@@ -15,7 +15,7 @@ import {
 } from '@tabler/icons-react';
 
 // Base URL Backend API dari environment variable Vercel atau fallback ke URL Render
-const API_BASE_URL = (
+const NEXT_PUBLIC_API_URL = (
   process.env.NEXT_PUBLIC_API_URL || 'https://aumonext-api.onrender.com'
 ).replace(/\/$/, '');
 
@@ -90,7 +90,7 @@ export default function GuardianSecurityPage() {
         setErrorMessage(null);
 
         // Solusi 1: Pemanggilan endpoint diarahkan ke /api/v1/guardian/dashboard
-        const response = await fetch(`${API_BASE_URL}/api/v1/guardian/dashboard`, {
+        const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/dashboard`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export default function GuardianSecurityPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/guardian/revoke-session/${sessionId}`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/revoke-session/${sessionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ export default function GuardianSecurityPage() {
 
     try {
       // Diselaraskan dengan endpoint [HttpPost("revoke-all-sessions")] di C#
-      const response = await fetch(`${API_BASE_URL}/api/v1/guardian/revoke-all-sessions`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/guardian/revoke-all-sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -45,7 +45,7 @@ const formatDateDisplay = (dateString?: string) => {
 
 // Sanitasi URL API
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -67,7 +67,7 @@ export default function RetainedEarningsReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/reports/retained-earnings`, {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/retained-earnings`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Untuk Identity Cookie Session

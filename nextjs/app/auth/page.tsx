@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 type AuthView = 'login' | 'register' | 'resend' | 'verifying';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
+const NEXT_PUBLIC_API_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 function AuthContent() {
   const router = useRouter();
@@ -70,7 +70,7 @@ function AuthContent() {
     try {
       const userAgentStr = getClientUserAgent();
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/verify-email?email=${encodeURIComponent(
+        `${NEXT_PUBLIC_API_URL}/api/v1/auth/verify-email?email=${encodeURIComponent(
           email.trim()
         )}&token=${encodeURIComponent(token)}`,
         {
@@ -113,7 +113,7 @@ function AuthContent() {
     try {
       const userAgentStr = getClientUserAgent();
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ function AuthContent() {
     try {
       const userAgentStr = getClientUserAgent();
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/auth/register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ function AuthContent() {
       const userAgentStr = getClientUserAgent();
 
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/auth/resend-verification`,
+        `${NEXT_PUBLIC_API_URL}/api/v1/auth/resend-verification`,
         {
           method: 'POST',
           headers: { 

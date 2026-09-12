@@ -48,7 +48,7 @@ const formatNumber = (amount: number) => {
 
 // Sanitasi URL API tanpa /api
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -63,7 +63,7 @@ export default function WorksheetReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/worksheet`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/worksheet`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Menggunakan Session Cookie

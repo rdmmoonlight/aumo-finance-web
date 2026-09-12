@@ -55,7 +55,7 @@ const generateTxNumber = (journalType: string, dateStr: string): string => {
 };
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-const API_BASE_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
+const NEXT_PUBLIC_API_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 function JournalEntryContent() {
   const router = useRouter();
@@ -122,7 +122,7 @@ function JournalEntryContent() {
       setLoading(true);
       try {
         // 1. Fetch Chart of Accounts menggunakan Cookie Authentication
-        const accountsRes = await fetch(`${API_BASE_URL}/api/v1/chart-of-accounts`, {
+        const accountsRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/chart-of-accounts`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ function JournalEntryContent() {
 
         // 2. Fetch data jika Edit Mode
         if (isEdit && entryIdParam) {
-          const journalRes = await fetch(`${API_BASE_URL}/api/v1/journals/${entryIdParam}`, {
+          const journalRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/journals/${entryIdParam}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
@@ -350,8 +350,8 @@ function JournalEntryContent() {
       };
 
       const url = isEdit
-        ? `${API_BASE_URL}/api/v1/journals/${entryIdParam}`
-        : `${API_BASE_URL}/api/v1/journals`;
+        ? `${NEXT_PUBLIC_API_URL}/api/v1/journals/${entryIdParam}`
+        : `${NEXT_PUBLIC_API_URL}/api/v1/journals`;
       const method = isEdit ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

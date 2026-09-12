@@ -65,7 +65,7 @@ const formatDateTimeDisplay = (dateTimeString?: string) => {
 
 // Sanitasi aman untuk URL API tanpa tumpukan /api
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -91,7 +91,7 @@ export default function GeneralJournalPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/journals/general`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/journals/general`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Mengirim Session Cookie secara otomatis
@@ -147,7 +147,7 @@ export default function GeneralJournalPage() {
 
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/journals/general/${entry.id}`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/journals/general/${entry.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

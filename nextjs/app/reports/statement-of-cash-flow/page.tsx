@@ -36,7 +36,7 @@ const formatNumber = (amount: number) => {
 
 // Sanitasi URL API
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -56,7 +56,7 @@ export default function CashFlowReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/statement-of-cash-flow`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/statement-of-cash-flow`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Untuk Identity Cookie Session

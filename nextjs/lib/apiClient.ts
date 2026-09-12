@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 interface FetchOptions extends RequestInit {
   body?: any;
@@ -16,7 +16,7 @@ export async function apiClient(endpoint: string, options: FetchOptions = {}) {
     body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}${endpoint}`, {
     ...options,
     headers,
     body,

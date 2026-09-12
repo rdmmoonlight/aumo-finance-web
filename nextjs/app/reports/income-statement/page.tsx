@@ -38,7 +38,7 @@ const formatNumber = (amount: number) => {
 
 // Sanitasi URL API
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -59,7 +59,7 @@ export default function IncomeStatementReportPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/income-statement`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/income-statement`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Cookie Session Identity

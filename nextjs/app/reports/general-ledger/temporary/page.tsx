@@ -42,7 +42,7 @@ const formatNumber = (amount: number) => {
 };
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -57,7 +57,7 @@ export default function TemporaryGeneralLedgerPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/general-ledger/temporary`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/general-ledger/temporary`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -23,7 +23,7 @@ const MONTH_NAMES = [
 ];
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl.replace(/\/+$/, '');
+const NEXT_PUBLIC_API_URL = rawApiUrl.replace(/\/+$/, '');
 
 export default function PeriodsMainPage() {
   const router = useRouter();
@@ -79,7 +79,7 @@ export default function PeriodsMainPage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const periodsRes = await fetch(`${API_BASE_URL}/api/v1/periods`, {
+      const periodsRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/periods`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -115,7 +115,7 @@ export default function PeriodsMainPage() {
         }
       }
 
-      const openInfoRes = await fetch(`${API_BASE_URL}/api/v1/periods/open-info`, {
+      const openInfoRes = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/periods/open-info`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -175,7 +175,7 @@ export default function PeriodsMainPage() {
     setSelectedPeriodId(period.id);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/periods/select/${period.id}`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/periods/select/${period.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -202,7 +202,7 @@ export default function PeriodsMainPage() {
   const clearSelection = async () => {
     setErrorMessage(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/periods/clear-selection`, {
+      const res = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/periods/clear-selection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -234,7 +234,7 @@ export default function PeriodsMainPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/periods/close/${period.id}`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/periods/close/${period.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -316,7 +316,7 @@ export default function PeriodsMainPage() {
         retainedEarningsAccountName: setupMode === 'CreateNew' ? retainedAccountName : null,
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/periods`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/periods`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

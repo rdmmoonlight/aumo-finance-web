@@ -36,7 +36,7 @@ const formatNumber = (amount: number) => {
 
 // Sanitasi URL API tanpa akhiran /api atau slash ganda
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -51,7 +51,7 @@ export default function AdjustedTrialBalancePage() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/reports/trial-balance/adjusted`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/reports/trial-balance/adjusted`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

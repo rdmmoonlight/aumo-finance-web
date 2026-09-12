@@ -83,7 +83,7 @@ export interface DashboardViewModel {
 
 // Sanitasi URL API
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const API_BASE_URL = rawApiUrl
+const NEXT_PUBLIC_API_URL = rawApiUrl
   .replace(/\/+$/, '')
   ;
 
@@ -119,7 +119,7 @@ function DashboardContent() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/dashboard?period=${type}`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/api/v1/dashboard?period=${type}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
