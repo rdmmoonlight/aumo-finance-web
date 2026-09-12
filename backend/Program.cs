@@ -200,7 +200,7 @@ namespace AumoBackend
             var originsList = new List<string>
             {
                 "http://localhost:3000",
-                "https://my-authentic-app.vercel.app",
+                "https://my-authentic-web.vercel.app",
                 "https://aumo-finance-web.vercel.app",
                 "https://aumo-finance-web.ndopoer.workers.dev"
             };
