@@ -37,7 +37,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/nitro-v2-vite-plugin": "1.155.2",
     "@tanstack/react-router": "1.155.2",
-    "@tanstack/react-router-devtools": "1.155.2",
+    "@tanstack/react-router-devtools": "1.155.0",
     "@tanstack/react-start": "1.155.2",
     "@tanstack/router-generator": "1.155.2",
     "@tanstack/router-plugin": "1.155.2",
