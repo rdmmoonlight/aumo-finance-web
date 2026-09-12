@@ -52,7 +52,7 @@ export default function PeriodsPage() {
       const exists = info.hasExistingPermanentAccounts?? (cashBankOptions.length>0 && retainedOptions.length>0);
       setHasExisting(exists); setSetupMode(exists?'LoadExisting':'CreateNew');
       if(exists){ setCashAccountId(cashBankOptions[0]?.id||''); setBankAccountId(cashBankOptions[1]?.id||cashBankOptions[0]?.id||''); setRetainedId(retainedOptions[0]?.id||''); }
-    } catch (err:any){ if(err.response?.status===401) navigate({ to: '/auth'); setErrorMessage(err.response?.data?.message||'Failed to connect'); } finally { setLoading(false); }
+    } catch (err:any){ if(err.response?.status===401) navigate({ to: '/auth' }); setErrorMessage(err.response?.data?.message||'Failed to connect'); } finally { setLoading(false); }
   };
 
   useEffect(()=>{ fetchAll(); }, []);
