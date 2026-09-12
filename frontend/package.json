@@ -63,7 +63,11 @@
   "overrides": {
     "@tanstack/router-generator": "latest",
     "@tanstack/react-router": "latest",
-    "@tanstack/start": "latest"
+    "@tanstack/router-plugin": "latest",
+    "@tanstack/start": "latest",
+    "@tanstack/react-start": "latest",
+    "@tanstack/react-start-plugin": "latest",
+    "@tanstack/start-plugin-core": "latest"
   },
   "allowScripts": {
     "esbuild@0.28.2": true
