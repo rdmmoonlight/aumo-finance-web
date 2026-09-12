@@ -181,7 +181,7 @@ function ChartOfAccountsContent() {
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Input placeholder="Search accounts..." value={searchText} onChange={(e) => setSearchText(e.target.value)} className="w-full sm:w-" />
-            <Select value={categoryFilter || 'all'} onValueChange={(v: string) => setCategoryFilter(v)}>
+            <Select value={categoryFilter || 'all'} onValueChange={(v: any) => setCategoryFilter(v || 'all')}>
               <SelectTrigger className="w-full sm:w-"><SelectValue placeholder="All Categories" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
