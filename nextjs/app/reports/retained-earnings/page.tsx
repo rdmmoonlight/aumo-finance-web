@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  IconPiggyBank,
+  IconPigMoney,
   IconAlertTriangle,
   IconEyeOff,
   IconCalendar,
@@ -83,7 +83,7 @@ export default function RetainedEarningsReportPage() {
         <>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"><IconPiggyBank className="h-5 w-5" /></span> Retained Earnings Statement</h2>
+              <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"><IconPigMoney className="h-5 w-5" /></span> Retained Earnings Statement</h2>
               <p className="max-w- text-sm text-muted-foreground">Bridges the Income Statement and the Equity section on the Balance Sheet (In IDR, unless otherwise stated).</p>
             </div>
             <Button asChild variant="outline"><Link href="/reports/statement-of-financial-position"><IconArrowRightCircle className="h-4 w-4" /> Balance Sheet</Link></Button>
