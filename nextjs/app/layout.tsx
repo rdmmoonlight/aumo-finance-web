@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
-import './globals.css';
-import { Geist } from "next/font/google";
+import './global.css';
+import 'geist/font/sans';
+import 'geist/font/mono';
 import { cn } from "@/lib/utils";
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,8 +20,6 @@ import {
   IconHome, IconLayoutGrid, IconCalendarEvent, IconSitemap, IconRobot, IconBook2, IconFolder, IconShieldCheck, IconTools, IconSettings, IconLogout, IconX,
   IconCalendarOff, IconLock, IconCalendarCheck, IconSearch, IconDotsVertical, IconMoonStars, IconSun, IconShieldCheckFilled, IconCloudCheck, IconRefresh, IconCirclePlus, IconList, IconEyeOff
 } from '@tabler/icons-react';
-
-const geist = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 const themeInitScript = `
   (function() {
@@ -140,7 +139,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   if(!isMounted){return <html lang="en-US" className={cn("dark font-sans antialiased",geist.variable)} suppressHydrationWarning><head><script dangerouslySetInnerHTML={{__html:themeInitScript}}/></head><body className="bg-background text-foreground min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary"/></body></html>;}
 
   return (
-    <html lang="en-US" className={cn("font-sans antialiased",geist.variable)} suppressHydrationWarning>
+<html lang="en-US" className="dark font-sans antialiased" suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{__html:themeInitScript}}/></head>
       <body className="bg-background text-foreground min-h-screen">
         <TooltipProvider delayDuration={0}>
