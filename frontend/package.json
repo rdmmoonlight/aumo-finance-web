@@ -60,6 +60,11 @@
     "vite-plugin-env-compatible": "^2.0.1",
     "vite-tsconfig-paths": "^5.1.4"
   },
+  "overrides": {
+    "@tanstack/router-generator": "latest",
+    "@tanstack/react-router": "latest",
+    "@tanstack/start": "latest"
+  },
   "allowScripts": {
     "esbuild@0.28.2": true
   }
