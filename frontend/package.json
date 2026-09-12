@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"tanstack-start dev --port 3000\" \"orval --watch\"",
-    "build": "tanstack-start build",
-    "start": "tanstack-start start",
+    "dev": "concurrently \"vinxi dev --port 3000\" \"orval --watch\"",
+    "build": "vinxi build",
+    "start": "vinxi start --port 3000",
     "preview": "vite preview --port 3000",
     "orval": "orval",
     "orval:watch": "orval --watch",
